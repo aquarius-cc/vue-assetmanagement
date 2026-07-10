@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   AssetTypeForm.vue
   资产分类表单页（新增 / 编辑）
   模式判断：路由 query 中有 code 参数 → 编辑模式，否则 → 新增模式
@@ -248,7 +248,7 @@ const goBack = () => {
       align-items: center;
       gap: 8px;
       font-weight: bold;
-      color: #409eff;
+      color: var(--color-primary-light);
 
       .el-icon {
         font-size: 20px;
@@ -262,12 +262,12 @@ const goBack = () => {
   }
 
   .section-title {
-    color: #303133;
+    color: var(--text-primary);
     font-size: 20px;
     font-weight: bold;
-    margin: 20px 0 15px 0;
+    margin: 20px 0 16px 0;
     padding-bottom: 8px;
-    border-bottom: 2px solid #409eff;
+    border-bottom: 2px solid var(--color-primary-light);
   }
 
   .el-form .el-form-item {
@@ -277,22 +277,22 @@ const goBack = () => {
 
 // Element Plus 组件样式穿透与统一优化
 :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px #dcdfe6 inset;
+  box-shadow: 0 0 0 1px var(--border-color-input) inset;
   &:hover {
-    box-shadow: 0 0 0 1px #c0c4cc inset;
+    box-shadow: 0 0 0 1px var(--border-color-input-dark) inset;
   }
   &.is-focus {
-    box-shadow: 0 0 0 1px #409eff inset;
+    box-shadow: 0 0 0 1px var(--color-primary-light) inset;
   }
 }
 
 :deep(.el-textarea__inner) {
-  box-shadow: 0 0 0 1px #dcdfe6 inset;
+  box-shadow: 0 0 0 1px var(--border-color-input) inset;
   &:hover {
-    box-shadow: 0 0 0 1px #c0c4cc inset;
+    box-shadow: 0 0 0 1px var(--border-color-input-dark) inset;
   }
   &:focus {
-    box-shadow: 0 0 0 1px #409eff inset;
+    box-shadow: 0 0 0 1px var(--color-primary-light) inset;
   }
 }
 </style>

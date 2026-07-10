@@ -1,21 +1,21 @@
-<!--
+﻿<!--
   BasicAssetDetails.vue
-  资产详情页面（重构版�?
+  资产详情页面（重构版�?
   @description
-  展示资产的完整详细信息，包括基本信息、分类信息、合同信息�?  人员信息、存储位置、硬盘序列号等�?
+  展示资产的完整详细信息，包括基本信息、分类信息、合同信息�?  人员信息、存储位置、硬盘序列号等�?
   @architecture
-  - 使用 InfoCard 组件展示键值对形式的信息卡�?  - 使用 HardDiskSNCard 组件展示硬盘序列号列�?  - 使用 useAssetInfoCards composable 生成卡片配置
+  - 使用 InfoCard 组件展示键值对形式的信息卡�?  - 使用 HardDiskSNCard 组件展示硬盘序列号列�?  - 使用 useAssetInfoCards composable 生成卡片配置
 
   @features
-  - 数据驱动的卡片渲�?  - 支持条件渲染（可选数据块�?  - 支持导出 Excel
-  - 支持编辑和返回操�?
+  - 数据驱动的卡片渲�?  - 支持条件渲染（可选数据块�?  - 支持导出 Excel
+  - 支持编辑和返回操�?
   @author System
   @date 2025-06-02
 -->
 
 <template>
   <div class="asset-detail-container" v-if="assetDetail">
-    <!-- 页面标题和操作按�?-->
+    <!-- 页面标题和操作按�?-->
     <div class="header-section">
       <div class="title-area">
         <h1 class="page-title">{{ assetDetail.asset_name }}</h1>
@@ -35,7 +35,7 @@
       </div>
     </div>
 
-    <!-- 资产状态标�?-->
+    <!-- 资产状态标�?-->
     <div class="status-badges">
       <el-tag
         :type="getStatusType(assetDetail.asset_current_status)"
@@ -56,12 +56,12 @@
     <InfoCard :config="storageCard" />
     <InfoCard :config="descriptionCard" />
 
-    <!-- 硬盘序列号卡片（表格形式�?-->
+    <!-- 硬盘序列号卡片（表格形式�?-->
     <!-- v-if="assetDetail.harddisk_sns?.length" -->
     <HardDiskSNCard :harddisk-sns="assetDetail.harddisk_sns" :asset-code="assetDetail.asset_code" />
   </div>
 
-  <!-- 加载状�?-->
+  <!-- 加载状�?-->
   <div v-else-if="isLoading" class="loading-container">
     <div class="loading-content">
       <el-skeleton :rows="12" animated />
@@ -72,7 +72,7 @@
     </div>
   </div>
 
-  <!-- 空状�?-->
+  <!-- 空状�?-->
   <div v-else class="empty-container">
     <el-empty description="暂无资产数据" />
   </div>
@@ -81,7 +81,7 @@
 <script lang="ts">
 /**
  * 组件名称定义
- * 用于�?Vue DevTools 中识别组�? */
+ * 用于�?Vue DevTools 中识别组�? */
 export default {
   name: 'BasicAssetDetails',
 }
@@ -102,7 +102,7 @@ import type { AssetDetail } from '@/types/asset'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { formatDate, assetCurrentStatusMapping } from '@/utils/Format'
 
-// ===== 路由与状�?=====
+// ===== 路由与状�?=====
 const router = useRouter()
 const route = useRoute()
 const assetStore = useAssetStore()
@@ -125,15 +125,15 @@ const {
 
 /**
  * 获取资产当前状态的中文文本
- * @param value - 状态枚举�? * @returns 中文状态文�? */
+ * @param value - 状态枚举�? * @returns 中文状态文�? */
 const getCurrentStatusText = (value: string | null | undefined): string => {
-  if (!value) return '未知状�?
-  return assetCurrentStatusMapping[value] || '未知状�?
+  if (!value) return '未知状�?
+  return assetCurrentStatusMapping[value] || '未知状�?
 }
 
 /**
  * 获取状态标签的类型
- * @param status - 状态枚举�? * @returns Element Plus Tag 组件�?type 属性�? */
+ * @param status - 状态枚举�? * @returns Element Plus Tag 组件�?type 属性�? */
 const getStatusType = (status: string | null | undefined): string => {
   if (!status) return 'info'
   const typeMap: Record<string, string> = {
@@ -151,8 +151,8 @@ onMounted(async () => {
   const assetCode = (route.query.code as string) || (route.query.recordcode as string)
   console.log('assetCode', assetCode)
   if (!assetCode || typeof assetCode !== 'string') {
-    console.error('无效的资产编码参�?)
-    ElMessage.error('无效的资产编码参�?)
+    console.error('无效的资产编码参�?)
+    ElMessage.error('无效的资产编码参�?)
     isLoading.value = false
     return
   }
@@ -176,14 +176,14 @@ onMounted(async () => {
 const { exportDetail } = useExcelExport()
 
 /**
- * 导出列配�? * 定义导出 Excel 时的列映�? */
+ * 导出列配�? * 定义导出 Excel 时的列映�? */
 const detailExportColumns: ColumnConfig<AssetDetail>[] = [
   { title: '资产编码', key: 'asset_code', default: '' },
   { title: '资产名称', key: 'asset_name', default: '' },
   { title: '品牌', key: 'asset_brand', default: '' },
   { title: '单位', key: 'asset_unit', default: '' },
   { title: '型号规格', key: 'asset_specification', default: '' },
-  { title: '资产分类�?, key: 'asset_type_code', default: '' },
+  { title: '资产分类�?, key: 'asset_type_code', default: '' },
   {
     title: '单价',
     key: 'asset_purchase_price',
@@ -203,7 +203,7 @@ const detailExportColumns: ColumnConfig<AssetDetail>[] = [
     formatter: (v) => formatDate(v as string) || '',
   },
   {
-    title: '质保�?�?',
+    title: '质保�?�?',
     key: 'asset_warranty_period',
     default: '0',
     formatter: (v) => String(v ?? '0'),
@@ -215,15 +215,15 @@ const detailExportColumns: ColumnConfig<AssetDetail>[] = [
     formatter: (v) => formatDate(v as string) || '',
   },
   {
-    title: '当前使用状�?,
+    title: '当前使用状�?,
     key: 'asset_current_status',
     default: '',
     formatter: (v) => getCurrentStatusText(v as string),
   },
-  { title: '录入人工�?, key: 'asset_entry_person_jobcode', default: '' },
+  { title: '录入人工�?, key: 'asset_entry_person_jobcode', default: '' },
   { title: '合同编码', key: 'asset_contract_code', default: '' },
-  { title: '申请人工�?, key: 'asset_applicant_jobcode', default: '' },
-  { title: '保管人工�?, key: 'asset_manager_jobcode', default: '' },
+  { title: '申请人工�?, key: 'asset_applicant_jobcode', default: '' },
+  { title: '保管人工�?, key: 'asset_manager_jobcode', default: '' },
   { title: '使用地点', key: 'asset_using_location', default: '' },
   { title: '仓库编码', key: 'asset_storage_code', default: '' },
   { title: '资产描述', key: 'asset_description', default: '' },
@@ -234,7 +234,7 @@ const detailExportColumns: ColumnConfig<AssetDetail>[] = [
  */
 const handleExportExcel = async () => {
   if (!assetDetail.value) {
-    ElMessage.warning('暂无资产数据可导�?)
+    ElMessage.warning('暂无资产数据可导�?)
     return
   }
   await exportDetail(
@@ -248,13 +248,13 @@ const handleExportExcel = async () => {
 // ===== 交互方法 =====
 
 /**
- * 返回上一�? */
+ * 返回上一�? */
 const handleBack = () => {
   router.go(-1)
 }
 
 /**
- * 跳转到编辑页�? */
+ * 跳转到编辑页�? */
 const handleEdit = () => {
   if (!assetDetail.value?.asset_code) {
     ElMessage.error('资产编码不存在，无法编辑')
@@ -266,7 +266,7 @@ const handleEdit = () => {
       query: { code: assetDetail.value.asset_code },
     })
     .catch((err) => {
-      ElMessage.error(`跳转到编辑页面失�? ${err.message || '未知错误'}`)
+      ElMessage.error(`跳转到编辑页面失�? ${err.message || '未知错误'}`)
     })
 }
 </script>
@@ -279,7 +279,7 @@ const handleEdit = () => {
   box-sizing: border-box;
   width: 100%;
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--background-color);
 }
 
 .header-section {
@@ -288,7 +288,7 @@ const handleEdit = () => {
   align-items: flex-start;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color-light);
 }
 
 .title-area {
@@ -313,7 +313,7 @@ const handleEdit = () => {
 .asset-brand {
   font-size: 14px;
   color: #6b7280;
-  background-color: #f3f4f6;
+  background-color: var(--card-background-subtle);
   padding: 4px 12px;
   border-radius: 4px;
   font-weight: 500;
@@ -335,7 +335,7 @@ const handleEdit = () => {
 }
 
 .status-tag {
-  padding: 6px 16px;
+  padding: 8px 16px;
   font-size: 14px;
   font-weight: 500;
   border-radius: 4px;
@@ -355,7 +355,7 @@ const handleEdit = () => {
   justify-content: center;
   gap: 8px;
   margin-top: 24px;
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 14px;
 
   .el-icon {

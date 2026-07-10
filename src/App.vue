@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useDarkMode } from '@/composables/useDarkMode'
+import './styles/variables.css'
 
 // 初始化暗色模式
 useDarkMode()

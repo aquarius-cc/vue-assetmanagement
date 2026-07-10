@@ -1,13 +1,13 @@
-<!--
+﻿<!--
   ScrapableAssetsSearch.vue
-  可报废资产搜索组�?
-  功能�?  - 根据资产编码、名称、型号规格、品牌、仓库搜索可报废资产
+  可报废资产搜索组�?
+  功能�?  - 根据资产编码、名称、型号规格、品牌、仓库搜索可报废资产
   - 结果分页展示，每行带"选择"按钮
-  - 选中后通过 emit 将完整的资产对象传递给父组�?
-  遵守 AGENTS 规范�?  - 使用组合�?API + TypeScript 严格模式
+  - 选中后通过 emit 将完整的资产对象传递给父组�?
+  遵守 AGENTS 规范�?  - 使用组合�?API + TypeScript 严格模式
   - 样式隔离 scoped
   - 禁止 any 类型
-  - 单向数据流：通过 emit 向上传递数�?  - 复杂逻辑抽离�?useScrapableAssets composable
+  - 单向数据流：通过 emit 向上传递数�?  - 复杂逻辑抽离�?useScrapableAssets composable
   - 全量使用 @/ 别名导入
 -->
 
@@ -86,7 +86,7 @@
 
     <!-- 搜索结果列表 -->
     <div v-if="list.length > 0" class="search-results">
-      <p class="result-title">可报废资产（�?{{ total }} 条，每页 {{ pageSize }} 条）</p>
+      <p class="result-title">可报废资产（�?{{ total }} 条，每页 {{ pageSize }} 条）</p>
       <el-table :data="list" size="small" style="width: 100%">
         <el-table-column prop="asset_code" label="资产编码" width="140" />
         <el-table-column prop="asset_name" label="资产名称" />
@@ -102,7 +102,7 @@
             {{ row.asset_storage?.storage_name || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="当前状�?>
+        <el-table-column label="当前状�?>
           <template #default="{ row }">
             {{ getAssetStatusText(row.asset_current_status) }}
           </template>
@@ -183,10 +183,10 @@ const searchForm = reactive<SearchForm>({
   asset_contract_name: '',
 })
 
-// 标记是否已执行过搜索（用于显示无数据提示�?const searched = ref(false)
+// 标记是否已执行过搜索（用于显示无数据提示�?const searched = ref(false)
 
 /**
- * 构建传给 Composable 的额外查询参�? * 过滤掉空字符串字段，避免后端收到无意义的参数
+ * 构建传给 Composable 的额外查询参�? * 过滤掉空字符串字段，避免后端收到无意义的参数
  */
 const buildExtraParams = (): Record<string, string> => {
   const params: Record<string, string> = {}
@@ -200,7 +200,7 @@ const buildExtraParams = (): Record<string, string> => {
 
 /**
  * 搜索处理
- * 重置到第一页，并根据表单条件请求数�? */
+ * 重置到第一页，并根据表单条件请求数�? */
 const handleSearch = async () => {
   currentPage.value = 1 // 重置页码
   searched.value = true
@@ -210,14 +210,14 @@ const handleSearch = async () => {
 
 /**
  * 分页页码变更
- * @param page - 新页�? */
+ * @param page - 新页�? */
 const handlePageChange = (page: number) => {
   changePage(page)
 }
 
 /**
  * 选择资产
- * @param row - 选中的资产详�? */
+ * @param row - 选中的资产详�? */
 const handleSelect = (row: AssetDetail) => {
   emit('select', row)
 }
@@ -227,9 +227,9 @@ const handleSelect = (row: AssetDetail) => {
 .scrapable-assets-search {
   margin-bottom: 20px;
   padding: 16px;
-  background-color: #f5f7fa;
+  background-color: var(--background-color);
   border-radius: 8px;
-  border: 1px solid #e4e7ed;
+  border: 1px solid var(--border-color-light);
 
   .search-section {
     margin-bottom: 16px;
@@ -237,14 +237,14 @@ const handleSelect = (row: AssetDetail) => {
 
   .search-results {
     padding: 12px;
-    background-color: #ffffff;
+    background-color: var(--card-background);
     border-radius: 4px;
     margin-top: 12px;
 
     .result-title {
       font-weight: bold;
       margin-bottom: 8px;
-      color: #606266;
+      color: var(--text-regular);
     }
 
     .pagination {
@@ -255,7 +255,7 @@ const handleSelect = (row: AssetDetail) => {
 
   .no-data {
     text-align: center;
-    color: #909399;
+    color: var(--text-secondary);
     padding: 20px;
     font-style: italic;
   }

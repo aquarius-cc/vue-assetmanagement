@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   AssetTypeDetails.vue
   资产分类列表页面（重构版）
 
@@ -464,7 +464,7 @@ const handleMaskBack = () => {
   }
   .el-scrollbar__thumb {
     opacity: 1;
-    background-color: #c1c1c1;
+    background-color: var(--text-placeholder);
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.15);
   }
 }

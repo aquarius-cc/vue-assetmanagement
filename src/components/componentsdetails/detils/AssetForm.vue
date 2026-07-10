@@ -1,7 +1,7 @@
-<!--
+﻿<!--
   AssetForm.vue
-  资产表单（新�?/ 编辑�?
-  后端规则变更说明�?  - asset_code 由后端自动生成（格式：ASSET-{category}-{type_code}-{YYYYMMDD}-{random}-{seq}�?  - 前端新增时无需传�?asset_code，编辑时作为唯一标识仍需传�?  - �?asset_purchase_number > 1 时，后端创建多条 Asset 记录并返�?List[AssetDetail]
+  资产表单（新�?/ 编辑�?
+  后端规则变更说明�?  - asset_code 由后端自动生成（格式：ASSET-{category}-{type_code}-{YYYYMMDD}-{random}-{seq}�?  - 前端新增时无需传�?asset_code，编辑时作为唯一标识仍需传�?  - �?asset_purchase_number > 1 时，后端创建多条 Asset 记录并返�?List[AssetDetail]
 -->
 <template>
   <div class="asset-form">
@@ -134,15 +134,15 @@ const assetForm = reactive<AssetCreateFormExtended>({
 
 /**
  * 获取提交给后端的创建表单数据
- * 新增模式时不传�?asset_code（后端自动生成）
- * 编辑模式时传�?asset_code（作为唯一标识�? *
- * 字段映射（AssetCreateForm �?AssetCreateSerializer）：
- * - asset_type �?SlugRelatedField(slug_field='asset_type_code')
- * - asset_contract �?SlugRelatedField(slug_field='contract_code')
- * - asset_storage �?SlugRelatedField(slug_field='storage_code')
- * - asset_entry_person �?SlugRelatedField(slug_field='employee_jobcode')
- * - asset_applicant �?SlugRelatedField(slug_field='employee_jobcode')
- * - asset_manager �?SlugRelatedField(slug_field='employee_jobcode')
+ * 新增模式时不传�?asset_code（后端自动生成）
+ * 编辑模式时传�?asset_code（作为唯一标识�? *
+ * 字段映射（AssetCreateForm �?AssetCreateSerializer）：
+ * - asset_type �?SlugRelatedField(slug_field='asset_type_code')
+ * - asset_contract �?SlugRelatedField(slug_field='contract_code')
+ * - asset_storage �?SlugRelatedField(slug_field='storage_code')
+ * - asset_entry_person �?SlugRelatedField(slug_field='employee_jobcode')
+ * - asset_applicant �?SlugRelatedField(slug_field='employee_jobcode')
+ * - asset_manager �?SlugRelatedField(slug_field='employee_jobcode')
  */
 const getAssetCreateForm = computed(() => {
   return {
@@ -183,7 +183,7 @@ const storageCodeUpdater = (code: string) => {
 const associationMethods = useAssetFormAssociationMethods(
   associations.contracts,
   associations.storages,
-  contractStore.getByName, // 确保 store 提供此方�?  contractUpdater,
+  contractStore.getByName, // 确保 store 提供此方�?  contractUpdater,
   storageCodeUpdater,
 )
 
@@ -218,7 +218,7 @@ const handleAssetTypeChange = (primaryName: string) => {
   }
 }
 
-// 编辑：加载详�?const loadAssetDetail = async (assetCode: string) => {
+// 编辑：加载详�?const loadAssetDetail = async (assetCode: string) => {
   try {
     const detail = await assetStore.getById(assetCode)
     if (!detail) {
@@ -240,7 +240,7 @@ const handleAssetTypeChange = (primaryName: string) => {
     assetForm.asset_description = detail.asset_description ?? ''
     assetForm.asset_current_status = detail.asset_current_status ?? ''
 
-    // FK 字段：后端返�?_code 后缀，表单使用同名字�?    assetForm.asset_type = detail.asset_type_code ?? ''
+    // FK 字段：后端返�?_code 后缀，表单使用同名字�?    assetForm.asset_type = detail.asset_type_code ?? ''
     assetForm.asset_contract = detail.asset_contract_code ?? ''
     assetForm.asset_storage = detail.asset_storage_code ?? ''
     assetForm.asset_entry_person = detail.asset_entry_person_jobcode ?? ''
@@ -273,8 +273,8 @@ const displayStatus = computed(() => getAssetStatusText(assetForm.asset_current_
 
 /**
  * 提交表单
- * 新增模式：不传�?asset_code，后端自动生成并返回 List[AssetDetail]
- * 编辑模式：传�?asset_code 作为唯一标识，后端返回单�?AssetDetail
+ * 新增模式：不传�?asset_code，后端自动生成并返回 List[AssetDetail]
+ * 编辑模式：传�?asset_code 作为唯一标识，后端返回单�?AssetDetail
  */
 const submitForm = () => {
   formRef.value?.validate(async (valid: boolean) => {
@@ -329,7 +329,7 @@ const resetForm = () => {
     assetForm.asset_applicant_name = ''
     assetForm.asset_manager = ''
     assetForm.asset_manager_name = ''
-    ElMessage.info('表单已重�?)
+    ElMessage.info('表单已重�?)
   }
 }
 
@@ -359,7 +359,7 @@ onMounted(async () => {
     align-items: center;
     gap: 8px;
     font-weight: bold;
-    color: #409eff;
+    color: var(--color-primary-light);
     position: relative;
     .batch-add-btn {
       position: absolute;
@@ -369,13 +369,13 @@ onMounted(async () => {
     }
   }
   :deep(.section-title) {
-    color: #303133;
+    color: var(--text-primary);
     font-size: 16px;
     font-weight: 600;
     margin: 28px 0 20px;
     padding: 12px 16px;
-    background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%);
-    border-left: 4px solid #409eff;
+    background: var(--gradient-card-highlight);
+    border-left: 4px solid var(--color-primary-light);
     border-radius: 4px;
   }
   .form-actions {
@@ -384,7 +384,7 @@ onMounted(async () => {
     justify-content: center;
     margin-top: 32px;
     padding-top: 20px;
-    border-top: 1px solid #e4e7ed;
+    border-top: 1px solid var(--border-color-light);
   }
 }
 </style>

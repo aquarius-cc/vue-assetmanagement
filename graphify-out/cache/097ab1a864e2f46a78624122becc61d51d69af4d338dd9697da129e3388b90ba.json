@@ -1,0 +1,1 @@
+{"nodes": [{"id": "components_d_ts", "label": "components.d.ts", "file_type": "code", "source_file": "components.d.ts", "source_location": "L1"}], "edges": [{"source": "components_d_ts", "target": "vue", "relation": "imports_from", "confidence": "EXTRACTED", "source_file": "components.d.ts", "source_location": "L8", "weight": 1.0}], "raw_calls": []}

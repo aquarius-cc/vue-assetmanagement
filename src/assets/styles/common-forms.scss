@@ -1,0 +1,692 @@
+/**
+ * 统一表单/卡片/列表样式 Mixin 库 (SCSS)
+ * 使用方式：在组件的 <style scoped lang="scss"> 中按需 @include
+ * 例如：.my-card { @include info-card; }
+ * 禁止在全局样式中导入本文件，防止样式泄漏。
+ * 本文件所有 Mixin 仅生成局部样式，不影响全局。
+ */
+
+// ========== 色彩变量（统一主题） ==========
+$primary-color: #409eff;
+$success-color: #67c23a;
+$warning-color: #e6a23c;
+$danger-color: #f56c6c;
+$info-color: #909399;
+
+// 文本色
+$text-primary: #303133;
+$text-regular: #606266;
+$text-secondary: #909399;
+$text-dark: #1f2329; // 用于卡片标题等深色文字
+$text-light: #6b7280; // 用于标签等辅助文字
+
+// 边框与背景
+$border-color: #e8e8e8;
+$background-color: #f5f7fa;
+$white: #ffffff;
+
+// 卡片悬浮阴影
+$card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+$card-hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+// ========== 响应式断点变量 ==========
+$breakpoint-mobile: 768px;
+$breakpoint-tablet: 1024px;
+
+// ========== 1. 通用表单容器 ==========
+/**
+ * 表单页面容器 (form-container)
+ * 适用于表单创建/编辑页面，提供卡片头部、表单域统一样式。
+ */
+@mixin form-container {
+  padding: 24px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100vh;
+  background-color: $background-color;
+
+  .box-card {
+    margin: 0;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    border: none;
+    overflow: hidden;
+    background: $white;
+
+    // 卡片头部（局部 mixin，避免污染外部）
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      color: $primary-color;
+      padding: 18px 24px;
+      background: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
+      border-bottom: 1px solid $border-color;
+
+      .el-icon {
+        font-size: 20px;
+        color: $primary-color;
+      }
+
+      span {
+        font-size: 16px;
+        color: $text-primary;
+      }
+    }
+  }
+
+  .el-form {
+    padding: 24px;
+
+    .el-form-item {
+      margin-bottom: 22px;
+
+      .el-form-item__label {
+        font-weight: 500;
+        color: $text-primary;
+        font-size: 14px;
+        text-align: right;
+        padding-right: 12px;
+      }
+
+      .el-input__wrapper,
+      .el-textarea__inner {
+        border-radius: 8px;
+        transition: all 0.3s ease;
+
+        &:hover {
+          box-shadow: 0 0 0 1px $primary-color inset;
+        }
+      }
+
+      .el-input.is-disabled .el-input__wrapper,
+      .el-input-number.is-disabled .el-input__inner {
+        background-color: #f5f7fa;
+        border-color: $border-color;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  // 分段标题样式
+  .section-title {
+    color: $text-primary;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 28px 0 20px 0;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%);
+    border-left: 4px solid $primary-color;
+    border-radius: 4px;
+  }
+
+  // 底部按钮组
+  .form-actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid $border-color;
+
+    .el-button {
+      min-width: 100px;
+      border-radius: 8px;
+      font-weight: 500;
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+
+    .el-button--primary {
+      background-color: $primary-color;
+      border-color: $primary-color;
+    }
+
+    .el-button--success {
+      background-color: $success-color;
+      border-color: $success-color;
+    }
+  }
+}
+
+// ========== 2. 详情页面容器 ==========
+/**
+ * 详情页面容器 (detail-container)
+ * 适用于资产详情、用户详情等只读信息展示页。
+ */
+@mixin detail-container {
+  padding: 24px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100vh;
+  background-color: $background-color;
+
+  // 头部区域（标题+操作按钮）
+  .header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e5e7eb;
+
+    .title-area {
+      flex: 1;
+
+      .page-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: $text-dark;
+        margin: 0 0 8px 0;
+      }
+
+      .basic-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+
+        .info-tag {
+          font-size: 14px;
+          color: $text-light;
+          background-color: #f3f4f6;
+          padding: 4px 12px;
+          border-radius: 4px;
+          font-weight: 500;
+        }
+      }
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+
+      .el-button {
+        border-radius: 8px;
+        font-weight: 500;
+        padding: 8px 16px;
+        font-size: 14px;
+
+        &.el-button--primary {
+          background-color: $primary-color;
+          border-color: $primary-color;
+        }
+
+        &.el-button--success {
+          background-color: $success-color;
+          border-color: $success-color;
+        }
+
+        &.el-button--danger {
+          background-color: $danger-color;
+          border-color: $danger-color;
+        }
+      }
+    }
+  }
+
+  // 状态标签组
+  .status-badges {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+
+    .status-tag {
+      padding: 6px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 4px;
+    }
+  }
+
+  // 描述内容区域
+  .description-content {
+    padding: 20px;
+    color: $text-dark;
+    line-height: 1.6;
+    font-size: 14px;
+    background-color: #f9fafb;
+    border-radius: 4px;
+  }
+}
+
+// ========== 3. 信息卡片（纯展示卡片，支持悬浮动画） ==========
+/**
+ * 信息卡片 (info-card)
+ * 用于详情页多个信息块的展示，内含 .card-header, .card-body, .info-grid 等子结构。
+ */
+@mixin info-card {
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: $card-shadow;
+  border: none;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: $white;
+
+  &:hover {
+    box-shadow: $card-hover-shadow;
+    transform: translateY(-2px);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: $text-dark;
+    padding: 12px 16px;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+
+    .section-icon {
+      margin-right: 8px;
+      color: #3b82f6;
+    }
+  }
+
+  .card-body {
+    padding: 20px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 16px;
+
+    .info-item {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .info-label {
+      flex: 0 0 140px;
+      color: $text-light;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .info-value {
+      flex: 1;
+      color: $text-dark;
+      font-size: 14px;
+      word-break: break-word;
+      line-height: 1.4;
+    }
+  }
+
+  .info-group {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #e5e7eb;
+  }
+}
+
+// ========== 4. 列表页面样式 ==========
+/**
+ * 列表容器 (list-container)
+ * 纯背景容器，用于放置表格和底栏。
+ */
+@mixin list-container {
+  width: 100%;
+  min-height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
+  background-color: $background-color;
+}
+
+/**
+ * 表格容器 (table-container)
+ * 包裹 el-table，提供圆角、阴影、横向滚动支持。
+ */
+@mixin table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 100px;
+  background: $white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  padding: 16px;
+  box-sizing: border-box;
+
+  .el-table {
+    min-width: 1200px;
+    border-radius: 8px;
+    overflow: hidden;
+    table-layout: fixed;
+
+    .el-table__header-wrapper th {
+      background-color: #f9fafb;
+      font-weight: 600;
+      color: $text-primary;
+      padding: 14px 12px !important; // 覆盖第三方默认内边距
+      text-align: center !important;
+      white-space: nowrap;
+      border-bottom: 2px solid #e4e7ed;
+    }
+
+    .el-table__body-wrapper tr:hover {
+      background-color: #f5f7fa;
+    }
+
+    .el-table__body-wrapper td {
+      padding: 12px 10px !important;
+      color: $text-regular;
+      text-align: center !important;
+      white-space: nowrap;
+      border-bottom: 1px solid #ebeef5;
+    }
+
+    .el-table__header-wrapper th.el-table__cell,
+    .el-table__body-wrapper td.el-table__cell {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+      box-sizing: border-box;
+    }
+
+    .el-table__body-wrapper .el-table__cell>div {
+      width: 100%;
+      text-align: inherit;
+    }
+  }
+}
+
+/**
+ * 底部固定按钮组 (bottom-buttons)
+ * 常用于列表页的批量操作按钮，悬浮于页面底部。
+ *
+ * 定位策略说明：
+ * - 使用 sticky 定位，在容器内保持相对位置，避免遮挡内容（优于 fixed 脱离文档流）
+ * - left/right 设为 16px，与父容器 list-container 的 padding: 16px 对齐，
+ *   确保按钮栏左右边缘与表格内容边缘一致，不会向左偏移或被遮挡
+ * - max-width: calc(100% - 32px) 作为防御性约束，减去左右各 16px，
+ *   保证按钮栏宽度不超过父容器内容区域
+ *
+ * 修复记录：
+ * - [2026-06-10] 修复按钮栏向左偏移且被遮挡的问题
+ *   原因：旧方案使用 left: 50% + transform: translateX(-50%) 实现视口级居中，
+ *   导致按钮栏相对于视口居中而非相对于父容器内容区对齐；
+ *   max-width: 90% 也与表格 100% 宽度不匹配
+ *   新方案改用 left/right 约束 + calc 宽度，实现容器内对齐
+ */
+@mixin bottom-buttons {
+  position: sticky;
+  bottom: 24px;
+  // 左右各留 16px，与 list-container / table-container 的 padding: 16px 对齐
+  left: 16px;
+  right: 16px;
+  display: flex;
+  gap: 16px;
+  padding: 16px 24px;
+  // background: rgba(255, 255, 255, 0.95);
+  background: transparent;
+  // backdrop-filter: blur(8px);
+  backdrop-filter: none;
+  border-radius: 12px;
+  z-index: 50;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  // 最大宽度 = 父容器宽度 - 左右各 16px，与 left/right 约束一致
+  max-width: calc(100% - 32px);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+
+  .el-button {
+    border-radius: 8px;
+    font-weight: 500;
+    min-width: 100px;
+    padding: 8px 16px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .el-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .el-button--primary {
+    background-color: $primary-color;
+    border-color: $primary-color;
+  }
+
+  .el-button--success {
+    background-color: $success-color;
+    border-color: $success-color;
+  }
+
+  .el-button--warning {
+    background-color: $warning-color;
+    border-color: $warning-color;
+  }
+
+  .el-button--danger {
+    background-color: $danger-color;
+    border-color: $danger-color;
+  }
+}
+
+// ========== 5. 路由模态框容器 ==========
+/**
+ * 用于路由嵌套弹窗（如详情弹窗、编辑弹窗）的全屏遮罩容器
+ */
+@mixin router-mask-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+@mixin mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+}
+
+@mixin child-router-container {
+  position: relative;
+  z-index: 200;
+  width: 100%;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: $white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+
+  .child-page-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid $border-color;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #f9fafb 0%, #f5f7fa 100%);
+
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0;
+    }
+  }
+
+  .child-page-content {
+    padding: 0 28px 28px;
+    box-sizing: border-box;
+  }
+
+  .el-card {
+    margin-bottom: 20px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+  }
+
+  .el-form-item {
+    margin-bottom: 24px;
+  }
+}
+
+// ========== 6. 响应式断点 Mixin（无硬编码选择器） ==========
+/**
+ * 响应式断点工具，配合调用方的选择器使用
+ * 例如：@include mobile { .my-class { ... } }
+ */
+@mixin mobile {
+  @media (max-width: $breakpoint-mobile) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (max-width: $breakpoint-tablet) {
+    @content;
+  }
+}
+
+/**
+ * 预置的响应式行为适配（常见布局）
+ * 调用方可以在自己的容器内 @include responsive-layout 快速获得基础适配。
+ */
+@mixin responsive-layout {
+  @include mobile {
+    padding: 16px;
+
+    .header-section {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .action-buttons {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .info-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .info-item .info-label {
+      flex: 0 0 120px;
+    }
+
+    .bottom-buttons {
+      flex-wrap: wrap;
+      justify-content: center;
+      bottom: 16px;
+    }
+
+    .child-router-container {
+      max-height: 85vh;
+    }
+  }
+
+  @include mobile {
+    .info-item .info-label {
+      flex: 0 0 100%;
+      margin-bottom: 4px;
+    }
+
+    .info-item .info-value {
+      flex: 1 0 100%;
+    }
+  }
+}
+
+// ========== 7. 响应式设计混合（兼容旧版调用） ==========
+@mixin responsive-design {
+  @media (max-width: 768px) {
+
+    .form-container,
+    .detail-container,
+    .list-container {
+      padding: 16px;
+    }
+
+    .detail-container .header-section {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .detail-container .action-buttons {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .detail-container .info-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .detail-container .info-item .info-label {
+      flex: 0 0 120px;
+    }
+
+    .list-container .bottom-buttons {
+      flex-wrap: wrap;
+      justify-content: center;
+      bottom: 16px;
+    }
+
+    .list-container .child-router-container {
+      max-height: 85vh;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .detail-container .info-item .info-label {
+      flex: 0 0 100%;
+      margin-bottom: 4px;
+    }
+
+    .detail-container .info-item .info-value {
+      flex: 1 0 100%;
+    }
+  }
+}
+
+// common-forms.scss 末尾添加
+/**
+ * 卡片头部样式 mixin
+ * 用于详情页、表单页中各个卡片区域的标题栏
+ */
+@mixin card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: $primary-color;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
+  border-bottom: 1px solid $border-color;
+
+  .el-icon {
+    font-size: 20px;
+    color: $primary-color;
+  }
+
+  span {
+    font-size: 16px;
+    color: $text-primary;
+  }
+}

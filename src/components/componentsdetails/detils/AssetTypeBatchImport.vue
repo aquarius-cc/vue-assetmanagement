@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   AssetTypeBatchImport.vue
   资产分类批量导入页面
   功能：上传 Excel → 数据预览与验证 → 并发批量提交
@@ -490,7 +490,7 @@ const goBack = () => {
     align-items: center;
     gap: 8px;
     font-weight: bold;
-    color: #409eff;
+    color: var(--color-primary-light);
   }
   .upload-actions {
     display: flex;
@@ -503,14 +503,14 @@ const goBack = () => {
   }
   .upload-tip {
     margin-top: 8px;
-    color: #909399;
+    color: var(--text-secondary);
     font-size: 13px;
   }
 
   /* 新增：导入格式参考卡片样式（模拟图片区域） */
   .import-guide-card {
-    background-color: #f8f9fc;
-    border: 1px solid #e4e7ed;
+    background-color: var(--card-background-muted);
+    border: 1px solid var(--border-color-light);
     border-radius: 8px;
     margin-bottom: 24px;
     overflow: hidden;
@@ -518,11 +518,11 @@ const goBack = () => {
       display: flex;
       align-items: center;
       gap: 8px;
-      background-color: #ecf5ff;
+      background-color: var(--color-primary-lighter);
       padding: 12px 16px;
       font-weight: 600;
-      color: #409eff;
-      border-bottom: 1px solid #d9ecff;
+      color: var(--color-primary-light);
+      border-bottom: 1px solid var(--color-primary-light-border);
       .el-icon {
         font-size: 18px;
       }
@@ -537,10 +537,10 @@ const goBack = () => {
         .section-title {
           font-size: 14px;
           font-weight: 600;
-          color: #303133;
+          color: var(--text-primary);
           margin-bottom: 12px;
           padding-left: 4px;
-          border-left: 3px solid #409eff;
+          border-left: 3px solid var(--color-primary-light);
         }
       }
       .notice-list {
@@ -548,7 +548,7 @@ const goBack = () => {
         padding-left: 20px;
         li {
           line-height: 1.8;
-          color: #606266;
+          color: var(--text-regular);
           font-size: 13px;
         }
       }
@@ -558,16 +558,16 @@ const goBack = () => {
   .preview-table {
     margin-bottom: 24px;
     .section-title {
-      color: #303133;
+      color: var(--text-primary);
       font-size: 16px;
       font-weight: 600;
       margin-bottom: 12px;
       padding-bottom: 8px;
-      border-bottom: 2px solid #409eff;
+      border-bottom: 2px solid var(--color-primary-light);
     }
   }
   .error-text {
-    color: #f56c6c;
+    color: var(--color-danger-light);
     font-size: 13px;
   }
   .form-actions {

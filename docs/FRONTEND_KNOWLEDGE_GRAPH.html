@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端知识图谱 - 资产管理系统</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #graph {
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+        }
+
+        .controls h3 {
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #4fc3f7;
+        }
+
+        .controls button {
+            display: block;
+            width: 100%;
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: #2196f3;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .controls button:hover {
+            background: #1976d2;
+        }
+
+        .controls button.active {
+            background: #ff9800;
+        }
+
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+        }
+
+        .legend h3 {
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #4fc3f7;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .tooltip h4 {
+            color: #4fc3f7;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .tooltip .info {
+            margin: 4px 0;
+            color: #ccc;
+        }
+
+        .tooltip .link {
+            color: #81c784;
+            word-break: break-all;
+        }
+
+        .search-box {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 25px;
+            z-index: 100;
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-box input {
+            background: transparent;
+            border: 1px solid #4fc3f7;
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+            width: 300px;
+            font-size: 14px;
+        }
+
+        .search-box input::placeholder {
+            color: #888;
+        }
+
+        .search-box button {
+            background: #4fc3f7;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            color: #1a1a2e;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .node {
+            cursor: pointer;
+        }
+
+        .node circle {
+            stroke-width: 2px;
+            transition: r 0.2s;
+        }
+
+        .node:hover circle {
+            r: 20;
+        }
+
+        .node text {
+            font-size: 10px;
+            fill: #fff;
+            pointer-events: none;
+        }
+
+        .link {
+            fill: none;
+            stroke-opacity: 0.6;
+        }
+
+        .link:hover {
+            stroke-opacity: 1;
+        }
+
+        .stats {
+            position: absolute;
+            bottom: 80px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        .stats div {
+            margin: 4px 0;
+        }
+
+        .stats span {
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+
+        .highlight {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <svg id="graph"></svg>
+
+        <div class="controls">
+            <h3>筛选视图</h3>
+            <button onclick="filterByType('all')" class="active" data-type="all">全部显示</button>
+            <button onclick="filterByType('page')" data-type="page">页面</button>
+            <button onclick="filterByType('component')" data-type="component">组件</button>
+            <button onclick="filterByType('store')" data-type="store">Store</button>
+            <button onclick="filterByType('api')" data-type="api">API</button>
+            <button onclick="filterByType('composable')" data-type="composable">Composable</button>
+        </div>
+
+        <div class="legend">
+            <h3>图例</h3>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #e91e63"></div>
+                <span>页面 (Page)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #9c27b0"></div>
+                <span>组件 (Component)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #2196f3"></div>
+                <span>Store</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4caf50"></div>
+                <span>API</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff9800"></div>
+                <span>Composable</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #00bcd4"></div>
+                <span>工具/类型 (Utils)</span>
+            </div>
+            <div class="legend-item" style="margin-top: 10px; border-top: 1px solid #444; padding-top: 10px;">
+                <svg width="40" height="10"><line x1="0" y1="5" x2="40" y2="5" stroke="#4fc3f7" stroke-width="2"/></svg>
+                <span>调用关系</span>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div>节点总数: <span id="nodeCount">0</span></div>
+            <div>连接总数: <span id="linkCount">0</span></div>
+            <div>当前筛选: <span id="currentFilter">全部</span></div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索节点名称...">
+            <button onclick="searchNode()">搜索</button>
+        </div>
+
+        <div class="tooltip" id="tooltip" style="display: none;"></div>
+    </div>
+
+    <script>
+        // 图谱数据
+        const graphData = {
+            nodes: [
+                // 页面节点
+                { id: 'Login', name: '登录页面', type: 'page', path: '/login', component: 'LogIn.vue' },
+                { id: 'MainView', name: '主布局', type: 'page', path: '/main', component: 'MainView.vue' },
+                { id: 'Dashboard', name: '仪表板', type: 'page', path: '/main/', component: 'DashboardPage.vue' },
+                { id: 'AssetDetails', name: '资产管理', type: 'page', path: '/main/assetdetails', component: 'AssetDetails.vue' },
+                { id: 'AssetContentDetails', name: '资产详情', type: 'page', path: '/main/assetdetails/:code', component: 'AssetContentDetails.vue' },
+                { id: 'AssetForm', name: '资产表单', type: 'page', path: '/main/assetdetails/:code/assetform', component: 'AssetForm.vue' },
+                { id: 'AssetBatchImport', name: '资产批量导入', type: 'page', path: '/main/assetdetails/assetbatchimport', component: 'AssetBatchImport.vue' },
+                { id: 'BasicAssetDetails', name: '资产基本信息', type: 'page', path: '/main/assetdetails/:code/basicassetdetails', component: 'BasicAssetDetails.vue' },
+                { id: 'ContractDetails', name: '合同管理', type: 'page', path: '/main/contractdetails', component: 'ContractDetails.vue' },
+                { id: 'ContractOfDetails', name: '合同详情', type: 'page', path: '/main/contractdetails/contractofdetails', component: 'ContractOfDetails.vue' },
+                { id: 'ContractForm', name: '合同表单', type: 'page', path: '/main/contractdetails/contractform', component: 'ContractForm.vue' },
+                { id: 'AssetTypeDetails', name: '资产类型管理', type: 'page', path: '/main/assettypedetails', component: 'AssetTypeDetails.vue' },
+                { id: 'StorageDetails', name: '仓库管理', type: 'page', path: '/main/storagedetails', component: 'StorageDetails.vue' },
+                { id: 'UserDetails', name: '用户管理', type: 'page', path: '/main/userdetails', component: 'UserDetails.vue' },
+                { id: 'OutAssetDetails', name: '资产发放', type: 'page', path: '/main/outassetdetails', component: 'OutAssetDetails.vue' },
+                { id: 'OutAssetForm', name: '出库表单', type: 'page', path: '/main/outassetdetails/outassetform', component: 'OutAssetForm.vue' },
+                { id: 'OutAssetBasicDetails', name: '出库详情', type: 'page', path: '/main/outassetdetails/outassetbasicdetails', component: 'OutAssetBasicDetails.vue' },
+                { id: 'RecycleAssetDetails', name: '资产回收', type: 'page', path: '/main/recycleassetdetails', component: 'RecycleAssetDetails.vue' },
+                { id: 'RecycleAssetForm', name: '回收表单', type: 'page', path: '/main/recycleassetdetails/recycleassetform', component: 'RecycleAssetForm.vue' },
+                { id: 'RecycleAssetBasicDetails', name: '回收详情', type: 'page', path: '/main/recycleassetdetails/recycleassetbasicdetails', component: 'RecycleAssetBasicDetails.vue' },
+                { id: 'DamagedAssetDetails', name: '资产报废', type: 'page', path: '/main/damagedassetdetails', component: 'DamagedAssetDetails.vue' },
+                { id: 'WasteAssetDetails', name: '已报废资产', type: 'page', path: '/main/wasteassetdetails', component: 'WasteAssetDetails.vue' },
+                { id: 'UnregisteredAssetDetails', name: '未登记资产', type: 'page', path: '/main/unregisteredassetdetails', component: 'UnregisteredAssetDetails.vue' },
+                { id: 'OperationLogDetails', name: '操作日志', type: 'page', path: '/main/operationlogdetails', component: 'OperationLogDetails.vue' },
+                { id: 'AuditLogDetails', name: '审计日志', type: 'page', path: '/main/auditlogdetails', component: 'AuditLogDetails.vue' },
+                { id: 'HardDiskSNDetails', name: '硬盘序列号', type: 'page', path: '/main/harddisksndetails', component: 'HardDiskSNDetails.vue' },
+                { id: 'DepartmentManagement', name: '部门人员管理', type: 'page', path: '/main/departmentmanagement', component: 'DepartmentManagement.vue' },
+                { id: 'DepartmentDetails', name: '部门管理', type: 'page', path: '/main/departmentdetails', component: 'DepartmentDetails.vue' },
+
+                // Store 节点
+                { id: 'useAppStore', name: 'useAppStore', type: 'store', file: 'app.ts' },
+                { id: 'useAuthStore', name: 'useAuthStore', type: 'store', file: 'auth.ts' },
+                { id: 'useDashboardStore', name: 'useDashboardStore', type: 'store', file: 'dashboard.ts' },
+                { id: 'useAssetStore', name: 'useAssetStore', type: 'store', file: 'assetStore.ts' },
+                { id: 'useContractStore', name: 'useContractStore', type: 'store', file: 'contractStore.ts' },
+                { id: 'useStorageStore', name: 'useStorageStore', type: 'store', file: 'storageStore.ts' },
+                { id: 'useAssetTypeStore', name: 'useAssetTypeStore', type: 'store', file: 'assetTypeStore.ts' },
+                { id: 'useOutAssetStore', name: 'useOutAssetStore', type: 'store', file: 'outAssetStore.ts' },
+                { id: 'useRecycleAssetStore', name: 'useRecycleAssetStore', type: 'store', file: 'recycleAssetStore.ts' },
+                { id: 'useDamagedAssetStore', name: 'useDamagedAssetStore', type: 'store', file: 'damagedAssetStore.ts' },
+                { id: 'useWasteAssetStore', name: 'useWasteAssetStore', type: 'store', file: 'wasteAssetStore.ts' },
+                { id: 'useUnregisteredAssetStore', name: 'useUnregisteredAssetStore', type: 'store', file: 'unregisteredAssetStore.ts' },
+                { id: 'useOperationLogStore', name: 'useOperationLogStore', type: 'store', file: 'operationLogStore.ts' },
+                { id: 'useHardDiskSnStore', name: 'useHardDiskSnStore', type: 'store', file: 'harddiskSnStore.ts' },
+                { id: 'useUserStore', name: 'useUserStore', type: 'store', file: 'userStore.ts' },
+                { id: 'useDepartmentStore', name: 'useDepartmentStore', type: 'store', file: 'departmentStore.ts' },
+                { id: 'createEntityStore', name: 'createEntityStore', type: 'store', file: 'createEntityStore.ts', desc: '通用实体Store工厂' },
+
+                // API 节点
+                { id: 'assetAPI', name: 'assetAPI', type: 'api', file: 'asset.ts', baseUrl: '/api/assets/assets/' },
+                { id: 'contractAPI', name: 'contractAPI', type: 'api', file: 'contract.ts', baseUrl: '/api/assets/contracts/' },
+                { id: 'storageAPI', name: 'storageAPI', type: 'api', file: 'storage.ts', baseUrl: '/api/assets/storages/' },
+                { id: 'assetTypeAPI', name: 'assetTypeAPI', type: 'api', file: 'assetType.ts', baseUrl: '/api/assets/asset-types/' },
+                { id: 'outAssetAPI', name: 'outAssetAPI', type: 'api', file: 'outAsset.ts', baseUrl: '/api/assets/out-assets/' },
+                { id: 'recycleAssetAPI', name: 'recycleAssetAPI', type: 'api', file: 'recycleAsset.ts', baseUrl: '/api/assets/recycle-assets/' },
+                { id: 'damagedAssetAPI', name: 'damagedAssetAPI', type: 'api', file: 'damagedAsset.ts', baseUrl: '/api/assets/damaged-assets/' },
+                { id: 'wasteAssetAPI', name: 'wasteAssetAPI', type: 'api', file: 'wasteAsset.ts', baseUrl: '/api/assets/waste-assets/' },
+                { id: 'unregisteredAssetAPI', name: 'unregisteredAssetAPI', type: 'api', file: 'unregisteredAsset.ts', baseUrl: '/api/assets/unregistered-assets/' },
+                { id: 'operationLogAPI', name: 'operationLogAPI', type: 'api', file: 'operationLog.ts', baseUrl: '/api/assets/operation-logs/' },
+                { id: 'harddiskSnAPI', name: 'harddiskSnAPI', type: 'api', file: 'harddiskSn.ts', baseUrl: '/api/assets/harddisk-sns/' },
+                { id: 'dashboardAPI', name: 'dashboardAPI', type: 'api', file: 'dashboard.ts', baseUrl: '/api/dashboard/' },
+                { id: 'userAPI', name: 'userAPI', type: 'api', file: 'user.ts', baseUrl: '/api/users/employees/' },
+                { id: 'departmentAPI', name: 'departmentAPI', type: 'api', file: 'department.ts', baseUrl: '/api/users/departments/' },
+                { id: 'authAPI', name: 'authAPI', type: 'api', file: 'auth.ts', baseUrl: '/api/auth/' },
+
+                // Composable 节点
+                { id: 'useAssetFormHelpers', name: 'useAssetFormHelpers', type: 'composable', file: 'useAssetFormHelpers.ts' },
+                { id: 'useAssetInfoCards', name: 'useAssetInfoCards', type: 'composable', file: 'useAssetInfoCards.ts' },
+                { id: 'useBatchImport', name: 'useBatchImport', type: 'composable', file: 'useBatchImport.ts' },
+                { id: 'usePaginationSearch', name: 'usePaginationSearch', type: 'composable', file: 'usePaginationSearch.ts' },
+                { id: 'useOutAssetDetailCards', name: 'useOutAssetDetailCards', type: 'composable', file: 'useOutAssetDetailCards.ts' },
+                { id: 'useRecyclableOutAssets', name: 'useRecyclableOutAssets', type: 'composable', file: 'useRecyclableOutAssets.ts' },
+                { id: 'useRecycleAssetDetailCards', name: 'useRecycleAssetDetailCards', type: 'composable', file: 'useRecycleAssetDetailCards.ts' },
+                { id: 'useRecycleFormAssociations', name: 'useRecycleFormAssociations', type: 'composable', file: 'useRecycleFormAssociations.ts' },
+                { id: 'useRecycleFormSubmit', name: 'useRecycleFormSubmit', type: 'composable', file: 'useRecycleFormSubmit.ts' },
+                { id: 'useRecyclePersonLinkage', name: 'useRecyclePersonLinkage', type: 'composable', file: 'useRecyclePersonLinkage.ts' },
+                { id: 'useDepartmentCache', name: 'useDepartmentCache', type: 'composable', file: 'useDepartmentCache.ts' },
+                { id: 'useEmployeeLinkage', name: 'useEmployeeLinkage', type: 'composable', file: 'useEmployeeLinkage.ts' },
+                { id: 'useSuggestionFetcher', name: 'useSuggestionFetcher', type: 'composable', file: 'useSuggestionFetcher.ts' },
+                { id: 'useExcelExport', name: 'useExcelExport', type: 'composable', file: 'useExcelExport.ts' },
+                { id: 'useScrapableAssets', name: 'useScrapableAssets', type: 'composable', file: 'useScrapableAssets.ts' },
+                { id: 'useWastedAssets', name: 'useWastedAssets', type: 'composable', file: 'useWastedAssets.ts' },
+
+                // 工具/类型节点
+                { id: 'request', name: 'request', type: 'utils', file: 'request.ts', desc: 'Axios封装' },
+                { id: 'AssetTypes', name: 'Asset 类型', type: 'utils', file: 'Asset.ts' },
+                { id: 'OutAssetTypes', name: 'OutAsset 类型', type: 'utils', file: 'OutAsset.ts' },
+                { id: 'ContractTypes', name: 'Contract 类型', type: 'utils', file: 'Contract.ts' },
+                { id: 'CommonList', name: 'CommonList', type: 'component', file: 'CommonList.vue', desc: '通用列表组件' },
+                { id: 'SearchBar', name: 'SearchBar', type: 'component', file: 'SearchBar.vue', desc: '搜索栏组件' },
+                { id: 'InfoCard', name: 'InfoCard', type: 'component', file: 'InfoCard.vue', desc: '信息卡片组件' },
+            ],
+            links: [
+                // 路由层级关系
+                { source: 'MainView', target: 'Dashboard', type: 'route', label: '默认子路由' },
+                { source: 'MainView', target: 'AssetDetails', type: 'route', label: '子路由' },
+                { source: 'MainView', target: 'ContractDetails', type: 'route', label: '子路由' },
+                { source: 'MainView', target: 'AssetTypeDetails', type: 'route', label: '子路由' },
+                { source: 'MainView', target: 'StorageDetails', type: 'route', label: '子路由' },
+                { source: 'MainView', target: 'UserDetails', type: 'route', label: '子路由' },
+                { source: 'MainView', target: 'OutAssetDetails', type: 'route', label: '子路由' },
+                { source: 'MainView', target: 'RecycleAssetDetails', type: 'route', label: '子路由' },
+                { source: 'MainView', target: 'DamagedAssetDetails', type: 'route', label: '子路由' },
+                { source: 'MainView', target: 'WasteAssetDetails', type: 'route', label: '子路由' },
+                { source: 'MainView', target: 'UnregisteredAssetDetails', type: 'route', label: '子路由' },
+                { source: 'MainView', target: 'OperationLogDetails', type: 'route', label: '子路由' },
+                { source: 'MainView', target: 'AuditLogDetails', type: 'route', label: '子路由' },
+                { source: 'MainView', target: 'HardDiskSNDetails', type: 'route', label: '子路由' },
+                { source: 'MainView', target: 'DepartmentManagement', type: 'route', label: '子路由' },
+                { source: 'MainView', target: 'DepartmentDetails', type: 'route', label: '子路由' },
+
+                // 资产详情子路由
+                { source: 'AssetDetails', target: 'AssetContentDetails', type: 'route', label: '子路由' },
+                { source: 'AssetContentDetails', target: 'BasicAssetDetails', type: 'route', label: '子路由' },
+                { source: 'AssetContentDetails', target: 'AssetForm', type: 'route', label: '子路由' },
+                { source: 'AssetContentDetails', target: 'AssetBatchImport', type: 'route', label: '子路由' },
+
+                // 合同详情子路由
+                { source: 'ContractDetails', target: 'ContractOfDetails', type: 'route', label: '子路由' },
+                { source: 'ContractDetails', target: 'ContractForm', type: 'route', label: '子路由' },
+
+                // 出库详情子路由
+                { source: 'OutAssetDetails', target: 'OutAssetForm', type: 'route', label: '子路由' },
+                { source: 'OutAssetDetails', target: 'OutAssetBasicDetails', type: 'route', label: '子路由' },
+
+                // 回收详情子路由
+                { source: 'RecycleAssetDetails', target: 'RecycleAssetForm', type: 'route', label: '子路由' },
+                { source: 'RecycleAssetDetails', target: 'RecycleAssetBasicDetails', type: 'route', label: '子路由' },
+
+                // 页面使用 Store
+                { source: 'Dashboard', target: 'useDashboardStore', type: 'uses', label: '使用' },
+                { source: 'AssetDetails', target: 'useAssetStore', type: 'uses', label: '使用' },
+                { source: 'AssetContentDetails', target: 'useAssetStore', type: 'uses', label: '使用' },
+                { source: 'AssetForm', target: 'useAssetStore', type: 'uses', label: '使用' },
+                { source: 'AssetForm', target: 'useAssetFormHelpers', type: 'uses', label: '使用' },
+                { source: 'ContractDetails', target: 'useContractStore', type: 'uses', label: '使用' },
+                { source: 'AssetTypeDetails', target: 'useAssetTypeStore', type: 'uses', label: '使用' },
+                { source: 'StorageDetails', target: 'useStorageStore', type: 'uses', label: '使用' },
+                { source: 'UserDetails', target: 'useUserStore', type: 'uses', label: '使用' },
+                { source: 'OutAssetDetails', target: 'useOutAssetStore', type: 'uses', label: '使用' },
+                { source: 'OutAssetForm', target: 'useOutAssetStore', type: 'uses', label: '使用' },
+                { source: 'OutAssetBasicDetails', target: 'useOutAssetStore', type: 'uses', label: '使用' },
+                { source: 'OutAssetBasicDetails', target: 'useOutAssetDetailCards', type: 'uses', label: '使用' },
+                { source: 'RecycleAssetDetails', target: 'useRecycleAssetStore', type: 'uses', label: '使用' },
+                { source: 'RecycleAssetForm', target: 'useRecycleAssetStore', type: 'uses', label: '使用' },
+                { source: 'RecycleAssetForm', target: 'useRecyclableOutAssets', type: 'uses', label: '使用' },
+                { source: 'RecycleAssetForm', target: 'useRecycleFormAssociations', type: 'uses', label: '使用' },
+                { source: 'RecycleAssetForm', target: 'useRecycleFormSubmit', type: 'uses', label: '使用' },
+                { source: 'RecycleAssetBasicDetails', target: 'useRecycleAssetStore', type: 'uses', label: '使用' },
+                { source: 'RecycleAssetBasicDetails', target: 'useRecycleAssetDetailCards', type: 'uses', label: '使用' },
+                { source: 'DamagedAssetDetails', target: 'useDamagedAssetStore', type: 'uses', label: '使用' },
+                { source: 'WasteAssetDetails', target: 'useWasteAssetStore', type: 'uses', label: '使用' },
+                { source: 'UnregisteredAssetDetails', target: 'useUnregisteredAssetStore', type: 'uses', label: '使用' },
+                { source: 'OperationLogDetails', target: 'useOperationLogStore', type: 'uses', label: '使用' },
+                { source: 'HardDiskSNDetails', target: 'useHardDiskSnStore', type: 'uses', label: '使用' },
+                { source: 'DepartmentManagement', target: 'useDepartmentStore', type: 'uses', label: '使用' },
+                { source: 'DepartmentDetails', target: 'useDepartmentStore', type: 'uses', label: '使用' },
+
+                // Store 使用 API
+                { source: 'useAssetStore', target: 'assetAPI', type: 'calls', label: '调用' },
+                { source: 'useContractStore', target: 'contractAPI', type: 'calls', label: '调用' },
+                { source: 'useStorageStore', target: 'storageAPI', type: 'calls', label: '调用' },
+                { source: 'useAssetTypeStore', target: 'assetTypeAPI', type: 'calls', label: '调用' },
+                { source: 'useOutAssetStore', target: 'outAssetAPI', type: 'calls', label: '调用' },
+                { source: 'useRecycleAssetStore', target: 'recycleAssetAPI', type: 'calls', label: '调用' },
+                { source: 'useDamagedAssetStore', target: 'damagedAssetAPI', type: 'calls', label: '调用' },
+                { source: 'useWasteAssetStore', target: 'wasteAssetAPI', type: 'calls', label: '调用' },
+                { source: 'useUnregisteredAssetStore', target: 'unregisteredAssetAPI', type: 'calls', label: '调用' },
+                { source: 'useOperationLogStore', target: 'operationLogAPI', type: 'calls', label: '调用' },
+                { source: 'useHardDiskSnStore', target: 'harddiskSnAPI', type: 'calls', label: '调用' },
+                { source: 'useDashboardStore', target: 'dashboardAPI', type: 'calls', label: '调用' },
+                { source: 'useUserStore', target: 'userAPI', type: 'calls', label: '调用' },
+                { source: 'useDepartmentStore', target: 'departmentAPI', type: 'calls', label: '调用' },
+
+                // Store 使用 createEntityStore
+                { source: 'useAssetStore', target: 'createEntityStore', type: 'extends', label: '基于' },
+                { source: 'useContractStore', target: 'createEntityStore', type: 'extends', label: '基于' },
+                { source: 'useStorageStore', target: 'createEntityStore', type: 'extends', label: '基于' },
+                { source: 'useAssetTypeStore', target: 'createEntityStore', type: 'extends', label: '基于' },
+                { source: 'useOutAssetStore', target: 'createEntityStore', type: 'extends', label: '基于' },
+                { source: 'useRecycleAssetStore', target: 'createEntityStore', type: 'extends', label: '基于' },
+                { source: 'useDamagedAssetStore', target: 'createEntityStore', type: 'extends', label: '基于' },
+                { source: 'useWasteAssetStore', target: 'createEntityStore', type: 'extends', label: '基于' },
+                { source: 'useUnregisteredAssetStore', target: 'createEntityStore', type: 'extends', label: '基于' },
+
+                // API 使用 request
+                { source: 'assetAPI', target: 'request', type: 'calls', label: '调用' },
+                { source: 'contractAPI', target: 'request', type: 'calls', label: '调用' },
+                { source: 'storageAPI', target: 'request', type: 'calls', label: '调用' },
+                { source: 'assetTypeAPI', target: 'request', type: 'calls', label: '调用' },
+                { source: 'outAssetAPI', target: 'request', type: 'calls', label: '调用' },
+                { source: 'recycleAssetAPI', target: 'request', type: 'calls', label: '调用' },
+                { source: 'damagedAssetAPI', target: 'request', type: 'calls', label: '调用' },
+                { source: 'wasteAssetAPI', target: 'request', type: 'calls', label: '调用' },
+                { source: 'unregisteredAssetAPI', target: 'request', type: 'calls', label: '调用' },
+                { source: 'operationLogAPI', target: 'request', type: 'calls', label: '调用' },
+                { source: 'harddiskSnAPI', target: 'request', type: 'calls', label: '调用' },
+                { source: 'dashboardAPI', target: 'request', type: 'calls', label: '调用' },
+                { source: 'userAPI', target: 'request', type: 'calls', label: '调用' },
+                { source: 'departmentAPI', target: 'request', type: 'calls', label: '调用' },
+                { source: 'authAPI', target: 'request', type: 'calls', label: '调用' },
+
+                // API 使用类型
+                { source: 'assetAPI', target: 'AssetTypes', type: 'uses', label: '使用类型' },
+                { source: 'outAssetAPI', target: 'OutAssetTypes', type: 'uses', label: '使用类型' },
+                { source: 'contractAPI', target: 'ContractTypes', type: 'uses', label: '使用类型' },
+
+                // Composable 关系
+                { source: 'useAssetFormHelpers', target: 'useAssetStore', type: 'calls', label: '调用' },
+                { source: 'useAssetFormHelpers', target: 'useAssetTypeStore', type: 'calls', label: '调用' },
+                { source: 'useAssetFormHelpers', target: 'useStorageStore', type: 'calls', label: '调用' },
+                { source: 'useAssetFormHelpers', target: 'useContractStore', type: 'calls', label: '调用' },
+                { source: 'useRecyclableOutAssets', target: 'useOutAssetStore', type: 'calls', label: '调用' },
+                { source: 'useRecyclableOutAssets', target: 'outAssetAPI', type: 'calls', label: '调用' },
+                { source: 'useRecycleFormAssociations', target: 'useAssetStore', type: 'calls', label: '调用' },
+                { source: 'useRecycleFormSubmit', target: 'useRecycleAssetStore', type: 'calls', label: '调用' },
+                { source: 'useRecyclePersonLinkage', target: 'useUserStore', type: 'calls', label: '调用' },
+                { source: 'useDepartmentCache', target: 'useDepartmentStore', type: 'calls', label: '调用' },
+                { source: 'useEmployeeLinkage', target: 'useUserStore', type: 'calls', label: '调用' },
+                { source: 'useEmployeeLinkage', target: 'useDepartmentStore', type: 'calls', label: '调用' },
+                { source: 'useSuggestionFetcher', target: 'userAPI', type: 'calls', label: '调用' },
+                { source: 'useScrapableAssets', target: 'useDamagedAssetStore', type: 'calls', label: '调用' },
+                { source: 'useWastedAssets', target: 'useWasteAssetStore', type: 'calls', label: '调用' },
+
+                // 组件使用
+                { source: 'AssetDetails', target: 'CommonList', type: 'uses', label: '使用组件' },
+                { source: 'AssetDetails', target: 'SearchBar', type: 'uses', label: '使用组件' },
+                { source: 'ContractDetails', target: 'CommonList', type: 'uses', label: '使用组件' },
+                { source: 'AssetContentDetails', target: 'InfoCard', type: 'uses', label: '使用组件' },
+                { source: 'OutAssetBasicDetails', target: 'InfoCard', type: 'uses', label: '使用组件' },
+                { source: 'RecycleAssetBasicDetails', target: 'InfoCard', type: 'uses', label: '使用组件' },
+
+                // 批量导入使用 composable
+                { source: 'AssetBatchImport', target: 'useBatchImport', type: 'uses', label: '使用' },
+                { source: 'AssetBatchImport', target: 'useAssetStore', type: 'calls', label: '调用' },
+            ]
+        };
+
+        // 颜色配置
+        const colorMap = {
+            page: '#e91e63',
+            component: '#9c27b0',
+            store: '#2196f3',
+            api: '#4caf50',
+            composable: '#ff9800',
+            utils: '#00bcd4'
+        };
+
+        // SVG 设置
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        const svg = d3.select('#graph')
+            .attr('width', width)
+            .attr('height', height);
+
+        // 添加缩放和平移
+        const g = svg.append('g');
+
+        svg.call(d3.zoom()
+            .scaleExtent([0.1, 4])
+            .on('zoom', (event) => {
+                g.attr('transform', event.transform);
+            }));
+
+        // 力导向模拟
+        const simulation = d3.forceSimulation(graphData.nodes)
+            .force('link', d3.forceLink(graphData.links).id(d => d.id).distance(150))
+            .force('charge', d3.forceManyBody().strength(-500))
+            .force('center', d3.forceCenter(width / 2, height / 2))
+            .force('collision', d3.forceCollide().radius(50));
+
+        // 定义箭头
+        svg.append('defs').append('marker')
+            .attr('id', 'arrowhead')
+            .attr('viewBox', '-0 -5 10 10')
+            .attr('refX', 20)
+            .attr('refY', 0)
+            .attr('orient', 'auto')
+            .attr('markerWidth', 6)
+            .attr('markerHeight', 6)
+            .append('path')
+            .attr('d', 'M0,-5L10,0L0,5')
+            .attr('fill', '#4fc3f7');
+
+        // 绘制连线
+        const link = g.append('g')
+            .attr('class', 'links')
+            .selectAll('line')
+            .data(graphData.links)
+            .enter()
+            .append('line')
+            .attr('class', 'link')
+            .attr('stroke', d => {
+                switch(d.type) {
+                    case 'route': return '#9c27b0';
+                    case 'uses': return '#4fc3f7';
+                    case 'calls': return '#4caf50';
+                    case 'extends': return '#ff9800';
+                    default: return '#4fc3f7';
+                }
+            })
+            .attr('stroke-width', 1.5)
+            .attr('marker-end', 'url(#arrowhead)');
+
+        // 绘制节点
+        const node = g.append('g')
+            .attr('class', 'nodes')
+            .selectAll('g')
+            .data(graphData.nodes)
+            .enter()
+            .append('g')
+            .attr('class', 'node')
+            .call(d3.drag()
+                .on('start', dragstarted)
+                .on('drag', dragged)
+                .on('end', dragended));
+
+        // 节点圆形
+        node.append('circle')
+            .attr('r', 12)
+            .attr('fill', d => colorMap[d.type])
+            .attr('stroke', d => d3.color(colorMap[d.type]).brighter(0.5));
+
+        // 节点文字
+        node.append('text')
+            .attr('dy', 25)
+            .attr('text-anchor', 'middle')
+            .text(d => d.name.length > 12 ? d.name.substring(0, 12) + '...' : d.name);
+
+        // 工具提示
+        const tooltip = d3.select('#tooltip');
+
+        node.on('mouseover', (event, d) => {
+            let content = `<h4>${d.name}</h4>`;
+            content += `<div class="info">类型: ${d.type}</div>`;
+            if (d.path) content += `<div class="link">路径: ${d.path}</div>`;
+            if (d.component) content += `<div class="info">组件: ${d.component}</div>`;
+            if (d.file) content += `<div class="info">文件: ${d.file}</div>`;
+            if (d.baseUrl) content += `<div class="link">API: ${d.baseUrl}</div>`;
+            if (d.desc) content += `<div class="info">${d.desc}</div>`;
+
+            // 显示相关连接
+            const connectedLinks = graphData.links.filter(l =>
+                l.source.id === d.id || l.target.id === d.id
+            );
+            if (connectedLinks.length > 0) {
+                content += `<div class="info" style="margin-top: 8px; border-top: 1px solid #444; padding-top: 8px;">`;
+                content += `<strong>关联关系:</strong><br>`;
+                connectedLinks.slice(0, 5).forEach(l => {
+                    const targetName = l.source.id === d.id ? l.target.name : l.source.name;
+                    const direction = l.source.id === d.id ? '→' : '←';
+                    content += `${direction} ${targetName} (${l.label})<br>`;
+                });
+                if (connectedLinks.length > 5) {
+                    content += `...等 ${connectedLinks.length} 条关系`;
+                }
+                content += `</div>`;
+            }
+
+            tooltip.html(content)
+                .style('display', 'block')
+                .style('left', (event.pageX + 15) + 'px')
+                .style('top', (event.pageY - 10) + 'px');
+        })
+        .on('mouseout', () => {
+            tooltip.style('display', 'none');
+        });
+
+        // 模拟更新
+        simulation.on('tick', () => {
+            link
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y);
+
+            node.attr('transform', d => `translate(${d.x},${d.y})`);
+        });
+
+        // 拖拽函数
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        // 筛选功能
+        let currentFilter = 'all';
+
+        function filterByType(type) {
+            currentFilter = type;
+
+            // 更新按钮状态
+            document.querySelectorAll('.controls button').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.type === type) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // 更新筛选显示
+            const filterNames = {
+                'all': '全部',
+                'page': '页面',
+                'component': '组件',
+                'store': 'Store',
+                'api': 'API',
+                'composable': 'Composable'
+            };
+            document.getElementById('currentFilter').textContent = filterNames[type] || type;
+
+            // 筛选节点
+            node.style('display', d => {
+                if (type === 'all') return 'block';
+                return d.type === type ? 'block' : 'none';
+            });
+
+            // 筛选连线
+            link.style('display', d => {
+                if (type === 'all') return 'block';
+                const sourceNode = graphData.nodes.find(n => n.id === (typeof d.source === 'object' ? d.source.id : d.source));
+                const targetNode = graphData.nodes.find(n => n.id === (typeof d.target === 'object' ? d.target.id : d.target));
+                if (!sourceNode || !targetNode) return 'none';
+                if (type === 'all') return 'block';
+                return (sourceNode.type === type || targetNode.type === type) ? 'block' : 'none';
+            });
+
+            // 更新计数
+            updateStats();
+        }
+
+        // 搜索功能
+        function searchNode() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            if (!searchTerm) {
+                filterByType('all');
+                return;
+            }
+
+            // 重置所有节点样式
+            node.select('circle')
+                .attr('r', 12)
+                .classed('highlight', false);
+
+            // 查找匹配节点
+            const matchedNodes = graphData.nodes.filter(n =>
+                n.name.toLowerCase().includes(searchTerm) ||
+                n.id.toLowerCase().includes(searchTerm) ||
+                (n.file && n.file.toLowerCase().includes(searchTerm)) ||
+                (n.path && n.path.toLowerCase().includes(searchTerm))
+            );
+
+            if (matchedNodes.length > 0) {
+                // 高亮匹配节点
+                node.select('circle')
+                    .attr('r', d => matchedNodes.some(m => m.id === d.id) ? 20 : 8)
+                    .classed('highlight', d => matchedNodes.some(m => m.id === d.id));
+
+                // 找到第一个匹配节点并居中
+                const firstMatch = matchedNodes[0];
+                const transform = d3.zoomIdentity
+                    .translate(width / 2, height / 2)
+                    .scale(1.5)
+                    .translate(-firstMatch.x, -firstMatch.y);
+
+                svg.transition()
+                    .duration(750)
+                    .call(d3.zoom().transform, transform);
+            }
+        }
+
+        // 更新统计
+        function updateStats() {
+            const visibleNodes = node.filter(function() {
+                return d3.select(this).style('display') !== 'none';
+            }).size();
+
+            const visibleLinks = link.filter(function() {
+                return d3.select(this).style('display') !== 'none';
+            }).size();
+
+            document.getElementById('nodeCount').textContent = visibleNodes;
+            document.getElementById('linkCount').textContent = visibleLinks;
+        }
+
+        // 回车搜索
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchNode();
+            }
+        });
+
+        // 初始化统计
+        updateStats();
+
+        // 响应窗口大小变化
+        window.addEventListener('resize', () => {
+            const newWidth = window.innerWidth;
+            const newHeight = window.innerHeight;
+
+            svg.attr('width', newWidth).attr('height', newHeight);
+
+            simulation.force('center', d3.forceCenter(newWidth / 2, newHeight / 2));
+            simulation.alpha(0.3).restart();
+        });
+    </script>
+</body>
+</html>

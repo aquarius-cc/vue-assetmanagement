@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <div class="exportable-assets-search">
-    <!-- 搜索表单（与原来基本相同�?-->
+    <!-- 搜索表单（与原来基本相同�?-->
     <div class="search-section">
       <el-row :gutter="12">
         <el-col :span="6"
@@ -76,7 +76,7 @@
             row.asset_contract?.contract_code || row.contract_code || '-'
           }}</template>
         </el-table-column>
-        <el-table-column label="当前状�?>
+        <el-table-column label="当前状�?>
           <template #default="{ row }">{{ getAssetStatusText(row.asset_current_status) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="80" fixed="right">
@@ -156,12 +156,12 @@ const handleSelect = (row: AssetDetail) => {
 
 <style scoped lang="scss">
 .exportable-assets-search {
-  // 添加�?RecyclableOutAssetsSearch 一致的卡片样式
+  // 添加�?RecyclableOutAssetsSearch 一致的卡片样式
   margin-bottom: 20px;
   padding: 16px;
-  background-color: #f5f7fa;
+  background-color: var(--background-color);
   border-radius: 8px;
-  border: 1px solid #e4e7ed;
+  border: 1px solid var(--border-color-light);
 
   .search-section {
     margin-bottom: 20px;
@@ -169,13 +169,13 @@ const handleSelect = (row: AssetDetail) => {
 
   .search-results {
     padding: 12px;
-    background-color: #ffffff; // 内部结果区域可以保持白色背景
+    background-color: var(--card-background); // 内部结果区域可以保持白色背景
     border-radius: 4px;
-    // 原有的其他样�?..
+    // 原有的其他样�?..
     .result-title {
       font-weight: bold;
       margin-bottom: 8px;
-      color: #606266;
+      color: var(--text-regular);
     }
     .pagination {
       margin-top: 12px;
@@ -185,7 +185,7 @@ const handleSelect = (row: AssetDetail) => {
 
   .no-data {
     text-align: center;
-    color: #909399;
+    color: var(--text-secondary);
     padding: 20px;
     font-style: italic;
   }

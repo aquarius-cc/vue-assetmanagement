@@ -1,0 +1,1 @@
+refactor: RecycleAssetBasicDetails 使用 InfoCard 组件重构为 5 卡片布局，新增关联查询

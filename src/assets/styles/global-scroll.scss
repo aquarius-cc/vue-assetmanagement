@@ -1,0 +1,40 @@
+/**
+ * 全局滚动条样式
+ * 作用于整个应用，统一所有页面滚动条外观。
+ * 使用方式：在 main.ts 中导入，仅此一次，全局生效。
+ * 请勿在此文件中添加其他业务样式，以免造成全局污染。
+ */
+
+:root {
+  --scrollbar-width: 15px;
+  --scrollbar-track-bg: #f1f1f1;
+  --scrollbar-thumb-bg: #c1c1c1;
+  --scrollbar-thumb-hover-bg: #a8a8a8;
+}
+
+/* WebKit 浏览器 (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-bg);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-bg);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover-bg);
+}
+
+/* Firefox 滚动条 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb-bg) var(--scrollbar-track-bg);
+}

@@ -1,0 +1,27 @@
+/**
+ * 全局重置样式
+ * 作用：统一盒模型、清除默认外边距、设置焦点轮廓样式
+ * 使用方式：在 main.ts 中导入，仅此一次，全局生效
+ * 注意：不包含业务相关样式，避免污染组件作用域
+ */
+
+/* Reset margin & box-sizing for all elements */
+*,
+*::before,
+*::after {
+  margin: 0;
+  box-sizing: border-box;
+  /* 注意：不设置 outline: none，保留默认焦点轮廓以确保可访问性 */
+}
+
+/* 为键盘导航提供清晰的焦点轮廓样式，同时避免鼠标点击时的轮廓干扰 */
+:focus-visible {
+  outline: 2px solid var(--el-color-primary, #409eff);
+  outline-offset: 2px;
+}
+
+/* 可选：为 body 设置与项目主背景一致的颜色，避免空白区域颜色突兀 */
+body {
+  background-color: #f5f7fa;
+  /* 与 Element Plus 默认背景协调，不强制覆盖第三方组件内部样式 */
+}

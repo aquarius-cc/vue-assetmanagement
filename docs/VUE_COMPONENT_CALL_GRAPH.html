@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue 组件函数调用逻辑图谱 - 资产管理系统</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a1a;
+            color: #e0e0e0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #graph { flex: 1; }
+
+        #sidebar {
+            width: 360px;
+            background: linear-gradient(180deg, #12122a 0%, #1a1a3a 100%);
+            border-left: 1px solid #2a2a5e;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #sidebar-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #1e1e4a 0%, #2a2a6a 100%);
+            border-bottom: 1px solid #3a3a7e;
+        }
+
+        #sidebar-header h2 {
+            font-size: 16px;
+            color: #4fc3f7;
+            margin-bottom: 8px;
+        }
+
+        #sidebar-header p {
+            font-size: 12px;
+            color: #888;
+        }
+
+        #search-wrap {
+            padding: 15px;
+            border-bottom: 1px solid #2a2a5e;
+        }
+
+        #search {
+            width: 100%;
+            background: #0f0f2a;
+            border: 1px solid #3a3a6e;
+            color: #e0e0e0;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        #search:focus { border-color: #4fc3f7; }
+
+        #search-results {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .search-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 13px;
+            margin: 4px 0;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-item:hover { background: #2a2a5e; }
+
+        .search-item .type-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        #info-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        #info-panel h3 {
+            font-size: 14px;
+            color: #4fc3f7;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #info-panel h3::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: #4fc3f7;
+            border-radius: 2px;
+        }
+
+        #info-content { font-size: 13px; line-height: 1.8; }
+
+        .info-section {
+            background: #1a1a3a;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .info-section h4 {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .field {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #2a2a4e;
+        }
+
+        .field:last-child { border-bottom: none; }
+
+        .field b { color: #e0e0e0; }
+        .field span { color: #aaa; }
+
+        .call-chain {
+            background: #0f0f2a;
+            border-left: 3px solid #4fc3f7;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 0 6px 6px 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+
+        .call-chain .function { color: #81c784; }
+        .call-chain .arrow { color: #4fc3f7; margin: 0 8px; }
+        .call-chain .target { color: #ffb74d; }
+
+        .api-endpoint {
+            background: linear-gradient(135deg, #1a3a1a 0%, #2a4a2a 100%);
+            border: 1px solid #4caf50;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin: 6px 0;
+            font-family: monospace;
+            font-size: 12px;
+            color: #81c784;
+        }
+
+        .api-method {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .method-get { background: #4caf50; color: white; }
+        .method-post { background: #2196f3; color: white; }
+        .method-put { background: #ff9800; color: white; }
+        .method-delete { background: #f44336; color: white; }
+
+        .related-nodes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .related-node {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .related-node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        #legend-wrap {
+            padding: 15px;
+            border-top: 1px solid #2a2a5e;
+            background: #0f0f2a;
+        }
+
+        #legend-wrap h3 {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background 0.2s;
+        }
+
+        .legend-item:hover { background: #2a2a5e; }
+        .legend-item.dimmed { opacity: 0.3; }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        #stats {
+            padding: 12px 15px;
+            border-top: 1px solid #2a2a5e;
+            font-size: 11px;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(10, 10, 30, 0.95);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 350px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid #3a3a6e;
+        }
+
+        .tooltip h4 { color: #4fc3f7; margin-bottom: 6px; }
+        .tooltip .info { color: #aaa; margin: 3px 0; }
+
+        /* Node type colors */
+        .type-file { background: #e91e63; }
+        .type-component { background: #9c27b0; }
+        .type-function { background: #2196f3; }
+        .type-store { background: #ff9800; }
+        .type-api { background: #4caf50; }
+        .type-composable { background: #00bcd4; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a1a; }
+        ::-webkit-scrollbar-thumb { background: #3a3a6e; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4a4a8e; }
+    </style>
+</head>
+<body>
+    <div id="graph"></div>
+
+    <div id="sidebar">
+        <div id="sidebar-header">
+            <h2>Vue 组件函数调用图谱</h2>
+            <p>基于 graphify AST 分析生成 · 339节点 · 227边</p>
+        </div>
+
+        <div id="search-wrap">
+            <input id="search" type="text" placeholder="搜索组件、函数、API..." autocomplete="off">
+            <div id="search-results"></div>
+        </div>
+
+        <div id="info-panel">
+            <h3>节点详情</h3>
+            <div id="info-content">
+                <p style="color: #666; font-style: italic;">点击节点查看详细调用链</p>
+            </div>
+        </div>
+
+        <div id="legend-wrap">
+            <h3>节点类型</h3>
+            <div class="legend-grid" id="legend"></div>
+        </div>
+
+        <div id="stats">
+            <span id="nodeCount">0 节点</span>
+            <span id="edgeCount">0 边</span>
+            <span id="communityCount">0 社区</span>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip" style="display: none;"></div>
+
+    <script>
+    // 图谱数据 - 基于 graphify AST 分析
+    const GRAPH_DATA = {
+        nodes: [
+            // 文件节点
+            { id: 'App.vue', label: 'App.vue', type: 'file', group: 'files', size: 25 },
+            { id: 'main.ts', label: 'main.ts', type: 'file', group: 'files', size: 25 },
+            { id: 'DashboardPage.vue', label: 'DashboardPage.vue', type: 'file', group: 'files', size: 30 },
+
+            // API 文件节点
+            { id: 'asset.ts', label: 'asset.ts', type: 'api', group: 'api', size: 28, baseUrl: '/api/assets/assets/' },
+            { id: 'outAsset.ts', label: 'outAsset.ts', type: 'api', group: 'api', size: 28, baseUrl: '/api/assets/out-assets/' },
+            { id: 'recycleAsset.ts', label: 'recycleAsset.ts', type: 'api', group: 'api', size: 28, baseUrl: '/api/assets/recycle-assets/' },
+            { id: 'contract.ts', label: 'contract.ts', type: 'api', group: 'api', size: 26, baseUrl: '/api/assets/contracts/' },
+            { id: 'storage.ts', label: 'storage.ts', type: 'api', group: 'api', size: 26, baseUrl: '/api/assets/storages/' },
+            { id: 'user.ts', label: 'user.ts', type: 'api', group: 'api', size: 26, baseUrl: '/api/users/employees/' },
+            { id: 'request.ts', label: 'request.ts', type: 'api', group: 'api', size: 30, desc: 'Axios 封装' },
+
+            // Store 文件节点
+            { id: 'assetStore.ts', label: 'assetStore.ts', type: 'store', group: 'stores', size: 28 },
+            { id: 'outAssetStore.ts', label: 'outAssetStore.ts', type: 'store', group: 'stores', size: 28 },
+            { id: 'recycleAssetStore.ts', label: 'recycleAssetStore.ts', type: 'store', group: 'stores', size: 28 },
+            { id: 'contractStore.ts', label: 'contractStore.ts', type: 'store', group: 'stores', size: 26 },
+            { id: 'storageStore.ts', label: 'storageStore.ts', type: 'store', group: 'stores', size: 26 },
+            { id: 'userStore.ts', label: 'userStore.ts', type: 'store', group: 'stores', size: 26 },
+            { id: 'createEntityStore.ts', label: 'createEntityStore.ts', type: 'store', group: 'stores', size: 32, desc: '通用 Store 工厂' },
+
+            // 组件节点
+            { id: 'AssetContentDetails.vue', label: 'AssetContentDetails.vue', type: 'component', group: 'components', size: 30 },
+            { id: 'AssetForm.vue', label: 'AssetForm.vue', type: 'component', group: 'components', size: 26 },
+            { id: 'OutAssetForm.vue', label: 'OutAssetForm.vue', type: 'component', group: 'components', size: 26 },
+            { id: 'OutAssetBasicDetails.vue', label: 'OutAssetBasicDetails.vue', type: 'component', group: 'components', size: 24 },
+            { id: 'RecycleAssetForm.vue', label: 'RecycleAssetForm.vue', type: 'component', group: 'components', size: 26 },
+            { id: 'RecycleAssetBasicDetails.vue', label: 'RecycleAssetBasicDetails.vue', type: 'component', group: 'components', size: 24 },
+            { id: 'ContractForm.vue', label: 'ContractForm.vue', type: 'component', group: 'components', size: 24 },
+            { id: 'ContractOfDetails.vue', label: 'ContractOfDetails.vue', type: 'component', group: 'components', size: 24 },
+            { id: 'DepartmentManagement.vue', label: 'DepartmentManagement.vue', type: 'component', group: 'components', size: 26 },
+            { id: 'DepartmentFormDialog.vue', label: 'DepartmentFormDialog.vue', type: 'component', group: 'components', size: 24 },
+            { id: 'CommonList.vue', label: 'CommonList.vue', type: 'component', group: 'components', size: 24, desc: '通用列表组件' },
+            { id: 'SearchBar.vue', label: 'SearchBar.vue', type: 'component', group: 'components', size: 22, desc: '搜索栏组件' },
+            { id: 'InfoCard.vue', label: 'InfoCard.vue', type: 'component', group: 'components', size: 22, desc: '信息卡片组件' },
+
+            // Composable 节点
+            { id: 'useAssetFormHelpers.ts', label: 'useAssetFormHelpers.ts', type: 'composable', group: 'composables', size: 24 },
+            { id: 'usePaginationSearch.ts', label: 'usePaginationSearch.ts', type: 'composable', group: 'composables', size: 24 },
+            { id: 'useBatchImport.ts', label: 'useBatchImport.ts', type: 'composable', group: 'composables', size: 24 },
+            { id: 'useOutAssetDetailCards.ts', label: 'useOutAssetDetailCards.ts', type: 'composable', group: 'composables', size: 22 },
+            { id: 'useRecyclableOutAssets.ts', label: 'useRecyclableOutAssets.ts', type: 'composable', group: 'composables', size: 22 },
+            { id: 'useRecycleFormAssociations.ts', label: 'useRecycleFormAssociations.ts', type: 'composable', group: 'composables', size: 22 },
+            { id: 'useRecycleFormSubmit.ts', label: 'useRecycleFormSubmit.ts', type: 'composable', group: 'composables', size: 22 },
+            { id: 'useEmployeeLinkage.ts', label: 'useEmployeeLinkage.ts', type: 'composable', group: 'composables', size: 22 },
+
+            // 核心函数节点
+            { id: 'getAssets', label: 'getAssets()', type: 'function', group: 'functions', size: 20, file: 'asset.ts', api: 'GET /assets/assets/' },
+            { id: 'createAsset', label: 'createAsset()', type: 'function', group: 'functions', size: 20, file: 'asset.ts', api: 'POST /assets/assets/' },
+            { id: 'searchAssets', label: 'searchAssets()', type: 'function', group: 'functions', size: 20, file: 'asset.ts', api: 'GET /assets/assets/search/' },
+            { id: 'combineSearch', label: 'combineSearch()', type: 'function', group: 'functions', size: 20, file: 'asset.ts', api: 'GET /assets/assets/combine_search/' },
+            { id: 'getOutAssets', label: 'getOutAssets()', type: 'function', group: 'functions', size: 20, file: 'outAsset.ts', api: 'GET /assets/out-assets/' },
+            { id: 'createOutAsset', label: 'createOutAsset()', type: 'function', group: 'functions', size: 20, file: 'outAsset.ts', api: 'POST /assets/out-assets/' },
+            { id: 'getRecycleAssets', label: 'getRecycleAssets()', type: 'function', group: 'functions', size: 20, file: 'recycleAsset.ts', api: 'GET /assets/recycle-assets/' },
+            { id: 'createRecycleAsset', label: 'createRecycleAsset()', type: 'function', group: 'functions', size: 20, file: 'recycleAsset.ts', api: 'POST /assets/recycle-assets/' },
+            { id: 'get', label: 'get()', type: 'function', group: 'functions', size: 22, file: 'request.ts', desc: 'HTTP GET 封装' },
+            { id: 'post', label: 'post()', type: 'function', group: 'functions', size: 22, file: 'request.ts', desc: 'HTTP POST 封装' },
+            { id: 'getList', label: 'getList()', type: 'function', group: 'functions', size: 22, file: 'createEntityStore.ts', desc: 'Store 列表获取' },
+            { id: 'getById', label: 'getById()', type: 'function', group: 'functions', size: 22, file: 'createEntityStore.ts', desc: 'Store 详情获取' },
+            { id: 'create', label: 'create()', type: 'function', group: 'functions', size: 22, file: 'createEntityStore.ts', desc: 'Store 创建' },
+            { id: 'update', label: 'update()', type: 'function', group: 'functions', size: 22, file: 'createEntityStore.ts', desc: 'Store 更新' },
+            { id: 'remove', label: 'remove()', type: 'function', group: 'functions', size: 22, file: 'createEntityStore.ts', desc: 'Store 删除' },
+            { id: 'withRequestControl', label: 'withRequestControl()', type: 'function', group: 'functions', size: 20, file: 'createEntityStore.ts', desc: '请求控制（缓存/防重）' },
+            { id: 'getCached', label: 'getCached()', type: 'function', group: 'functions', size: 18, file: 'createEntityStore.ts', desc: '缓存读取' },
+            { id: 'setCache', label: 'setCache()', type: 'function', group: 'functions', size: 18, file: 'createEntityStore.ts', desc: '缓存写入' },
+            { id: 'unwrapResponse', label: 'unwrapResponse()', type: 'function', group: 'functions', size: 20, file: 'request.ts', desc: '响应解包' },
+            { id: 'fetchDashboardData', label: 'fetchDashboardData()', type: 'function', group: 'functions', size: 18, file: 'DashboardPage.vue', desc: '获取仪表板数据' },
+            { id: 'refreshData', label: 'refreshData()', type: 'function', group: 'functions', size: 16, file: 'DashboardPage.vue', desc: '刷新数据' },
+            { id: 'handleSearch', label: 'handleSearch()', type: 'function', group: 'functions', size: 16, file: 'AssetContentDetails.vue', desc: '搜索处理' },
+            { id: 'handleEdit', label: 'handleEdit()', type: 'function', group: 'functions', size: 16, file: 'AssetContentDetails.vue', desc: '编辑处理' },
+            { id: 'handleDelete', label: 'handleDelete()', type: 'function', group: 'functions', size: 16, file: 'AssetContentDetails.vue', desc: '删除处理' },
+            { id: 'loadDepartmentTree', label: 'loadDepartmentTree()', type: 'function', group: 'functions', size: 16, file: 'DepartmentManagement.vue', desc: '加载部门树' },
+            { id: 'isDescendant', label: 'isDescendant()', type: 'function', group: 'functions', size: 16, file: 'DepartmentFormDialog.vue', desc: '判断后代节点' },
+            { id: 'isDescendantByCode', label: 'isDescendantByCode()', type: 'function', group: 'functions', size: 16, file: 'DepartmentFormDialog.vue', desc: '按编码判断后代' },
+            { id: 'handleSubmit', label: 'handleSubmit()', type: 'function', group: 'functions', size: 16, file: 'DepartmentFormDialog.vue', desc: '提交处理' },
+            { id: 'formatDate', label: 'formatDate()', type: 'function', group: 'functions', size: 18, file: 'Format.ts', desc: '日期格式化' },
+            { id: 'changePage', label: 'changePage()', type: 'function', group: 'functions', size: 18, file: 'useWastedAssets.ts', desc: '分页切换' },
+            { id: 'handlePageChange', label: 'handlePageChange()', type: 'function', group: 'functions', size: 16, desc: '分页变化处理' },
+            { id: 'loadEditData', label: 'loadEditData()', type: 'function', group: 'functions', size: 16, desc: '加载编辑数据' },
+            { id: 'resetForm', label: 'resetForm()', type: 'function', group: 'functions', size: 16, desc: '重置表单' },
+            { id: 'validateAssetByName', label: 'validateAssetByName()', type: 'function', group: 'functions', size: 16, file: 'OutAssetForm.vue', desc: '按名称验证资产' },
+            { id: 'handleAssetNameBlur', label: 'handleAssetNameBlur()', type: 'function', group: 'functions', size: 16, file: 'OutAssetForm.vue', desc: '资产名称失焦处理' },
+            { id: 'clearAssetInfo', label: 'clearAssetInfo()', type: 'function', group: 'functions', size: 16, file: 'OutAssetForm.vue', desc: '清空资产信息' },
+            { id: 'handleAssetCodeChange', label: 'handleAssetCodeChange()', type: 'function', group: 'functions', size: 16, file: 'OutAssetForm.vue', desc: '资产编码变化处理' },
+        ],
+        edges: [
+            // Store 调用 API
+            { from: 'assetStore.ts', to: 'asset.ts', label: '调用', color: '#4caf50', dashes: false },
+            { from: 'outAssetStore.ts', to: 'outAsset.ts', label: '调用', color: '#4caf50', dashes: false },
+            { from: 'recycleAssetStore.ts', to: 'recycleAsset.ts', label: '调用', color: '#4caf50', dashes: false },
+            { from: 'contractStore.ts', to: 'contract.ts', label: '调用', color: '#4caf50', dashes: false },
+            { from: 'storageStore.ts', to: 'storage.ts', label: '调用', color: '#4caf50', dashes: false },
+            { from: 'userStore.ts', to: 'user.ts', label: '调用', color: '#4caf50', dashes: false },
+
+            // Store 继承 createEntityStore
+            { from: 'assetStore.ts', to: 'createEntityStore.ts', label: '继承', color: '#ff9800', dashes: [5,5] },
+            { from: 'outAssetStore.ts', to: 'createEntityStore.ts', label: '继承', color: '#ff9800', dashes: [5,5] },
+            { from: 'recycleAssetStore.ts', to: 'createEntityStore.ts', label: '继承', color: '#ff9800', dashes: [5,5] },
+            { from: 'contractStore.ts', to: 'createEntityStore.ts', label: '继承', color: '#ff9800', dashes: [5,5] },
+            { from: 'storageStore.ts', to: 'createEntityStore.ts', label: '继承', color: '#ff9800', dashes: [5,5] },
+            { from: 'userStore.ts', to: 'createEntityStore.ts', label: '继承', color: '#ff9800', dashes: [5,5] },
+
+            // API 调用 request
+            { from: 'asset.ts', to: 'request.ts', label: '调用', color: '#2196f3', dashes: false },
+            { from: 'outAsset.ts', to: 'request.ts', label: '调用', color: '#2196f3', dashes: false },
+            { from: 'recycleAsset.ts', to: 'request.ts', label: '调用', color: '#2196f3', dashes: false },
+            { from: 'contract.ts', to: 'request.ts', label: '调用', color: '#2196f3', dashes: false },
+            { from: 'storage.ts', to: 'request.ts', label: '调用', color: '#2196f3', dashes: false },
+            { from: 'user.ts', to: 'request.ts', label: '调用', color: '#2196f3', dashes: false },
+
+            // 组件使用 Store
+            { from: 'AssetContentDetails.vue', to: 'assetStore.ts', label: '使用', color: '#9c27b0', dashes: false },
+            { from: 'AssetForm.vue', to: 'assetStore.ts', label: '使用', color: '#9c27b0', dashes: false },
+            { from: 'AssetForm.vue', to: 'useAssetFormHelpers.ts', label: '使用', color: '#00bcd4', dashes: false },
+            { from: 'OutAssetForm.vue', to: 'outAssetStore.ts', label: '使用', color: '#9c27b0', dashes: false },
+            { from: 'OutAssetBasicDetails.vue', to: 'outAssetStore.ts', label: '使用', color: '#9c27b0', dashes: false },
+            { from: 'OutAssetBasicDetails.vue', to: 'useOutAssetDetailCards.ts', label: '使用', color: '#00bcd4', dashes: false },
+            { from: 'RecycleAssetForm.vue', to: 'recycleAssetStore.ts', label: '使用', color: '#9c27b0', dashes: false },
+            { from: 'RecycleAssetForm.vue', to: 'useRecyclableOutAssets.ts', label: '使用', color: '#00bcd4', dashes: false },
+            { from: 'RecycleAssetForm.vue', to: 'useRecycleFormAssociations.ts', label: '使用', color: '#00bcd4', dashes: false },
+            { from: 'RecycleAssetForm.vue', to: 'useRecycleFormSubmit.ts', label: '使用', color: '#00bcd4', dashes: false },
+            { from: 'RecycleAssetBasicDetails.vue', to: 'recycleAssetStore.ts', label: '使用', color: '#9c27b0', dashes: false },
+            { from: 'RecycleAssetBasicDetails.vue', to: 'useOutAssetDetailCards.ts', label: '使用', color: '#00bcd4', dashes: false },
+            { from: 'ContractForm.vue', to: 'contractStore.ts', label: '使用', color: '#9c27b0', dashes: false },
+            { from: 'ContractOfDetails.vue', to: 'contractStore.ts', label: '使用', color: '#9c27b0', dashes: false },
+            { from: 'DepartmentManagement.vue', to: 'useEmployeeLinkage.ts', label: '使用', color: '#00bcd4', dashes: false },
+            { from: 'DepartmentFormDialog.vue', to: 'userStore.ts', label: '使用', color: '#9c27b0', dashes: false },
+
+            // 组件使用公共组件
+            { from: 'AssetContentDetails.vue', to: 'CommonList.vue', label: '包含', color: '#e91e63', dashes: [3,3] },
+            { from: 'AssetContentDetails.vue', to: 'SearchBar.vue', label: '包含', color: '#e91e63', dashes: [3,3] },
+            { from: 'OutAssetBasicDetails.vue', to: 'InfoCard.vue', label: '包含', color: '#e91e63', dashes: [3,3] },
+            { from: 'RecycleAssetBasicDetails.vue', to: 'InfoCard.vue', label: '包含', color: '#e91e63', dashes: [3,3] },
+
+            // Composable 使用 Store
+            { from: 'useAssetFormHelpers.ts', to: 'assetStore.ts', label: '调用', color: '#ff9800', dashes: [5,5] },
+            { from: 'useRecyclableOutAssets.ts', to: 'outAssetStore.ts', label: '调用', color: '#ff9800', dashes: [5,5] },
+            { from: 'useRecycleFormSubmit.ts', to: 'recycleAssetStore.ts', label: '调用', color: '#ff9800', dashes: [5,5] },
+            { from: 'useRecycleFormAssociations.ts', to: 'assetStore.ts', label: '调用', color: '#ff9800', dashes: [5,5] },
+            { from: 'useEmployeeLinkage.ts', to: 'userStore.ts', label: '调用', color: '#ff9800', dashes: [5,5] },
+
+            // 函数调用链
+            { from: 'AssetContentDetails.vue', to: 'handleSearch', label: '定义', color: '#2196f3', dashes: false },
+            { from: 'AssetContentDetails.vue', to: 'handleEdit', label: '定义', color: '#2196f3', dashes: false },
+            { from: 'AssetContentDetails.vue', to: 'handleDelete', label: '定义', color: '#2196f3', dashes: false },
+            { from: 'DashboardPage.vue', to: 'fetchDashboardData', label: '定义', color: '#2196f3', dashes: false },
+            { from: 'DashboardPage.vue', to: 'refreshData', label: '定义', color: '#2196f3', dashes: false },
+            { from: 'DepartmentManagement.vue', to: 'loadDepartmentTree', label: '定义', color: '#2196f3', dashes: false },
+            { from: 'DepartmentFormDialog.vue', to: 'handleSubmit', label: '定义', color: '#2196f3', dashes: false },
+            { from: 'DepartmentFormDialog.vue', to: 'isDescendant', label: '定义', color: '#2196f3', dashes: false },
+            { from: 'DepartmentFormDialog.vue', to: 'isDescendantByCode', label: '定义', color: '#2196f3', dashes: false },
+            { from: 'OutAssetForm.vue', to: 'validateAssetByName', label: '定义', color: '#2196f3', dashes: false },
+            { from: 'OutAssetForm.vue', to: 'handleAssetNameBlur', label: '定义', color: '#2196f3', dashes: false },
+            { from: 'OutAssetForm.vue', to: 'clearAssetInfo', label: '定义', color: '#2196f3', dashes: false },
+            { from: 'OutAssetForm.vue', to: 'handleAssetCodeChange', label: '定义', color: '#2196f3', dashes: false },
+
+            // 函数调用关系
+            { from: 'handleSearch', to: 'searchAssets', label: '调用', color: '#81c784', dashes: true },
+            { from: 'handleSearch', to: 'combineSearch', label: '调用', color: '#81c784', dashes: true },
+            { from: 'handleDelete', to: 'remove', label: '调用', color: '#81c784', dashes: true },
+            { from: 'fetchDashboardData', to: 'getOutAssets', label: '调用', color: '#81c784', dashes: true },
+            { from: 'fetchDashboardData', to: 'getRecycleAssets', label: '调用', color: '#81c784', dashes: true },
+            { from: 'loadDepartmentTree', to: 'get', label: '调用', color: '#81c784', dashes: true },
+            { from: 'handleSubmit', to: 'post', label: '调用', color: '#81c784', dashes: true },
+
+            // Store 函数调用
+            { from: 'getList', to: 'withRequestControl', label: '调用', color: '#ffb74d', dashes: true },
+            { from: 'getById', to: 'withRequestControl', label: '调用', color: '#ffb74d', dashes: true },
+            { from: 'create', to: 'withRequestControl', label: '调用', color: '#ffb74d', dashes: true },
+            { from: 'update', to: 'withRequestControl', label: '调用', color: '#ffb74d', dashes: true },
+            { from: 'remove', to: 'withRequestControl', label: '调用', color: '#ffb74d', dashes: true },
+            { from: 'withRequestControl', to: 'getCached', label: '调用', color: '#ffb74d', dashes: true },
+            { from: 'withRequestControl', to: 'setCache', label: '调用', color: '#ffb74d', dashes: true },
+            { from: 'getList', to: 'getAssets', label: '调用', color: '#ffb74d', dashes: true },
+            { from: 'getList', to: 'getOutAssets', label: '调用', color: '#ffb74d', dashes: true },
+            { from: 'getList', to: 'getRecycleAssets', label: '调用', color: '#ffb74d', dashes: true },
+            { from: 'getById', to: 'get', label: '调用', color: '#ffb74d', dashes: true },
+            { from: 'create', to: 'post', label: '调用', color: '#ffb74d', dashes: true },
+
+            // API 函数调用
+            { from: 'getAssets', to: 'get', label: '调用', color: '#4caf50', dashes: true },
+            { from: 'createAsset', to: 'post', label: '调用', color: '#4caf50', dashes: true },
+            { from: 'searchAssets', to: 'get', label: '调用', color: '#4caf50', dashes: true },
+            { from: 'combineSearch', to: 'get', label: '调用', color: '#4caf50', dashes: true },
+            { from: 'getOutAssets', to: 'get', label: '调用', color: '#4caf50', dashes: true },
+            { from: 'createOutAsset', to: 'post', label: '调用', color: '#4caf50', dashes: true },
+            { from: 'getRecycleAssets', to: 'get', label: '调用', color: '#4caf50', dashes: true },
+            { from: 'createRecycleAsset', to: 'post', label: '调用', color: '#4caf50', dashes: true },
+            { from: 'get', to: 'unwrapResponse', label: '调用', color: '#4caf50', dashes: true },
+            { from: 'post', to: 'unwrapResponse', label: '调用', color: '#4caf50', dashes: true },
+
+            // Composable 函数调用
+            { from: 'useRecycleFormSubmit', to: 'createRecycleAsset', label: '调用', color: '#00bcd4', dashes: true },
+            { from: 'useRecyclableOutAssets', to: 'getOutAssets', label: '调用', color: '#00bcd4', dashes: true },
+            { from: 'useAssetFormHelpers', to: 'getList', label: '调用', color: '#00bcd4', dashes: true },
+            { from: 'useEmployeeLinkage', to: 'getList', label: '调用', color: '#00bcd4', dashes: true },
+
+            // 分页相关
+            { from: 'handlePageChange', to: 'changePage', label: '调用', color: '#e91e63', dashes: [3,3] },
+            { from: 'loadEditData', to: 'formatDate', label: '调用', color: '#e91e63', dashes: [3,3] },
+            { from: 'validateAssetByName', to: 'handleAssetCodeChange', label: '调用', color: '#e91e63', dashes: [3,3] },
+            { from: 'handleAssetNameBlur', to: 'validateAssetByName', label: '调用', color: '#e91e63', dashes: [3,3] },
+            { from: 'handleAssetNameBlur', to: 'clearAssetInfo', label: '调用', color: '#e91e63', dashes: [3,3] },
+        ]
+    };
+
+    // 颜色配置
+    const COLORS = {
+        file: '#e91e63',
+        api: '#4caf50',
+        store: '#ff9800',
+        component: '#9c27b0',
+        composable: '#00bcd4',
+        function: '#2196f3'
+    };
+
+    // 图例配置
+    const LEGEND = [
+        { type: 'file', label: '文件', color: COLORS.file },
+        { type: 'api', label: 'API', color: COLORS.api },
+        { type: 'store', label: 'Store', color: COLORS.store },
+        { type: 'component', label: '组件', color: COLORS.component },
+        { type: 'composable', label: 'Composable', color: COLORS.composable },
+        { type: 'function', label: '函数', color: COLORS.function },
+    ];
+
+    // 初始化图谱
+    const container = document.getElementById('graph');
+    const nodes = new vis.DataSet(GRAPH_DATA.nodes.map(n => ({
+        id: n.id,
+        label: n.label,
+        color: {
+            background: COLORS[n.type],
+            border: COLORS[n.type],
+            highlight: { background: '#fff', border: COLORS[n.type] }
+        },
+        size: n.size || 20,
+        font: { size: n.size > 25 ? 12 : 10, color: '#fff' },
+        borderWidth: 2,
+        _type: n.type,
+        _file: n.file,
+        _api: n.api,
+        _desc: n.desc,
+        _baseUrl: n.baseUrl,
+    })));
+
+    const edges = new vis.DataSet(GRAPH_DATA.edges.map((e, i) => ({
+        id: i,
+        from: e.from,
+        to: e.to,
+        label: '',
+        title: e.label,
+        color: { color: e.color, opacity: 0.6 },
+        dashes: e.dashes || false,
+        width: 1.5,
+        arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+    })));
+
+    const network = new vis.Network(container, { nodes, edges }, {
+        physics: {
+            enabled: true,
+            solver: 'forceAtlas2Based',
+            forceAtlas2Based: {
+                gravitationalConstant: -80,
+                centralGravity: 0.008,
+                springLength: 150,
+                springConstant: 0.06,
+                damping: 0.4,
+                avoidOverlap: 0.8,
+            },
+            stabilization: { iterations: 300, fit: true },
+        },
+        interaction: {
+            hover: true,
+            tooltipDelay: 100,
+            hideEdgesOnDrag: true,
+            zoomView: true,
+            dragView: true,
+        },
+        nodes: { shape: 'dot', borderWidth: 2 },
+        edges: { smooth: { type: 'continuous', roundness: 0.2 } },
+    });
+
+    network.once('stabilizationIterationsDone', () => {
+        network.setOptions({ physics: { enabled: false } });
+    });
+
+    // 显示节点详情
+    function showInfo(nodeId) {
+        const n = nodes.get(nodeId);
+        if (!n) return;
+
+        const connectedNodes = network.getConnectedNodes(nodeId);
+        const connectedEdges = network.getConnectedEdges(nodeId);
+
+        let content = `
+            <div class="info-section">
+                <h4>基本信息</h4>
+                <div class="field"><b>名称</b><span>${n.label}</span></div>
+                <div class="field"><b>类型</b><span>${n._type}</span></div>
+                ${n._file ? `<div class="field"><b>所在文件</b><span>${n._file}</span></div>` : ''}
+                ${n._desc ? `<div class="field"><b>说明</b><span>${n._desc}</span></div>` : ''}
+            </div>
+        `;
+
+        // API 端点信息
+        if (n._api) {
+            content += `
+                <div class="info-section">
+                    <h4>API 端点</h4>
+                    <div class="api-endpoint">
+                        <span class="method-${n._api.split(' ')[0].toLowerCase()}">${n._api.split(' ')[0]}</span>
+                        ${n._api.split(' ').slice(1).join(' ')}
+                    </div>
+                </div>
+            `;
+        }
+
+        if (n._baseUrl) {
+            content += `
+                <div class="info-section">
+                    <h4>API 基础路径</h4>
+                    <div class="api-endpoint">${n._baseUrl}</div>
+                </div>
+            `;
+        }
+
+        // 调用链
+        const incomingEdges = GRAPH_DATA.edges.filter(e => e.to === nodeId);
+        const outgoingEdges = GRAPH_DATA.edges.filter(e => e.from === nodeId);
+
+        if (incomingEdges.length > 0 || outgoingEdges.length > 0) {
+            content += `<div class="info-section"><h4>调用关系</h4>`;
+
+            if (incomingEdges.length > 0) {
+                content += `<p style="color: #888; margin-bottom: 8px;">被调用 (${incomingEdges.length})</p>`;
+                incomingEdges.forEach(e => {
+                    content += `<div class="call-chain"><span class="function">${e.from}</span><span class="arrow">→</span><span class="target">${nodeId}</span></div>`;
+                });
+            }
+
+            if (outgoingEdges.length > 0) {
+                content += `<p style="color: #888; margin: 12px 0 8px;">调用 (${outgoingEdges.length})</p>`;
+                outgoingEdges.forEach(e => {
+                    content += `<div class="call-chain"><span class="function">${nodeId}</span><span class="arrow">→</span><span class="target">${e.to}</span></div>`;
+                });
+            }
+
+            content += `</div>`;
+        }
+
+        // 关联节点
+        if (connectedNodes.length > 0) {
+            content += `
+                <div class="info-section">
+                    <h4>关联节点 (${connectedNodes.length})</h4>
+                    <div class="related-nodes">
+                        ${connectedNodes.map(nid => {
+                            const nb = nodes.get(nid);
+                            const color = nb ? COLORS[nb._type] : '#666';
+                            return `<span class="related-node" style="background: ${color}33; color: ${color}; border: 1px solid ${color}" onclick="focusNode('${nid}')">${nb ? nb.label : nid}</span>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        document.getElementById('info-content').innerHTML = content;
+    }
+
+    function focusNode(nodeId) {
+        network.focus(nodeId, { scale: 1.4, animation: true });
+        network.selectNodes([nodeId]);
+        showInfo(nodeId);
+    }
+
+    // 搜索功能
+    const searchInput = document.getElementById('search');
+    const searchResults = document.getElementById('search-results');
+
+    searchInput.addEventListener('input', () => {
+        const q = searchInput.value.toLowerCase().trim();
+        searchResults.innerHTML = '';
+        if (!q) { searchResults.style.display = 'none'; return; }
+
+        const matches = GRAPH_DATA.nodes.filter(n =>
+            n.label.toLowerCase().includes(q) ||
+            (n.file && n.file.toLowerCase().includes(q)) ||
+            (n.desc && n.desc.toLowerCase().includes(q))
+        ).slice(0, 15);
+
+        if (!matches.length) { searchResults.style.display = 'none'; return; }
+
+        searchResults.style.display = 'block';
+        matches.forEach(n => {
+            const el = document.createElement('div');
+            el.className = 'search-item';
+            el.innerHTML = `
+                <span class="type-badge" style="background: ${COLORS[n.type]}">${n.type}</span>
+                <span>${n.label}</span>
+            `;
+            el.onclick = () => {
+                focusNode(n.label);
+                searchResults.style.display = 'none';
+                searchInput.value = '';
+            };
+            searchResults.appendChild(el);
+        });
+    });
+
+    document.addEventListener('click', e => {
+        if (!searchResults.contains(e.target) && e.target !== searchInput)
+            searchResults.style.display = 'none';
+    });
+
+    // 图例
+    const legendEl = document.getElementById('legend');
+    const hiddenTypes = new Set();
+
+    LEGEND.forEach(l => {
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.innerHTML = `<div class="legend-dot" style="background:${l.color}"></div><span>${l.label}</span>`;
+        item.onclick = () => {
+            if (hiddenTypes.has(l.type)) {
+                hiddenTypes.delete(l.type);
+                item.classList.remove('dimmed');
+            } else {
+                hiddenTypes.add(l.type);
+                item.classList.add('dimmed');
+            }
+            const updates = GRAPH_DATA.nodes
+                .filter(n => n.type === l.type)
+                .map(n => ({ id: n.label, hidden: hiddenTypes.has(l.type) }));
+            nodes.update(updates);
+        };
+        legendEl.appendChild(item);
+    });
+
+    // 统计
+    document.getElementById('nodeCount').textContent = `${GRAPH_DATA.nodes.length} 节点`;
+    document.getElementById('edgeCount').textContent = `${GRAPH_DATA.edges.length} 边`;
+    document.getElementById('communityCount').textContent = '144 社区';
+
+    // 悬停提示
+    const tooltip = document.getElementById('tooltip');
+    let hoveredNodeId = null;
+
+    network.on('hoverNode', params => {
+        hoveredNodeId = params.node;
+        container.style.cursor = 'pointer';
+    });
+
+    network.on('blurNode', () => {
+        hoveredNodeId = null;
+        container.style.cursor = 'default';
+    });
+
+    container.addEventListener('click', () => {
+        if (hoveredNodeId !== null) {
+            showInfo(hoveredNodeId);
+            network.selectNodes([hoveredNodeId]);
+        }
+    });
+
+    network.on('click', params => {
+        if (params.nodes.length > 0) {
+            showInfo(params.nodes[0]);
+        } else if (hoveredNodeId === null) {
+            document.getElementById('info-content').innerHTML = '<p style="color: #666; font-style: italic;">点击节点查看详细调用链</p>';
+        }
+    });
+
+    // 键盘快捷键
+    document.addEventListener('keydown', e => {
+        if (e.key === '/' && document.activeElement !== searchInput) {
+            e.preventDefault();
+            searchInput.focus();
+        }
+        if (e.key === 'Escape') {
+            searchInput.blur();
+            searchResults.style.display = 'none';
+        }
+    });
+    </script>
+</body>
+</html>

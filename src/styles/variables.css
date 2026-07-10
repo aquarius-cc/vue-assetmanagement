@@ -1,59 +1,181 @@
-/* src/styles/variables.css */
+/* CSS 变量定义 - 亮色模式（默认） */
 :root {
-  /* 设计令牌 - 主色 */
+  /* 主色 - 符合 F1 规范 */
   --color-primary: #2B5FD7;
   --color-primary-light: #409eff;
-  --color-primary-dark: #1a3d7c;
+  --color-primary-lighter: #ecf5ff;
+  --color-primary-dark: #1e429f;
   
-  /* 设计令牌 - 功能色 */
+  /* 功能色 - 符合 F2 规范 */
   --color-success: #52C41A;
+  --color-success-light: #67c23a;
+  --color-success-lighter: #f0f9eb;
+  --color-success-dark: #389e0d;
+  
   --color-warning: #FAAD14;
+  --color-warning-light: #e6a23c;
+  --color-warning-lighter: #fdf6ec;
+  --color-warning-dark: #d48806;
+  
   --color-danger: #FF4D4F;
+  --color-danger-light: #f56c6c;
+  --color-danger-lighter: #fef0f0;
+  --color-danger-dark: #cf1322;
+  
   --color-info: #1677FF;
+  --color-info-light: #909399;
+  --color-info-lighter: #f4f4f5;
+  --color-info-dark: #73767a;
   
-  /* 设计令牌 - 圆角 */
-  --border-radius-sm: 4px;
-  --border-radius-md: 8px;
-  --border-radius-lg: 12px;
+  /* 文本色 */
+  --text-primary: #303133;
+  --text-regular: #606266;
+  --text-secondary: #909399;
+  --text-dark: #1f2329;
+  --text-light: #6b7280;
+  --text-muted: #8492a6;
+  --text-placeholder: #c1c1c1;
   
-  /* 设计令牌 - 间距 (4px基数) */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 24px;
-  --spacing-xxl: 32px;
-  --spacing-xxxl: 48px;
-  
-  /* 设计令牌 - 字体 */
-  --font-size-xs: 12px;
-  --font-size-sm: 13px;
-  --font-size-md: 14px;
-  --font-size-lg: 16px;
-  --font-size-xl: 20px;
-  --font-size-xxl: 24px;
-  
-  /* 设计令牌 - 字体栈 */
-  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
-  
-  /* 设计令牌 - 阴影 */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.12);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
-  
-  /* 设计令牌 - 边框 */
-  --border-color: #dcdfe6;
+  /* 边框与背景 */
+  --border-color: #e8e8e8;
   --border-color-light: #e4e7ed;
   --border-color-lighter: #ebeef5;
+  --border-color-lightest: #f0f0f0;
+  --border-color-input: #dcdfe6;
+  --border-color-input-dark: #c0c4cc;
+  --background-color: #f5f7fa;
+  --background-color-light: #f9fafb;
+  --background-color-lighter: #fafafa;
   
-  /* 设计令牌 - 背景色 */
-  --bg-color: #ffffff;
-  --bg-color-page: #f5f7fa;
-  --bg-color-overlay: #ffffff;
+  /* 卡片背景 */
+  --card-background: #ffffff;
+  --card-background-light: #f9fafb;
+  --card-background-muted: #f8f9fc;
+  --card-background-subtle: #f3f4f6;
+  --card-background-page: #f8f9fa;
   
-  /* 设计令牌 - 文本色 */
-  --text-color-primary: #303133;
-  --text-color-regular: #606266;
-  --text-color-secondary: #909399;
-  --text-color-placeholder: #c0c4cc;
+  /* 阴影 */
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --card-hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  
+  /* 渐变 */
+  --gradient-primary: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
+  --gradient-background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+  --gradient-card-highlight: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%);
+  --gradient-purple: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-pink: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-cyan: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --gradient-green: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+
+  /* 主色衍生 */
+  --color-primary-light-mid: #66b1ff;
+  --color-primary-light-lighter: #79bbff;
+  --color-primary-light-border: #d9ecff;
+  
+  /* 透明度 */
+  --opacity-primary-light: rgba(43, 95, 215, 0.08);
+  --opacity-primary-lighter: rgba(43, 95, 215, 0.12);
+}
+
+/* 暗色模式变量 */
+html.dark {
+  /* 主色 - 保持品牌一致性，但调整亮度 */
+  --color-primary: #4a90e2;
+  --color-primary-light: #69b1ff;
+  --color-primary-lighter: rgba(74, 144, 226, 0.1);
+  --color-primary-dark: #2b5fd7;
+  
+  /* 功能色 - 调整亮度以适应深色背景 */
+  --color-success: #73d13d;
+  --color-success-light: #95de64;
+  --color-success-lighter: rgba(115, 209, 61, 0.1);
+  --color-success-dark: #52c41a;
+  
+  --color-warning: #ffc53d;
+  --color-warning-light: #ffd666;
+  --color-warning-lighter: rgba(255, 197, 61, 0.1);
+  --color-warning-dark: #faad14;
+  
+  --color-danger: #ff7875;
+  --color-danger-light: #ffa39e;
+  --color-danger-lighter: rgba(255, 120, 117, 0.1);
+  --color-danger-dark: #ff4d4f;
+  
+  --color-info: #40a9ff;
+  --color-info-light: #69c0ff;
+  --color-info-lighter: rgba(64, 169, 255, 0.1);
+  --color-info-dark: #1677ff;
+  
+  /* 文本色 - 深色背景下的文本 */
+  --text-primary: #e5eaf3;
+  --text-regular: #cfd3dc;
+  --text-secondary: #a3a6ad;
+  --text-dark: #f0f0f0;
+  --text-light: #9ca3af;
+  --text-muted: #8d9095;
+  --text-placeholder: #6b7280;
+  
+  /* 边框与背景 - 深色主题 */
+  --border-color: #4c4d4f;
+  --border-color-light: #414243;
+  --border-color-lighter: #363637;
+  --border-color-lightest: #2b2b2c;
+  --border-color-input: #4c4d4f;
+  --border-color-input-dark: #3a3a3a;
+  --background-color: #141414;
+  --background-color-light: #1d1e1f;
+  --background-color-lighter: #262727;
+  
+  /* 卡片背景 */
+  --card-background: #1d1e1f;
+  --card-background-light: #262727;
+  --card-background-muted: #262727;
+  --card-background-subtle: #1d1e1f;
+  --card-background-page: #141414;
+  
+  /* 阴影 - 调整为深色阴影 */
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --card-hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  
+  /* 渐变 - 深色渐变 */
+  --gradient-primary: linear-gradient(135deg, #1d1e1f 0%, #262727 100%);
+  --gradient-background: linear-gradient(180deg, #141414 0%, #1d1e1f 100%);
+  --gradient-card-highlight: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(74, 144, 226, 0.05) 100%);
+  --gradient-purple: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-pink: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-cyan: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --gradient-green: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+
+  /* 主色衍生 - 深色 */
+  --color-primary-light-mid: #85c1ff;
+  --color-primary-light-lighter: #a0cfff;
+  --color-primary-light-border: rgba(74, 144, 226, 0.2);
+  
+  /* 透明度 */
+  --opacity-primary-light: rgba(74, 144, 226, 0.15);
+  --opacity-primary-lighter: rgba(74, 144, 226, 0.2);
+  
+  /* Element Plus 暗色变量覆盖 */
+  --el-bg-color: #141414;
+  --el-bg-color-overlay: #1d1e1f;
+  --el-bg-color-page: #0a0a0a;
+  --el-text-color-primary: #e5eaf3;
+  --el-text-color-regular: #cfd3dc;
+  --el-text-color-secondary: #a3a6ad;
+  --el-text-color-placeholder: #8d9095;
+  --el-border-color: #4c4d4f;
+  --el-border-color-light: #414243;
+  --el-border-color-lighter: #363637;
+  --el-border-color-extra-light: #2b2b2c;
+  --el-border-color-dark: #5a5a5a;
+  --el-fill-color: #303030;
+  --el-fill-color-light: #2b2b2c;
+  --el-fill-color-lighter: #262727;
+  --el-fill-color-extra-light: #1d1e1f;
+  --el-fill-color-dark: #3a3a3a;
+  --el-mask-color: rgba(0, 0, 0, 0.8);
+  --el-box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  --el-box-shadow-light: 0 6px 16px rgba(0, 0, 0, 0.3);
+  --el-box-shadow-lighter: 0 3px 6px rgba(0, 0, 0, 0.2);
+  --el-box-shadow-dark: 0 16px 48px rgba(0, 0, 0, 0.5);
 }

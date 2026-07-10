@@ -1,0 +1,1 @@
+{"nodes": [{"id": "src_utils_user_ts", "label": "User.ts", "file_type": "code", "source_file": "src\\utils\\User.ts", "source_location": "L1"}], "edges": [{"source": "src_utils_user_ts", "target": "src_utils_department", "relation": "imports_from", "confidence": "EXTRACTED", "source_file": "src\\utils\\User.ts", "source_location": "L2", "weight": 1.0}], "raw_calls": []}
