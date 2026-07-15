@@ -1,4 +1,5 @@
 // src/stores/createEntityStore.ts 工厂函数
+// TECHNICAL_DEBT: >500 lines (813行，DR-5 存量超限，后续需拆分为基础CRUD + 搜索扩展 + 分页扩展)
 // 所有实体（Asset / Contract / Storage / AssetType / OutAsset / RecycleAsset / DamagedAsset / WasteAsset）拆分为独立 Store
 // 全部使用 createEntityStore 工厂函数创建，支持缓存 + 防重 + 防抖
 // 主键统一：优先使用 code 字段（字符串），若无则用 id（数字）

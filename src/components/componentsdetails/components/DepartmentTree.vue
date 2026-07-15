@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   DepartmentTree.vue
   部门树形组件
 
@@ -143,7 +143,7 @@ const emit = defineEmits<{
     e: 'move',
     data: {
       department_code: string
-      parent_code: string | null
+      parent_department_code: string | null
       target_code?: string
     },
   ): void
@@ -285,20 +285,20 @@ const handleNodeDrop = (draggingNode: ElTreeNode, dropNode: ElTreeNode, dropType
   const draggingData: DepartmentTreeNode = draggingNode.data
   const dropData: DepartmentTreeNode = dropNode.data
 
-  // 计算新的父节点编码
+  // 计算新的父节点业务编码
   let parentCode: string | null = null
   if (dropType === 'inner') {
     // 放入目标节点内部
     parentCode = dropData.department_code
   } else {
     // 放在目标节点前后，父节点与目标节点相同
-    parentCode = dropData.parent_code
+    parentCode = dropData.parent_department_code
   }
 
   // 触发移动事件
   emit('move', {
     department_code: draggingData.department_code,
-    parent_code: parentCode,
+    parent_department_code: parentCode,
     target_code: dropData.department_code,
   })
 }

@@ -1,15 +1,15 @@
-﻿<!--
+<!--
   UnregisteredAssetForm.vue
-  未登记资产表单页面（新增/编辑�?  模式判断：route.query.code 存在为编辑模式，否则为新增模�?  功能�?    - 新增未登记资产记�?    - 编辑已有未登记资产记�?    - 场景类型选择（el-select�?    - 资产类型编码联动（el-autocomplete 联动 assetTypeStore�?    - 关联资产编码联动（el-autocomplete 联动 assetStore�?    - 目标仓库编码联动（el-autocomplete 联动 storageStore�?    - S2/S3 场景�?related_asset_code 必填联动校验
+  未登记资产表单页面（新增/编辑）  模式判断：route.query.code 存在为编辑模式，否则为新增模式）  功能：    - 新增未登记资产记录）    - 编辑已有未登记资产记录）    - 场景类型选择（el-select）    - 资产类型编码联动（el-autocomplete 联动 assetTypeStore）    - 关联资产编码联动（el-autocomplete 联动 assetStore）    - 目标仓库编码联动（el-autocomplete 联动 storageStore）    - S2/S3 场景）related_asset_code 必填联动校验
     - 表单验证
 -->
 <template>
-  <div class="unregistered-asset-form" v-loading="isLoading" element-loading-text="加载�?..">
+  <div class="unregistered-asset-form" v-loading="isLoading" element-loading-text="加载中...">
     <el-card class="box-card">
       <template #header>
         <div class="card-header">
           <el-icon><EditPen /></el-icon>
-          <span>{{ isEditMode ? '未登记资产编�? : '未登记资产录�? }}</span>
+          <span>{{ isEditMode ? '未登记资产编码' : '未登记资产录入' }}</span>
         </div>
       </template>
 
@@ -23,7 +23,7 @@
       >
         <el-row :gutter="20">
           <el-col :span="24">
-            <h3 class="section-title">未登记资产信�?/h3>
+            <h3 class="section-title">未登记资产信息</h3>
           </el-col>
 
           <!-- 场景类型 -->
@@ -64,7 +64,7 @@
             <el-form-item label="发现地点" prop="discovery_location">
               <el-input
                 v-model="formData.discovery_location"
-                placeholder="请输入发现地�?
+                placeholder="请输入发现地点"
                 clearable
               />
             </el-form-item>
@@ -75,7 +75,7 @@
             <el-form-item label="资产名称" prop="asset_name">
               <el-input
                 v-model="formData.asset_name"
-                placeholder="请输入资产名�?
+                placeholder="请输入资产名称"
                 clearable
               />
             </el-form-item>
@@ -103,31 +103,30 @@
             </el-form-item>
           </el-col>
 
-          <!-- 资产类型编码（联�?assetTypeStore�?-->
+          <!-- 资产类型编码（联动 assetTypeStore） -->
           <el-col :xs="24" :sm="24" :md="12">
             <el-form-item label="资产类型编码" prop="asset_type_code_display">
               <el-autocomplete
                 v-model="formData.asset_type_code_display"
                 :fetch-suggestions="fetchAssetTypeSuggestions"
-                placeholder="请输入资产类型编�?
+                placeholder="请输入资产类型编码"
                 clearable
                 @select="handleAssetTypeSelect"
                 @change="handleAssetTypeCodeChange"
               >
                 <template #default="{ item }">
                   <div>
-                    类型编码：{{ item.asset_type_code }} /
-                    一级分类：{{ item.asset_type_primary }} /
-                    二级分类：{{ item.asset_type_secondary }}
+                    类型编码：{{ item.type_code }} /
+                    类型名称：{{ item.type_name }}
                   </div>
                 </template>
               </el-autocomplete>
             </el-form-item>
           </el-col>
 
-          <!-- 预估价�?-->
+          <!-- 预估价值 -->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="预估价�? prop="estimated_value">
+            <el-form-item label="预估价值" prop="estimated_value">
               <el-input-number
                 v-model="formData.estimated_value"
                 :min="0"
@@ -139,7 +138,7 @@
             </el-form-item>
           </el-col>
 
-          <!-- 关联资产编码（S2/S3 场景必填�?-->
+          <!-- 关联资产编码（S2/S3 场景必填） -->
           <el-col :xs="24" :sm="24" :md="12">
             <el-form-item
               label="关联资产编码"
@@ -148,7 +147,7 @@
               <el-autocomplete
                 v-model="formData.related_asset_code_display"
                 :fetch-suggestions="fetchAssetSuggestions"
-                placeholder="请输入关联资产编�?
+                placeholder="请输入关联资产编码"
                 clearable
                 @select="handleRelatedAssetSelect"
                 @change="handleRelatedAssetCodeChange"
@@ -156,16 +155,16 @@
                 <template #default="{ item }">
                   <div>
                     资产名称：{{ item.asset_name }} / 资产编码：{{ item.asset_code }} /
-                    规格型号：{{ item.asset_specification || '�? }}
+                    规格型号：{{ item.asset_specification || '' }}
                   </div>
                 </template>
               </el-autocomplete>
               <div v-if="isRelatedAssetRequired" class="field-hint">
-                当前场景下关联资产编码为必填�?              </div>
+                当前场景下关联资产编码为必填</div>
             </el-form-item>
           </el-col>
 
-          <!-- 目标仓库编码（联�?storageStore�?-->
+          <!-- 目标仓库编码（联动 storageStore） -->
           <el-col :xs="24" :sm="24" :md="12">
             <el-form-item label="目标仓库编码" prop="target_storage_code_display">
               <el-autocomplete
@@ -179,7 +178,7 @@
                 <template #default="{ item }">
                   <div>
                     仓库名称：{{ item.storage_name }} / 仓库编码：{{ item.storage_code }} /
-                    仓库位置：{{ item.storage_address || '�? }}
+                    仓库位置：{{ item.storage_address || '' }}
                   </div>
                 </template>
               </el-autocomplete>
@@ -249,12 +248,12 @@ const isEditMode = ref(!!route.query.code)
 
 // ===== 场景类型选项 =====
 const scenarioTypeOptions = [
-  { value: ScenarioType.S1_NO_RECORD, label: '无记录资�? },
-  { value: ScenarioType.S2_NO_OUTASSET, label: '无出库记�? },
+  { value: ScenarioType.S1_NO_RECORD, label: '无记录资产' },
+  { value: ScenarioType.S2_NO_OUTASSET, label: '无出库记录' },
   { value: ScenarioType.S3_STATUS_MISMATCH, label: '状态不匹配' },
 ]
 
-// ===== S2/S3 场景下关联资产编码必填判�?=====
+// ===== S2/S3 场景下关联资产编码必填判?=====
 const isRelatedAssetRequired = computed(() => {
   return (
     formData.scenario_type === ScenarioType.S2_NO_OUTASSET ||
@@ -299,7 +298,7 @@ const formData = reactive<FormDataType>({
 
 const originalFormData = ref<FormDataType | null>(null)
 
-// ===== 提交数据（仅包含 API 需要的字段�?=====
+// ===== 提交数据（仅包含 API 需要的字段?=====
 const submitData = computed<UnregisteredAssetCreateForm>(() => ({
   scenario_type: formData.scenario_type,
   discovery_date: formData.discovery_date,
@@ -318,12 +317,12 @@ const submitData = computed<UnregisteredAssetCreateForm>(() => ({
 const formRules = computed(() => ({
   scenario_type: [{ required: true, message: '请选择场景类型', trigger: 'change' }],
   discovery_date: [{ required: true, message: '请选择发现日期', trigger: 'change' }],
-  discovery_location: [{ required: true, message: '请输入发现地�?, trigger: 'blur' }],
-  asset_name: [{ required: true, message: '请输入资产名�?, trigger: 'blur' }],
+  discovery_location: [{ required: true, message: '请输入发现地点', trigger: 'blur' }],
+  asset_name: [{ required: true, message: '请输入资产名称', trigger: 'blur' }],
   related_asset_code_display: [
     {
       required: isRelatedAssetRequired.value,
-      message: '当前场景下关联资产编码为必填�?,
+      message: '当前场景下关联资产编码为必填',
       trigger: 'blur',
     },
   ],
@@ -331,7 +330,7 @@ const formRules = computed(() => ({
 
 // ===== 场景类型切换处理 =====
 const handleScenarioTypeChange = (value: string) => {
-  // 切换�?S1 场景时，清空关联资产编码
+  // 切换?S1 场景时，清空关联资产编码
   if (value === ScenarioType.S1_NO_RECORD) {
     formData.related_asset_code = ''
     formData.related_asset_code_display = ''
@@ -341,9 +340,8 @@ const handleScenarioTypeChange = (value: string) => {
 // ===== 资产类型编码联动 =====
 interface AssetTypeSuggestion {
   value: string
-  asset_type_code: string
-  asset_type_primary: string
-  asset_type_secondary: string
+  type_code: string
+  type_name: string
 }
 
 const fetchAssetTypeSuggestions = createSuggestionFetcher<AssetType, AssetTypeSuggestion>({
@@ -352,16 +350,15 @@ const fetchAssetTypeSuggestions = createSuggestionFetcher<AssetType, AssetTypeSu
     return response
   },
   transform: (assetType: AssetType): AssetTypeSuggestion => ({
-    value: assetType.asset_type_code,
-    asset_type_code: assetType.asset_type_code,
-    asset_type_primary: assetType.asset_type_primary,
-    asset_type_secondary: assetType.asset_type_secondary,
+    value: assetType.type_code,
+    type_code: assetType.type_code,
+    type_name: assetType.type_name,
   }),
 })
 
 const handleAssetTypeSelect = (item: AssetTypeSuggestion) => {
-  formData.asset_type_code_display = item.asset_type_code
-  formData.asset_type_code = item.asset_type_code
+  formData.asset_type_code_display = item.type_code
+  formData.asset_type_code = item.type_code
 }
 
 const handleAssetTypeCodeChange = (value: string) => {
@@ -431,7 +428,7 @@ const handleStorageCodeChange = (value: string) => {
   }
 }
 
-// ===== 编辑模式：加载现有数�?=====
+// ===== 编辑模式：加载现有数?=====
 const loadEditData = async (code: string) => {
   isLoading.value = true
   try {
@@ -459,7 +456,7 @@ const loadEditData = async (code: string) => {
 
     originalFormData.value = JSON.parse(JSON.stringify(formData))
   } catch (error) {
-    console.error('加载未登记资产详情失�?', error)
+    console.error('加载未登记资产详情失?', error)
     ElMessage.error('加载数据失败，请刷新重试')
     router.back()
   } finally {
@@ -474,8 +471,9 @@ const submitForm = () => {
       ElMessage.error('请完善必填信息！')
       return
     }
-    // S2/S3 场景下关联资产编码必填校�?    if (isRelatedAssetRequired.value && !formData.related_asset_code) {
-      ElMessage.error('当前场景下关联资产编码为必填�?)
+    // S2/S3 场景下关联资产编码必填校验
+    if (isRelatedAssetRequired.value && !formData.related_asset_code) {
+      ElMessage.error('当前场景下关联资产编码为必填')
       return
     }
     // 编辑模式下检查是否有修改
@@ -502,13 +500,13 @@ const submitForm = () => {
       router.push({ name: 'UnregisteredAssetDetails' })
     } catch (error: unknown) {
       if (isAxiosError(error)) {
-        ElMessage.error(`操作失败�?{error.response?.data?.msg || error.message}`)
+        ElMessage.error(`操作失败?{error.response?.data?.message || error.message}`)
       } else if (error instanceof Error) {
-        ElMessage.error(`操作失败�?{error.message}`)
+        ElMessage.error(`操作失败?{error.message}`)
       } else {
         ElMessage.error('操作失败，请重试')
       }
-      console.error('未登记资产提交失�?', error)
+      console.error('未登记资产提交失?', error)
     }
   })
 }
@@ -532,7 +530,7 @@ const resetForm = () => {
     target_storage_code: '',
     handle_description: '',
   })
-  ElMessage.info('表单已重�?)
+  ElMessage.info('表单已重置')
 }
 
 // ===== 返回 =====

@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   DepartmentForm.vue
   部门表单页（新增 / 编辑）
   模式判断：路由 query 中有 code 参数 → 编辑模式，否则 → 新增模式
@@ -210,7 +210,7 @@ const submitForm = () => {
     } catch (error: unknown) {
       // 类型安全错误处理
       if (isAxiosError(error)) {
-        const msg = error.response?.data?.msg || error.response?.data?.message || error.message
+        const msg = error.response?.data?.message || error.message
         ElMessage.error(`操作失败：${msg}`)
       } else if (error instanceof Error) {
         ElMessage.error(`操作失败：${error.message}`)

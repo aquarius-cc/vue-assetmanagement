@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   StorageForm.vue
   仓库表单（新增 / 编辑）—— 通过路由 query.code 判断模式
   完全遵循 AGENTS 规范：组合式 API、TypeScript 严格、别名导入、样式隔离、单一职责
@@ -44,11 +44,7 @@
           </el-col>
           <el-col :xs="24" :sm="24" :md="12">
             <el-form-item label="仓库地址" prop="storage_address">
-              <el-input
-                v-model="formData.storage_address"
-                placeholder="请输入仓库地址"
-                clearable
-              />
+              <el-input v-model="formData.storage_address" placeholder="请输入仓库地址" clearable />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="24" :md="12">
@@ -112,9 +108,9 @@ const route = useRoute()
 const storageStore = useStorageStore()
 const formRef = ref<FormInstance>()
 
-// 编辑模式：根据 query.code 判断
-const isEditMode = computed(() => !!route.query.code)
-const currentCode = computed(() => route.query.code as string | undefined)
+// 编辑模式：根据 query.recordcode 判断
+const isEditMode = computed(() => !!route.query.recordcode)
+const currentCode = computed(() => route.query.recordcode as string | undefined)
 
 // ==================== 表单数据模型 ====================
 const formData = reactive<Partial<StorageCreateForm> & { id?: number }>({
@@ -199,7 +195,7 @@ const submitForm = () => {
       router.push({ name: 'StorageDetails' })
     } catch (error: unknown) {
       const msg = isAxiosError(error)
-        ? error.response?.data?.message || error.response?.data?.msg || '操作失败'
+        ? error.response?.data?.message || '操作失败'
         : error instanceof Error
           ? error.message
           : '未知错误'

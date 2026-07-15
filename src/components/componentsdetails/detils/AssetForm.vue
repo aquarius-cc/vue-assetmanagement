@@ -1,7 +1,7 @@
-﻿<!--
+<!--
   AssetForm.vue
-  资产表单（新�?/ 编辑�?
-  后端规则变更说明�?  - asset_code 由后端自动生成（格式：ASSET-{category}-{type_code}-{YYYYMMDD}-{random}-{seq}�?  - 前端新增时无需传�?asset_code，编辑时作为唯一标识仍需传�?  - �?asset_purchase_number > 1 时，后端创建多条 Asset 记录并返�?List[AssetDetail]
+  资产表单（新?/ 编辑?
+  后端规则变更说明?  - asset_code 由后端自动生成（格式：ASSET-{category}-{type_code}-{YYYYMMDD}-{random}-{seq}?  - 前端新增时无需传?asset_code，编辑时作为唯一标识仍需传?  - ?asset_purchase_number > 1 时，后端创建多条 Asset 记录并返?List[AssetDetail]
 -->
 <template>
   <div class="asset-form">
@@ -115,8 +115,7 @@ const assetForm = reactive<AssetCreateFormExtended>({
   asset_warranty_period: 3,
   asset_entry_date: '',
   asset_type: '',
-  asset_type_primary: '',
-  asset_type_category: '',
+  asset_type_name: '',
   asset_entry_person: '',
   asset_entry_person_name: '',
   asset_contract: '',
@@ -134,15 +133,15 @@ const assetForm = reactive<AssetCreateFormExtended>({
 
 /**
  * 获取提交给后端的创建表单数据
- * 新增模式时不传�?asset_code（后端自动生成）
- * 编辑模式时传�?asset_code（作为唯一标识�? *
- * 字段映射（AssetCreateForm �?AssetCreateSerializer）：
- * - asset_type �?SlugRelatedField(slug_field='asset_type_code')
- * - asset_contract �?SlugRelatedField(slug_field='contract_code')
- * - asset_storage �?SlugRelatedField(slug_field='storage_code')
- * - asset_entry_person �?SlugRelatedField(slug_field='employee_jobcode')
- * - asset_applicant �?SlugRelatedField(slug_field='employee_jobcode')
- * - asset_manager �?SlugRelatedField(slug_field='employee_jobcode')
+ * 新增模式时不传入 asset_code（后端自动生成）
+ * 编辑模式时传入 asset_code（作为唯一标识）
+ * 字段映射（AssetCreateForm → AssetCreateSerializer）：
+ * - asset_type → SlugRelatedField(slug_field='asset_type_code')
+ * - asset_contract → SlugRelatedField(slug_field='contract_code')
+ * - asset_storage → SlugRelatedField(slug_field='storage_code')
+ * - asset_entry_person → SlugRelatedField(slug_field='employee_jobcode')
+ * - asset_applicant → SlugRelatedField(slug_field='employee_jobcode')
+ * - asset_manager ?SlugRelatedField(slug_field='employee_jobcode')
  */
 const getAssetCreateForm = computed(() => {
   return {
@@ -183,7 +182,8 @@ const storageCodeUpdater = (code: string) => {
 const associationMethods = useAssetFormAssociationMethods(
   associations.contracts,
   associations.storages,
-  contractStore.getByName, // 确保 store 提供此方�?  contractUpdater,
+  contractStore.getByName, // 确保 store 提供此方法
+  contractUpdater,
   storageCodeUpdater,
 )
 
@@ -205,20 +205,19 @@ const managerLinkage = useEmployeeLinkage(userStore.getByName, userStore.getById
   assetForm.asset_manager = code
 })
 
-const handleAssetTypeChange = (primaryName: string) => {
-  const item = associations.assetTypes.value.find((t) => t.asset_type_primary === primaryName)
+const handleAssetTypeChange = (typeName: string) => {
+  const item = associations.assetTypes.value.find((t) => t.type_name === typeName)
   if (item) {
-    assetForm.asset_type = item.asset_type_code
-    assetForm.asset_type_primary = item.asset_type_primary
-    assetForm.asset_type_category = item.asset_type_category ?? ''
+    assetForm.asset_type = item.type_code
+    assetForm.asset_type_name = item.type_name
   } else {
     assetForm.asset_type = ''
-    assetForm.asset_type_primary = ''
-    assetForm.asset_type_category = ''
+    assetForm.asset_type_name = ''
   }
 }
 
-// 编辑：加载详�?const loadAssetDetail = async (assetCode: string) => {
+// 编辑：加载详情
+const loadAssetDetail = async (assetCode: string) => {
   try {
     const detail = await assetStore.getById(assetCode)
     if (!detail) {
@@ -240,7 +239,7 @@ const handleAssetTypeChange = (primaryName: string) => {
     assetForm.asset_description = detail.asset_description ?? ''
     assetForm.asset_current_status = detail.asset_current_status ?? ''
 
-    // FK 字段：后端返�?_code 后缀，表单使用同名字�?    assetForm.asset_type = detail.asset_type_code ?? ''
+    // FK 字段：后端返?_code 后缀，表单使用同名字?    assetForm.asset_type = detail.asset_type_code ?? ''
     assetForm.asset_contract = detail.asset_contract_code ?? ''
     assetForm.asset_storage = detail.asset_storage_code ?? ''
     assetForm.asset_entry_person = detail.asset_entry_person_jobcode ?? ''
@@ -256,8 +255,7 @@ const handleAssetTypeChange = (primaryName: string) => {
       detail.asset_manager_jobcode ? userStore.getById(detail.asset_manager_jobcode) : null,
       detail.asset_contract_code ? contractStore.getById(detail.asset_contract_code) : null,
     ])
-    assetForm.asset_type_primary = at?.asset_type_primary ?? ''
-    assetForm.asset_type_category = at?.asset_type_category ?? ''
+    assetForm.asset_type_name = at?.type_name ?? ''
     assetForm.asset_storage_name = st?.storage_name ?? ''
     assetForm.asset_entry_person_name = ep?.employee_name ?? ''
     assetForm.asset_applicant_name = ap?.employee_name ?? ''
@@ -273,8 +271,8 @@ const displayStatus = computed(() => getAssetStatusText(assetForm.asset_current_
 
 /**
  * 提交表单
- * 新增模式：不传�?asset_code，后端自动生成并返回 List[AssetDetail]
- * 编辑模式：传�?asset_code 作为唯一标识，后端返回单�?AssetDetail
+ * 新增模式：不传 asset_code，后端自动生成并返回 List[AssetDetail]
+ * 编辑模式：传?asset_code 作为唯一标识，后端返回单个 AssetDetail
  */
 const submitForm = () => {
   formRef.value?.validate(async (valid: boolean) => {
@@ -298,7 +296,7 @@ const submitForm = () => {
       router.go(-1)
     } catch (error: unknown) {
       const msg = isAxiosError(error)
-        ? error.response?.data?.msg || error.response?.data?.message || '操作失败，请检查网络连接后重试'
+        ? error.response?.data?.message || '操作失败，请检查网络连接后重试'
         : error instanceof Error
           ? error.message
           : '未知错误'
@@ -317,8 +315,7 @@ const resetForm = () => {
     assetForm.asset_purchase_number = 1
     assetForm.asset_warranty_period = 3
     assetForm.asset_type = ''
-    assetForm.asset_type_primary = ''
-    assetForm.asset_type_category = ''
+    assetForm.asset_type_name = ''
     assetForm.asset_contract = ''
     assetForm.asset_contract_name = ''
     assetForm.asset_storage = ''
@@ -329,7 +326,7 @@ const resetForm = () => {
     assetForm.asset_applicant_name = ''
     assetForm.asset_manager = ''
     assetForm.asset_manager_name = ''
-    ElMessage.info('表单已重�?)
+    ElMessage.info('表单已重置')
   }
 }
 

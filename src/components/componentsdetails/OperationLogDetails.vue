@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   OperationLogDetails.vue
   操作日志列表页面（重构版）
 
@@ -411,7 +411,7 @@ const storeConfig = computed<PaginationSearchConfig<OperationLog>>(() => ({
 const handleFilter = () => {
   operationLogStore.pagination.page = 1
   // 通过 SmartListContainer 的 refresh 方法刷新数据
-  ;(smartListRef.value as unknown as { refresh: () => void })?.refresh?.()
+  smartListRef.value?.refresh()
 }
 
 /**

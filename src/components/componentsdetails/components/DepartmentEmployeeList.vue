@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   DepartmentEmployeeList.vue
   部门人员列表组件
 
@@ -113,9 +113,7 @@
       <el-table-column label="工号" prop="employee_jobcode" min-width="110" />
       <el-table-column label="状态" prop="employee_status" min-width="80">
         <template #default="{ row }">
-          <el-tag :type="getStatusType(row.employee_status)" size="small">
-            {{ getStatusText(row.employee_status) }}
-          </el-tag>
+          <StatusTag :status="row.employee_status" map-type="employee" size="small" />
         </template>
       </el-table-column>
       <el-table-column label="电话" prop="employee_phone" min-width="130" />
@@ -214,10 +212,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { User, Plus, Upload, Sort, Delete } from '@element-plus/icons-vue'
 import { getDepartmentEmployees } from '@/stores/departmentStore'
 import { userAPI } from '@/api/user'
-import { USER_STATUS_DISPLAY_MAPPING } from '@/utils/Format'
 import type { EmployeeExtended, EmployeeStatus } from '@/utils/User'
 import type { DepartmentTreeNode, DepartmentEmployeeListQueryParams } from '@/utils/Department'
 import { useUserStore } from '@/stores/userStore'
+import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 
 // ==================== Props ====================
 
@@ -364,26 +362,6 @@ const loadEmployeeList = async () => {
   } finally {
     isLoading.value = false
   }
-}
-
-/**
- * 获取状态标签类型
- */
-const getStatusType = (status: string): string => {
-  const types: Record<string, string> = {
-    active: 'success',
-    left: 'danger',
-    retirement: 'warning',
-  }
-  return types[status] || 'info'
-}
-
-/**
- * 获取状态显示文本
- * 使用 USER_STATUS_DISPLAY_MAPPING 将状态值转换为中文显示
- */
-const getStatusText = (status: string): string => {
-  return USER_STATUS_DISPLAY_MAPPING[status as keyof typeof USER_STATUS_DISPLAY_MAPPING] || status
 }
 
 /**

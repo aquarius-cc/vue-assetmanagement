@@ -51,8 +51,9 @@ export const useAppStore = defineStore('app', () => {
     theme.value = newTheme
     localStorage.setItem('theme', newTheme)
 
-    // 应用主题到HTML元素
-    document.documentElement.setAttribute('data-theme', newTheme)
+    // 统一使用 classList 方式，与 variables.css 和 dark.css 中的 html.dark 选择器一致
+    const isDark = newTheme === 'dark'
+    document.documentElement.classList.toggle('dark', isDark)
   }
 
   const setPrimaryColor = (color: string) => {

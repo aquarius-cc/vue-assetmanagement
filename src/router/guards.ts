@@ -1,5 +1,5 @@
 // guards.ts
-// 路由守卫配置
+// 路由守卫配置（含 RBAC 角色检查）
 import type { Router , RouteLocationNormalized} from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
@@ -8,6 +8,44 @@ import { ElMessage } from 'element-plus'
 
 // 不需要认证的页面白名单
 const whiteList = ['/login']
+
+// RBAC 路由-角色白名单
+// key: 路由路径前缀, value: 允许访问的角色列表
+// 未列出的路由默认所有已认证角色可访问
+const roleWhitelist: Record<string, string[]> = {
+  // 系统配置：仅系统管理员
+  '/main/assettypedetails': ['system_admin'],
+  '/main/storagedetails': ['system_admin'],
+  '/main/contractdetails': ['system_admin'],
+  '/main/userdetails': ['system_admin'],
+  '/main/departmentdetails': ['system_admin'],
+  '/main/system': ['system_admin'],
+  // 报废审批：部门经理及以上
+  '/main/damagedassetdetails': ['system_admin', 'dept_manager'],
+  '/main/damagedassetbasicdetails': ['system_admin', 'dept_manager'],
+  // 未登记资产：部门经理及以上
+  '/main/unregisteredassetdetails': ['system_admin', 'dept_manager'],
+  '/main/unregisteredassetbasicdetails': ['system_admin', 'dept_manager'],
+  // 审计日志：审计员或管理员
+  '/main/auditlogdetails': ['system_admin', 'auditor'],
+}
+
+/**
+ * 检查用户角色是否允许访问目标路由
+ */
+function checkRoleAccess(
+  targetPath: string,
+  userRole: string,
+): boolean {
+  // 精确匹配：从最长前缀开始
+  const sortedPrefixes = Object.keys(roleWhitelist).sort((a, b) => b.length - a.length)
+  for (const prefix of sortedPrefixes) {
+    if (targetPath.startsWith(prefix)) {
+      return roleWhitelist[prefix].includes(userRole)
+    }
+  }
+  return true // 未列出的路由默认放行
+}
 
 // 应用状态初始化标志（仅在首次路由守卫执行时初始化一次）
 let appInitialized = false
@@ -43,6 +81,11 @@ export const setupAuthGuard = (router: Router) => {
         return '/main'
       }
 
+      // 不需要认证的页面直接放行（如扫码页 requiresAuth: false）
+      if (to.meta.requiresAuth === false) {
+        return true
+      }
+
       if (whiteList.includes(to.path)) {
         // 在白名单中，直接放行
         return true
@@ -55,6 +98,12 @@ export const setupAuthGuard = (router: Router) => {
           // 如果没有用户信息，尝试获取
           if (!authStore.authInfo) {
             await authStore.getAuthInfo()
+          }
+
+          // RBAC: 检查角色是否有权访问目标路由
+          if (!checkRoleAccess(to.path, authStore.userRole)) {
+            ElMessage.error('您没有权限访问该页面')
+            return '/main' // 无权限则回首页
           }
 
           return true
@@ -125,10 +174,23 @@ const generateBreadcrumbs = (route: RouteLocationNormalized) => {  // 【修改�
       departmentdetails: '部门管理',
       userdetails: '用户管理',
       contractdetails: '合同管理',
-      // 子路由...
+      brokenassetdetails: '损坏资产',
+      lostassetdetails: '遗失资产',
+      foundassetdetails: '找回资产',
+      repairassetdetails: '维修资产',
+      unregisteredassetdetails: '未登记资产',
+      operationlogdetails: '操作日志',
+      auditlogdetails: '审计日志',
+      harddisksndetails: '硬盘序列号',
       basicassetdetails: '基本信息',
       assetform: '资产录入',
-      // 其他需要的...
+      outassetbasicdetails: '出库详情',
+      recycleassetbasicdetails: '回收详情',
+      damagedassetbasicdetails: '报废详情',
+      wasteassetbasicdetails: '已报废详情',
+      unregisteredassetbasicdetails: '未登记详情',
+      contractofdetails: '合同详情',
+      harddisksnbasicdetails: '硬盘信息',
     }
 
     for (let i = 1; i < pathSegments.length; i++) {

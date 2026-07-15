@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="exportable-assets-search">
-    <!-- 搜索表单（与原来基本相同�?-->
+    <!-- 搜索表单（与原来基本相同 -->
     <div class="search-section">
       <el-row :gutter="12">
         <el-col :span="6"
@@ -76,7 +76,7 @@
             row.asset_contract?.contract_code || row.contract_code || '-'
           }}</template>
         </el-table-column>
-        <el-table-column label="当前状�?>
+        <el-table-column label="当前状态">
           <template #default="{ row }">{{ getAssetStatusText(row.asset_current_status) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="80" fixed="right">
@@ -156,7 +156,7 @@ const handleSelect = (row: AssetDetail) => {
 
 <style scoped lang="scss">
 .exportable-assets-search {
-  // 添加�?RecyclableOutAssetsSearch 一致的卡片样式
+  // 添加?RecyclableOutAssetsSearch 一致的卡片样式
   margin-bottom: 20px;
   padding: 16px;
   background-color: var(--background-color);
@@ -171,7 +171,7 @@ const handleSelect = (row: AssetDetail) => {
     padding: 12px;
     background-color: var(--card-background); // 内部结果区域可以保持白色背景
     border-radius: 4px;
-    // 原有的其他样�?..
+    // 原有的其他样?..
     .result-title {
       font-weight: bold;
       margin-bottom: 8px;

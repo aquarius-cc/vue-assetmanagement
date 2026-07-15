@@ -131,16 +131,6 @@ function getIdentifierValue(entity: Record<string, unknown>): Record<string, str
   const identifierFields = [
     'code',
     'recordcode',
-    'outasset_recordcode',
-    'asset_code',
-    'harddisk_sn_code',
-    'contract_code',
-    'user_jobcode',
-    'department_code',
-    'storage_code',
-    'asset_type_code',
-    'waste_asset_code',
-    'logging_id',
     'id',
   ] as const
 
@@ -158,6 +148,7 @@ function getIdentifierValue(entity: Record<string, unknown>): Record<string, str
 
 /**
  * 构建查询参数
+ * 所有实体统一使用 recordcode 作为标识符
  */
 function buildQueryParams(row: Record<string, unknown>): Record<string, string> {
   const identifier = getIdentifierValue(row)
@@ -167,24 +158,7 @@ function buildQueryParams(row: Record<string, unknown>): Record<string, string> 
 
   const queryParam: Record<string, string> = {}
   for (const [key, value] of Object.entries(identifier)) {
-    if (
-      key === 'code' ||
-      key === 'harddisk_sn_code' ||
-      key === 'contract_code' ||
-      key === 'asset_code' ||
-      key === 'user_jobcode' ||
-      key === 'department_code' ||
-      key === 'outasset_recordcode' ||
-      key === 'storage_code' ||
-      key === 'asset_type_code' ||
-      key === 'recordcode' ||
-      key === 'waste_asset_code' ||
-      key === 'logging_id'
-    ) {
-      queryParam['code'] = value
-    } else {
-      queryParam[key] = value
-    }
+    queryParam['code'] = value
   }
 
   return queryParam

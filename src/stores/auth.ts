@@ -13,11 +13,27 @@ import {
   clearAllAuthTokens
 } from '@/utils/tokenCrypto'
 
+/**
+ * 从 JWT Token 中解析 payload（不验证签名，仅解码 Base64）
+ */
+function decodeJWTPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const payload = JSON.parse(atob(parts[1]))
+    return payload
+  } catch {
+    return null
+  }
+}
+
 export const useAuthStore = defineStore('AuthUser', () => {
   const authInfo = ref<AuthInfo | null>(null) // 认证用户信息
   const isLoggedIn = ref(false) // 登录状态
   const access_token = ref<string | null>(null) // 访问令牌
   const refresh_token = ref<string | null>(null) // 刷新令牌
+  const userRole = ref<string>('regular_user') // RBAC 角色
+  const userDepartmentCode = ref<string | null>(null) // RBAC 部门编码
 
   /**
    * 用户登录
@@ -33,9 +49,9 @@ export const useAuthStore = defineStore('AuthUser', () => {
       })
 
       // 根据后端 API 响应格式解析数据
-      // 后端返回结构: { code, msg, data: { user, access, refresh } }
-      // 成功条件：code === 200 或 code === 201（后端 API 文档规范）
-      const isSuccess = response.code === 200 || response.code === 201
+      // 后端返回结构: { code, message, data: { user, access, refresh } }
+      // 成功条件：code === 0（AGENTS.md §3 跨端契约）
+      const isSuccess = response.code === 0
 
       if (isSuccess) {
         // 构建 AuthInfo 对象用于本地存储
@@ -51,6 +67,13 @@ export const useAuthStore = defineStore('AuthUser', () => {
         access_token.value = response.data.access
         refresh_token.value = response.data.refresh
 
+        // RBAC: 从 JWT 中解析 role + department_code
+        const payload = decodeJWTPayload(response.data.access)
+        if (payload) {
+          userRole.value = (payload.role as string) || 'regular_user'
+          userDepartmentCode.value = (payload.department_code as string) || null
+        }
+
         // 持久化存储认证信息（使用加密存储，与token一致）
         setEncryptedToken('authInfo', JSON.stringify(authUserData))
         setEncryptedToken('access_token', response.data.access)
@@ -59,7 +82,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
         // 注意：不再调用 ElMessage.success()，由调用方（LogIn.vue）统一处理成功提示
         return { success: true, message: '登录成功' }
       } else {
-        const errorMessage = response.msg || '登录失败'
+        const errorMessage = response.message || '登录失败'
         // 注意：不再调用 ElMessage.error()，由调用方（LogIn.vue）统一处理错误提示显示
         return { success: false, message: errorMessage }
       }
@@ -72,9 +95,8 @@ export const useAuthStore = defineStore('AuthUser', () => {
         errorMessage = error.message || errorMessage
       } else if (error && typeof error === 'object' && 'response' in error) {
         // AxiosError：网络请求失败时的错误格式
-        const axiosError = error as { response?: { data?: { message?: string; msg?: string } } }
+        const axiosError = error as { response?: { data?: { message?: string } } }
         errorMessage =
-          axiosError.response?.data?.msg ||
           axiosError.response?.data?.message ||
           errorMessage
       }
@@ -120,6 +142,8 @@ export const useAuthStore = defineStore('AuthUser', () => {
       isLoggedIn.value = false
       access_token.value = null
       refresh_token.value = null
+      userRole.value = 'regular_user'
+      userDepartmentCode.value = null
       clearAllAuthTokens()
       localStorage.removeItem('authInfo')
     }
@@ -139,6 +163,8 @@ export const useAuthStore = defineStore('AuthUser', () => {
     isLoggedIn.value = false
     access_token.value = null
     refresh_token.value = null
+    userRole.value = 'regular_user'
+    userDepartmentCode.value = null
 
     // 清除本地存储的认证信息
     clearAllAuthTokens()
@@ -162,6 +188,14 @@ export const useAuthStore = defineStore('AuthUser', () => {
         access_token.value = savedAccessToken
         refresh_token.value = savedRefreshToken
         isLoggedIn.value = true
+
+        // RBAC: 从存储的 access_token 中解析 role + department_code
+        const payload = decodeJWTPayload(savedAccessToken)
+        if (payload) {
+          userRole.value = (payload.role as string) || 'regular_user'
+          userDepartmentCode.value = (payload.department_code as string) || null
+        }
+
         return true
       } catch (error) {
         console.error('恢复用户状态失败:', error)
@@ -223,6 +257,8 @@ export const useAuthStore = defineStore('AuthUser', () => {
     isLoggedIn,
     access_token,
     refresh_token,
+    userRole,           // RBAC 角色
+    userDepartmentCode, // RBAC 部门编码
 
     // 操作方法
     login,

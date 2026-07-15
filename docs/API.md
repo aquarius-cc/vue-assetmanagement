@@ -173,7 +173,7 @@
 ## 12. 部门管理 (`department.ts`)
 
 **DepartmentBrief 类型**（`getEmployeeDepartment`/`getParentDepartment` 返回值）：
-`{ department_code, department_name, level, parent_code }`
+`{ recordcode, department_code, department_name, level, parent_department_code, path }`
 
 | 方法 | HTTP | URL | 说明 |
 |------|------|-----|------|

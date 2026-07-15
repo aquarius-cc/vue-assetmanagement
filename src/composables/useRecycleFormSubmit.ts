@@ -124,7 +124,7 @@ export function useRecycleFormSubmit(options: {
       router.go(-1)
     } catch (error: unknown) {
       const msg = isAxiosError(error)
-        ? error.response?.data?.msg || error.response?.data?.message || '操作失败'
+        ? error.response?.data?.message || '操作失败'
         : error instanceof Error ? error.message : '未知错误'
       ElMessage.error(msg)
     } finally {

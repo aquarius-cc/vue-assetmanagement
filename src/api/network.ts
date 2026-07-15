@@ -2,6 +2,7 @@
 // 网络连通性测试模块
 // 注意：此模块仅用于开发调试，生产环境应隐藏相关按钮
 import { request } from '@/api/index'
+import { isAxiosError } from 'axios'
 
 // 从环境变量获取后端地址（与request.ts保持一致）
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://127.0.0.1:8000'
@@ -23,19 +24,18 @@ export const networkAPI = {
         message: 'Django服务器连接正常',
       }
     } catch (error: unknown) {
-      // 区分网络错误和HTTP错误
-      const axiosError = error as { response?: { status?: number }; code?: string }
-      if (axiosError.code === 'ERR_NETWORK') {
-        return {
-          status: 'error',
-          message: '网络连接失败，请检查网络设置',
+      if (isAxiosError(error)) {
+        if (error.code === 'ERR_NETWORK') {
+          return {
+            status: 'error',
+            message: '网络连接失败，请检查网络设置',
+          }
         }
-      }
-      // HTTP错误（如404、500）说明服务器可达
-      if (axiosError.response) {
-        return {
-          status: 'success',
-          message: `服务器可达（状态码: ${axiosError.response.status}）`,
+        if (error.response) {
+          return {
+            status: 'success',
+            message: `服务器可达（状态码: ${error.response.status}）`,
+          }
         }
       }
       return {
@@ -58,18 +58,18 @@ export const networkAPI = {
         details: response,
       }
     } catch (error: unknown) {
-      // 安全地从未知错误中提取信息
-      let errorDetails: unknown = undefined
       let errorMessage = '未知错误'
+      let errorDetails: unknown = undefined
 
-      if (error && typeof error === 'object') {
-        const err = error as Record<string, unknown>
-        errorMessage = String(err.message || errorMessage)
+      if (isAxiosError(error)) {
+        errorMessage = String(error.message || errorMessage)
         errorDetails = {
-          status: err.response ? (err.response as Record<string, unknown>).status : undefined,
-          data: err.response ? (err.response as Record<string, unknown>).data : undefined,
-          url: err.config ? (err.config as Record<string, unknown>).url : undefined,
+          status: error.response?.status,
+          data: error.response?.data,
+          url: error.config?.url,
         }
+      } else if (error instanceof Error) {
+        errorMessage = error.message
       }
 
       return {

@@ -12,7 +12,7 @@ import type { PaginationQuery } from '@/stores/createEntityStore'
  */
 export const useLostAssetStore = createEntityStore<LostAssetExtended, PaginationQuery>('lostAsset', {
   idKey: 'recordcode',
-  nameField: 'lost_asset_name',
+  nameField: 'asset_name',
   displayName: '遗失资产',
   api: {
     getList: async (params?: PaginationQuery) => {

@@ -1,14 +1,14 @@
 <!--
   HardDiskSNForm.vue
-  硬盘序列号表单页面（新增/编辑�?  模式判断：route.query.id 存在为编辑模式，否则为新增模�?  功能�?    - 新增硬盘序列号记�?    - 编辑已有硬盘序列号记�?    - 资产编码联动（el-autocomplete�?    - 表单验证
+  硬盘序列号表单页面（新增/编辑＀  模式判断：route.query.id 存在为编辑模式，否则为新增模式）  功能＀    - 新增硬盘序列号记录    - 编辑已有硬盘序列号记录    - 资产编码联动（el-autocomplete＀    - 表单验证
 -->
 <template>
-  <div class="harddisk-sn-form" v-loading="isLoading" element-loading-text="加载�?..">
+  <div class="harddisk-sn-form" v-loading="isLoading" element-loading-text="加载中...">
     <el-card class="box-card">
       <template #header>
         <div class="card-header">
           <el-icon><EditPen /></el-icon>
-          <span>{{ isEditMode ? '硬盘序列号编�? : '硬盘序列号录�? }}</span>
+          <span>{{ isEditMode ? '硬盘序列号编码' : '硬盘序列号录入' }}</span>
         </div>
       </template>
 
@@ -22,7 +22,7 @@
       >
         <el-row :gutter="20">
           <el-col :span="24">
-            <h3 class="section-title">硬盘序列号信�?/h3>
+            <h3 class="section-title">硬盘序列号信息</h3>
           </el-col>
 
           <!-- 资产编码（联动资产名称） -->
@@ -31,7 +31,7 @@
               <el-autocomplete
                 v-model="formData.asset_code"
                 :fetch-suggestions="fetchAssetSuggestions"
-                placeholder="请输入资产编�?
+                placeholder="请输入资产编码"
                 clearable
                 :disabled="isEditMode"
                 @select="handleAssetSelect"
@@ -59,7 +59,7 @@
           </el-col>
         </el-row>
 
-        <!-- 动态渲染硬盘组（只展示未移除的�?-->
+        <!-- 动态渲染硬盘组（只展示未移除的＀-->
         <div v-for="(disk, index) in activeDisks" :key="diskKey(disk, index)" class="disk-group">
           <el-divider content-position="left"> 硬盘 #{{ disk.harddisk_no }} </el-divider>
 
@@ -75,10 +75,10 @@
               </el-form-item>
             </el-col>
 
-            <!-- 硬盘序列�?-->
+            <!-- 硬盘序列号-->
             <el-col :xs="24" :sm="12" :md="8">
               <el-form-item
-                label="硬盘序列�?
+                label="硬盘序列号"
                 :prop="`disks.${index}.harddisk_sn_code`"
                 :rules="rules.harddisk_sn_code"
               >
@@ -100,9 +100,9 @@
               </el-form-item>
             </el-col>
 
-            <!-- 硬盘状�?-->
+            <!-- 硬盘状态-->
             <el-col :xs="24" :sm="12" :md="8">
-              <el-form-item label="硬盘状�?>
+              <el-form-item label="硬盘状态">
                 <el-select v-model="disk.harddisk_status" clearable style="width: 100%">
                   <el-option
                     v-for="opt in hardDiskStatusOptions"
@@ -179,7 +179,7 @@ const harddiskSnCode = ref((route.query.harddiskSnCode as string) || '')
 // ===== 硬盘类型选项 =====
 const hardDiskTypeOptions = [
   { value: HardDiskType.HDD, label: '机械硬盘 (HDD)' },
-  { value: HardDiskType.SSD, label: '固态硬�?(SSD)' },
+  { value: HardDiskType.SSD, label: '固态硬盀(SSD)' },
   { value: HardDiskType.NVMe, label: 'NVMe硬盘' },
   { value: HardDiskType.OTHER, label: '其他' },
 ]
@@ -193,7 +193,7 @@ const hardDiskStatusOptions = [
   { value: HardDiskStatus.DAMAGED, label: '损坏' },
 ]
 
-// ===== 表单数据（数组结构，每组硬盘独立�?=====
+// ===== 表单数据（数组结构，每组硬盘独立＀=====
 interface FormDataType {
   asset_code: string
   harddisk_number: number
@@ -217,13 +217,13 @@ const formData = reactive<FormDataType>({
 const originalFormData = ref<FormDataType | null>(null)
 
 /**
- * 获取未标记为移除的硬盘列�? * 用于表单渲染
+ * 获取未标记为移除的硬盘列血 * 用于表单渲染
  */
 const activeDisks = computed(() => formData.disks.filter((d) => d._status !== 'removed'))
 
 /**
- * 生成稳定�?key
- * 编辑模式�?_id，新增模式用索引
+ * 生成稳定皀key
+ * 编辑模式甀_id，新增模式用索引
  */
 const diskKey = (disk: DiskItem, index: number): string =>
   disk._id ? `disk-${disk._id}` : `new-${index}`
@@ -231,7 +231,7 @@ const diskKey = (disk: DiskItem, index: number): string =>
 /**
  * 硬盘数量变更处理
  * - 增加：追加新组，自动编号
- * - 减少：标记末尾项�?removed（不物理删除�? */
+ * - 减少：标记末尾项一removed（不物理删除＀ */
 const handleNumberChange = (newVal: number, oldVal: number) => {
   // 边界校验
   if (newVal < 1) {
@@ -244,7 +244,8 @@ const handleNumberChange = (newVal: number, oldVal: number) => {
   }
 
   if (newVal > oldVal) {
-    // 增加数量：追加新�?    for (let i = oldVal; i < newVal; i++) {
+    // 增加数量：追加新记录
+    for (let i = oldVal; i < newVal; i++) {
       formData.disks.push({
         harddisk_no: i + 1,
         harddisk_sn_code: '',
@@ -273,11 +274,11 @@ const rules: FormRules = {
   asset_code: [{ required: true, message: '请输入或选择资产编码', trigger: 'blur' }],
   harddisk_sn_code: [{ required: true, message: '请输入硬盘序列号', trigger: 'blur' }],
   harddisk_number: [
-    { required: true, message: '请输入硬盘数�?, trigger: 'blur' },
+    { required: true, message: '请输入硬盘数量', trigger: 'blur' },
     { type: 'number', min: 1, message: '范围1-999', trigger: 'blur' },
   ],
   harddisk_no: [
-    { required: true, message: '请输入硬盘编�?, trigger: 'blur' },
+    { required: true, message: '请输入硬盘编号', trigger: 'blur' },
     { type: 'number', min: 1, message: '编号必须大于0', trigger: 'blur' },
   ],
 }
@@ -310,7 +311,7 @@ const handleAssetCodeChange = (value: string) => {
   }
 }
 
-/** 资产编码失焦回调：自动匹�?*/
+/** 资产编码失焦回调：自动匹酀*/
 const handleAssetCodeBlur = async (event: FocusEvent) => {
   const currentValue = (event.target as HTMLInputElement).value
   if (!currentValue.trim()) {
@@ -325,22 +326,23 @@ const handleAssetCodeBlur = async (event: FocusEvent) => {
       ElMessage.warning('未找到匹配的资产')
     }
   } catch {
-    // 查询失败不阻�?  }
+    // 查询失败不阻塞
+  }
 }
 
-// ===== 编辑模式：加载现有数�?=====
+// ===== 编辑模式：加载现有数捀=====
 /**
  * 编辑模式加载数据
- * 根据 asset_code 查询该资产下所有硬盘记�? * 映射�?disks 数组
+ * 根据 asset_code 查询该资产下所有硬盘记录 * 映射一disks 数组
  */
 const loadEditData = async (assetCode: string, harddiskSnCode: string) => {
   isLoading.value = true
   try {
-    // 1. 获取该资产下的所有硬盘记�?    const response = await harddiskSnAPI.getHardDiskSNsByAsset(assetCode)
+    // 1. 获取该资产下的所有硬盘记录    const response = await harddiskSnAPI.getHardDiskSNsByAsset(assetCode)
     const records = response.results
 
     if (!records || records.length === 0) {
-      ElMessage.warning('该资产暂无硬盘记�?)
+      ElMessage.warning('该资产暂无硬盘记录')
       return
     }
     let disksRecords = []
@@ -350,7 +352,7 @@ const loadEditData = async (assetCode: string, harddiskSnCode: string) => {
       disksRecords = records
     }
 
-    // 2. 映射�?disks 数组
+    // 2. 映射一disks 数组
     formData.disks = disksRecords.map((record) => ({
       harddisk_no: record.harddisk_no,
       harddisk_sn_code: record.harddisk_sn_code,
@@ -377,7 +379,7 @@ const loadEditData = async (assetCode: string, harddiskSnCode: string) => {
 
 /**
  * 检测单个硬盘是否有变更
- * 用于编辑模式判断是否需要提�? */
+ * 用于编辑模式判断是否需要提人 */
 const hasDiskChanged = (disk: DiskItem, index: number): boolean => {
   if (!originalFormData.value) return true
   const original = originalFormData.value.disks[index]
@@ -393,7 +395,7 @@ const hasDiskChanged = (disk: DiskItem, index: number): boolean => {
 }
 
 /**
- * 监听 disks 变化，自动更�?_status
+ * 监听 disks 变化，自动更斀_status
  */
 watch(
   () => formData.disks,
@@ -409,8 +411,8 @@ watch(
 )
 
 /**
- * 统一提交方法（新增和编辑共用�? * 始终通过 saveHardDiskSNBatch 提交 { asset_code, disks } 数组
- * - 新增模式：disks 不含 id，后端全部创�? * - 编辑模式：disks �?id 的记录后端更新，�?id 的后端创建，scrap 的标记失�? */
+ * 统一提交方法（新增和编辑共用＀ * 始终通过 saveHardDiskSNBatch 提交 { asset_code, disks } 数组
+ * - 新增模式：disks 不含 id，后端全部创廀 * - 编辑模式：disks 吀id 的记录后端更新，id 的后端创建，scrap 的标记失数 */
 const submitForm = () => {
   formRef.value.validate(async (valid: boolean) => {
     if (!valid) {
@@ -422,12 +424,12 @@ const submitForm = () => {
       const submitData: HardDiskSNBatchSaveForm = {
         asset_code: formData.asset_code,
         disks: formData.disks.map((disk) => ({
-          // 编辑已有记录时传�?id，新增时不传
+          // 编辑已有记录时传退id，新增时不传
           ...(disk._id ? { id: disk._id } : {}),
           harddisk_no: disk.harddisk_no,
           harddisk_sn_code: disk.harddisk_sn_code,
           harddisk_type: disk.harddisk_type,
-          // removed 状态的记录提交�?harddisk_status 设为 scrap
+          // removed 状态的记录提交harddisk_status 设为 scrap
           harddisk_status: disk._status === 'removed' ? HardDiskStatus.SCRAP : disk.harddisk_status,
           harddisk_sn_description: disk.harddisk_sn_description,
         })),
@@ -448,13 +450,13 @@ const submitForm = () => {
       router.push({ name: 'HardDiskSNDetails' })
     } catch (error: unknown) {
       if (isAxiosError(error)) {
-        ElMessage.error(`操作失败�?{error.response?.data?.msg || error.message}`)
+        ElMessage.error(`操作失败＀{error.response?.data?.message || error.message}`)
       } else if (error instanceof Error) {
-        ElMessage.error(`操作失败�?{error.message}`)
+        ElMessage.error(`操作失败＀{error.message}`)
       } else {
         ElMessage.error('操作失败，请重试')
       }
-      console.error('硬盘序列号提交失�?', error)
+      console.error('硬盘序列号提交失贀', error)
     }
   })
 }
@@ -476,7 +478,7 @@ const resetForm = () => {
       harddisk_sn_description: null,
     },
   ]
-  ElMessage.info('表单已重�?)
+  ElMessage.info('表单已重置')
 }
 
 // ===== 返回 =====
@@ -486,7 +488,7 @@ const goBack = () => {
 
 /**
  * 生命周期：页面加载时判断模式
- * 编辑模式：通过 assetCode 查询该资产下所有硬盘记�? * 新增模式：初始化空表�? */
+ * 编辑模式：通过 assetCode 查询该资产下所有硬盘记录 * 新增模式：初始化空表區 */
 onMounted(async () => {
   if (isEditMode.value) {
     const code = assetCode.value

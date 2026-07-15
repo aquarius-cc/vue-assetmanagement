@@ -34,7 +34,7 @@
             >
               <el-card shadow="never">
                 <div class="timeline-item-content">
-                  <el-tag :type="getStatusTagType(item.status)" size="small">{{ item.status }}</el-tag>
+                  <StatusTag :status="item.status" />
                   <span class="timeline-desc">{{ item.description }}</span>
                   <span class="timeline-operator">操作人: {{ item.operator_name }}</span>
                 </div>
@@ -55,6 +55,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Document } from '@element-plus/icons-vue'
 import { assetAPI } from '@/api/asset'
 import type { AssetDetail } from '@/types/asset'
+import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 
 interface TimelineItem {
   status: string
@@ -69,18 +70,6 @@ const loading = ref(true)
 const asset = ref<AssetDetail | null>(null)
 const assetCode = ref(route.params.code as string)
 const timeline = ref<TimelineItem[]>([])
-
-const getStatusTagType = (status: string) => {
-  const map: Record<string, string> = {
-    in_store: 'success',
-    in_use: 'primary',
-    repairing: 'warning',
-    damaged: 'danger',
-    scrapped: 'info',
-    recycled_pending: 'warning',
-  }
-  return (map[status] || 'info') as 'success' | 'primary' | 'warning' | 'danger' | 'info'
-}
 
 onMounted(async () => {
   if (!assetCode.value) return

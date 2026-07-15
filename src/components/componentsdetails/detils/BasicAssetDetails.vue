@@ -1,21 +1,21 @@
-﻿<!--
+<!--
   BasicAssetDetails.vue
-  资产详情页面（重构版�?
+  资产详情页面（重构版?
   @description
-  展示资产的完整详细信息，包括基本信息、分类信息、合同信息�?  人员信息、存储位置、硬盘序列号等�?
+  展示资产的完整详细信息，包括基本信息、分类信息、合同信息?  人员信息、存储位置、硬盘序列号等?
   @architecture
-  - 使用 InfoCard 组件展示键值对形式的信息卡�?  - 使用 HardDiskSNCard 组件展示硬盘序列号列�?  - 使用 useAssetInfoCards composable 生成卡片配置
+  - 使用 InfoCard 组件展示键值对形式的信息卡?  - 使用 HardDiskSNCard 组件展示硬盘序列号列?  - 使用 useAssetInfoCards composable 生成卡片配置
 
   @features
-  - 数据驱动的卡片渲�?  - 支持条件渲染（可选数据块�?  - 支持导出 Excel
-  - 支持编辑和返回操�?
+  - 数据驱动的卡片渲?  - 支持条件渲染（可选数据块?  - 支持导出 Excel
+  - 支持编辑和返回操?
   @author System
   @date 2025-06-02
 -->
 
 <template>
   <div class="asset-detail-container" v-if="assetDetail">
-    <!-- 页面标题和操作按�?-->
+    <!-- 页面标题和操作按?-->
     <div class="header-section">
       <div class="title-area">
         <h1 class="page-title">{{ assetDetail.asset_name }}</h1>
@@ -31,19 +31,58 @@
         <el-button type="warning" :icon="Download" @click="handleExportExcel" size="default">
           导出
         </el-button>
+
+        <!-- 状态流转操作按钮 -->
+        <el-button v-if="canMarkBroken" type="danger" @click="handleMarkBroken">标记损坏</el-button>
+        <el-button v-if="canMarkLost" type="danger" @click="handleMarkLost">标记遗失</el-button>
+        <el-button v-if="canFound" type="success" @click="handleFound">找回</el-button>
+        <el-button v-if="canRepair" type="warning" @click="handleRepair">送修</el-button>
+        <el-button v-if="canRepairDone" type="success" @click="handleRepairDone">维修完成</el-button>
+        <el-button v-if="canRepairFailed" type="danger" @click="handleRepairFailed">维修失败</el-button>
+        <el-button v-if="canScrap" type="danger" @click="handleScrap">报废申请</el-button>
+
+        <!-- 查看日志（始终显示） -->
+        <el-button :icon="Timer" @click="handleViewLogs">状态日志</el-button>
+
         <el-button :icon="Back" @click="handleBack" size="default">返回</el-button>
       </div>
     </div>
 
-    <!-- 资产状态标�?-->
+    <!-- 资产状态标签-->
     <div class="status-badges">
-      <el-tag
-        :type="getStatusType(assetDetail.asset_current_status)"
+      <StatusTag
+        :status="assetDetail.asset_current_status"
         size="large"
         class="status-tag"
       >
         {{ '资产状态：' + getCurrentStatusText(assetDetail.asset_current_status) }}
-      </el-tag>
+      </StatusTag>
+    </div>
+
+    <!-- CRIT-6: 二维码展示区域 -->
+    <div class="qr-code-section" v-if="assetDetail.recordcode">
+      <el-card class="qr-card" body-style="padding: 16px; text-align: center;">
+        <template #header>
+          <div class="qr-card-header">
+            <span>资产二维码</span>
+            <el-button type="primary" size="small" :icon="Download" @click="downloadQRCode">
+              下载
+            </el-button>
+          </div>
+        </template>
+        <div class="qr-image-wrapper">
+          <img
+            v-if="qrCodeUrl"
+            :src="qrCodeUrl"
+            alt="资产二维码"
+            class="qr-image"
+          />
+          <div v-else class="qr-loading">
+            <el-icon class="is-loading"><Loading /></el-icon>
+          </div>
+        </div>
+        <p class="qr-hint">扫码查看资产公开信息</p>
+      </el-card>
     </div>
 
     <!-- 使用 InfoCard 组件展示各类信息 -->
@@ -56,12 +95,12 @@
     <InfoCard :config="storageCard" />
     <InfoCard :config="descriptionCard" />
 
-    <!-- 硬盘序列号卡片（表格形式�?-->
+    <!-- 硬盘序列号卡片（表格形式?-->
     <!-- v-if="assetDetail.harddisk_sns?.length" -->
     <HardDiskSNCard :harddisk-sns="assetDetail.harddisk_sns" :asset-code="assetDetail.asset_code" />
   </div>
 
-  <!-- 加载状�?-->
+  <!-- 加载状?-->
   <div v-else-if="isLoading" class="loading-container">
     <div class="loading-content">
       <el-skeleton :rows="12" animated />
@@ -72,7 +111,7 @@
     </div>
   </div>
 
-  <!-- 空状�?-->
+  <!-- 空状?-->
   <div v-else class="empty-container">
     <el-empty description="暂无资产数据" />
   </div>
@@ -81,7 +120,7 @@
 <script lang="ts">
 /**
  * 组件名称定义
- * 用于�?Vue DevTools 中识别组�? */
+ * 用于?Vue DevTools 中识别组? */
 export default {
   name: 'BasicAssetDetails',
 }
@@ -89,25 +128,28 @@ export default {
 
 <script lang="ts" setup>
 // ===== 导入 =====
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { Edit, Download, Back, Loading } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Edit, Download, Back, Loading, Timer } from '@element-plus/icons-vue'
 import { useAssetStore } from '@/stores/assetStore'
 import { useExcelExport } from '@/composables/useExcelExport'
 import { useAssetInfoCards } from '@/composables/useAssetInfoCards'
+import { assetAPI } from '@/api/asset'
 import InfoCard from '@/components/commoncomponents/InfoCard.vue'
 import HardDiskSNCard from '@/components/commoncomponents/HardDiskSNCard.vue'
+import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import type { AssetDetail } from '@/types/asset'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { formatDate, assetCurrentStatusMapping } from '@/utils/Format'
 
-// ===== 路由与状�?=====
+// ===== 路由与状?=====
 const router = useRouter()
 const route = useRoute()
 const assetStore = useAssetStore()
 const assetDetail = ref<AssetDetail | null>(null)
 const isLoading = ref(true)
+const qrCodeUrl = ref('')
 
 // ===== 使用 composable 生成卡片配置 =====
 const {
@@ -125,25 +167,103 @@ const {
 
 /**
  * 获取资产当前状态的中文文本
- * @param value - 状态枚举�? * @returns 中文状态文�? */
+ * @param value - 状态枚举? * @returns 中文状态文? */
 const getCurrentStatusText = (value: string | null | undefined): string => {
-  if (!value) return '未知状�?
-  return assetCurrentStatusMapping[value] || '未知状�?
+  if (!value) return '未知状态'
+  return assetCurrentStatusMapping[value] || '未知状态'
 }
 
-/**
- * 获取状态标签的类型
- * @param status - 状态枚举�? * @returns Element Plus Tag 组件�?type 属性�? */
-const getStatusType = (status: string | null | undefined): string => {
-  if (!status) return 'info'
-  const typeMap: Record<string, string> = {
-    in_store: 'success',
-    recycled_pending: 'success',
-    in_use: 'primary',
-    damaged: 'warning',
-    scrapped: 'danger',
+// ===== 状态流转按钮可见性 =====
+const currentStatus = computed(() => assetDetail.value?.asset_current_status ?? '')
+
+const canMarkBroken = computed(() =>
+  ['in_store', 'in_use'].includes(currentStatus.value),
+)
+
+const canMarkLost = computed(() =>
+  currentStatus.value === 'in_use',
+)
+
+const canFound = computed(() =>
+  currentStatus.value === 'lost',
+)
+
+const canRepair = computed(() =>
+  currentStatus.value === 'broken',
+)
+
+const canRepairDone = computed(() =>
+  currentStatus.value === 'repairing',
+)
+
+const canRepairFailed = computed(() =>
+  currentStatus.value === 'repairing',
+)
+
+const canScrap = computed(() =>
+  currentStatus.value === 'broken',
+)
+
+// ===== 刷新详情 =====
+const refreshDetail = async () => {
+  const assetCode = assetDetail.value?.asset_code
+  if (!assetCode) return
+  try {
+    const data = await assetStore.getById(assetCode)
+    if (data) assetDetail.value = data
+  } catch (error) {
+    console.error('刷新资产详情失败', error)
   }
-  return typeMap[status] || 'info'
+}
+
+// ===== 状态流转操作 =====
+const handleMarkBroken = () => {
+  ElMessageBox.confirm('确定将该资产标记为已损坏？', '确认操作', { type: 'warning' })
+    .then(async () => {
+      await assetAPI.markAssetAsBroken(assetDetail.value!.asset_code, {})
+      ElMessage.success('资产已标记为损坏')
+      await refreshDetail()
+    })
+    .catch(() => {})
+}
+
+const handleMarkLost = () => {
+  router.push({ name: 'LostAsset', params: { code: assetDetail.value!.asset_code } })
+}
+
+const handleFound = () => {
+  router.push({ name: 'FoundAsset', params: { code: assetDetail.value!.asset_code } })
+}
+
+const handleRepair = () => {
+  router.push({ name: 'RepairAsset', params: { code: assetDetail.value!.asset_code } })
+}
+
+const handleRepairDone = () => {
+  router.push({ name: 'RepairDone', params: { code: assetDetail.value!.asset_code } })
+}
+
+const handleRepairFailed = () => {
+  router.push({ name: 'RepairFailed', params: { code: assetDetail.value!.asset_code } })
+}
+
+const handleScrap = () => {
+  router.push({ name: 'ScrapAsset', params: { code: assetDetail.value!.asset_code } })
+}
+
+const handleViewLogs = () => {
+  router.push({ name: 'AssetLogs', params: { code: assetDetail.value!.asset_code } })
+}
+
+// CRIT-6: 下载二维码
+const downloadQRCode = () => {
+  if (!qrCodeUrl.value) return
+  const link = document.createElement('a')
+  link.href = qrCodeUrl.value
+  link.download = `qr_${assetDetail.value?.asset_code || 'asset'}.png`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 }
 
 // ===== 生命周期 =====
@@ -151,8 +271,8 @@ onMounted(async () => {
   const assetCode = (route.query.code as string) || (route.query.recordcode as string)
   console.log('assetCode', assetCode)
   if (!assetCode || typeof assetCode !== 'string') {
-    console.error('无效的资产编码参�?)
-    ElMessage.error('无效的资产编码参�?)
+    console.error('无效的资产编码参数')
+    ElMessage.error('无效的资产编码参数')
     isLoading.value = false
     return
   }
@@ -170,20 +290,26 @@ onMounted(async () => {
   } finally {
     isLoading.value = false
   }
+
+  // CRIT-6: 生成二维码 URL
+  if (assetDetail.value?.recordcode) {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
+    qrCodeUrl.value = `${baseUrl}/api/v1/assets/${assetDetail.value.recordcode}/qr-code-image/`
+  }
 })
 
 // ===== 导出功能 =====
 const { exportDetail } = useExcelExport()
 
 /**
- * 导出列配�? * 定义导出 Excel 时的列映�? */
+ * 导出列配? * 定义导出 Excel 时的列映? */
 const detailExportColumns: ColumnConfig<AssetDetail>[] = [
   { title: '资产编码', key: 'asset_code', default: '' },
   { title: '资产名称', key: 'asset_name', default: '' },
   { title: '品牌', key: 'asset_brand', default: '' },
   { title: '单位', key: 'asset_unit', default: '' },
   { title: '型号规格', key: 'asset_specification', default: '' },
-  { title: '资产分类�?, key: 'asset_type_code', default: '' },
+  { title: '资产分类', key: 'asset_type_code', default: '' },
   {
     title: '单价',
     key: 'asset_purchase_price',
@@ -203,7 +329,7 @@ const detailExportColumns: ColumnConfig<AssetDetail>[] = [
     formatter: (v) => formatDate(v as string) || '',
   },
   {
-    title: '质保�?�?',
+    title: '质保??',
     key: 'asset_warranty_period',
     default: '0',
     formatter: (v) => String(v ?? '0'),
@@ -215,15 +341,15 @@ const detailExportColumns: ColumnConfig<AssetDetail>[] = [
     formatter: (v) => formatDate(v as string) || '',
   },
   {
-    title: '当前使用状�?,
+    title: '当前使用状态',
     key: 'asset_current_status',
     default: '',
     formatter: (v) => getCurrentStatusText(v as string),
   },
-  { title: '录入人工�?, key: 'asset_entry_person_jobcode', default: '' },
+  { title: '录入人工号', key: 'asset_entry_person_jobcode', default: '' },
   { title: '合同编码', key: 'asset_contract_code', default: '' },
-  { title: '申请人工�?, key: 'asset_applicant_jobcode', default: '' },
-  { title: '保管人工�?, key: 'asset_manager_jobcode', default: '' },
+  { title: '申请人工号', key: 'asset_applicant_jobcode', default: '' },
+  { title: '保管人工号', key: 'asset_manager_jobcode', default: '' },
   { title: '使用地点', key: 'asset_using_location', default: '' },
   { title: '仓库编码', key: 'asset_storage_code', default: '' },
   { title: '资产描述', key: 'asset_description', default: '' },
@@ -234,7 +360,7 @@ const detailExportColumns: ColumnConfig<AssetDetail>[] = [
  */
 const handleExportExcel = async () => {
   if (!assetDetail.value) {
-    ElMessage.warning('暂无资产数据可导�?)
+    ElMessage.warning('暂无资产数据可导出')
     return
   }
   await exportDetail(
@@ -248,13 +374,13 @@ const handleExportExcel = async () => {
 // ===== 交互方法 =====
 
 /**
- * 返回上一�? */
+ * 返回上一? */
 const handleBack = () => {
   router.go(-1)
 }
 
 /**
- * 跳转到编辑页�? */
+ * 跳转到编辑页? */
 const handleEdit = () => {
   if (!assetDetail.value?.asset_code) {
     ElMessage.error('资产编码不存在，无法编辑')
@@ -266,7 +392,7 @@ const handleEdit = () => {
       query: { code: assetDetail.value.asset_code },
     })
     .catch((err) => {
-      ElMessage.error(`跳转到编辑页面失�? ${err.message || '未知错误'}`)
+      ElMessage.error(`跳转到编辑页面失? ${err.message || '未知错误'}`)
     })
 }
 </script>
@@ -298,7 +424,7 @@ const handleEdit = () => {
 .page-title {
   font-size: 24px;
   font-weight: 700;
-  color: #1f2329;
+  color: var(--text-primary);
   margin: 0 0 8px 0;
 }
 
@@ -312,7 +438,7 @@ const handleEdit = () => {
 .asset-code,
 .asset-brand {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-secondary);
   background-color: var(--card-background-subtle);
   padding: 4px 12px;
   border-radius: 4px;
@@ -361,5 +487,50 @@ const handleEdit = () => {
   .el-icon {
     font-size: 16px;
   }
+}
+
+/* CRIT-6: 二维码样式 */
+.qr-code-section {
+  margin-bottom: 24px;
+}
+
+.qr-card {
+  border-radius: 8px;
+  max-width: 240px;
+}
+
+.qr-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.qr-image-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.qr-image {
+  width: 160px;
+  height: 160px;
+  border: 1px solid var(--border-color-light);
+  border-radius: 4px;
+}
+
+.qr-loading {
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 </style>

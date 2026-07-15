@@ -88,4 +88,31 @@ export const damagedAssetAPI = {
   getDamagedAssetsByAsset: (asset_code: string): Promise<DamagedAssetListResponse> => {
     return unwrapResponse(request.get<DamagedAssetListResponse>(`/assets/damaged-assets/by-asset/${asset_code}/`))
   },
+
+  /**
+   * 审批通过待报废资产
+   * @param code 损坏资产编码
+   * @param data 审批数据（可选 approver_jobcode 和 operator_name）
+   * @returns 审批结果
+   */
+  approveDamagedAsset: (code: string, data?: { approver_jobcode?: string; operator_name?: string }): Promise<{
+    damaged_asset: DamagedAsset
+    waste_asset: Record<string, unknown>
+  }> => {
+    return unwrapResponse(
+      request.post(`/assets/damaged-assets/${code}/approve/`, data),
+    )
+  },
+
+  /**
+   * 审批拒绝待报废资产
+   * @param code 损坏资产编码
+   * @param data 审批数据（可选 approver_jobcode 和 operator_name）
+   * @returns 审批结果
+   */
+  rejectDamagedAsset: (code: string, data?: { approver_jobcode?: string; operator_name?: string }): Promise<DamagedAsset> => {
+    return unwrapResponse(
+      request.post(`/assets/damaged-assets/${code}/reject/`, data),
+    )
+  },
 }

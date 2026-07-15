@@ -1,473 +1,475 @@
-﻿<!--
-  AssetTypeDetails.vue
-  资产分类列表页面（重构版）
-
-  架构调整：
-  1. 使用 SmartListContainer 封装数据管理逻辑（分页、搜索、加载）
-  2. CommonList 只负责 UI 展示，不管理数据
-  3. 解决原架构中前端过滤不准确、无分页的问题
-
-  数据流：
-  SmartListContainer (数据管理) → slot props → CommonList (纯展示)
-
-  功能：
-  - 展示资产分类列表（支持后端分页和搜索）
-  - 新增分类、编辑分类、删除分类（带确认弹窗）
-  - 批量导入
-  - 子路由：新增/编辑表单（浮层遮罩）
--->
 <template>
-  <div class="asset-type-details-root">
-    <!--
-      表格容器
-      使用 SmartListContainer 管理数据，通过 slot 将数据传递给 CommonList
-    -->
-    <div class="table-container">
-      <SmartListContainer
-        ref="smartListRef"
-        :store-config="storeConfig"
-        :auto-load="true"
-        :initial-page="1"
-        :initial-page-size="10"
-      >
-        <!--
-          slot 接收 SmartListContainer 传递的数据管理状态
-          包括：data, loading, currentPage, pageSize, total, search 等
-        -->
-        <template #default="slotProps">
-          <CommonList
-            :data="slotProps.data"
-            :loading="slotProps.loading"
-            v-model:current-page="slotProps.currentPage"
-            v-model:page-size="slotProps.pageSize"
-            v-model:search="slotProps.search"
-            :total="slotProps.total"
-            :columns="columns"
-            :enable-search="true"
-            :show-detail-button="false"
-            :show-actions="true"
-            :enable-edit="true"
-            :enable-delete="true"
-            :enable-selection="true"
-            :row-key="'asset_type_code'"
-            :action-column-width="180"
-            :page-size-options="slotProps.pageSizeOptions"
-            @size-change="slotProps.handleSizeChange"
-            @current-change="slotProps.handleCurrentChange"
-            @search="slotProps.performSearch"
-            @edit="handleEdit"
-            @delete="handleDelete"
-            @selection-change="slotProps.handleSelectionChange"
-          >
-            <!-- 资产分类类型列自定义渲染 -->
-            <template #asset_type_category="{ row }">
-              <el-tag :type="getAssetTypeTagType(row.asset_type_category)">
-                {{ assetTypeMapping[row.asset_type_category] || '未知分类' }}
-              </el-tag>
-            </template>
-          </CommonList>
+  <div class="asset-type-management" v-loading="isLoading" element-loading-text="加载中...">
+    <!-- 左侧：资产分类树形目录 -->
+    <div class="tree-panel">
+      <AssetTypeTree
+        ref="treeRef"
+        :data="allData"
+        :current-key="selectedType?.recordcode"
+        @select="handleTypeSelect"
+      />
 
-          <!-- 底部固定按钮组 -->
-          <div class="bottom-buttons">
-            <el-button type="success" @click="handleAddAssetType">新增资产分类</el-button>
-            <el-button type="warning" @click="handleBatchImport">批量导入</el-button>
-            <!-- 批量删除按钮：当选中数据时可用 -->
-            <el-button
-              type="danger"
-              :disabled="slotProps.selectedRows?.length === 0"
-              @click="handleBatchDelete(slotProps.selectedRows)"
-            >
-              批量删除 ({{ slotProps.selectedRows?.length || 0 }})
-            </el-button>
-          </div>
-        </template>
-      </SmartListContainer>
-    </div>
-
-    <!-- 子路由遮罩容器（新增/编辑表单浮层） -->
-    <div v-if="isChildRouteActive" class="router-mask-container">
-      <div class="mask" @click="handleMaskBack"></div>
-      <div class="child-router-container">
-        <router-view />
+      <div class="tree-actions">
+        <el-button type="primary" size="small" @click="handleAddRootType">
+          <el-icon><Plus /></el-icon>
+          新增根分类
+        </el-button>
       </div>
     </div>
+
+    <!-- 右侧：内容区 -->
+    <div class="content-panel">
+      <!-- 子路由视图 -->
+      <router-view v-if="isChildRouteActive" />
+
+      <template v-else>
+        <!-- 已选中分类：显示信息卡片 + 子分类列表 -->
+        <template v-if="selectedType">
+          <AssetTypeInfoCard
+            :asset-type="selectedType"
+            @edit="handleEditType"
+            @add-child="handleAddChildType"
+            @batch-add-child="handleBatchAddChildType"
+            @delete="handleDeleteType"
+          />
+
+          <AssetTypeChildList
+            :children="childrenOfSelected"
+            :loading="false"
+            @add-child="handleAddChildType"
+            @batch-import="handleBatchImport"
+            @batch-delete="handleBatchDelete"
+            @edit="handleEditChild"
+            @delete="handleDeleteChild"
+          />
+        </template>
+
+        <!-- 未选中分类时的提示 -->
+        <el-empty v-else description="请从左侧选择资产分类" />
+      </template>
+    </div>
+
+    <!-- 新增/编辑表单弹窗 -->
+    <el-dialog
+      v-model="formDialogVisible"
+      :title="formDialogTitle"
+      width="560px"
+      destroy-on-close
+    >
+      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="110px">
+        <el-form-item label="类型编码" prop="type_code">
+          <el-input v-model="formData.type_code" :disabled="isEditMode" placeholder="请输入类型编码" />
+        </el-form-item>
+        <el-form-item label="类型名称" prop="type_name">
+          <el-input v-model="formData.type_name" placeholder="请输入类型名称" />
+        </el-form-item>
+        <el-form-item label="父级编码">
+          <el-input v-model="formData.parent_type_code" disabled />
+        </el-form-item>
+        <el-form-item label="层级">
+          <el-input-number v-model="formData.level" :min="0" :max="6" disabled />
+        </el-form-item>
+        <el-form-item label="排序">
+          <el-input-number v-model="formData.sort_order" :min="0" controls-position="right" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="formData.type_description" type="textarea" :rows="3" placeholder="请输入描述" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="formDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmitForm">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 批量新增子分类弹窗 -->
+    <el-dialog
+      v-model="batchAddVisible"
+      title="批量新增子分类"
+      width="600px"
+      destroy-on-close
+    >
+      <el-form label-width="110px">
+        <el-form-item label="父级分类">
+          <el-tag>{{ selectedType?.type_name }} ({{ selectedType?.type_code }})</el-tag>
+        </el-form-item>
+        <el-form-item label="子分类列表">
+          <div class="batch-add-list">
+            <div v-for="(item, index) in batchAddList" :key="index" class="batch-add-item">
+              <el-input v-model="item.type_code" placeholder="类型编码" style="width: 150px" />
+              <el-input v-model="item.type_name" placeholder="类型名称" style="width: 150px" />
+              <el-input v-model="item.type_description" placeholder="描述（可选）" style="flex: 1" />
+              <el-button type="danger" link @click="batchAddList.splice(index, 1)">
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </div>
+            <el-button type="primary" link @click="addBatchItem">
+              <el-icon><Plus /></el-icon> 添加一行
+            </el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="batchAddVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleBatchAddSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script lang="ts">
-/**
- * 组件名称定义
- */
 export default {
-  name: 'AssetTypeDetails',
+  name: 'AssetTypeManagement',
 }
 </script>
 
-<script lang="ts" setup>
-// ===== 导入顺序：Vue 核心 → 第三方库 → @/ 内部模块 =====
-import { ref, watch, computed } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { isAxiosError } from 'axios'
-import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
-import CommonList from '@/components/commoncomponents/CommonList.vue'
-import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
-import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
-import type { AssetType } from '@/utils/AssetType'
-import { useAssetTypeStore } from '@/stores/assetTypeStore'
-import { assetTypeMapping } from '@/utils/Format'
-import type { SmartListContainerExpose } from '@/types/common'
+import { Plus, Delete } from '@element-plus/icons-vue'
+import type { FormInstance, FormRules } from 'element-plus'
+import { assetTypeAPI } from '@/api/assetType'
+import type { AssetType, AssetTypeCreateForm } from '@/utils/AssetType'
 
-// ===== 状态与实例 =====
+import AssetTypeTree from '@/components/componentsdetails/components/AssetTypeTree.vue'
+import AssetTypeInfoCard from '@/components/componentsdetails/components/AssetTypeInfoCard.vue'
+import AssetTypeChildList from '@/components/componentsdetails/components/AssetTypeChildList.vue'
+
 const route = useRoute()
 const router = useRouter()
-const assetTypeStore = useAssetTypeStore()
 
-/**
- * SmartListContainer 组件引用
- * 用于调用容器暴露的方法（如 refresh、reset）
- * 使用 SmartListContainerExpose 类型确保类型安全
- */
-const smartListRef = ref<SmartListContainerExpose | null>(null)
+const isChildRouteActive = computed(() => {
+  return route.name !== 'AssetTypeDetails' && ['AssetTypeForm', 'AssetTypeBatchImport'].includes(route.name as string)
+})
 
-/**
- * 子路由激活状态
- * 用于控制子路由遮罩层的显示
- */
-const isChildRouteActive = ref(false)
+// ==================== 状态 ====================
+const isLoading = ref(false)
+const submitting = ref(false)
+const allData = ref<AssetType[]>([])
+const selectedType = ref<AssetType | null>(null)
 
-// ===== 辅助函数 =====
+/** 当前选中节点的直接子节点 */
+const childrenOfSelected = computed(() => {
+  if (!selectedType.value) return []
+  return allData.value.filter((item) => item.parent_type_code === selectedType.value!.type_code)
+})
 
-/**
- * 获取资产分类类型对应的 el-tag 类型
- * @param category 资产分类类型值
- * @returns 标签类型
- */
-const getAssetTypeTagType = (
-  category: string,
-): 'success' | 'primary' | 'warning' | 'danger' | 'info' => {
-  switch (category) {
-    case 'hardware':
-      return 'success'
-    case 'software':
-      return 'primary'
-    case 'lowvalue':
-      return 'warning'
-    case 'other':
-      return 'danger'
-    default:
-      return 'info'
-  }
+// ==================== 表单弹窗 ====================
+const formDialogVisible = ref(false)
+const isEditMode = ref(false)
+const editingRecordcode = ref('')
+const formRef = ref<FormInstance>()
+
+const formDialogTitle = computed(() => isEditMode.value ? '编辑资产分类' : '新增资产分类')
+
+const formData = ref<AssetTypeCreateForm>({
+  type_code: '',
+  type_name: '',
+  parent_type_code: null,
+  level: 0,
+  type_description: '',
+  sort_order: 0,
+})
+
+const formRules: FormRules = {
+  type_code: [
+    { required: true, message: '请输入类型编码', trigger: 'blur' },
+    { min: 3, max: 30, message: '编码长度在 3 到 30 个字符', trigger: 'blur' },
+  ],
+  type_name: [
+    { required: true, message: '请输入类型名称', trigger: 'blur' },
+    { min: 2, max: 100, message: '名称长度在 2 到 100 个字符', trigger: 'blur' },
+  ],
 }
 
-// ===== 表格列配置 =====
-/**
- * 表格列定义
- * 每一列的渲染方式、标题、宽度等属性
- */
-const columns: TableColumn[] = [
-  { type: 'index', label: '序号', width: 60, align: 'center' },
-  { prop: 'asset_type_code', label: '资产分类码', width: 150, align: 'center' },
-  { prop: 'asset_type_primary', label: '一级分类名称', width: 150, align: 'left' },
-  { prop: 'asset_type_secondary', label: '二级分类名称', width: 150, align: 'left' },
-  {
-    type: 'custom',
-    prop: 'asset_type_category',
-    label: '资产分类类型',
-    width: 130,
-    align: 'center',
-    slotName: 'asset_type_category',
-  },
-  { prop: 'asset_type_description', label: '资产分类描述', width: 200, align: 'left' },
-]
+// ==================== 批量新增弹窗 ====================
+const batchAddVisible = ref(false)
+const batchAddList = ref<Array<{ type_code: string; type_name: string; type_description: string }>>([])
 
-// ===== SmartListContainer 配置 =====
-/**
- * Store 配置对象
- * 传递给 SmartListContainer 用于数据管理
- *
- * 【优化】改为后端搜索，不再使用前端本地过滤
- *
- * 包含：
- * - getList: 获取列表数据的方法
- * - pagination: 分页状态（使用 getter/setter 实现双向绑定）
- * - list: 列表数据（computed）
- * - loading: 加载状态（computed）
- * - search: 搜索配置（后端搜索）
- */
-const storeConfig: PaginationSearchConfig<AssetType> = {
-  store: {
-    /**
-     * 获取列表数据
-     * @param params 分页查询参数
-     * @returns 包含 count 和 results 的响应对象
-     */
-    getList: async (params) => {
-      const response = await assetTypeStore.getList(params)
-      return {
-        count: assetTypeStore.pagination.total,
-        results: response,
-        next: null,
-        previous: null,
-      }
-    },
-    /**
-     * 分页状态
-     * 使用 getter/setter 对象实现与 Pinia store 的双向绑定
-     */
-    pagination: {
-      page: {
-        get: () => assetTypeStore.pagination.page,
-        set: (val: number) => {
-          assetTypeStore.pagination.page = val
-        },
-      },
-      page_size: {
-        get: () => assetTypeStore.pagination.page_size,
-        set: (val: number) => {
-          assetTypeStore.pagination.page_size = val
-        },
-      },
-      total: {
-        get: () => assetTypeStore.pagination.total,
-        set: (val: number) => {
-          assetTypeStore.pagination.total = val
-        },
-      },
-    },
-    /**
-     * 列表数据（computed 保持响应式）
-     */
-    list: computed(() => assetTypeStore.list),
-    /**
-     * 加载状态（computed 保持响应式）
-     */
-    loading: computed(() => assetTypeStore.loading),
-    /**
-     * 刷新标志（computed 保持响应式）
-     * 用于子页面（如批量导入、表单编辑）通知列表刷新
-     */
-    refreshFlag: computed(() => assetTypeStore.refreshFlag),
-    /**
-     * 设置刷新标志
-     * 子页面调用后，usePaginationSearch 会自动监听并触发列表刷新
-     */
-    setRefreshFlag: (flag: boolean) => assetTypeStore.setRefreshFlag(flag),
-  },
-  /**
-   * 搜索配置
-   * 【优化】改为后端搜索，支持多字段搜索
-   */
-  search: {
-    performSearch: async (keyword: string, page: number, page_size: number) => {
-      const response = await assetTypeStore.getList({ search: keyword, page, page_size })
-      return {
-        count: assetTypeStore.pagination.total,
-        results: response,
-      }
-    },
-  },
-  defaultPageSize: 10,
-  messages: {
-    loadFailed: '加载资产分类列表失败',
-    searchFailed: '搜索资产分类失败',
-    invalidPage: '页码超出范围，已跳转至最后一页',
-  },
+const addBatchItem = () => {
+  batchAddList.value.push({ type_code: '', type_name: '', type_description: '' })
 }
 
-// ===== 路由监听：控制子路由遮罩 =====
-/**
- * 监听路由变化，判断是否需要显示子路由遮罩层
- * 当访问子路由（如新增/编辑页）时显示遮罩
- */
-watch(
-  () => route.matched,
-  (matched) => {
-    const hasParent = matched.some((item) => item.name === 'AssetTypeDetails')
-    const isSelfTop = matched[matched.length - 1]?.name === 'AssetTypeDetails'
-    isChildRouteActive.value = hasParent && !isSelfTop
-  },
-  { immediate: true },
-)
+// ==================== 方法 ====================
 
-// ===== 事件处理 =====
-
-/**
- * 新增资产分类
- */
-const handleAddAssetType = () => {
-  router.push({ name: 'AssetTypeForm', query: {} }).catch((err) => {
-    console.error('跳转新增页面失败:', err)
-    ElMessage.error('跳转失败，请刷新页面重试')
-  })
-}
-
-/**
- * 批量导入
- */
-const handleBatchImport = () => {
-  router.push({ name: 'AssetTypeBatchImport' }).catch((err) => {
-    console.error('跳转批量导入页面失败:', err)
-    ElMessage.error('跳转失败，请刷新页面重试')
-  })
-}
-
-/**
- * 编辑资产分类
- * @param row 行数据
- */
-const handleEdit = (row: AssetType) => {
-  if (!row.asset_type_code) {
-    ElMessage.error('无法编辑：资产分类编码不存在')
-    return
-  }
-  router
-    .push({
-      name: 'AssetTypeForm',
-      query: { code: row.asset_type_code },
-    })
-    .catch((err) => {
-      console.error('跳转编辑页面失败:', err)
-      ElMessage.error('跳转失败，请刷新页面重试')
-    })
-}
-
-/**
- * 删除资产分类
- * 【优化】添加二次确认弹窗，防止误删
- * @param row 行数据
- */
-const handleDelete = async (row: AssetType) => {
-  if (!row.asset_type_code) {
-    ElMessage.error('无法删除：资产分类编码不存在')
-    return
-  }
-
+/** 加载所有资产类型数据 */
+const fetchAllData = async () => {
+  isLoading.value = true
   try {
-    // 二次确认
+    const response = await assetTypeAPI.getAssetTypes({ page: 1, page_size: 9999 })
+    allData.value = response.results
+
+    // 如果当前有选中的分类，刷新其信息
+    if (selectedType.value) {
+      const updated = allData.value.find((d) => d.recordcode === selectedType.value!.recordcode)
+      if (updated) {
+        selectedType.value = updated
+      }
+    } else {
+      // 默认选中第一个根分类
+      const root = allData.value.find((d) => !d.parent_type_code)
+      if (root) selectedType.value = root
+    }
+  } catch (error) {
+    console.error('加载资产分类数据失败:', error)
+    ElMessage.error('加载资产分类数据失败')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+/** 树节点选择 */
+const handleTypeSelect = (assetType: AssetType) => {
+  selectedType.value = assetType
+}
+
+/** 新增根分类 */
+const handleAddRootType = () => {
+  isEditMode.value = false
+  editingRecordcode.value = ''
+  formData.value = { type_code: '', type_name: '', parent_type_code: null, level: 0, type_description: '', sort_order: 0 }
+  formDialogVisible.value = true
+}
+
+/** 编辑选中分类 */
+const handleEditType = () => {
+  if (!selectedType.value) return
+  isEditMode.value = true
+  editingRecordcode.value = selectedType.value.recordcode
+  formData.value = {
+    type_code: selectedType.value.type_code,
+    type_name: selectedType.value.type_name,
+    parent_type_code: selectedType.value.parent_type_code ?? null,
+    level: selectedType.value.level ?? 0,
+    type_description: selectedType.value.type_description ?? '',
+    sort_order: selectedType.value.sort_order ?? 0,
+  }
+  formDialogVisible.value = true
+}
+
+/** 新增子分类 */
+const handleAddChildType = () => {
+  if (!selectedType.value) return
+  isEditMode.value = false
+  editingRecordcode.value = ''
+  formData.value = {
+    type_code: '',
+    type_name: '',
+    parent_type_code: selectedType.value.type_code,
+    level: (selectedType.value.level ?? 0) + 1,
+    type_description: '',
+    sort_order: 0,
+  }
+  formDialogVisible.value = true
+}
+
+/** 批量新增子分类 */
+const handleBatchAddChildType = () => {
+  if (!selectedType.value) return
+  batchAddList.value = [{ type_code: '', type_name: '', type_description: '' }]
+  batchAddVisible.value = true
+}
+
+/** 提交表单 */
+const handleSubmitForm = async () => {
+  if (!formRef.value) return
+  await formRef.value.validate(async (valid) => {
+    if (!valid) return
+    submitting.value = true
+    try {
+      if (isEditMode.value) {
+        await assetTypeAPI.updateAssetType({
+          recordcode: editingRecordcode.value,
+          ...formData.value,
+        })
+        ElMessage.success('修改成功')
+      } else {
+        await assetTypeAPI.createAssetType(formData.value)
+        ElMessage.success('创建成功')
+      }
+      formDialogVisible.value = false
+      await fetchAllData()
+    } catch (error) {
+      const msg = isAxiosError(error) ? error.response?.data?.message || error.message : '操作失败'
+      ElMessage.error(`操作失败：${msg}`)
+    } finally {
+      submitting.value = false
+    }
+  })
+}
+
+/** 批量新增提交 */
+const handleBatchAddSubmit = async () => {
+  const validItems = batchAddList.value.filter((item) => item.type_code.trim() && item.type_name.trim())
+  if (validItems.length === 0) {
+    ElMessage.warning('请至少填写一条有效的子分类数据')
+    return
+  }
+
+  submitting.value = true
+  try {
+    const items: AssetTypeCreateForm[] = validItems.map((item) => ({
+      type_code: item.type_code.trim(),
+      type_name: item.type_name.trim(),
+      parent_type_code: selectedType.value?.type_code ?? null,
+      level: (selectedType.value?.level ?? 0) + 1,
+      type_description: item.type_description.trim() || null,
+      sort_order: 0,
+    }))
+    const result = await assetTypeAPI.batchCreateAssetTypes(items)
+    if (result.fail_count > 0) {
+      ElMessage.warning(`批量新增完成：成功 ${result.success_count} 条，失败 ${result.fail_count} 条`)
+    } else {
+      ElMessage.success(`批量新增成功：共 ${result.success_count} 条`)
+    }
+    batchAddVisible.value = false
+    await fetchAllData()
+  } catch (error) {
+    const msg = isAxiosError(error) ? error.response?.data?.message || error.message : '批量新增失败'
+    ElMessage.error(`批量新增失败：${msg}`)
+  } finally {
+    submitting.value = false
+  }
+}
+
+/** 删除选中分类 */
+const handleDeleteType = async () => {
+  if (!selectedType.value) return
+  try {
     await ElMessageBox.confirm('确定要删除该资产分类吗？删除后数据不可恢复！', '删除确认', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning',
     })
-    await assetTypeStore.remove(row.asset_type_code)
+    await assetTypeAPI.deleteAssetType(selectedType.value.recordcode)
     ElMessage.success('删除成功')
-    // 【架构优化】通过 SmartListContainer 刷新列表，保持数据一致性
-    smartListRef.value?.refresh()
+    selectedType.value = null
+    await fetchAllData()
   } catch (err) {
-    if (err === 'cancel') return // 用户取消删除
-    if (isAxiosError(err) && err.response?.status === 404) {
-      ElMessage.error('无法删除：资产分类不存在或已被删除')
-    } else if (isAxiosError(err) && err.response?.status === 400) {
+    if (err === 'cancel') return
+    if (isAxiosError(err) && err.response?.status === 400) {
       ElMessage.error('无法删除：该资产分类已被使用，不能删除')
     } else {
-      console.error('删除失败:', err)
       ElMessage.error('删除失败，请重试')
     }
   }
 }
 
-/**
- * 批量删除资产分类
- * 弹出确认框，确认后调用 store.removeBatch 执行批量删除
- * @param rows 选中的资产分类行数据
- */
-const handleBatchDelete = async (rows: AssetType[] | undefined) => {
-  if (!rows || rows.length === 0) {
-    ElMessage.warning('请先选择要删除的数据')
-    return
+/** 编辑子分类 */
+const handleEditChild = (row: AssetType) => {
+  isEditMode.value = true
+  editingRecordcode.value = row.recordcode
+  formData.value = {
+    type_code: row.type_code,
+    type_name: row.type_name,
+    parent_type_code: row.parent_type_code ?? null,
+    level: row.level ?? 0,
+    type_description: row.type_description ?? '',
+    sort_order: row.sort_order ?? 0,
   }
+  formDialogVisible.value = true
+}
 
-  // 提取选中的资产分类编码
-  const codes = rows
-    .map((row) => row.asset_type_code)
-    .filter((code): code is string => !!code)
-
-  if (codes.length === 0) {
-    ElMessage.error('无法删除：选中的数据缺少资产分类编码')
-    return
-  }
-
+/** 删除子分类 */
+const handleDeleteChild = async (row: AssetType) => {
   try {
-    // 二次确认弹窗
-    await ElMessageBox.confirm(
-      `确定要删除选中的 ${codes.length} 条资产分类吗？删除后数据不可恢复！`,
-      '批量删除确认',
-      {
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
-
-    // 执行批量删除
-    await assetTypeStore.removeBatch(codes)
-
-    // 清空选中状态并刷新列表
-    smartListRef.value?.clearSelection()
-    await smartListRef.value?.refresh()
+    await ElMessageBox.confirm(`确定要删除「${row.type_name}」吗？`, '删除确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    await assetTypeAPI.deleteAssetType(row.recordcode)
+    ElMessage.success('删除成功')
+    await fetchAllData()
   } catch (err) {
-    if (err === 'cancel') return // 用户取消删除
-    console.error('批量删除失败:', err)
+    if (err === 'cancel') return
+    if (isAxiosError(err) && err.response?.status === 400) {
+      ElMessage.error('无法删除：该资产分类已被使用，不能删除')
+    } else {
+      ElMessage.error('删除失败，请重试')
+    }
+  }
+}
+
+/** 批量删除子分类 */
+const handleBatchDelete = async (rows: AssetType[]) => {
+  if (rows.length === 0) return
+  const typeCodes = rows.map((r) => r.type_code).filter(Boolean)
+  try {
+    await ElMessageBox.confirm(`确定要删除选中的 ${typeCodes.length} 条资产分类吗？`, '批量删除确认', {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    await assetTypeAPI.batchDeleteAssetTypes(typeCodes)
+    ElMessage.success('批量删除成功')
+    await fetchAllData()
+  } catch (err) {
+    if (err === 'cancel') return
     ElMessage.error('批量删除失败，请重试')
   }
 }
 
-/**
- * 遮罩层点击返回
- */
-const handleMaskBack = () => {
-  router.go(-1)
+/** 批量导入 */
+const handleBatchImport = () => {
+  router.push({ name: 'AssetTypeBatchImport' }).catch((err) => {
+    console.error('跳转批量导入页面失败:', err)
+  })
 }
+
+// ==================== 路由监听 ====================
+watch(
+  () => isChildRouteActive.value,
+  (wasActive, isActive) => {
+    if (wasActive && !isActive) fetchAllData()
+  },
+)
+
+onMounted(() => {
+  fetchAllData()
+})
 </script>
 
 <style lang="scss" scoped>
-// 导入公共样式 mixin 库（使用现代 @use 语法）
-@use '@/assets/styles/common-forms.scss' as *;
-@use '@/assets/styles/global-scroll.scss' as *;
+.asset-type-management {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
 
-// 根容器：使用统一列表容器样式
-.asset-type-details-root {
-  @include list-container;
+  .tree-panel {
+    width: 280px;
+    min-width: 280px;
+    border-right: 1px solid var(--border-color-light);
+    display: flex;
+    flex-direction: column;
+    background: var(--background-color);
 
-  .table-container {
-    @include table-container;
-    margin-bottom: 80px; // 为底部按钮预留空间
+    .tree-actions {
+      padding: 8px 12px;
+      border-top: 1px solid var(--border-color-light);
+      display: flex;
+      gap: 8px;
+    }
+  }
+
+  .content-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background: var(--background-color);
   }
 }
 
-// 底部按钮：复用全局底部按钮样式
-.bottom-buttons {
-  @include bottom-buttons;
-}
+.batch-add-list {
+  width: 100%;
 
-// 子路由遮罩容器：复用全局样式
-.router-mask-container {
-  @include router-mask-container;
-
-  .mask {
-    @include mask;
-  }
-
-  .child-router-container {
-    @include child-router-container;
+  .batch-add-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
   }
 }
-
-// 可选：覆盖 Element Plus 表格内滚动条样式（不影响全局）
-.el-scrollbar {
-  .el-scrollbar__bar.is-horizontal {
-    height: 8px;
-  }
-  .el-scrollbar__bar.is-vertical {
-    width: 8px;
-  }
-  .el-scrollbar__thumb {
-    opacity: 1;
-    background-color: var(--text-placeholder);
-    box-shadow: 0 0 3px rgba(0, 0, 0, 0.15);
-  }
-}
-
-@include responsive-design;
 </style>

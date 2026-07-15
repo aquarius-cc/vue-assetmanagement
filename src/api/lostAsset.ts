@@ -121,14 +121,19 @@ export const lostAssetAPI = {
   },
 
   /**
-   * 找回遗失资产
+   * 找回遗失资产并入库
    * POST /api/assets/assets/{asset_code}/found/
    * @param asset_code 资产编码
+   * @param data 找回信息
    * @returns 资产详情
    */
-  foundAsset: (asset_code: string): Promise<LostAssetExtended> => {
+  foundAsset: (asset_code: string, data: {
+    found_location?: string
+    found_description?: string
+  }): Promise<LostAssetExtended> => {
     return unwrapResponse(request.post<LostAssetExtended>(
       `/assets/assets/${asset_code}/found/`,
+      data,
     ))
   },
 }

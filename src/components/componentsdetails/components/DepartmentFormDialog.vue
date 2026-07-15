@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   DepartmentFormDialog.vue
   部门表单弹窗组件
 
@@ -54,9 +54,9 @@
       </el-form-item>
 
       <!-- 上级部门（编辑模式可选择，新增模式根据 parentDepartment 决定） -->
-      <el-form-item label="上级部门" prop="parent_code">
+      <el-form-item label="上级部门" prop="parent_department_code">
         <el-tree-select
-          v-model="formData.parent_code"
+          v-model="formData.parent_department_code"
           :data="departmentTreeOptions"
           :props="treeSelectProps"
           placeholder="请选择上级部门（不选则为根部门）"
@@ -169,12 +169,12 @@ const formRef = ref<FormInstance>()
 const isSubmitting = ref(false)
 
 /** 表单数据 */
-const formData = ref<DepartmentCreateForm & { parent_code: string | null }>({
+const formData = ref<DepartmentCreateForm & { parent_department_code: string | null }>({
   department_code: '',
   department_name: '',
   department_information: '',
   sort_order: 0,
-  parent_code: null,
+  parent_department_code: null,
 })
 
 /** TreeSelect 配置 */
@@ -233,7 +233,7 @@ const departmentTreeOptions = computed(() => {
  * 根据选择的上级部门计算当前部门层级
  */
 const currentLevelText = computed(() => {
-  const level = calculateNewLevel(formData.value.parent_code)
+  const level = calculateNewLevel(formData.value.parent_department_code)
   const levelNames = ['根部门', '一级部门', '二级部门', '三级部门', '四级部门', '五级部门']
   return levelNames[level] || `第 ${level + 1} 级`
 })
@@ -242,7 +242,7 @@ const currentLevelText = computed(() => {
  * 层级警告信息
  */
 const levelWarning = computed(() => {
-  const level = calculateNewLevel(formData.value.parent_code)
+  const level = calculateNewLevel(formData.value.parent_department_code)
   if (level > MAX_LEVEL) {
     return `（超出最大层级限制 ${MAX_LEVEL + 1} 层）`
   }
@@ -306,7 +306,7 @@ const formRules: FormRules = {
     { required: true, message: '请输入部门信息员', trigger: 'blur' },
     { max: 50, message: '最多 50 个字符', trigger: 'blur' },
   ],
-  parent_code: [{ validator: validateParentCode, trigger: 'change' }],
+  parent_department_code: [{ validator: validateParentCode, trigger: 'change' }],
   sort_order: [
     { required: true, message: '请输入排序顺序', trigger: 'blur' },
     { type: 'number', min: 0, max: 9999, message: '范围 0-9999', trigger: 'blur' },
@@ -347,7 +347,7 @@ const calculateNewLevel = (parentCode: string | null): number => {
  * @param parentCode 父部门编码
  */
 const isDescendant = (node: DepartmentTreeNode, parentCode: string): boolean => {
-  if (node.parent_code === parentCode) return true
+  if (node.parent_department_code === parentCode) return true
   if (node.children?.length) {
     return node.children.some((child) => isDescendant(child, parentCode))
   }
@@ -412,7 +412,7 @@ const getMaxChildDepth = (departmentCode: string): number => {
  */
 const handleParentChange = (_value: string | null) => {
   // 触发表单验证
-  formRef.value?.validateField('parent_code')
+  formRef.value?.validateField('parent_department_code')
 }
 
 /**
@@ -426,7 +426,7 @@ const initFormData = () => {
       department_name: props.editDepartment.department_name,
       department_information: props.editDepartment.department_information,
       sort_order: props.editDepartment.sort_order,
-      parent_code: props.editDepartment.parent_code,
+      parent_department_code: props.editDepartment.parent_department_code,
     }
   } else {
     // 新增模式
@@ -435,8 +435,8 @@ const initFormData = () => {
       department_name: '',
       department_information: '',
       sort_order: 0,
-      // 如果有父部门，设置 parent_code
-      parent_code: props.parentDepartment?.department_code || null,
+      // 如果有父部门，设置 parent_department_code
+      parent_department_code: props.parentDepartment?.department_code || null,
     }
   }
 }
@@ -450,7 +450,7 @@ const handleSubmit = async () => {
     await formRef.value?.validate()
 
     // 额外验证：层级检查
-    const newLevel = calculateNewLevel(formData.value.parent_code)
+    const newLevel = calculateNewLevel(formData.value.parent_department_code)
     if (newLevel > MAX_LEVEL) {
       ElMessage.error(`层级不能超过 ${MAX_LEVEL + 1} 层`)
       return
@@ -461,13 +461,13 @@ const handleSubmit = async () => {
     if (isEdit.value) {
       // 编辑部门：调用 moveDepartment 或 updateDepartment
       const editDept = props.editDepartment
-      const parentChanged = editDept && editDept.parent_code !== formData.value.parent_code
+      const parentChanged = editDept && editDept.parent_department_code !== formData.value.parent_department_code
 
       // 如果上级部门变更，需要调用 moveDepartment
-      // 后端字段名为 target_parent_code，与 MoveDepartmentSerializer 保持一致
+      // 后端字段名为 target_parent_department_code，与 MoveDepartmentSerializer 保持一致
       if (parentChanged && editDept) {
         await departmentAPI.moveDepartment(editDept.department_code, {
-          target_parent_code: formData.value.parent_code,
+          target_parent_department_code: formData.value.parent_department_code,
         })
       }
 

@@ -6,7 +6,7 @@
       <el-autocomplete
         v-model="form.asset_contract_name"
         :fetch-suggestions="associationMethods.fetchContractSuggestions"
-        placeholder="请输入合同名�?
+        placeholder="请输入合同名称"
         clearable
         @select="associationMethods.handleContractSelect"
         @change="associationMethods.handleContractNameChange"

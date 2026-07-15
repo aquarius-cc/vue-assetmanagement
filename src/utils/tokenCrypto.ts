@@ -78,8 +78,8 @@ export function setEncryptedToken(key: string, value: string): void {
     const encrypted = xorEncrypt(value, CRYPTO_KEY)
     localStorage.setItem(key, encrypted)
   } catch (error) {
-    console.warn('Token 加密存储失败，使用明文存储:', error)
-    localStorage.setItem(key, value)
+    console.error('Token 加密存储失败:', error)
+    throw new Error(`[tokenCrypto] 加密失败，拒绝明文存储 Token: ${error}`)
   }
 }
 

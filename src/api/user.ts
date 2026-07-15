@@ -182,7 +182,7 @@ export const userAPI = {
    * 根据工号查询员工所在部门
    * GET /api/users/employees/{employee_jobcode}/department/
    * @param employee_jobcode 员工工号
-   * @returns 部门简要信息（department_code, department_name, level, parent_code）
+   * @returns 部门简要信息（department_code, department_name, level, parent_department_code）
    */
   getEmployeeDepartment: (employee_jobcode: string): Promise<DepartmentBrief> => {
     return unwrapResponse(request.get<DepartmentBrief>(

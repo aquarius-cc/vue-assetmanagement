@@ -12,7 +12,7 @@ import type { PaginationQuery } from '@/stores/createEntityStore'
  * 仓库 Store
  */
 export const useStorageStore = createEntityStore<Storage, PaginationQuery>('storage', {
-  idKey: 'storage_code',
+  idKey: 'recordcode',
   nameField: 'storage_name',
   displayName: '仓库',
   api: {
@@ -29,9 +29,9 @@ export const useStorageStore = createEntityStore<Storage, PaginationQuery>('stor
         results: response.results as Storage[],
       }
     },
-    getById: (code) => storageAPI.getStorageByCode(code),
+    getById: (code) => storageAPI.getStorageByRecordcode(code),
     create: (data) => storageAPI.createStorage(data as StorageCreateForm),
-    update: (data) => storageAPI.updateStorage(data as StorageUpdateForm),
+    update: (data) => storageAPI.updateStorage(data as StorageUpdateForm & { recordcode?: string }),
     delete: (code) => {
       return storageAPI.deleteStorage(code)
     },

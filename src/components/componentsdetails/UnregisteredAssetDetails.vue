@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   UnregisteredAssetDetails.vue
   未登记资产列表页面（重构版）
   
@@ -398,7 +398,7 @@ const handleDelete = (row: UnregisteredAsset) => {
     .then(() => {
       ElMessage.success('删除成功')
       // 删除成功后刷新列表
-      ;(smartListRef.value as unknown as { refresh: () => void })?.refresh?.()
+      smartListRef.value?.refresh()
     })
     .catch((error) => {
       if (error !== 'cancel') {

@@ -7,11 +7,11 @@
  * API 前缀: /api/assets/assets/
  */
 
-import type { AssetType } from '@/utils/AssetType'
-import type { EmployeeExtended } from '@/utils/User'
+import type { AssetType } from '@/types/assettype'
+import type { EmployeeExtended } from '@/types/user'
 import type { Contract } from '@/types/contract'
-import type { Storage } from '@/utils/Storage'
-import type { HardDiskSNListResponse } from '@/utils/HardDiskSN'
+import type { Storage } from '@/types/storage'
+import type { HardDiskSNListResponse } from '@/types/harddisksn'
 
 // ==================== 枚举类型定义 ====================
 
@@ -31,6 +31,9 @@ export enum AssetCurrentStatus {
   IN_STORE = 'in_store',
   RECYCLED_PENDING = 'recycled_pending',
   IN_USE = 'in_use',
+  BROKEN = 'broken',
+  REPAIRING = 'repairing',
+  LOST = 'lost',
   DAMAGED = 'damaged',
   SCRAPPED = 'scrapped',
 }
@@ -40,6 +43,9 @@ export const ASSET_STATUS_DISPLAY_MAPPING: Record<string, string> = {
   in_store: '在库',
   recycled_pending: '已回收待发放',
   in_use: '在用',
+  broken: '已损坏',
+  repairing: '维修中',
+  lost: '已遗失',
   damaged: '待报废',
   scrapped: '已报废',
 }
@@ -102,10 +108,8 @@ export interface AssetCreateForm {
  * 在 AssetCreateForm 基础上增加关联对象的显示名称字段
  */
 export interface AssetCreateFormExtended extends AssetCreateForm {
-  /** 资产类型一级分类（显示用，下拉选择用） */
-  asset_type_primary?: string
-  /** 资产类型分类（显示用） */
-  asset_type_category?: string
+  /** 资产类型名称（显示用，下拉选择用） */
+  asset_type_name?: string
   /** 合同名称（显示用，autocomplete） */
   asset_contract_name?: string
   /** 仓库名称（显示用，select） */

@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   DepartmentDetails.vue
   部门管理列表页（重构版 - 方案A架构）
 
@@ -137,6 +137,8 @@ const columns: TableColumn[] = [
   { type: 'index', label: '序号', width: 80, align: 'center' },
   { prop: 'department_code', label: '部门编码', width: 140, align: 'center' },
   { prop: 'department_name', label: '部门名称', width: 200, align: 'center' },
+  { prop: 'level', label: '层级', width: 80, align: 'center' },
+  { prop: 'parent_department_code', label: '父部门编码', width: 140, align: 'center' },
   { prop: 'sort_order', label: '排序', width: 80, align: 'center' },
   { prop: 'department_information', label: '部门信息员', width: 160, align: 'center' },
 ]
@@ -330,9 +332,7 @@ const handleBatchDelete = async (rows: Department[] | undefined) => {
   }
 
   // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows
-    .map((row) => row.department_code)
-    .filter((code): code is string => !!code)
+  const codes = rows.map((row) => row.department_code).filter((code): code is string => !!code)
 
   if (codes.length === 0) {
     ElMessage.error('无法删除：选中的数据缺少唯一标识')

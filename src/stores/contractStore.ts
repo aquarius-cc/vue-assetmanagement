@@ -12,7 +12,7 @@ import { ElMessage } from 'element-plus'
  * 合同 Store
  */
 export const useContractStore = createEntityStore<Contract, PaginationQuery>('contract', {
-  idKey: 'contract_code',
+  idKey: 'recordcode',
   nameField: 'contract_name',
   displayName: '合同',
   api: {
@@ -35,7 +35,7 @@ export const useContractStore = createEntityStore<Contract, PaginationQuery>('co
       return response.results as Contract[]
     },
     create: (data) => contractAPI.createContract(data as ContractCreateForm),
-    update: (data) => contractAPI.updateContract(data as ContractUpdateForm),
+    update: (data) => contractAPI.updateContract(data as ContractUpdateForm & { recordcode?: string }),
     delete: (code) => contractAPI.deleteContract(code),
     batchDelete: (codes) => contractAPI.batchDeleteContracts(codes),
   },

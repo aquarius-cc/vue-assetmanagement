@@ -1,9 +1,10 @@
 <!--
   ContractForm.vue
   合同录入/编辑表单页面
-  功能：新增合�?/ 编辑已有合同（通过 query.code 识别�?-->
+  功能：新增合同/ 编辑已有合同（通过 query.code 识别）
+-->
 <template>
-  <div class="contract-form form-container">
+  <div class="contract-form, form-container">
     <el-card class="box-card">
       <template #header>
         <div class="card-header">
@@ -25,24 +26,24 @@
             <h3 class="section-title">合同信息</h3>
           </el-col>
 
-          <!-- 合同编码：新增可编辑，编辑只�?-->
+          <!-- 合同编码：新增可编辑，编辑只读 -->
           <el-col :xs="24" :sm="24" :md="12">
             <el-form-item label="合同编码" prop="contract_code">
               <el-input
                 v-model="contractForm.contract_code"
-                placeholder="请输入合同编�?
+                placeholder="请输入合同编码"
                 clearable
                 :disabled="isEdit"
               />
             </el-form-item>
           </el-col>
 
-          <!-- 合同名称：新增可编辑，编辑只�?-->
+          <!-- 合同名称：新增可编辑，编辑只读 -->
           <el-col :xs="24" :sm="24" :md="12">
             <el-form-item label="合同名称" prop="contract_name">
               <el-input
                 v-model="contractForm.contract_name"
-                placeholder="请输入合同名�?
+                placeholder="请输入合同名称"
                 clearable
                 :disabled="isEdit"
               />
@@ -56,16 +57,16 @@
                 v-model="contractForm.contract_price"
                 :min="0"
                 :precision="2"
-                placeholder="请输入合同金�?
+                placeholder="请输入合同金额"
                 style="width: 100%"
                 :readonly="isEdit"
               />
             </el-form-item>
           </el-col>
 
-          <!-- 供应�?-->
+          <!-- 供应商-->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="供应�? prop="contract_supplier">
+            <el-form-item label="供应商" prop="contract_supplier">
               <el-input
                 v-model="contractForm.contract_supplier"
                 placeholder="请输入供应商"
@@ -85,15 +86,15 @@
               >
                 <el-option label="采购合同" value="purchase" />
                 <el-option label="服务合同" value="service" />
-                <el-option label="信息化建设合�? value="information_construction" />
+                <el-option label="信息化建设合同" value="information_construction" />
                 <el-option label="直接采购合同" value="direct_procurement" />
               </el-select>
             </el-form-item>
           </el-col>
 
-          <!-- 质保�?-->
+          <!-- 质保最-->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="质保�?�?" prop="contract_warranty_period">
+            <el-form-item label="质保最幀" prop="contract_warranty_period">
               <el-input-number
                 v-model="contractForm.contract_warranty_period"
                 :min="0"
@@ -119,16 +120,16 @@
             </el-form-item>
           </el-col>
 
-          <!-- 合同结算状�?-->
+          <!-- 合同结算状态-->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="合同结算状�? prop="contract_settledment_status">
+            <el-form-item label="合同结算状态" prop="contract_settledment_status">
               <el-select
                 v-model="contractForm.contract_settledment_status"
-                placeholder="请选择结算状�?
+                placeholder="请选择结算状态"
                 style="width: 100%"
               >
-                <el-option label="待结�? value="pending" />
-                <el-option label="已结�? value="settled" />
+                <el-option label="待结算" value="pending" />
+                <el-option label="已结算" value="settled" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -155,7 +156,7 @@
                 v-model="contractForm.contract_settledment_price"
                 :min="0"
                 :precision="2"
-                placeholder="请输入结算金�?
+                placeholder="请输入结算金额"
                 style="width: 100%"
               />
             </el-form-item>
@@ -176,9 +177,9 @@
             </el-form-item>
           </el-col>
 
-          <!-- 已付款次�?-->
+          <!-- 已付款次数-->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="已付款次�? prop="contract_paid_count_number">
+            <el-form-item label="已付款次数" prop="contract_paid_count_number">
               <el-input-number
                 v-model="contractForm.contract_paid_count_number"
                 :min="0"
@@ -188,9 +189,9 @@
             </el-form-item>
           </el-col>
 
-          <!-- 已支付金�?-->
+          <!-- 已支付金额-->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="已支付金�? prop="contract_paid_price">
+            <el-form-item label="已支付金额" prop="contract_paid_price">
               <el-input-number
                 v-model="contractForm.contract_paid_price"
                 :min="0"
@@ -208,7 +209,7 @@
                 type="textarea"
                 :rows="3"
                 v-model="contractForm.contract_paid_record"
-                placeholder="请输入支付记�?
+                placeholder="请输入支付记录"
                 clearable
               />
             </el-form-item>
@@ -230,7 +231,8 @@
 
 <script lang="ts">
 export default {
-  name: 'ContractForm', // 多词组件�?}
+  name: 'ContractForm', // 多词组件名称
+}
 </script>
 
 <script lang="ts" setup>
@@ -243,14 +245,15 @@ import type { Contract, ContractCreateForm, ContractSettlementStatus } from '@/t
 import { formatDate } from '@/utils/Format'
 import { isAxiosError } from 'axios'
 
-// ========== 路由与状�?==========
+// ========== 路由与状态==========
 const route = useRoute()
 const router = useRouter()
 const contractStore = useContractStore()
 const formRef = ref()
 const isLoading = ref(false)
 
-// 是否为编辑模�?const isEdit = ref(!!route.query.code)
+// 是否为编辑模式
+const isEdit = ref(!!route.query.code)
 
 // ========== 表单数据类型定义 ==========
 interface ContractFormData extends ContractCreateForm {
@@ -271,7 +274,8 @@ interface ContractFormData extends ContractCreateForm {
   contract_paid_record: string
 }
 
-// 初始化表单数�?const initFormData = (): ContractFormData => ({
+// 初始化表单数据
+const initFormData = (): ContractFormData => ({
   id: 0,
   contract_code: '',
   contract_name: '',
@@ -294,41 +298,43 @@ const contractForm = reactive<ContractFormData>(initFormData())
 // ========== 表单验证规则 ==========
 const rules = {
   contract_code: [
-    { required: true, message: '请输入合同编�?, trigger: 'blur' },
-    { min: 3, max: 50, message: '合同编码长度�?3 �?50 个字�?, trigger: 'blur' },
+    { required: true, message: '请输入合同编码', trigger: 'blur' },
+    { min: 3, max: 50, message: '合同编码长度在3到50个字符', trigger: 'blur' },
   ],
   contract_name: [
-    { required: true, message: '请输入合同名�?, trigger: 'blur' },
-    { min: 2, max: 100, message: '合同名称长度�?2 �?100 个字�?, trigger: 'blur' },
+    { required: true, message: '请输入合同名称', trigger: 'blur' },
+    { min: 2, max: 100, message: '合同名称长度在2到100个字符', trigger: 'blur' },
   ],
   contract_price: [
-    { required: true, message: '请输入合同金�?, trigger: 'blur' },
+    { required: true, message: '请输入合同金额', trigger: 'blur' },
     { type: 'number', min: 0, message: '合同金额必须大于等于0', trigger: 'blur' },
   ],
   contract_supplier: [{ required: true, message: '请输入供应商', trigger: 'blur' }],
   contract_signing_date: [{ required: true, message: '请选择合同签订日期', trigger: 'change' }],
-  contract_settledment_status: [{ required: true, message: '请选择合同结算状�?, trigger: 'change' }],
+  contract_settledment_status: [
+    { required: true, message: '请选择合同结算状态', trigger: 'change' },
+  ],
   contract_warranty_period: [
     { required: true, message: '请输入质保期', trigger: 'blur' },
-    { type: 'number', min: 0, message: '质保期必须大于等�?', trigger: 'blur' },
+    { type: 'number', min: 0, message: '质保期必须大于等人', trigger: 'blur' },
   ],
   contract_type: [{ required: true, message: '请选择合同类型', trigger: 'change' }],
   contract_settledment_price: [
-    { required: true, message: '请输入结算金�?, trigger: 'blur' },
+    { required: true, message: '请输入结算金额', trigger: 'blur' },
     { type: 'number', min: 0, message: '结算金额必须大于等于0', trigger: 'blur' },
   ],
 }
 
 // ========== 辅助函数 ==========
 /**
- * 安全获取数字�? */
+ * 安全获取数字候 */
 const toNumber = (value: unknown, defaultValue = 0): number => {
   const num = Number(value)
   return isNaN(num) ? defaultValue : num
 }
 
 /**
- * 格式化日期（处理 null/undefined�? */
+ * 格式化日期（处理 null/undefined' */
 const safeFormatDate = (date: string | null | undefined): string | null => {
   if (!date) return null
   return formatDate(date)
@@ -338,7 +344,7 @@ const safeFormatDate = (date: string | null | undefined): string | null => {
 const loadContractDetail = async (code: string) => {
   isLoading.value = true
   try {
-    // 优先�?store 中查找，如果找不到则设为 null
+    // 优先什store 中查找，如果找不到则设为 null
     let targetContract: Contract | null =
       contractStore.list.find((item) => item.contract_code === code) ?? null
 
@@ -348,7 +354,7 @@ const loadContractDetail = async (code: string) => {
     }
 
     if (!targetContract) {
-      ElMessage.error('未找到对应的合同详情，请检查合同编�?)
+      ElMessage.error('未找到对应的合同详情，请检查合同编码')
       goBack()
       return
     }
@@ -366,7 +372,8 @@ const loadContractDetail = async (code: string) => {
         targetContract.contract_preliminary_acceptance_date,
       ),
       contract_final_acceptance_date: safeFormatDate(targetContract.contract_final_acceptance_date),
-      // 确保结算状态值为枚举字符�?      contract_settledment_status:
+      // 确保结算状态值为枚举字符
+      contract_settledment_status:
         targetContract.contract_settledment_status === 'settled' ? 'settled' : 'pending',
     })
   } catch (error) {
@@ -399,11 +406,13 @@ const submitForm = () => {
       return
     }
 
-    // 构建提交数据，确保类型正�?    const submitData: ContractCreateForm = {
+    // 构建提交数据，确保类型正确
+    const submitData: ContractCreateForm = {
       contract_code: contractForm.contract_code,
       contract_name: contractForm.contract_name,
       contract_price: Number(contractForm.contract_price),
-      contract_settledment_status: contractForm.contract_settledment_status as ContractSettlementStatus,
+      contract_settledment_status:
+        contractForm.contract_settledment_status as ContractSettlementStatus,
       contract_signing_date: safeFormatDate(contractForm.contract_signing_date) || '',
       contract_supplier: contractForm.contract_supplier,
       contract_type: contractForm.contract_type,
@@ -421,30 +430,30 @@ const submitForm = () => {
     try {
       if (isEdit.value) {
         await contractStore.update(submitData)
-        ElMessage.success('合同修改成功�?)
+        ElMessage.success('合同修改成功')
       } else {
         await contractStore.create(submitData)
-        ElMessage.success('合同录入成功�?)
+        ElMessage.success('合同录入成功')
       }
       contractStore.setRefreshFlag(true)
       router.push({ name: 'ContractDetails' })
     } catch (error: unknown) {
       const errorMsg = isAxiosError(error)
-        ? `操作失败�?{error.response?.data?.msg || '服务器错�?}`
+        ? `操作失败'{error.response?.data?.message || '服务器错诀}`
         : error instanceof Error
           ? error.message
-          : '操作失败：未知错�?
+          : '操作失败：未知错误'
       ElMessage.error(errorMsg)
       console.error('合同提交失败:', error)
     }
   })
 }
 
-// ========== 重置表单（仅新增模式�?==========
+// ========== 重置表单（仅新增模式'==========
 const resetForm = () => {
   formRef.value?.resetFields()
   Object.assign(contractForm, initFormData())
-  ElMessage.info('表单已重�?)
+  ElMessage.info('表单已重置')
 }
 
 // ========== 返回 ==========

@@ -195,7 +195,7 @@ const handleSubmit = async () => {
       department_code: item.department_code.trim(),
       department_name: item.department_name.trim(),
       department_information: item.department_information.trim() || '-',
-      parent_code: props.parentDepartment!.department_code,
+      parent_department_code: props.parentDepartment!.department_code,
       sort_order: item.sort_order ?? 0,
     }))
 

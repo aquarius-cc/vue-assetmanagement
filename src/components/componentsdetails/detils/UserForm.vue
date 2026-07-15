@@ -63,7 +63,9 @@
             <el-form-item label="所属部门" prop="employee_department_code">
               <el-select
                 v-model="userForm.employee_department_code"
-                placeholder="请选择所属部门"
+                :placeholder="
+                  isEdit && currentDepartmentName ? currentDepartmentName : '请选择所属部门'
+                "
                 style="width: 100%"
               >
                 <el-option
@@ -174,6 +176,9 @@ const userForm = reactive<EmployeeCreateForm>({
   sort_order: undefined,
 })
 
+// 编辑模式下当前部门名称，用于 placeholder 显示
+const currentDepartmentName = ref('')
+
 // 判断是否为编辑模式：通过路由query中的user_jobcode是否存在
 const isEdit = computed(() => {
   return !!route.query.jobcode
@@ -207,7 +212,7 @@ const formRules = reactive<FormRules>({
   employee_location: [
     {
       validator: (
-        rule: FormRules,
+        // rule: FormRules,
         value: string,
         callback: (error?: Error | undefined) => void,
       ) => {
@@ -254,9 +259,11 @@ const loadUserData = async () => {
       userForm.employee_phone = targetUser.employee_phone
       userForm.employee_location = targetUser.employee_location
       userForm.employee_status = targetUser.employee_status
-      userForm.employee_department_code = targetUser.employee_department?.department_code || ''
+      userForm.employee_department_code = targetUser.employee_department_code || ''
+      currentDepartmentName.value = targetUser.employee_department_name || ''
       userForm.employee_description = targetUser.employee_description || ''
       userForm.sort_order = targetUser.sort_order || undefined // 确保排序顺序为 undefined
+      // console.log('currentDepartmentName:', currentDepartmentName.value)
     } else {
       ElMessage.error('用户不存在')
       goBack()

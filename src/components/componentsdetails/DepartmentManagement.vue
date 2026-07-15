@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   DepartmentManagement.vue
   部门-人员综合管理页面
 
@@ -268,13 +268,12 @@ const handleDepartmentSelect = (department: Department) => {
  */
 const handleDepartmentMove = async (data: {
   department_code: string
-  parent_code: string | null
+  parent_department_code: string | null
   target_code?: string
 }) => {
   try {
     const params: MoveDepartmentParams = {
-      // 后端字段名为 target_parent_code，与 MoveDepartmentSerializer 保持一致
-      target_parent_code: data.parent_code,
+      target_parent_department_code: data.parent_department_code,
     }
     await departmentAPI.moveDepartment(data.department_code, params)
     ElMessage.success('部门移动成功')

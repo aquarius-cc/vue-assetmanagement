@@ -2,7 +2,7 @@
   <!-- eslint-disable vue/no-mutating-props -- form 是父组件 reactive 对象的引用，修改属性是预期行为 -->
   <el-col :span="24"><h3 class="section-title">管理信息</h3></el-col>
   <el-col :xs="24" :sm="24" :md="12">
-    <el-form-item label="申请�? prop="asset_applicant_name">
+    <el-form-item label="申请人" prop="asset_applicant_name">
       <el-input
         v-model="form.asset_applicant_name"
         placeholder="姓名"
@@ -12,7 +12,7 @@
     </el-form-item>
   </el-col>
   <el-col :xs="24" :sm="24" :md="12">
-    <el-form-item label="申请人工�? prop="asset_applicant">
+    <el-form-item label="申请人工号" prop="asset_applicant">
       <el-input
         v-model="form.asset_applicant"
         placeholder="工号"
@@ -22,7 +22,7 @@
     </el-form-item>
   </el-col>
   <el-col :xs="24" :sm="24" :md="12">
-    <el-form-item label="管理�? prop="asset_manager_name">
+    <el-form-item label="管理员" prop="asset_manager_name">
       <el-input
         v-model="form.asset_manager_name"
         placeholder="姓名"
@@ -32,7 +32,7 @@
     </el-form-item>
   </el-col>
   <el-col :xs="24" :sm="24" :md="12">
-    <el-form-item label="管理员工�? prop="asset_manager">
+    <el-form-item label="管理员工号" prop="asset_manager">
       <el-input
         v-model="form.asset_manager"
         placeholder="工号"

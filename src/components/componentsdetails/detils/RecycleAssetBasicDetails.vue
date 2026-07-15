@@ -1,19 +1,19 @@
-﻿<!--
+<!--
   RecycleAssetBasicDetails.vue
   回收资产详情页面
-  功能：展示回收资产的完整信息，支持导�?Excel
+  功能：展示回收资产的完整信息，支持导出 Excel
 -->
 <template>
-  <div class="recycle-asset-detail-page" v-loading="isLoading" element-loading-text="加载�?..">
+  <div class="recycle-asset-detail-page" v-loading="isLoading" element-loading-text="加载中...">
     <div class="child-page-header">
-      <h1 class="page-title">{{ detailData?.recycle_asset_name || '未知资产' }} �?回收资产详情</h1>
+      <h1 class="page-title">{{ detailData?.recycle_asset_name || '未知资产' }} - 回收资产详情</h1>
       <div class="action-buttons">
         <el-button type="primary" :icon="Back" @click="handleBack">返回</el-button>
         <el-button type="warning" :icon="Download" @click="handleExport">导出</el-button>
       </div>
     </div>
 
-    <!-- 内容区：使用 InfoCard 组件展示 5 个语义卡�?-->
+    <!-- 内容区：使用 InfoCard 组件展示 5 个语义卡片 -->
     <div class="child-page-content">
       <template v-if="detailData">
         <InfoCard :config="basicInfoConfig" />
@@ -23,7 +23,7 @@
         <InfoCard :config="storageInfoConfig" />
       </template>
       <div v-else-if="!isLoading">
-        <el-empty description="未找到回收资产详情数�? />
+        <el-empty description="未找到回收资产详情数据" />
       </div>
     </div>
   </div>
@@ -60,7 +60,7 @@ const router = useRouter()
 const recycleAssetStore = useRecycleAssetStore()
 /** 用户 Store：用于查询使用人、回收人详细信息 */
 const userStore = useUserStore()
-/** 仓库 Store：用于查询仓库详细信�?*/
+/** 仓库 Store：用于查询仓库详细信?*/
 const storageStore = useStorageStore()
 const isLoading = ref(true)
 const detailData = ref<RecycleAssetExtended | null>(null)
@@ -68,15 +68,15 @@ const detailData = ref<RecycleAssetExtended | null>(null)
 // ===== 关联数据 ref =====
 /** 合同详情：通过 assetAPI.getContractByAssetCode 获取 */
 const contractDetail = ref<Contract | null>(null)
-/** 【v1.1.0 对齐】移�?usingPerson ref，使用人信息通过后端序列化器 FK 链自动返�?*/
+/** 【v1.1.0 对齐】移?usingPerson ref，使用人信息通过后端序列化器 FK 链自动返?*/
 /** 回收人详情：通过 userStore.getById 获取 */
 const recyclePerson = ref<EmployeeExtended | null>(null)
 /** 仓库详情：通过 storageStore.getById 获取 */
 const storageDetail = ref<Storage | null>(null)
 
-// ===== InfoCard 卡片配置：通过 composable 生成 5 个语义卡�?=====
+// ===== InfoCard 卡片配置：通过 composable 生成 5 个语义卡?=====
 /**
- * 卡片数据源：将页面中的响应式数据聚合�?composable 所需的格�? * 【v1.1.0 对齐】移�?usingPerson，使用人信息通过 detail 中的 read_only 字段展示
+ * 卡片数据源：将页面中的响应式数据聚合?composable 所需的格? * 【v1.1.0 对齐】移?usingPerson，使用人信息通过 detail 中的 read_only 字段展示
  */
 const cardData = computed(() => ({
   detail: detailData.value,
@@ -86,7 +86,7 @@ const cardData = computed(() => ({
 }))
 
 /**
- * 使用 useRecycleAssetDetailCards composable 生成 5 �?InfoCardConfig�? * - basicInfoConfig: 基本信息卡片�? 个字段，Document 图标�? * - contractInfoConfig: 合同信息卡片�? 个字段，Tickets 图标�? * - usingPersonInfoConfig: 使用人信息卡片（2 个字段，User 图标�? * - recyclePersonInfoConfig: 回收人信息卡片（2 个字段，UserFilled 图标�? * - storageInfoConfig: 仓库信息卡片�? 个字段，Location 图标�? */
+ * 使用 useRecycleAssetDetailCards composable 生成 5 ?InfoCardConfig? * - basicInfoConfig: 基本信息卡片? 个字段，Document 图标? * - contractInfoConfig: 合同信息卡片? 个字段，Tickets 图标? * - usingPersonInfoConfig: 使用人信息卡片（2 个字段，User 图标? * - recyclePersonInfoConfig: 回收人信息卡片（2 个字段，UserFilled 图标? * - storageInfoConfig: 仓库信息卡片? 个字段，Location 图标? */
 const {
   basicInfoConfig,
   contractInfoConfig,
@@ -109,19 +109,19 @@ const exportColumns: ColumnConfig<RecycleAssetExtended>[] = [
     default: '',
     formatter: (v) => formatDate(v as string) || '',
   },
-  { title: '回收�?, key: 'recycle_person_name', default: '' },
-  { title: '回收人工�?, key: 'recycle_person_jobcode', default: '' },
+  { title: '回收人', key: 'recycle_person_name', default: '' },
+  { title: '回收人工号', key: 'recycle_person_jobcode', default: '' },
   { title: '回收描述', key: 'recycle_asset_description', default: '' },
   { title: '存放仓库编码', key: 'storage_code', default: '' },
   { title: '存放仓库', key: 'recycle_asset_storage_name', default: '' },
   { title: '回收数量', key: 'recycle_asset_number', default: '' },
-  { title: '使用人姓�?, key: 'using_person_name', default: '' },
-  { title: '使用人工�?, key: 'using_person_jobcode', default: '' },
+  { title: '使用人姓名', key: 'using_person_name', default: '' },
+  { title: '使用人工号', key: 'using_person_jobcode', default: '' },
 ]
 
 // ===== 加载详情数据 =====
 /**
- * 加载回收资产详情及关联数�? *
+ * 加载回收资产详情及关联数? *
  * @description
  * 1. 先获取回收资产主详情
  * 2. 根据主详情中的外键字段，通过 Promise.all 并行加载 3 个关联数据：
@@ -129,23 +129,25 @@ const exportColumns: ColumnConfig<RecycleAssetExtended>[] = [
  *    - 回收人：通过 userStore.getById(recycle_asset_recycle_person_jobcode)
  *    - 仓库：通过 storageStore.getById(recycle_asset_storage_code)
  * 3. 使用人信息通过后端序列化器 FK 链自动返回（using_person_name / using_person_jobcode），无需单独加载
- * 4. 每个查询前检查外键字段是否存在，避免空值调�? */
+ * 4. 每个查询前检查外键字段是否存在，避免空值调? */
 const loadDetail = async (code: string) => {
   try {
     isLoading.value = true
     const detail = await recycleAssetStore.getById(code)
 
     if (!detail) {
-      ElMessage.error('未找到对应回收资�?)
+      ElMessage.error('未找到对应回收资产')
       router.back()
       return
     }
 
     detailData.value = detail
 
-    // 并行加载关联数据（提升性能�?    const promises: Promise<unknown>[] = []
+    // 并行加载关联数据（提升性能）
+    const promises: Promise<unknown>[] = []
 
-    // 合同：直接调�?API（Store 未封装此方法�?    if (detail.recycle_asset) {
+    // 合同：直接调用 API（Store 未封装此方法）
+    if (detail.recycle_asset) {
       promises.push(
         assetAPI.getContractByAssetCode(detail.recycle_asset).then((contract) => {
           contractDetail.value = contract
@@ -153,9 +155,13 @@ const loadDetail = async (code: string) => {
       )
     }
 
-    // 使用�?    // 【v1.1.0 对齐】后端已删除 recycle_asset_using_person_jobcode 字段�?    // 使用人信息通过序列化器 FK 链自动返回（using_person_name / using_person_jobcode），
-    // 无需再通过 userStore.getById 单独加载�?    // usingPerson 卡片改为直接使用 detail 中的 read_only 字段展示�?
-    // 回收�?    if (detail.recycle_asset_recycle_person_jobcode) {
+    // 使用人信息
+    // 【v1.1.0 对齐】后端已删除 recycle_asset_using_person_jobcode 字段）
+    // 使用人信息通过序列化器 FK 链自动返回（using_person_name / using_person_jobcode），
+    // 无需再通过 userStore.getById 单独加载）
+    // usingPerson 卡片改为直接使用 detail 中的 read_only 字段展示）
+    // 回收人
+    if (detail.recycle_asset_recycle_person_jobcode) {
       promises.push(
         userStore.getById(detail.recycle_asset_recycle_person_jobcode).then((user) => {
           recyclePerson.value = user
@@ -201,7 +207,7 @@ const handleBack = () => {
 
 const handleExport = async () => {
   if (!detailData.value) {
-    ElMessage.warning('暂无数据可导�?)
+    ElMessage.warning('暂无数据可导出')
     return
   }
   await exportDetail(

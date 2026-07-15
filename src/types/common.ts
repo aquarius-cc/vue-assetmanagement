@@ -1,19 +1,21 @@
 // 通用类型定义
 
-// API响应基础接口
+// API响应基础接口（AGENTS.md §3 跨端契约：code=0 成功，message 字段名）
 export interface ApiResponse<T = unknown> {
   code: number
   message: string
   data: T
-  timestamp: string
 }
 
-// 分页响应接口
+// 分页响应接口（AGENTS.md §3 跨端契约：page/page_size 参数名）
 export interface PaginatedResponse<T> {
   count: number
   next: string | null
   previous: string | null
   results: T[]
+  total_pages: number
+  page: number
+  page_size: number
 }
 
 // 分页查询参数
@@ -114,14 +116,8 @@ export interface StatusOption {
   disabled?: boolean
 }
 
-// 资产状态枚举
-export enum AssetStatus {
-  IN_STOCK = '在库',
-  IN_USE = '使用中',
-  MAINTENANCE = '维修中',
-  SCRAPPED = '报废',
-  PENDING_SCRAP = '待报废',
-}
+// 注意：资产状态枚举已统一在 types/asset.ts 的 AssetCurrentStatus 中定义
+// 删除冗余的 AssetStatus 枚举（P0-7 修复：避免与 AssetCurrentStatus 矛盾）
 
 // 用户状态枚举
 export enum UserStatus {

@@ -1,6 +1,6 @@
 /**
- * 可出库资产搜�?Composable
- * 后端接口�?assets/assets/search_available/（仅返回 asset_current_status = 'in_store' 的资产）
+ * 可出库资产搜紀Composable
+ * 后端接口＀assets/assets/search_available/（仅返回 asset_current_status = 'in_store' 的资产）
  */
 import { ref } from 'vue'
 import { assetAPI } from '@/api/asset'
@@ -20,13 +20,13 @@ export function useExportableAssets() {
     loading.value = true
     try {
       const params = { page, page_size: pageSize.value, ...extraParams }
-      const response: AssetListSimpleResponse = await assetAPI.searchAvailableAssets(params)
+      const response: AssetListSimpleResponse = await assetAPI.searchExportableAssets(params)
       list.value = response.results
       total.value = response.count
       currentPage.value = page
     } catch (error) {
-      console.error('[useExportableAssets] 获取可出库资产失�?', error)
-      ElMessage.error('加载可出库资产列表失�?)
+      console.error('[useExportableAssets] 获取可出库资产失败', error)
+      ElMessage.error('加载可出库资产列表失败')
       list.value = []
       total.value = 0
     } finally {

@@ -28,10 +28,10 @@ declare module 'axios' {
 
 // ======================== 类型定义 ========================
 
-/** 后端统一响应格式 */
+/** 后端统一响应格式（AGENTS.md §3 跨端契约：code=0 成功，message 字段名） */
 export interface ApiResponse<T> {
   code: number
-  msg: string
+  message: string
   data: T
 }
 
@@ -45,9 +45,8 @@ interface RequestOptions {
 
 // ======================== 常量 ========================
 
-// 从环境变量获取基础 URL，默认值为 http://127.0.0.1:8000/api
-// 注意：环境变量名应该是 VITE_API_BASE_URL（用户可能笔误写成了 VIET）
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api'
+// 从环境变量获取基础 URL，默认值为 http://127.0.0.1:8000/api/v1
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1'
 const TIMEOUT = 15_000
 
 // Token 刷新最大重试次数
@@ -168,10 +167,9 @@ api.interceptors.response.use(
     // ---------- 统一错误提示 ----------
     if (error.response) {
       const { status: code, data } = error.response
-      // 优先提取错误信息：detail > msg > message > error
-      // DRF 返回格式：{ detail: "..." } 或 { msg: "..." }
+      // 优先提取错误信息：detail > message > error
+      // DRF 返回格式：{ detail: "..." } 或 { message: "..." }
       const msg = (data as Record<string, unknown>)?.detail
-        || (data as Record<string, unknown>)?.msg
         || (data as Record<string, unknown>)?.message
         || (data as Record<string, unknown>)?.error
         || '请求失败'
@@ -323,16 +321,15 @@ export async function del<T>(
 
 /**
  * 解包响应数据
- * 验证响应的 code 字段，200 和 201 视为成功
+ * 验证响应的 code 字段，0 视为成功（AGENTS.md §3 跨端契约）
  * @param promise - API 请求 Promise
  * @returns 响应的 data 部分
- * @throws 当 code 不是 200 或 201 时抛出错误
+ * @throws 当 code !== 0 时抛出错误
  */
 export async function unwrapResponse<T>(promise: Promise<ApiResponse<T>>): Promise<T> {
   const res = await promise
-  // 根据后端 API 文档，200 和 201 都视为成功
-  if (res.code !== 200 && res.code !== 201) {
-    throw new Error(res.msg || '请求失败')
+  if (res.code !== 0) {
+    throw new Error(res.message || '请求失败')
   }
   return res.data
 }

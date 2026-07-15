@@ -13,14 +13,14 @@ interface SuggestionItem {
   value: string
 }
 
-/** 合同建议�?*/
+/** 合同建议页*/
 export interface ContractSuggestion extends SuggestionItem {
   contract_name: string
   contract_code: string
   recordcode: string
 }
 
-/** 用户建议�?*/
+/** 用户建议页*/
 export interface UserSuggestion extends SuggestionItem {
   user_name: string
   user_jobcode: string
@@ -100,7 +100,7 @@ export function useAssetFormAssociationMethods(
     onContractUpdate(item.contract_name, item.contract_code)
   }
 
-  /** 合同名变�?*/
+  /** 合同名变曀*/
   const handleContractNameChange = (name: string) => {
     if (!name) {
       onContractUpdate('', '')
@@ -147,7 +147,7 @@ export function useAssetFormAssociationMethods(
   }
 }
 
-// ======================== 姓名/工号联动（通用�?========================
+// ======================== 姓名/工号联动（通用＀========================
 
 export function useEmployeeLinkage(
   getUserByName: (name: string) => Promise<EmployeeData[]>,
@@ -179,7 +179,7 @@ export function useEmployeeLinkage(
     }
   }
 
-  /** 选中建议�?*/
+  /** 选中建议页*/
   const handleSelect = (item: UserSuggestion) => {
     selectFlag.value = false
     onUpdate(item.user_name, item.user_jobcode)
@@ -199,14 +199,14 @@ export function useEmployeeLinkage(
       const users = await getUserByName(name)
       if (users.length > 1) {
         const codes = users.map((u) => u.employee_jobcode).join(', ')
-        onUpdate(name, `${codes} (请选择一个正确工�?`)
+        onUpdate(name, `${codes} (请选择一个正确工号`)
       } else if (users.length === 1) {
         onUpdate(users[0].employee_name, users[0].employee_jobcode)
       } else {
         onUpdate(name, '姓名错误，无对应工号')
       }
     } catch {
-      onUpdate(name, '查询失败，无法验证工�?)
+      onUpdate(name, '查询失败，无法验证工号')
     }
   }
 

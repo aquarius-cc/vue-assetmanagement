@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   DepartmentInfoCard.vue
   部门信息卡片组件
 
@@ -57,8 +57,12 @@
           <el-tag size="small" :type="levelTagType">{{ levelText }}</el-tag>
         </div>
         <div class="info-item" v-if="department.level !== 0">
-          <span class="label">父部门名称：</span>
-          <span class="value">{{ department.parent_code }}</span>
+          <span class="label">父部门编码：</span>
+          <span class="value">{{ department.parent_department_code || '—' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">物化路径：</span>
+          <span class="value">{{ department.path }}</span>
         </div>
         <div class="info-item">
           <span class="label">排序顺序：</span>

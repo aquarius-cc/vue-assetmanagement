@@ -86,7 +86,6 @@ export const outAssetAPI = {
       ...rest,
       ...(outasset_code !== undefined && outasset_code !== null && { outasset_asset: outasset_code }),
     }
-    console.log("createOutAsset", backendData)
     return unwrapResponse(request.post<OutAssetDetail>('/assets/out-assets/', backendData))
   },
 

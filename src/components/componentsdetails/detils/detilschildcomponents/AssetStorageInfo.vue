@@ -19,7 +19,7 @@
   </el-col>
   <el-col :xs="24" :sm="24" :md="12">
     <el-form-item label="仓库编码">
-      <span>{{ form.asset_storage || '�? }}</span>
+      <span>{{ form.asset_storage || '' }}</span>
     </el-form-item>
   </el-col>
   <el-col :span="24">
@@ -28,7 +28,7 @@
         v-model="form.asset_description"
         type="textarea"
         :rows="3"
-        placeholder="请输入描�?
+        placeholder="请输入描述"
       />
     </el-form-item>
   </el-col>

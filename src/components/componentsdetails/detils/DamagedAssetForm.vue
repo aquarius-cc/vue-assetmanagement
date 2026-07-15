@@ -1,10 +1,10 @@
 <!--
   DamagedAssetForm.vue
-  待报废资产表单页面（新增/编辑�?  模式判断：route.query.id 存在为编辑模式，否则为新增模�?  功能�?    - 新增待报废资产记�?    - 编辑已有待报废资产记�?    - 资产搜索选择（ScrapableAssetsSearch�?    - 资产名称→资产编码联动（el-autocomplete�?    - 合同名称→合同编码联动（el-autocomplete�?    - 仓库名称→仓库编码联动（el-autocomplete�?    - 表单验证
+  待报废资产表单页面（新增/编辑＀  模式判断：route.query.id 存在为编辑模式，否则为新增模式  功能＀    - 新增待报废资产记录    - 编辑已有待报废资产记录    - 资产搜索选择（ScrapableAssetsSearch＀    - 资产名称→资产编码联动（el-autocomplete＀    - 合同名称→合同编码联动（el-autocomplete＀    - 仓库名称→仓库编码联动（el-autocomplete＀    - 表单验证
 -->
 <template>
-  <div class="damaged-asset-form" v-loading="isLoading" element-loading-text="加载�?..">
-    <!-- 可报废资产搜索组件（新增模式显示�?-->
+  <div class="damaged-asset-form" v-loading="isLoading" element-loading-text="加载中...">
+    <!-- 可报废资产搜索组件（新增模式显示＀-->
     <ScrapableAssetsSearch
       v-if="!isEditMode"
       @select="handleAssetSearchSelect"
@@ -15,7 +15,7 @@
       <template #header>
         <div class="card-header">
           <el-icon><EditPen /></el-icon>
-          <span>{{ isEditMode ? '待报废资产编�? : '待报废资产录�? }}</span>
+          <span>{{ isEditMode ? '待报废资产编码' : '待报废资产录入' }}</span>
         </div>
       </template>
 
@@ -29,7 +29,7 @@
       >
         <el-row :gutter="20">
           <el-col :span="24">
-            <h3 class="section-title">待报废资产信�?/h3>
+            <h3 class="section-title">待报废资产信息</h3>
           </el-col>
 
           <!-- 资产名称（联动资产编码） -->
@@ -38,7 +38,7 @@
               <el-autocomplete
                 v-model="formData.asset_name_display"
                 :fetch-suggestions="fetchAssetSuggestions"
-                placeholder="请输入资产名�?
+                placeholder="请输入资产名称"
                 clearable
                 :disabled="isEditMode"
                 @select="handleAssetSelect"
@@ -48,7 +48,7 @@
                 <template #default="{ item }">
                   <div>
                     资产名称：{{ item.asset_name }} / 资产编码：{{ item.asset_code }} / 规格型号：{{
-                      item.asset_specification || '�?
+                      item.asset_specification || ''
                     }}
                   </div>
                 </template>
@@ -61,7 +61,7 @@
             <el-form-item label="资产编码" prop="damaged_asset_code">
               <el-input
                 v-model="formData.damaged_asset_code"
-                placeholder="选择资产名称后自动回�?
+                placeholder="选择资产名称后自动回塀"
                 disabled
               />
             </el-form-item>
@@ -73,7 +73,7 @@
               <el-autocomplete
                 v-model="formData.contract_name_display"
                 :fetch-suggestions="fetchContractSuggestions"
-                placeholder="请输入合同名�?
+                placeholder="请输入合同名称"
                 clearable
                 @select="handleContractSelect"
                 @change="handleContractNameChange"
@@ -91,7 +91,7 @@
             <el-form-item label="合同编码" prop="damaged_asset_contract_code">
               <el-input
                 v-model="formData.damaged_asset_contract_code"
-                placeholder="选择合同名称后自动回�?
+                placeholder="选择合同名称后自动回塀"
                 disabled
               />
             </el-form-item>
@@ -103,7 +103,7 @@
               <el-autocomplete
                 v-model="formData.storage_name_display"
                 :fetch-suggestions="fetchStorageSuggestions"
-                placeholder="请输入仓库名�?
+                placeholder="请输入仓库名称"
                 clearable
                 @select="handleStorageSelect"
                 @change="handleStorageNameChange"
@@ -112,7 +112,7 @@
                 <template #default="{ item }">
                   <div>
                     仓库名称：{{ item.storage_name }} / 仓库编码：{{ item.storage_code }} /
-                    仓库位置：{{ item.storage_address || '�? }}
+                    仓库位置：{{ item.storage_address || '' }}
                   </div>
                 </template>
               </el-autocomplete>
@@ -124,32 +124,32 @@
             <el-form-item label="仓库编码" prop="damaged_asset_storage_code">
               <el-input
                 v-model="formData.damaged_asset_storage_code"
-                placeholder="选择仓库名称后自动回�?
+                placeholder="选择仓库名称后自动回塀"
                 disabled
               />
             </el-form-item>
           </el-col>
 
-          <!-- 待报废数�?-->
+          <!-- 待报废数量-->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="待报废数�? prop="damaged_asset_number">
+            <el-form-item label="待报废数量" prop="damaged_asset_number">
               <el-input-number
                 v-model="formData.damaged_asset_number"
                 :min="1"
                 :max="999999"
-                placeholder="请输入数�?
+                placeholder="请输入数量"
                 style="width: 100%"
               />
             </el-form-item>
           </el-col>
 
-          <!-- 待报废日�?-->
+          <!-- 待报废日期 -->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="待报废日�? prop="damaged_date">
+            <el-form-item label="待报废日期" prop="damaged_date">
               <el-date-picker
                 v-model="formData.damaged_date"
                 type="date"
-                placeholder="请选择待报废日�?
+                placeholder="请选择待报废日期"
                 format="YYYY-MM-DD"
                 value-format="YYYY-MM-DD"
                 style="width: 100%"
@@ -164,7 +164,7 @@
                 type="textarea"
                 :rows="3"
                 v-model="formData.damaged_asset_description"
-                placeholder="请输入描�?
+                placeholder="请输入描述"
                 clearable
               />
             </el-form-item>
@@ -245,8 +245,8 @@ const formData = reactive<FormDataType>({
 
 const originalFormData = ref<FormDataType | null>(null)
 
-// ===== 提交数据（仅包含 API 需要的字段�?=====
-// 【AGENTS规范】固�?approval_status='pending'，不提交 approver
+// ===== 提交数据（仅包含 API 需要的字段＀=====
+// 【AGENTS规范】固宀approval_status='pending'，不提交 approver
 const submitData = computed<DamagedAssetCreateForm>(() => ({
   damaged_asset_code: formData.damaged_asset_code || null,
   damaged_asset_number: formData.damaged_asset_number,
@@ -293,7 +293,7 @@ const handleAssetSelect = (item: AssetSuggestion) => {
 /**
  * 处理资产搜索组件的选择事件
  * 将选中的资产数据回填到表单
- * @param asset - 选中的资产详�? */
+ * @param asset - 选中的资产详惀 */
 const handleAssetSearchSelect = (asset: AssetDetail) => {
   formData.asset_name_display = asset.asset_name
   formData.damaged_asset_code = asset.asset_code
@@ -307,7 +307,7 @@ const handleAssetSearchSelect = (asset: AssetDetail) => {
     formData.contract_name_display = asset.asset_contract.contract_name || ''
     formData.damaged_asset_contract_code = asset.asset_contract.contract_code || ''
   }
-  ElMessage.success(`已选择资产�?{asset.asset_name}`)
+  ElMessage.success(`已选择资产＀{asset.asset_name}`)
 }
 
 const handleAssetNameChange = (value: string) => {
@@ -443,7 +443,7 @@ const handleStorageNameBlur = async (event: FocusEvent) => {
   }
 }
 
-// ===== 编辑模式：加载现有数�?=====
+// ===== 编辑模式：加载现有数捀=====
 const loadEditData = async (code: string) => {
   isLoading.value = true
   try {
@@ -470,26 +470,29 @@ const loadEditData = async (code: string) => {
         const asset = await assetStore.getById(detail.damaged_asset_code)
         if (asset) formData.asset_name_display = asset.asset_name
       } catch {
-        // 查询失败不阻�?      }
+        // 查询失败不阻塞
+      }
     }
     if (!detail.damaged_asset_contract_name && detail.damaged_asset_contract_code) {
       try {
         const contract = await contractStore.getById(detail.damaged_asset_contract_code)
         if (contract) formData.contract_name_display = contract.contract_name
       } catch {
-        // 查询失败不阻�?      }
+        // 查询失败不阻塞
+      }
     }
     if (!detail.damaged_asset_storage_name && detail.damaged_asset_storage_code) {
       try {
         const storage = await storageStore.getById(detail.damaged_asset_storage_code)
         if (storage) formData.storage_name_display = storage.storage_name
       } catch {
-        // 查询失败不阻�?      }
+        // 查询失败不阻塞
+      }
     }
 
     originalFormData.value = JSON.parse(JSON.stringify(formData))
   } catch (error) {
-    console.error('加载待报废资产详情失�?', error)
+    console.error('加载待报废资产详情失败', error)
     ElMessage.error('加载数据失败，请刷新重试')
     router.back()
   } finally {
@@ -518,7 +521,7 @@ const submitForm = () => {
     }
     try {
       if (isEditMode.value) {
-        // 编辑模式：submitData 已包�?damaged_asset_code（主键）
+        // 编辑模式：submitData 已包吀damaged_asset_code（主键）
         await damagedAssetStore.update(submitData.value)
         ElMessage.success('待报废资产修改成功！')
       } else {
@@ -529,13 +532,13 @@ const submitForm = () => {
       router.push({ name: 'DamagedAssetDetails' })
     } catch (error: unknown) {
       if (isAxiosError(error)) {
-        ElMessage.error(`操作失败�?{error.response?.data?.msg || error.message}`)
+        ElMessage.error(`操作失败＀{error.response?.data?.message || error.message}`)
       } else if (error instanceof Error) {
-        ElMessage.error(`操作失败�?{error.message}`)
+        ElMessage.error(`操作失败＀{error.message}`)
       } else {
         ElMessage.error('操作失败，请重试')
       }
-      console.error('待报废资产提交失�?', error)
+      console.error('待报废资产提交失贀', error)
     }
   })
 }
@@ -554,8 +557,8 @@ const resetForm = () => {
     damaged_date: '',
     damaged_asset_description: '',
   })
-  // 【AGENTS规范】重置时不需要设�?approval_status �?approver
-  ElMessage.info('表单已重�?)
+  // 【AGENTS规范】重置时不需要设置approval_status 咀approver
+  ElMessage.info('表单已重置')
 }
 
 // ===== 返回 =====

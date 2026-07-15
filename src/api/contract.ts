@@ -1,7 +1,7 @@
 /**
  * 合同管理 API
  * 对应后端接口: /api/assets/contracts/
- * 所有字段名采用 snake_case 与后端序列化器保持一�? */
+ * 所有字段名采用 snake_case 与后端序列化器保持一臀 */
 import { request, unwrapResponse } from '@/api/index'
 import type {
   Contract,
@@ -16,7 +16,7 @@ import type { BatchDeleteResult } from '@/stores/createEntityStore'
 /**
  * 批量创建合同响应
  * 对应后端 ContractViewSet.batch_create action 返回格式
- * fail_items 格式与后�?BatchOperationMixin.batch_execute 对齐
+ * fail_items 格式与后竀BatchOperationMixin.batch_execute 对齐
  */
 export interface ContractBatchCreateResult {
   total: number
@@ -46,33 +46,33 @@ export const contractAPI = {
   },
 
   /**
-   * 根据合同编码获取合同详情（启用缓存）
-   * @param contract_code 合同编码
+   * 根据 recordcode 获取合同详情（启用缓存）
+   * @param recordcode 合同 recordcode
    * @returns 合同详情
    */
-  getContractByCode: (contract_code: string): Promise<Contract> => {
-    return unwrapResponse(request.get<Contract>(`/assets/contracts/${contract_code}/`,
+  getContractByRecordcode: (recordcode: string): Promise<Contract> => {
+    return unwrapResponse(request.get<Contract>(`/assets/contracts/${recordcode}/`,
       undefined,
-      true, // 使用缓存
-      300000, // 缓存时间 5 分钟
+      true,
+      300000,
     ))
   },
 
   /**
-   * 根据合同编码�?ID 获取合同详情
-   * @param code 合同编码�?ID
+   * 根据 recordcode 获取合同详情（兼容旧调用）
+   * @param code 合同 recordcode
    * @returns 合同详情
    */
   getContractByCodeOrId: (code: string): Promise<Contract> => {
     return unwrapResponse(request.get<Contract>(`/assets/contracts/${code}/`,
       undefined,
-      true, // 使用缓存
-      300000, // 缓存时间 5 分钟
+      true,
+      300000,
     ))
   },
 
   /**
-   * 按名称搜索合�?   * GET /api/assets/contracts/getcontractByname/{name}/
+   * 按名称搜索合吀   * GET /api/assets/contracts/getcontractByname/{name}/
    * 对应后端 ContractViewSet.getcontractByname action
    */
   getContractByName: (contract_name: string): Promise<ContractListResponse> => {
@@ -97,38 +97,40 @@ export const contractAPI = {
   /**
    * 创建合同
    * @param data 合同创建表单数据
-   * @returns 创建的合�?   */
+   * @returns 创建的合吀   */
   createContract: (data: ContractCreateForm): Promise<Contract> => {
     return unwrapResponse(request.post<Contract>('/assets/contracts/', data))
   },
 
   /**
    * 更新合同信息
-   * @param data 合同更新表单数据（需包含 contract_code�?   * @returns 更新后的合同
+   * @param data 合同更新表单数据（需包含 contract_code＀   * @returns 更新后的合同
    */
-  updateContract: (data: Partial<ContractUpdateForm>): Promise<Contract> => {
-    if (!data.contract_code) {
-      throw new Error('contract_code is required for update')
+  updateContract: (data: Partial<ContractUpdateForm> & { recordcode?: string }): Promise<Contract> => {
+    const recordcode = data.recordcode
+    if (!recordcode) {
+      throw new Error('recordcode is required for update')
     }
-    return unwrapResponse(request.put<Contract>(`/assets/contracts/${data.contract_code}/`, data))
+    return unwrapResponse(request.put<Contract>(`/assets/contracts/${recordcode}/`, data))
   },
 
   /**
-   * 局部更新合同信�?   * @param data 合同更新表单数据（需包含 contract_code�?   * @returns 更新后的合同
+   * 局部更新合同信息   * @param data 合同更新表单数据（需包含 contract_code＀   * @returns 更新后的合同
    */
-  partialUpdateContract: (data: Partial<ContractUpdateForm>): Promise<Contract> => {
-    if (!data.contract_code) {
-      throw new Error('contract_code is required for update')
+  partialUpdateContract: (data: Partial<ContractUpdateForm> & { recordcode?: string }): Promise<Contract> => {
+    const recordcode = data.recordcode
+    if (!recordcode) {
+      throw new Error('recordcode is required for update')
     }
-    return unwrapResponse(request.patch<Contract>(`/assets/contracts/${data.contract_code}/`, data))
+    return unwrapResponse(request.patch<Contract>(`/assets/contracts/${recordcode}/`, data))
   },
 
   /**
    * 删除合同
-   * @param contract_code 合同编码
+   * @param recordcode 合同 recordcode
    */
-  deleteContract: (contract_code: string): Promise<void> => {
-    return unwrapResponse(request.delete<void>(`/assets/contracts/${contract_code}/`))
+  deleteContract: (recordcode: string): Promise<void> => {
+    return unwrapResponse(request.delete<void>(`/assets/contracts/${recordcode}/`))
   },
 
   /**
@@ -159,21 +161,22 @@ export const contractAPI = {
 
   /**
    * 添加付款记录
-   * @param contract_code 合同编码
+   * @param recordcode 合同 recordcode
    * @param data 付款记录数据
    * @returns 更新后的合同信息
    */
-  addPaymentRecord: (contract_code: string, data: { amount: number; description?: string }): Promise<Contract> => {
-    return unwrapResponse(request.post<Contract>(`/assets/contracts/${contract_code}/payment_record/`, data))
+  addPaymentRecord: (recordcode: string, data: { amount: number; description?: string }): Promise<Contract> => {
+    return unwrapResponse(request.post<Contract>(`/assets/contracts/${recordcode}/payment_record/`, data))
   },
 
   /**
-   * 更新合同结算状�?   * POST /api/assets/contracts/{contract_code}/update_settlement_status/
+   * 更新合同结算状态
+   * POST /api/assets/contracts/{recordcode}/update_settlement_status/
    * 对应后端 ContractViewSet.update_settlement_status action
    */
-  updateSettlementStatus: (contract_code: string, status: 'pending' | 'settled'): Promise<Contract> => {
+  updateSettlementStatus: (recordcode: string, status: 'pending' | 'settled'): Promise<Contract> => {
     return unwrapResponse(request.post<Contract>(
-      `/assets/contracts/${contract_code}/update_settlement_status/`,
+      `/assets/contracts/${recordcode}/update_settlement_status/`,
       { status }
     ))
   },
@@ -182,7 +185,7 @@ export const contractAPI = {
    * 批量创建合同
    * POST /api/assets/contracts/batch-create/
    * 对应后端 ContractViewSet.batch_create action
-   * 一次性提交多条合同数据，后端逐条处理并返回成�?失败明细
+   * 一次性提交多条合同数据，后端逐条处理并返回成劀失败明细
    */
   batchCreateContracts: (items: ContractCreateForm[]): Promise<ContractBatchCreateResult> => {
     return unwrapResponse(

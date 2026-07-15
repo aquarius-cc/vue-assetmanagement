@@ -1,11 +1,11 @@
 /**
  * useScrapableAssets
- * 可报废资产列表管�?Composable
+ * 可报废资产列表管琀Composable
  *
- * 职责�? * - 搜索资产状态为 in_store �?recycled_pending 的资�? * - 管理列表数据、分页状态、加载状�? * - 提供搜索、翻页、重置等操作方法
+ * 职责＀ * - 搜索资产状态为 in_store 戀recycled_pending 的资人 * - 管理列表数据、分页状态、加载状态 * - 提供搜索、翻页、重置等操作方法
  *
- * 遵守 AGENTS 规范�? * - 类型严格，无 any
- * - 单向依赖：Composable �?Store �?API �? * - 单一职责：仅处理可报废资产列表相关逻辑
+ * 遵守 AGENTS 规范＀ * - 类型严格，无 any
+ * - 单向依赖：Composable ↀStore ↀAPI 局 * - 单一职责：仅处理可报废资产列表相关逻辑
  * - 可被多个组件复用
  */
 
@@ -16,11 +16,11 @@ import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 
 /**
- * 可报废资产列�?Composable 返回值接�? */
+ * 可报废资产列血Composable 返回值接号 */
 export interface UseScrapableAssetsReturn {
-  /** 列表数据（响应式�?*/
+  /** 列表数据（响应式＀*/
   list: import('vue').Ref<AssetDetail[]>
-  /** 加载中状�?*/
+  /** 加载中状态*/
   loading: import('vue').Ref<boolean>
   /** 总记录数 */
   total: import('vue').Ref<number>
@@ -35,19 +35,19 @@ export interface UseScrapableAssetsReturn {
    */
   search: (extraParams?: Omit<PaginationQuery, 'page' | 'page_size'>) => Promise<void>
   /**
-   * 切换页码（自动使用上次的搜索条件重新请求�?   * @param page - 目标页码
+   * 切换页码（自动使用上次的搜索条件重新请求＀   * @param page - 目标页码
    */
   changePage: (page: number) => Promise<void>
   /**
-   * 重置所有状态（清空列表、重置分页、清空缓存的搜索条件�?   */
+   * 重置所有状态（清空列表、重置分页、清空缓存的搜索条件＀   */
   reset: () => void
 }
 
 /**
- * 可报废资产列�?Composable
- * 查询资产状态为 in_store �?recycled_pending 的资�? */
+ * 可报废资产列血Composable
+ * 查询资产状态为 in_store 戀recycled_pending 的资人 */
 export function useScrapableAssets(): UseScrapableAssetsReturn {
-  // ---------- 响应式状�?----------
+  // ---------- 响应式状态----------
   const list = ref<AssetDetail[]>([])
   const loading = ref(false)
   const total = ref(0)
@@ -62,24 +62,24 @@ export function useScrapableAssets(): UseScrapableAssetsReturn {
 
   /**
    * 内部请求方法
-   * @param params - 完整查询参数（包含分页和搜索条件�?   */
+   * @param params - 完整查询参数（包含分页和搜索条件＀   */
   const fetchList = async (params: PaginationQuery) => {
     loading.value = true
     try {
-      // 构建查询参数，固定包�?asset_current_status__in 条件
+      // 构建查询参数，固定包吀asset_current_status__in 条件
       const searchParams: PaginationQuery & Record<string, string | number> = {
         ...params,
         asset_current_status__in: 'in_store,recycled_pending',
       }
 
       const response = await assetStore.combineSearch(searchParams)
-      console.log('[useScrapableAssets] 获取可报废资产成�?', response)
+      console.log('[useScrapableAssets] 获取可报废资产成劀', response)
       // 后端 search_assets 返回 AssetSimpleReturn[]，与 AssetDetail[] 结构兼容
       list.value = response.results as unknown as typeof list.value
       total.value = response.count
     } catch (error) {
-      console.error('[useScrapableAssets] 获取可报废资产失�?', error)
-      ElMessage.error('加载可报废资产列表失�?)
+      console.error('[useScrapableAssets] 获取可报废资产失败', error)
+      ElMessage.error('加载可报废资产列表失败')
       list.value = []
       total.value = 0
     } finally {
@@ -92,7 +92,8 @@ export function useScrapableAssets(): UseScrapableAssetsReturn {
    * @param extraParams - 搜索条件（不包含 page / page_size），会缓存供翻页使用
    */
   const search = async (extraParams?: Omit<PaginationQuery, 'page' | 'page_size'>) => {
-    // 缓存搜索条件（如果传入了新条件则覆盖，否则保留之前的�?    if (extraParams !== undefined) {
+    // 缓存搜索条件（如果传入了新条件则覆盖，否则保留之前的）
+    if (extraParams !== undefined) {
       lastExtraParams = extraParams
     }
     // 重置页码到第一页（新搜索应从第一页开始）
@@ -106,7 +107,7 @@ export function useScrapableAssets(): UseScrapableAssetsReturn {
   }
 
   /**
-   * 切换页码（自动使用缓存的搜索条件重新请求�?   * @param page - 目标页码
+   * 切换页码（自动使用缓存的搜索条件重新请求＀   * @param page - 目标页码
    */
   const changePage = async (page: number) => {
     if (page === currentPage.value) return
@@ -120,7 +121,7 @@ export function useScrapableAssets(): UseScrapableAssetsReturn {
   }
 
   /**
-   * 重置所有状�?   */
+   * 重置所有状态   */
   const reset = () => {
     currentPage.value = 1
     total.value = 0

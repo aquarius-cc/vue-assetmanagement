@@ -312,6 +312,42 @@ const router = createRouter({
           ],
         },
         {
+          path: 'brokenassetdetails',
+          name: 'BrokenAssetDetails',
+          component: () => import('@/components/componentsdetails/BrokenAssetDetails.vue'),
+          meta: {
+            title: '损坏资产',
+            requiresAuth: true,
+          },
+        },
+        {
+          path: 'lostassetdetails',
+          name: 'LostAssetDetails',
+          component: () => import('@/components/componentsdetails/LostAssetDetails.vue'),
+          meta: {
+            title: '遗失资产',
+            requiresAuth: true,
+          },
+        },
+        {
+          path: 'foundassetdetails',
+          name: 'FoundAssetDetails',
+          component: () => import('@/components/componentsdetails/FoundAssetDetails.vue'),
+          meta: {
+            title: '找回资产',
+            requiresAuth: true,
+          },
+        },
+        {
+          path: 'repairassetdetails',
+          name: 'RepairAssetDetails',
+          component: () => import('@/components/componentsdetails/RepairAssetDetails.vue'),
+          meta: {
+            title: '维修记录',
+            requiresAuth: true,
+          },
+        },
+        {
           path: 'damagedassetdetails',
           name: 'DamagedAssetDetails',
           component: () => import('@/components/componentsdetails/DamagedAssetDetails.vue'),
@@ -554,11 +590,38 @@ const router = createRouter({
       },
     },
     {
+      path: '/assets/:code/repair-done',
+      name: 'RepairDone',
+      component: () => import('@/views/RepairDoneView.vue'),
+      meta: {
+        title: '维修完成',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/assets/:code/repair-failed',
+      name: 'RepairFailed',
+      component: () => import('@/views/RepairFailedView.vue'),
+      meta: {
+        title: '维修失败',
+        requiresAuth: true,
+      },
+    },
+    {
       path: '/assets/:code/lost',
       name: 'LostAsset',
       component: () => import('@/views/LostAssetView.vue'),
       meta: {
         title: '资产遗失',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/assets/:code/found',
+      name: 'FoundAsset',
+      component: () => import('@/views/FoundAssetView.vue'),
+      meta: {
+        title: '找回遗失资产',
         requiresAuth: true,
       },
     },
@@ -586,7 +649,7 @@ const router = createRouter({
       component: () => import('@/views/ScanAssetView.vue'),
       meta: {
         title: '扫码查看',
-        requiresAuth: true,
+        requiresAuth: false,
       },
     },
     {

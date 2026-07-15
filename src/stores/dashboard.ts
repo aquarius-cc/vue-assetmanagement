@@ -12,6 +12,7 @@ import {
   type RecycleAssetRecord
 } from '@/api/dashboard'
 import { ElMessage } from 'element-plus'
+import { getStatusColor as getStatusColorFromMapping } from '@/utils/statusMapping'
 
 /**
  * 仪表盘 Store
@@ -213,19 +214,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
   }
 
   /**
-   * 工具方法 - 获取状态颜色
+   * 工具方法 - 获取状态颜色（复用 statusMapping 中心化颜色映射）
    * @param status 状态
    * @returns 颜色值
    */
   const getStatusColor = (status: string): string => {
-    const colorMap: Record<string, string> = {
-      '在库': '#67C23A',
-      '使用中': '#409EFF',
-      '维修中': '#E6A23C',
-      '报废': '#F56C6C',
-      '待报废': '#909399'
-    }
-    return colorMap[status] || '#909399'
+    return getStatusColorFromMapping(status)
   }
 
   /**

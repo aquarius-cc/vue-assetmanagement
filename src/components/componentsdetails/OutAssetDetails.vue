@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   OutAssetDetails.vue
   出库资产列表页面（重构版）
 
@@ -69,11 +69,9 @@
               {{ formatDate(row.outasset_date) }}
             </template>
 
-            <!-- 资产状态列自定义渲染（使用 el-tag） -->
+            <!-- 资产状态列自定义渲染 -->
             <template #outasset_current_status="{ row }">
-              <el-tag :type="getOutAssetStatusTagType(row.outasset_current_status || '')">
-                {{ getOutAssetStatusText(row.outasset_current_status || '') }}
-              </el-tag>
+              <StatusTag :status="row.outasset_current_status || ''" map-type="outasset" />
             </template>
           </CommonList>
 
@@ -121,6 +119,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
+import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
 import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import type { ColumnConfig } from '@/utils/excelExporter'
@@ -147,23 +146,6 @@ const smartListRef = ref<SmartListContainerExpose | null>(null)
  * 用于控制子路由遮罩层的显示
  */
 const isChildRouteActive = ref(false)
-
-// ===== 辅助函数 =====
-/**
- * 获取出库资产状态对应的 Element Plus 标签类型
- * @param status 资产状态值
- * @returns 标签类型：success | warning | info
- */
-const getOutAssetStatusTagType = (status: string): 'success' | 'warning' | 'info' => {
-  switch (status) {
-    case 'in_use':
-      return 'success'
-    case 'recycled_pending':
-      return 'info'
-    default:
-      return 'warning'
-  }
-}
 
 // ===== 表格列配置 =====
 /**

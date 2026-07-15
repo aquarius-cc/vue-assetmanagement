@@ -95,11 +95,16 @@ const handleSubmit = async () => {
 
   submitting.value = true
   try {
-    await recycleAssetAPI.create({
-      asset_code: assetCode.value,
+    await recycleAssetAPI.createRecycleAsset({
+      outasset_recordcode: assetCode.value,
+      recycle_asset: assetCode.value,
       recycle_asset_number: formData.recycle_asset_number,
-      remark: formData.remark,
-    } as never)
+      recycle_asset_storage_code: '',
+      recycle_asset_recycle_person_jobcode: '',
+      recycle_asset_date: new Date().toISOString().split('T')[0],
+      recycle_type: 'normal',
+      recycle_asset_description: formData.remark || '',
+    })
     ElMessage.success('回收操作成功')
     router.push('/main/recycleassetdetails')
   } catch (err) {

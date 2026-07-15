@@ -23,16 +23,8 @@ export const handleAssetOut = async (data: OutAssetCreateForm) => {
 
   await outAssetStore.create(data)
 
-  const asset = assetStore.list.find((a) => a.asset_code === data.outasset_code)
-  if (asset) {
-    asset.asset_current_status = 'in_use'
-    // [HR-01] 后端 v1.1.0 改为 read_only，前端不再手动更新以下字段
-    // 后端创建 outasset 时自动从 asset 获取并更新：
-    // 注意：OutAssetCreateForm 已移除这些字段，此注释仅供参考历史逻辑
-    // asset.asset_using_location = data.outasset_using_location
-    // asset.asset_applicant_jobcode = data.outasset_applicant_jobcode || ''
-    // asset.asset_manager_jobcode = data.outasset_manager_jobcode || ''
-  }
+  // 刷新资产列表，确保状态变更同步
+  await assetStore.getList()
 
   ElMessage.success('资产出库成功')
 }
@@ -50,8 +42,8 @@ export const handleAssetRecycle = async (data: RecycleAssetCreateForm) => {
     recycle_asset_date: formattedDate,
   })
 
-  const asset = assetStore.list.find((a) => a.asset_code === data.recycle_asset)
-  if (asset) asset.asset_current_status = 'recycle'
+  // 刷新资产列表，确保状态变更同步
+  await assetStore.getList()
 
   ElMessage.success('资产回收成功')
 }
@@ -63,8 +55,8 @@ export const handleAssetDamaged = async (data: DamagedAssetCreateForm) => {
 
   await damagedAssetStore.create(data)
 
-  const asset = assetStore.list.find((a) => a.asset_code === data.damaged_asset_code)
-  if (asset) asset.asset_current_status = 'damaged'
+  // 刷新资产列表，确保状态变更同步
+  await assetStore.getList()
 
   ElMessage.success('资产已标记为待报废')
 }
@@ -76,8 +68,8 @@ export const handleAssetWaste = async (data: WasteAssetCreateForm) => {
 
   await wasteAssetStore.create(data)
 
-  const asset = assetStore.list.find((a) => a.asset_code === data.waste_asset_code)
-  if (asset) asset.asset_current_status = 'waste'
+  // 刷新资产列表，确保状态变更同步
+  await assetStore.getList()
 
   ElMessage.success('资产报废处理成功')
 }

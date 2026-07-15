@@ -34,15 +34,15 @@ export const authAPI = {
     try {
       const response: LoginResponse = await request.post('/auth/login/', data)
 
-      // 根据后端 API 文档，成功条件为 code === 200 或 code === 201
-      const isSuccess = response.code === 200 || response.code === 201
+      // 根据后端 API 文档，成功条件为 code === 0（AGENTS.md §3 跨端契约）
+      const isSuccess = response.code === 0
 
       if (isSuccess) {
         return response
       }
 
       // 如果有错误消息则抛出，否则使用默认错误
-      const errorMsg = response.msg || '登录失败'
+      const errorMsg = response.message || '登录失败'
       throw new Error(errorMsg)
     } catch (error: unknown) {
       if (error instanceof Error) {

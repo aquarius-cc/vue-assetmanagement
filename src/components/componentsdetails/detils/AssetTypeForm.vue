@@ -1,8 +1,3 @@
-﻿<!--
-  AssetTypeForm.vue
-  资产分类表单页（新增 / 编辑）
-  模式判断：路由 query 中有 code 参数 → 编辑模式，否则 → 新增模式
--->
 <template>
   <div class="asset-entry">
     <el-card class="box-card">
@@ -27,52 +22,59 @@
           </el-col>
 
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="资产分类编码" prop="asset_type_code">
+            <el-form-item label="类型编码" prop="type_code">
               <el-input
-                v-model="assetTypeForm.asset_type_code"
-                placeholder="请输入资产分类编码"
+                v-model="assetTypeForm.type_code"
+                placeholder="请输入类型编码"
                 :disabled="isEdit"
                 clearable
               />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="一级分类名称" prop="asset_type_primary">
+            <el-form-item label="类型名称" prop="type_name">
               <el-input
-                v-model="assetTypeForm.asset_type_primary"
-                placeholder="请输入一级分类名称"
+                v-model="assetTypeForm.type_name"
+                placeholder="请输入类型名称"
                 clearable
               />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="二级分类名称" prop="asset_type_secondary">
+            <el-form-item label="父级编码" prop="parent_type_code">
               <el-input
-                v-model="assetTypeForm.asset_type_secondary"
-                placeholder="请输入二级分类名称"
+                v-model="assetTypeForm.parent_type_code"
+                placeholder="顶级分类无需填写"
                 clearable
               />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="资产分类类型" prop="asset_type_category">
-              <el-select
-                v-model="assetTypeForm.asset_type_category"
-                placeholder="请选择资产分类类型"
+            <el-form-item label="层级" prop="level">
+              <el-input-number
+                v-model="assetTypeForm.level"
+                :min="0"
+                :max="6"
+                controls-position="right"
                 style="width: 100%"
-              >
-                <el-option label="硬件" value="hardware" />
-                <el-option label="软件" value="software" />
-                <el-option label="低值易耗" value="lowvalue" />
-                <el-option label="其他" value="other" />
-              </el-select>
+              />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="资产分类描述" prop="asset_type_description">
+            <el-form-item label="排序" prop="sort_order">
+              <el-input-number
+                v-model="assetTypeForm.sort_order"
+                :min="0"
+                controls-position="right"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="24" :md="12">
+            <el-form-item label="类型描述" prop="type_description">
               <el-input
-                v-model="assetTypeForm.asset_type_description"
-                placeholder="请输入资产分类描述"
+                v-model="assetTypeForm.type_description"
+                placeholder="请输入类型描述"
                 clearable
               />
             </el-form-item>
@@ -81,7 +83,6 @@
 
         <el-row justify="center">
           <el-col :span="24" style="text-align: center; margin-top: 20px">
-            <!-- 新增模式才显示重置按钮，编辑模式下重置无意义 -->
             <el-button v-if="!isEdit" @click="resetForm">重置</el-button>
             <el-button type="success" @click="submitForm" :loading="assetTypeStore.loading"
               >提交</el-button
@@ -101,7 +102,6 @@ export default {
 </script>
 
 <script lang="ts" setup>
-// ===== 导入：按“Vue核心 → 第三方库 → @/内部模块”顺序 =====
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
@@ -110,69 +110,58 @@ import { isAxiosError } from 'axios'
 import { useAssetTypeStore } from '@/stores/assetTypeStore'
 import type { AssetTypeCreateForm, AssetTypeUpdateForm } from '@/utils/AssetType'
 
-// ===== 路由 =====
 const route = useRoute()
 const router = useRouter()
 const assetTypeStore = useAssetTypeStore()
 const formRef = ref()
 
-// ===== 模式判断：通过路由 query.code 是否为真确定新增/编辑（含参数 → 编辑） =====
 const isEdit = computed(() => !!route.query.code)
 
-// ===== 表单数据初始化 =====
-/**
- * 工厂函数：创建全新表单数据对象
- * 返回类型声明为联合类型，编译时保证调用统一
- */
-const initForm = (): AssetTypeCreateForm | AssetTypeUpdateForm => ({
-  asset_type_code: '',
-  asset_type_primary: '',
-  asset_type_secondary: '',
-  asset_type_category: '',
-  asset_type_description: '',
+const initForm = (): AssetTypeCreateForm => ({
+  type_code: '',
+  type_name: '',
+  parent_type_code: null,
+  level: 0,
+  type_description: '',
+  sort_order: 0,
 })
 
-const assetTypeForm = ref<AssetTypeCreateForm | AssetTypeUpdateForm>(initForm())
+const assetTypeForm = ref<AssetTypeCreateForm>(initForm())
 
-// ===== 表单验证规则（全字段必填，修正文案） =====
 const rules = {
-  asset_type_code: [
-    { required: true, message: '请输入资产分类编码', trigger: 'blur' },
-    { min: 3, max: 50, message: '编码长度在 3 到 50 个字符', trigger: 'blur' },
+  type_code: [
+    { required: true, message: '请输入类型编码', trigger: 'blur' },
+    { min: 3, max: 30, message: '编码长度在 3 到 30 个字符', trigger: 'blur' },
   ],
-  asset_type_primary: [
-    { required: true, message: '请输入一级分类名称', trigger: 'blur' },
+  type_name: [
+    { required: true, message: '请输入类型名称', trigger: 'blur' },
     { min: 2, max: 100, message: '名称长度在 2 到 100 个字符', trigger: 'blur' },
   ],
-  asset_type_secondary: [
-    { required: true, message: '请输入二级分类名称', trigger: 'blur' },
-    { min: 2, max: 100, message: '名称长度在 2 到 100 个字符', trigger: 'blur' },
-  ],
-  asset_type_category: [{ required: true, message: '请选择资产分类类型', trigger: 'change' }],
-  asset_type_description: [{ required: true, message: '请输入资产分类描述', trigger: 'blur' }],
+  parent_type_code: [],
+  level: [],
+  type_description: [],
+  sort_order: [],
 }
 
-// ===== 组件挂载逻辑 =====
 onMounted(async () => {
-  // 新增模式无需加载数据
   if (!isEdit.value) return
 
   try {
-    // 确保 store 中已有列表数据（父页面可能未提前加载）
-    if (!assetTypeStore.list || assetTypeStore.list.length === 0) {
-      await assetTypeStore.getList()
-    }
-
     const code = route.query.code as string
-    // 根据资产分类编码查找对应的完整数据
-    const target = assetTypeStore.list.find((item) => item.asset_type_code === code)
+    // 使用 recordcode 从 API 加载详情
+    const target = await assetTypeStore.getById(code)
 
     if (target) {
-      // 浅拷贝避免直接修改 store 原始引用
-      assetTypeForm.value = { ...target }
+      assetTypeForm.value = {
+        type_code: target.type_code,
+        type_name: target.type_name,
+        parent_type_code: target.parent_type_code ?? null,
+        level: target.level ?? 0,
+        type_description: target.type_description ?? '',
+        sort_order: target.sort_order ?? 0,
+      }
     } else {
       ElMessage.error('未找到对应的资产分类，请检查编码是否正确')
-      // 非法编码直接退回列表页
       router.replace('/main/assettypedetails')
     }
   } catch (error) {
@@ -181,7 +170,6 @@ onMounted(async () => {
   }
 })
 
-// ===== 提交表单 =====
 const submitForm = () => {
   formRef.value.validate(async (valid: boolean) => {
     if (!valid) {
@@ -190,24 +178,24 @@ const submitForm = () => {
     }
 
     try {
-      // 根据模式调用不同的 Store Action，类型断言保证参数类型匹配
       if (isEdit.value) {
-        await assetTypeStore.update(assetTypeForm.value as Parameters<typeof assetTypeStore.update>[0])
+        const code = route.query.code as string
+        const updateData: AssetTypeUpdateForm = {
+          recordcode: code,
+          ...assetTypeForm.value,
+        }
+        await assetTypeStore.update(updateData)
         ElMessage.success('资产分类修改成功！')
       } else {
-        console.log('新增资产分类:', assetTypeForm.value)
-        await assetTypeStore.create(assetTypeForm.value as Parameters<typeof assetTypeStore.create>[0])
+        await assetTypeStore.create(assetTypeForm.value)
         ElMessage.success('资产分类录入成功！')
       }
 
-      // 通知列表页需要刷新数据
       assetTypeStore.setRefreshFlag(true)
-      // 操作成功后回到列表页
       router.push('/main/assettypedetails')
     } catch (error: unknown) {
-      // 使用类型守卫安全提取错误信息
       if (isAxiosError(error)) {
-        const msg = error.response?.data?.msg || error.message
+        const msg = error.response?.data?.message || error.message
         ElMessage.error(`操作失败：${msg}`)
       } else if (error instanceof Error) {
         ElMessage.error(`操作失败：${error.message}`)
@@ -219,12 +207,10 @@ const submitForm = () => {
   })
 }
 
-// ===== 重置表单（仅新增模式） =====
 const resetForm = () => {
   formRef.value.resetFields()
 }
 
-// ===== 返回上一页 =====
 const goBack = () => {
   router.go(-1)
 }
@@ -275,7 +261,6 @@ const goBack = () => {
   }
 }
 
-// Element Plus 组件样式穿透与统一优化
 :deep(.el-input__wrapper) {
   box-shadow: 0 0 0 1px var(--border-color-input) inset;
   &:hover {

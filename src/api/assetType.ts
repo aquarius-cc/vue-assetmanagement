@@ -16,7 +16,6 @@ import type { BatchDeleteResult } from '@/stores/createEntityStore'
 /**
  * 批量创建资产类型响应
  * 对应后端 AssetTypeViewSet.batch_create action 返回格式
- * fail_items 格式与后端 BatchOperationMixin.batch_execute 对齐
  */
 export interface AssetTypeBatchCreateResult {
   total: number
@@ -46,15 +45,15 @@ export const assetTypeAPI = {
   },
 
   /**
-   * 根据资产类型编码获取详情（启用缓存）
-   * @param asset_type_code 资产类型编码
+   * 根据 recordcode 获取资产类型详情（启用缓存）
+   * @param recordcode 资产类型 recordcode
    * @returns 资产类型详情
    */
-  getAssetTypeByCode: (asset_type_code: string): Promise<AssetType> => {
-    return unwrapResponse(request.get<AssetType>(`/assets/asset-types/${asset_type_code}/`,
+  getAssetTypeByRecordcode: (recordcode: string): Promise<AssetType> => {
+    return unwrapResponse(request.get<AssetType>(`/assets/asset-types/${recordcode}/`,
       undefined,
-      true, // 使用缓存
-      300000, // 缓存时间 5 分钟
+      true,
+      300000,
     ))
   },
 
@@ -69,45 +68,43 @@ export const assetTypeAPI = {
 
   /**
    * 更新资产类型
-   * @param data 资产类型更新表单数据（需包含 asset_type_code）
+   * @param data 资产类型更新表单数据（需包含 recordcode）
    * @returns 更新后的资产类型
    */
-  updateAssetType: (data: Partial<AssetTypeUpdateForm>): Promise<AssetType> => {
-    if (!data.asset_type_code) {
-      throw new Error('asset_type_code is required for update')
+  updateAssetType: (data: AssetTypeUpdateForm): Promise<AssetType> => {
+    const recordcode = data.recordcode
+    if (!recordcode) {
+      throw new Error('recordcode is required for update')
     }
-    return unwrapResponse(request.put<AssetType>(`/assets/asset-types/${data.asset_type_code}/`, data))
+    return unwrapResponse(request.put<AssetType>(`/assets/asset-types/${recordcode}/`, data))
   },
 
   /**
    * 局部更新资产类型
-   * @param data 资产类型更新表单数据（需包含 asset_type_code）
+   * @param data 资产类型更新表单数据（需包含 recordcode）
    * @returns 更新后的资产类型
    */
-  partialUpdateAssetType: (data: Partial<AssetTypeUpdateForm>): Promise<AssetType> => {
-    if (!data.asset_type_code) {
-      throw new Error('asset_type_code is required for update')
-    }
-    return unwrapResponse(request.patch<AssetType>(`/assets/asset-types/${data.asset_type_code}/`, data))
+  partialUpdateAssetType: (data: Partial<AssetTypeUpdateForm> & { recordcode: string }): Promise<AssetType> => {
+    return unwrapResponse(request.patch<AssetType>(`/assets/asset-types/${data.recordcode}/`, data))
   },
 
   /**
    * 删除资产类型
-   * @param asset_type_code 资产类型编码
+   * @param recordcode 资产类型 recordcode
    */
-  deleteAssetType: (asset_type_code: string): Promise<void> => {
-    return unwrapResponse(request.delete<void>(`/assets/asset-types/${asset_type_code}/`))
+  deleteAssetType: (recordcode: string): Promise<void> => {
+    return unwrapResponse(request.delete<void>(`/assets/asset-types/${recordcode}/`))
   },
 
   /**
    * 批量删除资产类型
    * POST /api/assets/asset-types/batch-delete/
-   * 对应后端 AssetTypeViewSet.batch_delete action
+   * 后端 AssetTypeBatchDeleteSerializer 接收 ids 列表（type_code 值）
    */
-  batchDeleteAssetTypes: (asset_type_codes: string[]): Promise<BatchDeleteResult> => {
+  batchDeleteAssetTypes: (type_codes: string[]): Promise<BatchDeleteResult> => {
     return unwrapResponse(
       request.post<BatchDeleteResult>('/assets/asset-types/batch-delete/', {
-        ids: asset_type_codes,
+        ids: type_codes,
       }),
     )
   },
@@ -115,8 +112,7 @@ export const assetTypeAPI = {
   /**
    * 批量创建资产类型
    * POST /api/assets/asset-types/batch-create/
-   * 对应后端 AssetTypeViewSet.batch_create action
-   * 一次性提交多条资产类型数据，后端逐条处理并返回成功/失败明细
+   * 后端 AssetTypeBatchCreateItemSerializer 接收 type_code/type_name/parent_type_code/level/type_description/sort_order
    */
   batchCreateAssetTypes: (items: AssetTypeCreateForm[]): Promise<AssetTypeBatchCreateResult> => {
     return unwrapResponse(

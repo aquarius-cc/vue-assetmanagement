@@ -192,13 +192,13 @@ export const departmentAPI = {
    * 获取父部门
    * GET /api/users/departments/{department_code}/parent/
    * @param department_code 部门编码
-   * @returns 父部门简要信息（department_code, department_name, level, parent_code）
+   * @returns 父部门简要信息（recordcode, department_code, department_name, level, parent_department_code, path）
    */
   getParentDepartment: (department_code: string): Promise<DepartmentBrief> => {
     return unwrapResponse(request.get<DepartmentBrief>(
       `/users/departments/${department_code}/parent/`,
       undefined,
-      true, // 使用缓存
+      true,
       300000,
     ))
   },

@@ -11,8 +11,8 @@ import type { PaginationQuery } from '@/stores/createEntityStore'
  * 资产类型 Store
  */
 export const useAssetTypeStore = createEntityStore<AssetType, PaginationQuery>('assetType', {
-  idKey: 'asset_type_code',
-  nameField: 'asset_type_primary',
+  idKey: 'recordcode',
+  nameField: 'type_name',
   displayName: '资产类型',
   api: {
     getList: async (params?: PaginationQuery) => {
@@ -28,7 +28,7 @@ export const useAssetTypeStore = createEntityStore<AssetType, PaginationQuery>('
         results: response.results as AssetType[],
       }
     },
-    getById: (code) => assetTypeAPI.getAssetTypeByCode(code),
+    getById: (code) => assetTypeAPI.getAssetTypeByRecordcode(code),
     create: (data) => assetTypeAPI.createAssetType(data as AssetTypeCreateForm),
     update: (data) => assetTypeAPI.updateAssetType(data as AssetTypeUpdateForm),
     delete: (code) => assetTypeAPI.deleteAssetType(code),

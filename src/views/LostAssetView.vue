@@ -26,24 +26,24 @@
 
         <el-divider />
 
-        <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
-          <el-form-item label="遗失数量" prop="lost_asset_number">
-            <el-input-number v-model="formData.lost_asset_number" :min="1" :max="1000" />
-          </el-form-item>
-          <el-form-item label="遗失日期" prop="lost_date">
+        <el-form ref="formRef" :model="formData" :rules="rules" label-width="120px">
+          <el-form-item label="Lost Date" prop="lost_date">
             <el-date-picker
               v-model="formData.lost_date"
               type="date"
-              placeholder="请选择遗失日期"
+              placeholder="Select lost date"
               format="YYYY-MM-DD"
               value-format="YYYY-MM-DD"
             />
           </el-form-item>
-          <el-form-item label="遗失原因" prop="lost_reason">
-            <el-input v-model="formData.lost_reason" placeholder="请输入遗失原因" />
+          <el-form-item label="Last Location" prop="last_known_location">
+            <el-input v-model="formData.last_known_location" placeholder="Last known location (optional)" />
           </el-form-item>
-          <el-form-item label="遗失描述" prop="lost_description">
-            <el-input v-model="formData.lost_description" type="textarea" :rows="3" placeholder="请输入遗失描述（可选）" />
+          <el-form-item label="Lost Reason" prop="lost_reason">
+            <el-input v-model="formData.lost_reason" placeholder="Enter lost reason" />
+          </el-form-item>
+          <el-form-item label="Description" prop="lost_description">
+            <el-input v-model="formData.lost_description" type="textarea" :rows="3" placeholder="Description (optional)" />
           </el-form-item>
         </el-form>
 
@@ -81,16 +81,15 @@ const asset = ref<AssetDetail | null>(null)
 const assetCode = ref(route.params.code as string)
 
 const formData = reactive({
-  lost_asset_number: 1,
+  last_known_location: '',
   lost_date: '',
   lost_reason: '',
   lost_description: '',
 })
 
 const rules: FormRules = {
-  lost_asset_number: [{ required: true, message: '请输入遗失数量', trigger: 'blur' }],
-  lost_date: [{ required: true, message: '请选择遗失日期', trigger: 'change' }],
-  lost_reason: [{ required: true, message: '请输入遗失原因', trigger: 'blur' }],
+  lost_date: [{ required: true, message: 'Please select lost date', trigger: 'change' }],
+  lost_reason: [{ required: true, message: 'Please enter lost reason', trigger: 'blur' }],
 }
 
 onMounted(async () => {
@@ -112,9 +111,9 @@ const handleSubmit = async () => {
   submitting.value = true
   try {
     await lostAssetAPI.markAssetAsLost(assetCode.value, {
-      asset_code: assetCode.value,
-      lost_asset_number: formData.lost_asset_number,
-      lost_date: formData.lost_date,
+      asset_recordcode: assetCode.value,
+      last_known_location: formData.last_known_location || null,
+      lost_date: formData.lost_date || null,
       lost_reason: formData.lost_reason,
       lost_description: formData.lost_description || null,
     })

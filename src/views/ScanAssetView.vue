@@ -23,9 +23,7 @@
           <el-descriptions-item label="资产规格">{{ asset.asset_specification || '-' }}</el-descriptions-item>
           <el-descriptions-item label="品牌">{{ asset.asset_brand || '-' }}</el-descriptions-item>
           <el-descriptions-item label="当前状态">
-            <el-tag :type="getStatusTagType(asset.asset_current_status)">
-              {{ asset.asset_current_status }}
-            </el-tag>
+            <StatusTag :status="asset.asset_current_status" />
           </el-descriptions-item>
           <el-descriptions-item label="存放仓库">{{ asset.asset_storage_name || '-' }}</el-descriptions-item>
           <el-descriptions-item label="资产分类">{{ asset.asset_type_name || '-' }}</el-descriptions-item>
@@ -53,8 +51,9 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Iphone } from '@element-plus/icons-vue'
-import { assetAPI } from '@/api/asset'
+import { get } from '@/api/request'
 import type { AssetDetail } from '@/types/asset'
+import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -62,22 +61,11 @@ const loading = ref(true)
 const asset = ref<AssetDetail | null>(null)
 const recordcode = ref(route.params.recordcode as string)
 
-const getStatusTagType = (status: string) => {
-  const map: Record<string, string> = {
-    in_store: 'success',
-    in_use: 'primary',
-    repairing: 'warning',
-    damaged: 'danger',
-    scrapped: 'info',
-    recycled_pending: 'warning',
-  }
-  return (map[status] || 'info') as 'success' | 'primary' | 'warning' | 'danger' | 'info'
-}
-
 onMounted(async () => {
   if (!recordcode.value) return
   try {
-    asset.value = await assetAPI.getAssetByCode(recordcode.value)
+    const res = await get<AssetDetail>(`/public/scan/${recordcode.value}`)
+    asset.value = res.data as AssetDetail
   } catch (err) {
     console.error('获取资产信息失败:', err)
   } finally {

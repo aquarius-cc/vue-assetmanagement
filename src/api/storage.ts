@@ -48,15 +48,15 @@ export const storageAPI = {
 
   /**
    * 获取仓库详情（启用缓存）
-   * @param storage_code 仓库编码
+   * @param recordcode 仓库 recordcode
    * @returns 仓库详情
    */
-  getStorageByCode: (storage_code: string): Promise<Storage> => {
+  getStorageByRecordcode: (recordcode: string): Promise<Storage> => {
     return unwrapResponse(request.get<Storage>(
-      `/assets/storages/${storage_code}/`,
+      `/assets/storages/${recordcode}/`,
       undefined,
-      true, // 使用缓存
-      300000, // 缓存时间 5 分钟
+      true,
+      300000,
     ))
   },
 
@@ -80,34 +80,36 @@ export const storageAPI = {
 
   /**
    * 更新仓库信息
-   * @param data 仓库更新表单数据（需包含 storage_code）
+   * @param data 仓库更新表单数据（需包含 recordcode）
    * @returns 更新后的仓库信息
    */
-  updateStorage: (data: Partial<StorageUpdateForm>): Promise<Storage> => {
-    if (!data.storage_code) {
-      throw new Error('storage_code is required for update')
+  updateStorage: (data: Partial<StorageUpdateForm> & { recordcode?: string }): Promise<Storage> => {
+    const recordcode = data.recordcode
+    if (!recordcode) {
+      throw new Error('recordcode is required for update')
     }
-    return unwrapResponse(request.put<Storage>(`/assets/storages/${data.storage_code}/`, data))
+    return unwrapResponse(request.put<Storage>(`/assets/storages/${recordcode}/`, data))
   },
 
   /**
    * 局部更新仓库信息
-   * @param data 仓库更新表单数据（需包含 storage_code）
+   * @param data 仓库更新表单数据（需包含 recordcode）
    * @returns 更新后的仓库信息
    */
-  partialUpdateStorage: (data: Partial<StorageUpdateForm>): Promise<Storage> => {
-    if (!data.storage_code) {
-      throw new Error('storage_code is required for update')
+  partialUpdateStorage: (data: Partial<StorageUpdateForm> & { recordcode?: string }): Promise<Storage> => {
+    const recordcode = data.recordcode
+    if (!recordcode) {
+      throw new Error('recordcode is required for update')
     }
-    return unwrapResponse(request.patch<Storage>(`/assets/storages/${data.storage_code}/`, data))
+    return unwrapResponse(request.patch<Storage>(`/assets/storages/${recordcode}/`, data))
   },
 
   /**
    * 删除仓库（软删除）
-   * @param storage_code 仓库编码
+   * @param recordcode 仓库 recordcode
    */
-  deleteStorage: (storage_code: string): Promise<void> => {
-    return unwrapResponse(request.delete<void>(`/assets/storages/${storage_code}/`))
+  deleteStorage: (recordcode: string): Promise<void> => {
+    return unwrapResponse(request.delete<void>(`/assets/storages/${recordcode}/`))
   },
 
   /**
