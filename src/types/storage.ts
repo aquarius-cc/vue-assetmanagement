@@ -50,6 +50,8 @@ export interface StorageUpdateForm extends Partial<StorageCreateForm> {
  * 对应后端数据库表 am_storage 的基础字段
  */
 export interface Storage extends StorageCreateForm {
+  /** 记录编码 (由后端自动生成，用于业务关联) */
+  recordcode: string
   /** 主键 ID */
   id: number
   /** 创建时间 */
