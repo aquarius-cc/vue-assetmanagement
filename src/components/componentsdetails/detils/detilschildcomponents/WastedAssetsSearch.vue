@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   WastedAssetsSearch.vue
   已报废资产搜索组?
   功能：  - 根据资产编码、名称、型号规格、品牌、合同名称、合同编码搜索已报废资产
@@ -134,7 +134,7 @@ export default { name: 'WastedAssetsSearch' }
 </script>
 
 <script lang="ts" setup>
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import type { AssetDetail } from '@/types/asset'
 import { useWastedAssets } from '@/composables/useWastedAssets'
@@ -175,7 +175,8 @@ const searchForm = reactive<SearchForm>({
   contract_code: '',
 })
 
-// 标记是否已执行过搜索（用于显示无数据提示?const searched = ref(false)
+// 标记是否已执行过搜索（用于显示无数据提示）
+const searched = ref(false)
 
 /**
  * 构建传给 Composable 的额外查询参? * 过滤掉空字符串字段，避免后端收到无意义的参数
