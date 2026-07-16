@@ -93,14 +93,14 @@ describe('useAssetInfoCards', () => {
     expect(basicInfoCard.value.fields).toHaveLength(2)
     // 左列
     expect(basicInfoCard.value.fields[0]).toContainEqual(
-      expect.objectContaining({ label: '编码', value: 'A001' }),
+      expect.objectContaining({ label: '资产编码', value: 'A001' }),
     )
     expect(basicInfoCard.value.fields[0]).toContainEqual(
-      expect.objectContaining({ label: '名称', value: '测试资产' }),
+      expect.objectContaining({ label: '资产名称', value: '测试资产' }),
     )
     // 右列
     expect(basicInfoCard.value.fields[1]).toContainEqual(
-      expect.objectContaining({ label: '单价', value: 1000 }),
+      expect.objectContaining({ label: '资产单价', value: 1000 }),
     )
   })
 
@@ -109,7 +109,7 @@ describe('useAssetInfoCards', () => {
     const assetDetail = ref(asset)
     const { basicInfoCard } = useAssetInfoCards(assetDetail)
 
-    const priceField = basicInfoCard.value.fields[1].find((f) => f.label === '单价')
+    const priceField = basicInfoCard.value.fields[1].find((f) => f.label === '资产单价')
     expect(priceField?.formatter?.(9999)).toBe('¥9999')
   })
 
@@ -137,7 +137,7 @@ describe('useAssetInfoCards', () => {
     const assetDetail = ref(createMockAsset())
     const { contractCard } = useAssetInfoCards(assetDetail)
 
-    const typeField = contractCard.value.fields[0].find((f) => f.label === '合同类型')
+    const typeField = contractCard.value.fields[2].find((f) => f.label === '合同类型')
     expect(typeField?.formatter?.('purchase')).toBe('采购合同')
   })
 
