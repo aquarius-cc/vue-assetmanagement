@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="login-container">
     <el-card class="login-card">
       <template #header>
@@ -127,7 +127,7 @@ onMounted(() => {
  *
  * 优化点：将复合错误提示拆分为单独提示，帮助用户精确定位问题
  */
-const validateUsername = (rule: unknown, value: string, callback: (error?: Error) => void) => {
+const validateUsername = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
   if (!value) {
     return callback(new Error('请输入用户名'))
   }
@@ -156,7 +156,7 @@ const validateUsername = (rule: unknown, value: string, callback: (error?: Error
  * - 将字符类型验证拆分为两个独立提示
  * - 帮助用户更清楚地了解密码要求
  */
-const validatePassword = (rule: unknown, value: string, callback: (error?: Error) => void) => {
+const validatePassword = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
   if (!value) {
     return callback(new Error('请输入密码'))
   }

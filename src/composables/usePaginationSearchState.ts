@@ -39,7 +39,7 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
 
   /** 获取当前页码的读写代理 */
   const getPage = () => readReactive<number>(currentPage)
-  const _setPage = (v: number) => writeReactive(currentPage, v)
+  const setPage = (v: number) => writeReactive(currentPage, v) // eslint-disable-line @typescript-eslint/no-unused-vars
   const getSize = () => readReactive<number>(pageSize)
 
   /** 单关键词搜索 */

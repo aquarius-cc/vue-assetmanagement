@@ -330,25 +330,28 @@ const handleAssetCodeBlur = async (event: FocusEvent) => {
  * 编辑模式加载数据
  * 根据 asset_code 查询该资产下所有硬盘记录 * 映射一disks 数组
  */
-const loadEditData = async (assetCode: string, harddiskSnCode: string) => {
+const loadEditData = async (_assetCode: string, harddiskSnCode: string) => {
   isLoading.value = true
   try {
-    // 1. 获取该资产下的所有硬盘记录    const response = await harddiskSnAPI.getHardDiskSNsByAsset(assetCode)
+    // 1. 获取该资产下的所有硬盘记录
+    const response = await harddiskSnAPI.getHardDiskSNsByAsset(_assetCode)
     const records = response.results
 
     if (!records || records.length === 0) {
       ElMessage.warning('该资产暂无硬盘记录')
       return
     }
-    let disksRecords = []
+    let disksRecords: Array<Record<string, unknown>> = []
     if (harddiskSnCode) {
-      disksRecords = records.filter((record) => record.harddisk_sn_code === harddiskSnCode)
+      disksRecords = records.filter(
+        (record: Record<string, unknown>) => record.harddisk_sn_code === harddiskSnCode,
+      )
     } else {
       disksRecords = records
     }
 
     // 2. 映射一disks 数组
-    formData.disks = disksRecords.map((record) => ({
+    formData.disks = disksRecords.map((record: Record<string, unknown>) => ({
       harddisk_no: record.harddisk_no,
       harddisk_sn_code: record.harddisk_sn_code,
       harddisk_type: record.harddisk_type,

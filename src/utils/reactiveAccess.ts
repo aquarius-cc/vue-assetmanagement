@@ -26,6 +26,7 @@ export function writeReactive(value: unknown, val: unknown): void {
 export function readStoreValue<T>(raw: ComputedRef<T> | Ref<T> | T | (() => T)): T {
   if (typeof raw === 'function') return (raw as () => T)()
   if (isRef(raw)) return raw.value
-  if (raw && typeof raw === 'object' && 'value' in raw) return (raw as ComputedRef<T>).value
+  if (raw && typeof raw === 'object' && 'value' in raw)
+    return (raw as unknown as ComputedRef<T>).value
   return raw as T
 }

@@ -32,15 +32,9 @@
           <el-descriptions-item label="当前状态">
             <StatusTag :status="asset.asset_current_status" />
           </el-descriptions-item>
-          <el-descriptions-item label="存放仓库">{{
-            asset.asset_storage_name || '-'
-          }}</el-descriptions-item>
-          <el-descriptions-item label="资产分类">{{
-            asset.asset_type_name || '-'
-          }}</el-descriptions-item>
-          <el-descriptions-item label="使用人">{{
-            asset.asset_manager_name || '-'
-          }}</el-descriptions-item>
+          <el-descriptions-item label="存放仓库">{{ storageName }}</el-descriptions-item>
+          <el-descriptions-item label="资产分类">{{ typeName }}</el-descriptions-item>
+          <el-descriptions-item label="使用人">{{ managerName }}</el-descriptions-item>
         </el-descriptions>
 
         <div class="action-buttons">
@@ -69,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Iphone } from '@element-plus/icons-vue'
 import { get } from '@/api/request'
@@ -81,6 +75,19 @@ const router = useRouter()
 const loading = ref(true)
 const asset = ref<AssetDetail | null>(null)
 const recordcode = ref(route.params.recordcode as string)
+
+const storageName = computed(() => {
+  const storage = asset.value?.asset_storage as Record<string, unknown> | undefined
+  return (storage?.storage_name as string) || '-'
+})
+const typeName = computed(() => {
+  const type = asset.value?.asset_type as Record<string, unknown> | undefined
+  return (type?.type_name as string) || '-'
+})
+const managerName = computed(() => {
+  const manager = asset.value?.asset_manager as Record<string, unknown> | undefined
+  return (manager?.employee_name as string) || '-'
+})
 
 onMounted(async () => {
   if (!recordcode.value) return

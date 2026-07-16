@@ -58,7 +58,7 @@ export function useAssetInfoCards(assetDetail: Ref<AssetDetail | null>) {
     const type = assetDetail.value?.asset_type
     return {
       title: '资产类型',
-      icon: 'Menu',
+      icon: 'Document',
       visible: !!type,
       fields: [
         [{ label: '类型编码', value: type?.type_code }],

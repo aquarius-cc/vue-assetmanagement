@@ -260,7 +260,7 @@ const levelWarning = computed(() => {
 
 /** 自定义上级部门验证 */
 const validateParentCode = (
-  rule: unknown,
+  _rule: unknown,
   value: string | null,
   callback: (error?: Error) => void,
 ) => {

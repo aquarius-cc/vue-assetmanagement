@@ -245,6 +245,7 @@ import type { AssetDetail, AssetUpdateForm } from '@/types/asset'
 import ExportableAssetsSearch from '@/components/componentsdetails/detils/detilschildcomponents/ExportableAssetsSearch.vue'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
 import { useEmployeeSuggestionFetcher } from '@/composables/useEmployeeSuggestionFetcher'
+import { useAutocompleteField } from '@/composables/useAutocompleteField'
 
 // ========== 类型增强：解冀assetStore 类型定义缺失（运行时方法存在＀==========
 // 注意：createEntityStore 实际返回了getByName/getById/update 等方法，但TypeScript 未能正确推断
@@ -358,8 +359,6 @@ const fetchAssetSuggestions = createSuggestionFetcher({
 const fetchEmployeeSuggestions = useEmployeeSuggestionFetcher()
 
 // ========== 员工选择相关逻辑（使用 useAutocompleteField） ==========
-import { useAutocompleteField } from '@/composables/useAutocompleteField'
-
 const applicantField = useAutocompleteField({
   form: outAssetCreateExtendedForm,
   nameField: 'outasset_applicant_name',

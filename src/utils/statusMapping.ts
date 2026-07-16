@@ -91,7 +91,14 @@ export function getStatusInfo(
   status: string,
   map: Record<string, { label: string; type: string }>,
 ): { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' } {
-  return map[status] || { label: status || '未知', type: 'info' }
+  const info = map[status]
+  if (info) {
+    return {
+      label: info.label,
+      type: info.type as 'success' | 'warning' | 'danger' | 'info' | 'primary',
+    }
+  }
+  return { label: status || '未知', type: 'info' }
 }
 
 /** 获取资产状态标签类型 */
