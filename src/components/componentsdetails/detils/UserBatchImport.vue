@@ -208,7 +208,6 @@ const batchConfig = {
     const location = String(item.位置 ?? '').trim()
     const statusInput = String(item.状态 ?? '').trim()
     const departmentName = String(item.部门 ?? '').trim()
-    const description = String(item.描述 ?? '').trim()
     const sort = Number(item.排序 ?? 0)
 
     // 必填校验
@@ -244,20 +243,12 @@ const batchConfig = {
     if (sort > 1000000) errors.排序 = '排序不能大于 1000000'
 
     // 状态值映射（可选字段，不存在则使用默认值 active）
-    let normalizedStatus: 'active' | 'left' | 'retirement' = 'active'
     if (statusInput) {
       const mapped = USER_STATUS_INPUT_MAPPING[statusInput]
       if (!mapped) {
         errors.状态 = `状态值无效，有效值：${VALID_STATUS_INPUTS.join('、')}`
-      } else {
-        normalizedStatus = mapped as 'active' | 'left' | 'retirement'
       }
     }
-
-    // 当部门名称存在时，优先使用名称反查的部门代码（部门代码列可留空）
-    const departmentCode = departmentName
-      ? reverseDepartmentMapping.value[departmentName] || 'ERROR'
-      : String(item.部门代码 ?? '').trim()
 
     return {
       valid: Object.keys(errors).length === 0,
@@ -395,7 +386,7 @@ const headerExamples: HeaderExample[] = [
     headerName: '排序',
     field: 'sort_order',
     required: false,
-    example: 100,
+    example: '100',
     remark: '排序顺序，默认0',
   },
   {
