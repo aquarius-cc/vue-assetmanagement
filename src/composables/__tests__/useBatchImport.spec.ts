@@ -36,7 +36,9 @@ interface TestApi {
   code: string
 }
 
-const createMockConfig = (overrides?: Partial<BatchImportConfig<TestExcel, TestApi>>): BatchImportConfig<TestExcel, TestApi> => ({
+const createMockConfig = (
+  overrides?: Partial<BatchImportConfig<TestExcel, TestApi>>,
+): BatchImportConfig<TestExcel, TestApi> => ({
   entityName: '测试实体',
   requiredFields: ['name', 'code'],
   excelHeaderMap: { 名称: 'name', 编码: 'code' },
@@ -61,7 +63,8 @@ describe('useBatchImport', () => {
 
   it('should initialize with default values', () => {
     const config = createMockConfig()
-    const { previewData, validDataCount, isSubmitting, submitResult, parseError } = useBatchImport(config)
+    const { previewData, validDataCount, isSubmitting, submitResult, parseError } =
+      useBatchImport(config)
 
     expect(previewData.value).toEqual([])
     expect(validDataCount.value).toBe(0)
@@ -78,14 +81,21 @@ describe('useBatchImport', () => {
 
       // Use a class-based FileReader mock so `new FileReader()` works
       const mockInstances: any[] = []
-      vi.stubGlobal('FileReader', class {
-        readAsArrayBuffer = vi.fn()
-        onload: any = null
-        onerror: any = null
-        constructor() { mockInstances.push(this) }
-      })
+      vi.stubGlobal(
+        'FileReader',
+        class {
+          readAsArrayBuffer = vi.fn()
+          onload: any = null
+          onerror: any = null
+          constructor() {
+            mockInstances.push(this)
+          }
+        },
+      )
 
-      const file = new File(['test'], 'test.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const file = new File(['test'], 'test.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
       const p = handleFileChange(file)
 
       const reader = mockInstances[0]
@@ -104,14 +114,21 @@ describe('useBatchImport', () => {
       parseError.value = 'previous error'
 
       const mockInstances: any[] = []
-      vi.stubGlobal('FileReader', class {
-        readAsArrayBuffer = vi.fn()
-        onload: any = null
-        onerror: any = null
-        constructor() { mockInstances.push(this) }
-      })
+      vi.stubGlobal(
+        'FileReader',
+        class {
+          readAsArrayBuffer = vi.fn()
+          onload: any = null
+          onerror: any = null
+          constructor() {
+            mockInstances.push(this)
+          }
+        },
+      )
 
-      const file = new File(['test'], 'test.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const file = new File(['test'], 'test.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
       handleFileChange(file)
 
       // Trigger onload with empty buffer - will fail in ExcelJS parsing
@@ -119,7 +136,7 @@ describe('useBatchImport', () => {
       reader.onload({ target: { result: new ArrayBuffer(0) } })
 
       // Wait for async
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise((resolve) => setTimeout(resolve, 10))
 
       expect(parseError.value).not.toBe('previous error')
     })
@@ -143,7 +160,12 @@ describe('useBatchImport', () => {
       const { ElMessage } = await import('element-plus')
 
       previewData.value = [
-        { data: { name: 'A', code: 'C1' }, validationStatus: 'success', validationErrors: {}, validationErrorSummary: '' },
+        {
+          data: { name: 'A', code: 'C1' },
+          validationStatus: 'success',
+          validationErrors: {},
+          validationErrorSummary: '',
+        },
       ]
 
       const result = await submitBatchData()
@@ -161,8 +183,18 @@ describe('useBatchImport', () => {
       const { ElMessage } = await import('element-plus')
 
       previewData.value = [
-        { data: { name: 'A', code: 'C1' }, validationStatus: 'success', validationErrors: {}, validationErrorSummary: '' },
-        { data: { name: 'B', code: 'C2' }, validationStatus: 'success', validationErrors: {}, validationErrorSummary: '' },
+        {
+          data: { name: 'A', code: 'C1' },
+          validationStatus: 'success',
+          validationErrors: {},
+          validationErrorSummary: '',
+        },
+        {
+          data: { name: 'B', code: 'C2' },
+          validationStatus: 'success',
+          validationErrors: {},
+          validationErrorSummary: '',
+        },
       ]
 
       const result = await submitBatchData()
@@ -186,8 +218,18 @@ describe('useBatchImport', () => {
       const { ElMessage } = await import('element-plus')
 
       previewData.value = [
-        { data: { name: 'A', code: 'C1' }, validationStatus: 'success', validationErrors: {}, validationErrorSummary: '' },
-        { data: { name: 'B', code: 'C2' }, validationStatus: 'success', validationErrors: {}, validationErrorSummary: '' },
+        {
+          data: { name: 'A', code: 'C1' },
+          validationStatus: 'success',
+          validationErrors: {},
+          validationErrorSummary: '',
+        },
+        {
+          data: { name: 'B', code: 'C2' },
+          validationStatus: 'success',
+          validationErrors: {},
+          validationErrorSummary: '',
+        },
       ]
 
       const result = await submitBatchData()
@@ -208,7 +250,12 @@ describe('useBatchImport', () => {
       const { ElMessage } = await import('element-plus')
 
       previewData.value = [
-        { data: { name: 'A', code: 'C1' }, validationStatus: 'success', validationErrors: {}, validationErrorSummary: '' },
+        {
+          data: { name: 'A', code: 'C1' },
+          validationStatus: 'success',
+          validationErrors: {},
+          validationErrorSummary: '',
+        },
       ]
 
       const result = await submitBatchData()
@@ -220,13 +267,23 @@ describe('useBatchImport', () => {
     it('should mark isSubmitting during submission', async () => {
       const mockSubmitBatch = vi.mocked(submitBatch)
       let resolveSubmit: any
-      mockSubmitBatch.mockImplementation(() => new Promise((resolve) => { resolveSubmit = resolve }))
+      mockSubmitBatch.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveSubmit = resolve
+          }),
+      )
 
       const config = createMockConfig()
       const { submitBatchData, previewData, isSubmitting } = useBatchImport(config)
 
       previewData.value = [
-        { data: { name: 'A', code: 'C1' }, validationStatus: 'success', validationErrors: {}, validationErrorSummary: '' },
+        {
+          data: { name: 'A', code: 'C1' },
+          validationStatus: 'success',
+          validationErrors: {},
+          validationErrorSummary: '',
+        },
       ]
 
       const promise = submitBatchData()
@@ -244,7 +301,14 @@ describe('useBatchImport', () => {
       const config = createMockConfig()
       const { clearData, previewData, submitResult } = useBatchImport(config)
 
-      previewData.value = [{ data: { name: 'A', code: 'C1' }, validationStatus: 'success', validationErrors: {}, validationErrorSummary: '' }]
+      previewData.value = [
+        {
+          data: { name: 'A', code: 'C1' },
+          validationStatus: 'success',
+          validationErrors: {},
+          validationErrorSummary: '',
+        },
+      ]
       submitResult.value = { successCount: 1, failedItems: [] }
 
       clearData()

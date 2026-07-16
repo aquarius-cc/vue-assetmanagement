@@ -129,7 +129,9 @@ export const moveDepartment = async (departmentCode: string, params: MoveDepartm
  * 批量排序部门
  * @param sortData 排序数据
  */
-export const sortDepartments = async (sortData: { department_code: string; sort_order: number }[]) => {
+export const sortDepartments = async (
+  sortData: { department_code: string; sort_order: number }[],
+) => {
   return departmentAPI.sortDepartments(sortData)
 }
 
@@ -150,11 +152,11 @@ export const sortDepartments = async (sortData: { department_code: string; sort_
  */
 export const getDepartmentEmployees = async (
   departmentCode: string,
-  params?: DepartmentEmployeeListQueryParams
+  params?: DepartmentEmployeeListQueryParams,
 ): Promise<EmployeeExtended[]> => {
   const response: DepartmentEmployeeListResponse = await departmentAPI.getDepartmentEmployeeList(
     departmentCode,
-    params
+    params,
   )
 
   // 从响应中提取 employees 数组（类型安全，无需 as any）

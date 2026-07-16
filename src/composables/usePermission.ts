@@ -33,7 +33,9 @@ export function usePermission() {
       try {
         const payload = JSON.parse(atob(authStore.access_token.split('.')[1]))
         if (payload.is_superuser) return true
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     // 方式2：authInfo 中 auth_is_staff 且 is_superuser（兼容旧 token）
     // 旧 token 没有 role 但用户是 superuser，需要 re-login 获取新 token

@@ -522,7 +522,9 @@ describe('createEntityStore', () => {
         fail_items: 'invalid',
       } as any)
 
-      await expect(batchStore.removeBatch(['1'])).rejects.toThrow('Invalid batch delete response format')
+      await expect(batchStore.removeBatch(['1'])).rejects.toThrow(
+        'Invalid batch delete response format',
+      )
     })
 
     it('批量删除应清除当前选中的实体', async () => {
@@ -571,7 +573,12 @@ describe('createEntityStore', () => {
 
     it('本地无缓存时应调用getById获取', async () => {
       const nameFieldStore = useNameFieldStore()
-      vi.mocked(mockApi.getById).mockResolvedValue({ id: '1', name: 'A', value: 1, label: '标签X' } as any)
+      vi.mocked(mockApi.getById).mockResolvedValue({
+        id: '1',
+        name: 'A',
+        value: 1,
+        label: '标签X',
+      } as any)
 
       const result = await nameFieldStore.getNameByCode('1')
       expect(result).toBe('标签X')
@@ -614,9 +621,7 @@ describe('createEntityStore', () => {
         enableDebounce: false,
       })()
 
-      vi.mocked(mockApiWithName.getByName).mockResolvedValue([
-        { id: '1', name: '实体A', value: 1 },
-      ])
+      vi.mocked(mockApiWithName.getByName).mockResolvedValue([{ id: '1', name: '实体A', value: 1 }])
 
       const result = await nameStore.getByName('实体A')
       expect(result).toHaveLength(1)
@@ -649,12 +654,14 @@ describe('createEntityStore', () => {
       let resolve1: (v: ListResponse<TestEntity>) => void
       let resolve2: (v: ListResponse<TestEntity>) => void
 
-      const p1 = new Promise<ListResponse<TestEntity>>((r) => { resolve1 = r })
-      const p2 = new Promise<ListResponse<TestEntity>>((r) => { resolve2 = r })
+      const p1 = new Promise<ListResponse<TestEntity>>((r) => {
+        resolve1 = r
+      })
+      const p2 = new Promise<ListResponse<TestEntity>>((r) => {
+        resolve2 = r
+      })
 
-      vi.mocked(mockApi.getList)
-        .mockReturnValueOnce(p1)
-        .mockReturnValueOnce(p2)
+      vi.mocked(mockApi.getList).mockReturnValueOnce(p1).mockReturnValueOnce(p2)
 
       const req1 = store.getList()
       const req2 = store.getList({ page: 2, page_size: 10 })

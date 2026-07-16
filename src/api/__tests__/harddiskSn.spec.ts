@@ -8,11 +8,13 @@ const { mockRequest, mockUnwrapResponse } = vi.hoisted(() => ({
     patch: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
     delete: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
   },
-  mockUnwrapResponse: vi.fn(async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
-    const res = await promise
-    if (res.code !== 0) throw new Error(res.message || '请求失败')
-    return res.data
-  }),
+  mockUnwrapResponse: vi.fn(
+    async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
+      const res = await promise
+      if (res.code !== 0) throw new Error(res.message || '请求失败')
+      return res.data
+    },
+  ),
 }))
 
 vi.mock('@/api/index', () => ({
@@ -34,12 +36,19 @@ describe('harddiskSnAPI', () => {
 
   it('getHardDiskSN calls GET /assets/harddisk-sn/{code}/', async () => {
     await harddiskSnAPI.getHardDiskSN('HS001')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/harddisk-sn/HS001/', undefined, true, 300000)
+    expect(mockRequest.get).toHaveBeenCalledWith(
+      '/assets/harddisk-sn/HS001/',
+      undefined,
+      true,
+      300000,
+    )
   })
 
   it('getHardDiskSNByCode calls POST /assets/harddisk-sn/search_by_serial_number/', async () => {
     await harddiskSnAPI.getHardDiskSNByCode('SN12345')
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/harddisk-sn/search_by_serial_number/', { harddisk_sn_code: 'SN12345' })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/harddisk-sn/search_by_serial_number/', {
+      harddisk_sn_code: 'SN12345',
+    })
   })
 
   it('createHardDiskSN calls POST /assets/harddisk-sn/', async () => {
@@ -49,7 +58,9 @@ describe('harddiskSnAPI', () => {
 
   it('updateHardDiskSN calls PUT /assets/harddisk-sn/{code}/', async () => {
     await harddiskSnAPI.updateHardDiskSN('HS001', { harddisk_sn: 'Updated' } as never)
-    expect(mockRequest.put).toHaveBeenCalledWith('/assets/harddisk-sn/HS001/', { harddisk_sn: 'Updated' })
+    expect(mockRequest.put).toHaveBeenCalledWith('/assets/harddisk-sn/HS001/', {
+      harddisk_sn: 'Updated',
+    })
   })
 
   it('deleteHardDiskSN calls DELETE /assets/harddisk-sn/{code}/', async () => {
@@ -64,7 +75,10 @@ describe('harddiskSnAPI', () => {
 
   it('saveHardDiskSNBatch calls POST /assets/harddisk-sn/batch/', async () => {
     await harddiskSnAPI.saveHardDiskSNBatch({ asset_code: 'A001', disks: [] } as never)
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/harddisk-sn/batch/', { asset_code: 'A001', disks: [] })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/harddisk-sn/batch/', {
+      asset_code: 'A001',
+      disks: [],
+    })
   })
 
   it('getHardDiskSNsByAsset calls GET /assets/harddisk-sn/by-asset/{code}/', async () => {

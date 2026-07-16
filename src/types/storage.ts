@@ -14,7 +14,7 @@
 export enum StorageType {
   NEWASSET = 'newasset',
   RECYCLE = 'recycle',
-  DAMAGED = 'damaged'
+  DAMAGED = 'damaged',
 }
 
 // ==================== 基础接口定义 ====================

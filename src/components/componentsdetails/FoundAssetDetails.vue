@@ -61,12 +61,12 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
-import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
+import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { FoundAssetExtended } from '@/utils/FoundAsset'
@@ -95,52 +95,10 @@ const columns: TableColumn[] = [
   { prop: 'operator_name', label: 'Operator', width: 100, align: 'center' },
 ]
 
-const storeConfig: PaginationSearchConfig<FoundAssetExtended> = {
-  store: {
-    getList: async (params) => {
-      const response = await foundAssetStore.getList(params)
-      return {
-        count: foundAssetStore.pagination.total,
-        results: response,
-        next: null,
-        previous: null,
-      }
-    },
-    pagination: {
-      page: {
-        get: () => foundAssetStore.pagination.page,
-        set: (val: number) => { foundAssetStore.pagination.page = val },
-      },
-      page_size: {
-        get: () => foundAssetStore.pagination.page_size,
-        set: (val: number) => { foundAssetStore.pagination.page_size = val },
-      },
-      total: {
-        get: () => foundAssetStore.pagination.total,
-        set: (val: number) => { foundAssetStore.pagination.total = val },
-      },
-    },
-    list: computed(() => foundAssetStore.list),
-    loading: computed(() => foundAssetStore.loading),
-    refreshFlag: computed(() => foundAssetStore.refreshFlag),
-    setRefreshFlag: (flag: boolean) => foundAssetStore.setRefreshFlag(flag),
-  },
-  search: {
-    performSearch: async (keyword: string, page: number, page_size: number) => {
-      const response = await foundAssetStore.getList({ search: keyword, page, page_size })
-      return {
-        count: foundAssetStore.pagination.total,
-        results: response,
-      }
-    },
-  },
-  defaultPageSize: 20,
-  messages: {
-    loadFailed: 'Failed to load found asset list',
-    searchFailed: 'Failed to search found assets',
-    invalidPage: 'Page out of range, jumped to last page',
-  },
-}
+const storeConfig = useSmartListConfig<FoundAssetExtended>({
+  store: foundAssetStore,
+  entityName: '找回资产',
+})
 
 const handleDelete = (row: FoundAssetExtended) => {
   if (!row.recordcode) {

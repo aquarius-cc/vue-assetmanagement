@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   OutAssetBatchImport.vue
   出库资产批量导入页面
   功能：上传 Excel → 数据预览与验证 → 并发批量提交
@@ -34,58 +34,19 @@
       </div>
 
       <!-- 导入格式参考卡片 -->
-      <div class="import-guide-card">
-        <div class="guide-header">
-          <el-icon><InfoFilled /></el-icon>
-          <span>导入格式参考</span>
-        </div>
-        <div class="guide-content">
-          <!-- 必填列说明 -->
-          <div class="guide-section">
-            <div class="section-title">📌 必填列说明</div>
-            <el-table :data="headerExamples" border size="small" style="width: 100%">
-              <el-table-column prop="headerName" label="Excel 表头（中文）" width="180" />
-              <el-table-column prop="field" label="对应字段" width="180" />
-              <el-table-column prop="required" label="必填" width="80">
-                <template #default="{ row }">
-                  <el-tag :type="row.required ? 'danger' : 'info'" size="small">
-                    {{ row.required ? '是' : '否' }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="example" label="示例值" />
-              <el-table-column prop="remark" label="备注" />
-            </el-table>
-          </div>
-          <!-- 示例数据 -->
-          <div class="guide-section">
-            <div class="section-title">📝 示例数据（参考填写）</div>
-            <el-table :data="exampleRows" border size="small" style="width: 100%">
-              <el-table-column
-                v-for="col in exampleColumns"
-                :key="col.prop"
-                :prop="col.prop"
-                :label="col.label"
-                min-width="120"
-              />
-            </el-table>
-          </div>
-          <!-- 注意事项 -->
-          <div class="guide-section">
-            <div class="section-title">⚠️ 注意事项</div>
-            <ul class="notice-list">
-              <li>出库资产编码、出库数量、出库日期为必填项</li>
-              <li>
-                资产状态可选值：in_use（使用中）/returned（已归还）/lost（丢失）/damaged（损坏）
-              </li>
-              <li>出库类型可选值：normal（正常出库）/scrap（报废出库）/transfer（调拨出库）</li>
-              <li>日期格式统一为 YYYY-MM-DD，必填日期不可为空</li>
-              <li>Excel 首行必须与「表头说明」中的中文列名完全一致</li>
-              <li>导入前建议先「导出模板」，在模板基础上填写数据</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      <BatchImportGuideCard
+        :header-examples="headerExamples"
+        :example-rows="exampleRows"
+        :example-columns="exampleColumns"
+        :notices="[
+          '出库资产编码、出库数量、出库日期为必填项',
+          '资产状态可选值：in_use（使用中）/returned（已归还）/lost（丢失）/damaged（损坏）',
+          '出库类型可选值：normal（正常出库）/scrap（报废出库）/transfer（调拨出库）',
+          '日期格式统一为 YYYY-MM-DD，必填日期不可为空',
+          'Excel 首行必须与「表头说明」中的中文列名完全一致',
+          '导入前建议先「导出模板」，在模板基础上填写数据',
+        ]"
+      />
 
       <!-- 数据预览表格 -->
       <div v-if="previewData.length > 0" class="preview-table">
@@ -147,35 +108,23 @@ export default { name: 'OutAssetBatchImport' }
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
-import { Upload, InfoFilled } from '@element-plus/icons-vue'
+import { Upload } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import ExcelJS from 'exceljs'
 import { useBatchImport } from '@/composables/useBatchImport'
-import type { ValidatedRow } from '@/composables/useBatchImport'
+import {
+  validationTagType,
+  validationTagText,
+  type HeaderExample,
+  type ExampleColumn,
+} from '@/utils/batchImportHelpers'
+import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { outAssetAPI } from '@/api/outAsset'
 import { useOutAssetStore } from '@/stores/outAssetStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import type { OutAssetCreateForm } from '@/utils/OutAsset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
-
-// ===== Excel 行数据类型 =====
-interface OutAssetExcelRow {
-  outasset_code: string
-  outasset_number: number | string
-  // [HR-01] 后端 v1.1.0 改为 read_only，移除 outasset_applicant_jobcode
-  // [HR-01] 后端 v1.1.0 改为 read_only，移除 outasset_manager_jobcode
-  outasset_current_status?: string
-  outasset_date: string
-  return_date?: string
-  outasset_type?: string
-  // [HR-01] 后端 v1.1.0 改为 read_only，移除 outasset_using_location
-  outasset_description?: string
-  // 以下为辅助展示字段（非必填，但可出现在Excel中）
-  outasset_name?: string
-  outasset_applicant_name?: string
-  outasset_manager_name?: string
-  outasset_storage?: string
-}
+import type { OutAssetExcelRow } from '@/types/batch-import'
 
 const router = useRouter()
 const outAssetStore = useOutAssetStore()
@@ -272,13 +221,17 @@ const importConfig: BatchImportConfig<OutAssetExcelRow, OutAssetCreateForm> = {
   }),
 
   // placeholder: 实际提交逻辑在 handleSubmit 中直接调用 batchCreateOutAssets
-  createFn: async () => ({} as OutAssetCreateForm),
+  createFn: async () => ({}) as OutAssetCreateForm,
   idField: 'outasset_code',
 }
 
 // ===== 使用批量导入 Hook（仅用于 Excel 解析和数据验证）=====
-const { previewData, validDataCount, handleFileChange: _handleFileChange, clearData } =
-  useBatchImport<OutAssetExcelRow, OutAssetCreateForm>(importConfig)
+const {
+  previewData,
+  validDataCount,
+  handleFileChange: _handleFileChange,
+  clearData,
+} = useBatchImport<OutAssetExcelRow, OutAssetCreateForm>(importConfig)
 
 /**
  * el-upload 的 on-change 回调参数为 UploadFile 对象
@@ -290,21 +243,6 @@ const handleFileChange = (uploadFile: UploadFile) => {
   } else {
     ElMessage.error('文件读取失败，请重新选择')
   }
-}
-
-// ===== 验证状态标签辅助方法 =====
-const validationTagType = (row: ValidatedRow<OutAssetExcelRow>) => {
-  if (row.submitStatus === 'error') return 'danger'
-  if (row.submitStatus === 'success') return 'success'
-  if (row.validationStatus === 'error') return 'danger'
-  return 'success'
-}
-
-const validationTagText = (row: ValidatedRow<OutAssetExcelRow>) => {
-  if (row.submitStatus === 'error') return '提交失败'
-  if (row.submitStatus === 'success') return '已提交'
-  if (row.validationStatus === 'error') return '验证失败'
-  return '有效'
 }
 
 // ===== 导出模板 =====
@@ -364,7 +302,7 @@ const handleExportTemplate = async () => {
 }
 
 // ===== 导入格式参考卡片数据 =====
-const headerExamples = [
+const headerExamples: HeaderExample[] = [
   {
     headerName: '出库资产编码',
     field: 'outasset_code',
@@ -419,7 +357,7 @@ const headerExamples = [
   },
 ]
 
-const exampleColumns = [
+const exampleColumns: ExampleColumn[] = [
   { prop: 'outasset_code', label: '出库资产编码' },
   { prop: 'outasset_number', label: '出库数量' },
   // [HR-01] 后端 v1.1.0 改为 read_only，移除申请人工号列
@@ -504,9 +442,7 @@ const handleSubmit = async () => {
       // 通知父页面刷新数据
       outAssetStore.setRefreshFlag(true)
     } else {
-      ElMessage.warning(
-        `导入完成：成功 ${result.success_count} 条，失败 ${result.fail_count} 条`,
-      )
+      ElMessage.warning(`导入完成：成功 ${result.success_count} 条，失败 ${result.fail_count} 条`)
     }
   } catch (error) {
     const msg = extractErrorMessage(error)
@@ -555,53 +491,6 @@ const goBack = () => {
     margin-top: 8px;
     color: var(--text-secondary);
     font-size: 13px;
-  }
-
-  .import-guide-card {
-    background-color: var(--card-background-muted);
-    border: 1px solid var(--border-color-light);
-    border-radius: 8px;
-    margin-bottom: 24px;
-    overflow: hidden;
-    .guide-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background-color: var(--color-primary-lighter);
-      padding: 12px 16px;
-      font-weight: 600;
-      color: var(--color-primary-light);
-      border-bottom: 1px solid var(--color-primary-light-border);
-      .el-icon {
-        font-size: 18px;
-      }
-    }
-    .guide-content {
-      padding: 16px;
-      .guide-section {
-        margin-bottom: 20px;
-        &:last-child {
-          margin-bottom: 0;
-        }
-        .section-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--text-primary);
-          margin-bottom: 12px;
-          padding-left: 4px;
-          border-left: 3px solid var(--color-primary-light);
-        }
-      }
-      .notice-list {
-        margin: 0;
-        padding-left: 20px;
-        li {
-          line-height: 1.8;
-          color: var(--text-regular);
-          font-size: 13px;
-        }
-      }
-    }
   }
 
   .preview-table {

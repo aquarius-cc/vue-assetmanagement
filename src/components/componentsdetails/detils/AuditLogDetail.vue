@@ -18,11 +18,16 @@
         </div>
         <div class="info-item">
           <span class="label">应用模块：</span>
-          <el-tag size="small" type="info">{{ appLabelMapping[detailData.app_label] || detailData.app_label }}</el-tag>
+          <el-tag size="small" type="info">{{
+            appLabelMapping[detailData.app_label] || detailData.app_label
+          }}</el-tag>
         </div>
         <div class="info-item">
           <span class="label">操作类型：</span>
-          <el-tag :type="auditOperationTypeTagMapping[detailData.operation_type] || 'info'" size="small">
+          <el-tag
+            :type="auditOperationTypeTagMapping[detailData.operation_type] || 'info'"
+            size="small"
+          >
             {{ auditOperationTypeMapping[detailData.operation_type] || detailData.operation_type }}
           </el-tag>
         </div>
@@ -81,7 +86,11 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { auditLogAPI } from '@/api/auditLog'
 import type { AuditLog } from '@/utils/AuditLog'
-import { auditOperationTypeMapping, appLabelMapping, auditOperationTypeTagMapping } from '@/utils/AuditLog'
+import {
+  auditOperationTypeMapping,
+  appLabelMapping,
+  auditOperationTypeTagMapping,
+} from '@/utils/AuditLog'
 
 const route = useRoute()
 const router = useRouter()

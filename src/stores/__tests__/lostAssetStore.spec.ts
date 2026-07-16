@@ -110,12 +110,14 @@ describe('LostAssetStore', () => {
       const { lostAssetAPI } = await import('@/api/lostAsset')
       vi.mocked(lostAssetAPI.createLostAsset).mockRejectedValue(new Error('创建失败'))
 
-      await expect(lostAssetStore.create({
-        asset_code: 'asset-001',
-        lost_asset_number: 1,
-        lost_date: '2026-07-09',
-        lost_reason: '测试遗失',
-      })).rejects.toThrow('创建失败')
+      await expect(
+        lostAssetStore.create({
+          asset_code: 'asset-001',
+          lost_asset_number: 1,
+          lost_date: '2026-07-09',
+          lost_reason: '测试遗失',
+        }),
+      ).rejects.toThrow('创建失败')
     })
   })
 

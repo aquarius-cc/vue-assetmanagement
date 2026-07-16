@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   DepartmentBatchImport.vue
   部门批量导入页面
   功能：上传 Excel → 数据预览与验证 → 并发批量提交
@@ -27,9 +27,7 @@
         >
           <el-button type="primary" :icon="Upload">选择 Excel 文件</el-button>
           <template #tip>
-            <div class="upload-tip">
-              仅支持 .xlsx / .xls，首行为表头（中文列名）
-            </div>
+            <div class="upload-tip">仅支持 .xlsx / .xls，首行为表头（中文列名）</div>
           </template>
         </el-upload>
         <el-button type="warning" @click="handleExportTemplate">导出模板</el-button>
@@ -148,13 +146,7 @@ import { useDepartmentStore } from '@/stores/departmentStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import type { DepartmentCreateForm } from '@/utils/Department'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
-
-// ===== Excel 行数据类型 =====
-interface DepartmentExcelRow {
-  department_code: string
-  department_name: string
-  department_information: string
-}
+import type { DepartmentExcelRow } from '@/types/batch-import'
 
 const router = useRouter()
 const departmentStore = useDepartmentStore()
@@ -167,9 +159,9 @@ const importConfig: BatchImportConfig<DepartmentExcelRow, DepartmentCreateForm> 
 
   // Excel 表头中文 -> 数据字段映射
   excelHeaderMap: {
-    '部门编码': 'department_code',
-    '部门名称': 'department_name',
-    '部门信息员': 'department_information',
+    部门编码: 'department_code',
+    部门名称: 'department_name',
+    部门信息员: 'department_information',
   },
 
   // 必填字段
@@ -206,17 +198,15 @@ const importConfig: BatchImportConfig<DepartmentExcelRow, DepartmentCreateForm> 
   }),
 
   // placeholder: 实际提交逻辑在 handleSubmit 中直接调用 batchCreateDepartments
-  createFn: async () => ({} as DepartmentCreateForm),
+  createFn: async () => ({}) as DepartmentCreateForm,
   idField: 'department_code',
 }
 
 // ===== 使用批量导入 Hook（仅用于 Excel 解析和数据验证）=====
-const {
-  previewData,
-  validDataCount,
-  handleFileChange,
-  clearData,
-} = useBatchImport<DepartmentExcelRow, DepartmentCreateForm>(importConfig)
+const { previewData, validDataCount, handleFileChange, clearData } = useBatchImport<
+  DepartmentExcelRow,
+  DepartmentCreateForm
+>(importConfig)
 
 // ===== 验证状态标签辅助方法 =====
 const validationTagType = (row: ValidatedRow<DepartmentExcelRow>) => {
@@ -238,14 +228,11 @@ const handleExportTemplate = async () => {
   try {
     const headers = Object.keys(importConfig.excelHeaderMap)
     const exampleRowData: Record<string, string> = {
-      '部门编码': 'ITDEPT01',
-      '部门名称': '信息技术部',
-      '部门信息员': '张三',
+      部门编码: 'ITDEPT01',
+      部门名称: '信息技术部',
+      部门信息员: '张三',
     }
-    const sheetData = [
-      headers,
-      headers.map((h) => exampleRowData[h] ?? ''),
-    ]
+    const sheetData = [headers, headers.map((h) => exampleRowData[h] ?? '')]
     // 使用 ExcelJS 创建模板工作簿
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('部门导入模板')
@@ -280,9 +267,27 @@ const handleExportTemplate = async () => {
 
 // ===== 导入格式参考卡片数据 =====
 const headerExamples = [
-  { headerName: '部门编码', field: 'department_code', required: true, example: 'ITDEPT01', remark: '2-20位字母数字组合' },
-  { headerName: '部门名称', field: 'department_name', required: true, example: '信息技术部', remark: '长度2-50' },
-  { headerName: '部门信息员', field: 'department_information', required: true, example: '张三', remark: '必填' },
+  {
+    headerName: '部门编码',
+    field: 'department_code',
+    required: true,
+    example: 'ITDEPT01',
+    remark: '2-20位字母数字组合',
+  },
+  {
+    headerName: '部门名称',
+    field: 'department_name',
+    required: true,
+    example: '信息技术部',
+    remark: '长度2-50',
+  },
+  {
+    headerName: '部门信息员',
+    field: 'department_information',
+    required: true,
+    example: '张三',
+    remark: '必填',
+  },
 ]
 
 const exampleColumns = headerExamples.map((h) => ({ prop: h.field, label: h.headerName }))
@@ -358,9 +363,7 @@ const handleSubmit = async () => {
         router.push('/main/departmentdetails')
       }, 1500)
     } else {
-      ElMessage.warning(
-        `导入完成：成功 ${result.success_count} 条，失败 ${result.fail_count} 条`,
-      )
+      ElMessage.warning(`导入完成：成功 ${result.success_count} 条，失败 ${result.fail_count} 条`)
     }
   } catch (error) {
     const msg = extractErrorMessage(error)

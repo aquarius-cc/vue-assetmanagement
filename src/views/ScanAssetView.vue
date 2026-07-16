@@ -8,7 +8,12 @@
         </div>
       </template>
 
-      <el-result v-if="!recordcode" icon="info" title="缺少记录编码" sub-title="请通过扫码方式访问此页面">
+      <el-result
+        v-if="!recordcode"
+        icon="info"
+        title="缺少记录编码"
+        sub-title="请通过扫码方式访问此页面"
+      >
         <template #extra>
           <el-button type="primary" @click="router.push('/main')">返回首页</el-button>
         </template>
@@ -20,25 +25,41 @@
         <el-descriptions :column="1" border class="asset-info">
           <el-descriptions-item label="资产编码">{{ asset.asset_code }}</el-descriptions-item>
           <el-descriptions-item label="资产名称">{{ asset.asset_name }}</el-descriptions-item>
-          <el-descriptions-item label="资产规格">{{ asset.asset_specification || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="资产规格">{{
+            asset.asset_specification || '-'
+          }}</el-descriptions-item>
           <el-descriptions-item label="品牌">{{ asset.asset_brand || '-' }}</el-descriptions-item>
           <el-descriptions-item label="当前状态">
             <StatusTag :status="asset.asset_current_status" />
           </el-descriptions-item>
-          <el-descriptions-item label="存放仓库">{{ asset.asset_storage_name || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="资产分类">{{ asset.asset_type_name || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="使用人">{{ asset.asset_manager_name || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="存放仓库">{{
+            asset.asset_storage_name || '-'
+          }}</el-descriptions-item>
+          <el-descriptions-item label="资产分类">{{
+            asset.asset_type_name || '-'
+          }}</el-descriptions-item>
+          <el-descriptions-item label="使用人">{{
+            asset.asset_manager_name || '-'
+          }}</el-descriptions-item>
         </el-descriptions>
 
         <div class="action-buttons">
-          <el-button type="primary" @click="router.push({ path: '/main/assetdetails/' + asset.asset_code })">
+          <el-button
+            type="primary"
+            @click="router.push({ path: '/main/assetdetails/' + asset.asset_code })"
+          >
             查看详情
           </el-button>
           <el-button @click="router.push('/main')">返回首页</el-button>
         </div>
       </template>
 
-      <el-result v-else icon="error" title="未找到资产" sub-title="无法根据该编码找到对应的资产信息">
+      <el-result
+        v-else
+        icon="error"
+        title="未找到资产"
+        sub-title="无法根据该编码找到对应的资产信息"
+      >
         <template #extra>
           <el-button type="primary" @click="router.push('/main')">返回首页</el-button>
         </template>

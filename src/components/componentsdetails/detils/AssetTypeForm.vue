@@ -33,11 +33,7 @@
           </el-col>
           <el-col :xs="24" :sm="24" :md="12">
             <el-form-item label="类型名称" prop="type_name">
-              <el-input
-                v-model="assetTypeForm.type_name"
-                placeholder="请输入类型名称"
-                clearable
-              />
+              <el-input v-model="assetTypeForm.type_name" placeholder="请输入类型名称" clearable />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="24" :md="12">

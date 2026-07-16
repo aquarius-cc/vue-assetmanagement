@@ -152,7 +152,6 @@ const router = createRouter({
             componentName: 'AssetTypeDetails', // 组件名称（需与组件定义的name一致）
           },
           children: [
-
             {
               path: 'assettypeform',
               name: 'AssetTypeForm',
@@ -197,7 +196,8 @@ const router = createRouter({
             {
               path: 'storagebatchimport',
               name: 'StorageBatchImport',
-              component: () => import('@/components/componentsdetails/detils/StorageBatchImport.vue'),
+              component: () =>
+                import('@/components/componentsdetails/detils/StorageBatchImport.vue'),
               meta: {
                 title: '仓库批量导入',
                 requiresAuth: true,
@@ -216,7 +216,6 @@ const router = createRouter({
             componentName: 'UserDetails', // 组件名称（需与组件定义的name一致）
           },
           children: [
-
             {
               path: 'userform',
               name: 'UserForm',
@@ -246,7 +245,6 @@ const router = createRouter({
             requiresAuth: true,
           },
           children: [
-
             {
               path: 'outassetform',
               name: 'OutAssetForm',
@@ -291,8 +289,7 @@ const router = createRouter({
             {
               path: 'recycleassetform',
               name: 'RecycleAssetForm',
-              component: () =>
-                import('@/components/componentsdetails/detils/RecycleAssetForm.vue'),
+              component: () => import('@/components/componentsdetails/detils/RecycleAssetForm.vue'),
               meta: {
                 title: '资产回收录入/编辑',
                 requiresAuth: true,
@@ -406,7 +403,8 @@ const router = createRouter({
             {
               path: 'unregisteredassetform',
               name: 'UnregisteredAssetForm',
-              component: () => import('@/components/componentsdetails/detils/UnregisteredAssetForm.vue'),
+              component: () =>
+                import('@/components/componentsdetails/detils/UnregisteredAssetForm.vue'),
               meta: { title: '未登记资产录入/编辑', requiresAuth: true },
             },
             {
@@ -435,7 +433,8 @@ const router = createRouter({
             {
               path: 'operationlogdetail',
               name: 'OperationLogDetail',
-              component: () => import('@/components/componentsdetails/detils/OperationLogDetail.vue'),
+              component: () =>
+                import('@/components/componentsdetails/detils/OperationLogDetail.vue'),
               props: (route) => ({ pk: route.query.pk }),
               meta: { title: '操作日志详情', requiresAuth: true },
             },
@@ -470,7 +469,8 @@ const router = createRouter({
             {
               path: 'harddisksnbasicdetails',
               name: 'HardDiskSNBasicDetails',
-              component: () => import('@/components/componentsdetails/detils/HardDiskSNBasicDetails.vue'),
+              component: () =>
+                import('@/components/componentsdetails/detils/HardDiskSNBasicDetails.vue'),
               props: (route) => ({ id: route.query.id }),
               meta: { title: '硬盘序列号详情', requiresAuth: true },
             },
@@ -478,11 +478,11 @@ const router = createRouter({
         },
         {
           path: 'departmentmanagement',
-              name: 'DepartmentManagement',
-              component: () => import('@/components/componentsdetails/DepartmentManagement.vue'),
-              meta: {
-                title: '部门-人员管理',
-                requiresAuth: true,
+          name: 'DepartmentManagement',
+          component: () => import('@/components/componentsdetails/DepartmentManagement.vue'),
+          meta: {
+            title: '部门-人员管理',
+            requiresAuth: true,
           },
           children: [
             {
@@ -493,8 +493,8 @@ const router = createRouter({
                * 此处使用 Dept 前缀区分：DeptUserForm / DeptUserBatchImport / DeptDepartmentBatchImport
                * 对应 DepartmentEmployeeList.vue 中的导航引用也已同步更新。
                */
-              path:'userform',
-              name:'DeptUserForm',
+              path: 'userform',
+              name: 'DeptUserForm',
               component: () => import('@/components/componentsdetails/detils/UserForm.vue'),
               meta: {
                 title: '用户录入',
@@ -502,8 +502,8 @@ const router = createRouter({
               },
             },
             {
-              path:'userbatchimport',
-              name:'DeptUserBatchImport',
+              path: 'userbatchimport',
+              name: 'DeptUserBatchImport',
               component: () => import('@/components/componentsdetails/detils/UserBatchImport.vue'),
               meta: {
                 title: '批量导入用户',
@@ -511,15 +511,16 @@ const router = createRouter({
               },
             },
             {
-              path:'departmentbatchimport',
-              name:'DeptDepartmentBatchImport',
-              component: () => import('@/components/componentsdetails/detils/DepartmentBatchImport.vue'),
+              path: 'departmentbatchimport',
+              name: 'DeptDepartmentBatchImport',
+              component: () =>
+                import('@/components/componentsdetails/detils/DepartmentBatchImport.vue'),
               meta: {
                 title: '批量导入部门',
                 requiresAuth: true,
               },
             },
-          ]
+          ],
         },
         {
           path: 'departmentdetails',
@@ -532,7 +533,6 @@ const router = createRouter({
             componentName: 'DepartmentDetails', // 组件名称（需与组件定义的name一致）
           },
           children: [
-
             {
               path: 'departmentform',
               name: 'DepartmentForm',

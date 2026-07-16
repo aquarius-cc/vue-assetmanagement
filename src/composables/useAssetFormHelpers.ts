@@ -6,6 +6,9 @@ import type { Contract } from '@/types/contract'
 import type { Storage } from '@/utils/Storage'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 
+// 向后兼容：useEmployeeLinkage 已拆分至独立文件
+export { useEmployeeLinkage } from './useEmployeeLinkage'
+
 // ======================== 公共类型 ========================
 
 /** 自动完成建议项基础类型 */
@@ -13,25 +16,18 @@ interface SuggestionItem {
   value: string
 }
 
-/** 合同建议页*/
+/** 合同建议 */
 export interface ContractSuggestion extends SuggestionItem {
   contract_name: string
   contract_code: string
   recordcode: string
 }
 
-/** 用户建议页*/
+/** 用户建议 */
 export interface UserSuggestion extends SuggestionItem {
   user_name: string
   user_jobcode: string
   department_name: string
-}
-
-/** 用户基本数据结构（用于联动回调） */
-interface EmployeeData {
-  employee_name: string
-  employee_jobcode: string
-  employee_department_name?: string | null
 }
 
 // ======================== 基础关联数据加载 ========================
@@ -100,7 +96,7 @@ export function useAssetFormAssociationMethods(
     onContractUpdate(item.contract_name, item.contract_code)
   }
 
-  /** 合同名变曀*/
+  /** 合同名变更 */
   const handleContractNameChange = (name: string) => {
     if (!name) {
       onContractUpdate('', '')
@@ -145,88 +141,4 @@ export function useAssetFormAssociationMethods(
     handleContractCodeChange,
     handleStorageNameChange,
   }
-}
-
-// ======================== 姓名/工号联动（通用＀========================
-
-export function useEmployeeLinkage(
-  getUserByName: (name: string) => Promise<EmployeeData[]>,
-  getUserByCode: (code: string) => Promise<EmployeeData | null>,
-  onUpdate: (name: string, code: string) => void,
-) {
-  const selectFlag = ref(true)
-
-  /** 自动完成建议 */
-  const fetchSuggestions = async (
-    queryString: string,
-    cb: (results: UserSuggestion[]) => void,
-  ) => {
-    if (!queryString) {
-      cb([])
-      return
-    }
-    try {
-      const users = await getUserByName(queryString)
-      const suggestions: UserSuggestion[] = users.map((u) => ({
-        value: u.employee_name,
-        user_name: u.employee_name,
-        user_jobcode: u.employee_jobcode,
-        department_name: u.employee_department_name ?? '',
-      }))
-      cb(suggestions)
-    } catch {
-      cb([])
-    }
-  }
-
-  /** 选中建议页*/
-  const handleSelect = (item: UserSuggestion) => {
-    selectFlag.value = false
-    onUpdate(item.user_name, item.user_jobcode)
-  }
-
-  /** 姓名输入变更 */
-  const handleNameChange = async (name: string) => {
-    if (!selectFlag.value) {
-      selectFlag.value = true
-      return
-    }
-    if (!name.trim()) {
-      onUpdate('', '')
-      return
-    }
-    try {
-      const users = await getUserByName(name)
-      if (users.length > 1) {
-        const codes = users.map((u) => u.employee_jobcode).join(', ')
-        onUpdate(name, `${codes} (请选择一个正确工号`)
-      } else if (users.length === 1) {
-        onUpdate(users[0].employee_name, users[0].employee_jobcode)
-      } else {
-        onUpdate(name, '姓名错误，无对应工号')
-      }
-    } catch {
-      onUpdate(name, '查询失败，无法验证工号')
-    }
-  }
-
-  /** 工号变更 */
-  const handleCodeChange = async (code: string) => {
-    if (!code) {
-      onUpdate('', '')
-      return
-    }
-    try {
-      const user = await getUserByCode(code)
-      if (user) {
-        onUpdate(user.employee_name ?? '', user.employee_jobcode)
-      } else {
-        onUpdate('工号错误，无对应姓名', code)
-      }
-    } catch {
-      onUpdate('查询失败', code)
-    }
-  }
-
-  return { fetchSuggestions, handleSelect, handleNameChange, handleCodeChange }
 }

@@ -50,11 +50,9 @@ export const assetTypeAPI = {
    * @returns 资产类型详情
    */
   getAssetTypeByRecordcode: (recordcode: string): Promise<AssetType> => {
-    return unwrapResponse(request.get<AssetType>(`/assets/asset-types/${recordcode}/`,
-      undefined,
-      true,
-      300000,
-    ))
+    return unwrapResponse(
+      request.get<AssetType>(`/assets/asset-types/${recordcode}/`, undefined, true, 300000),
+    )
   },
 
   /**
@@ -84,7 +82,9 @@ export const assetTypeAPI = {
    * @param data 资产类型更新表单数据（需包含 recordcode）
    * @returns 更新后的资产类型
    */
-  partialUpdateAssetType: (data: Partial<AssetTypeUpdateForm> & { recordcode: string }): Promise<AssetType> => {
+  partialUpdateAssetType: (
+    data: Partial<AssetTypeUpdateForm> & { recordcode: string },
+  ): Promise<AssetType> => {
     return unwrapResponse(request.patch<AssetType>(`/assets/asset-types/${data.recordcode}/`, data))
   },
 

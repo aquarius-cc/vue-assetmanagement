@@ -35,11 +35,7 @@
 -->
 
 <template>
-  <el-card
-    v-if="config.visible !== false"
-    class="info-card"
-    shadow="hover"
-  >
+  <el-card v-if="config.visible !== false" class="info-card" shadow="hover">
     <!-- 卡片头部：图标 + 标题 -->
     <template #header>
       <div class="section-header">
@@ -50,16 +46,8 @@
 
     <!-- grid 布局：双列键值对 -->
     <div v-if="config.layout !== 'description'" class="info-grid">
-      <div
-        v-for="(column, colIndex) in config.fields"
-        :key="colIndex"
-        class="info-column"
-      >
-        <div
-          v-for="(field, fieldIndex) in column"
-          :key="fieldIndex"
-          class="info-item"
-        >
+      <div v-for="(column, colIndex) in config.fields" :key="colIndex" class="info-column">
+        <div v-for="(field, fieldIndex) in column" :key="fieldIndex" class="info-item">
           <span class="info-label">{{ field.label }}：</span>
           <span class="info-value" :class="{ price: field.isPrice }">
             {{ formatValue(field) }}

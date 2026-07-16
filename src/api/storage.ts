@@ -52,12 +52,9 @@ export const storageAPI = {
    * @returns 仓库详情
    */
   getStorageByRecordcode: (recordcode: string): Promise<Storage> => {
-    return unwrapResponse(request.get<Storage>(
-      `/assets/storages/${recordcode}/`,
-      undefined,
-      true,
-      300000,
-    ))
+    return unwrapResponse(
+      request.get<Storage>(`/assets/storages/${recordcode}/`, undefined, true, 300000),
+    )
   },
 
   /**
@@ -96,7 +93,9 @@ export const storageAPI = {
    * @param data 仓库更新表单数据（需包含 recordcode）
    * @returns 更新后的仓库信息
    */
-  partialUpdateStorage: (data: Partial<StorageUpdateForm> & { recordcode?: string }): Promise<Storage> => {
+  partialUpdateStorage: (
+    data: Partial<StorageUpdateForm> & { recordcode?: string },
+  ): Promise<Storage> => {
     const recordcode = data.recordcode
     if (!recordcode) {
       throw new Error('recordcode is required for update')

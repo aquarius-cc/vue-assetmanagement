@@ -8,11 +8,13 @@ const { mockRequest, mockUnwrapResponse } = vi.hoisted(() => ({
     patch: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
     delete: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
   },
-  mockUnwrapResponse: vi.fn(async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
-    const res = await promise
-    if (res.code !== 0) throw new Error(res.message || '请求失败')
-    return res.data
-  }),
+  mockUnwrapResponse: vi.fn(
+    async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
+      const res = await promise
+      if (res.code !== 0) throw new Error(res.message || '请求失败')
+      return res.data
+    },
+  ),
 }))
 
 vi.mock('@/api/index', () => ({
@@ -34,7 +36,12 @@ describe('wasteAssetAPI', () => {
 
   it('getWasteAsset calls GET /assets/waste-assets/{code}/', async () => {
     await wasteAssetAPI.getWasteAsset('WA001')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/waste-assets/WA001/', undefined, true, 300000)
+    expect(mockRequest.get).toHaveBeenCalledWith(
+      '/assets/waste-assets/WA001/',
+      undefined,
+      true,
+      300000,
+    )
   })
 
   it('createWasteAsset calls POST /assets/waste-assets/', async () => {
@@ -44,7 +51,9 @@ describe('wasteAssetAPI', () => {
 
   it('updateWasteAsset calls PUT /assets/waste-assets/{code}/', async () => {
     await wasteAssetAPI.updateWasteAsset('WA001', { description: 'Updated' })
-    expect(mockRequest.put).toHaveBeenCalledWith('/assets/waste-assets/WA001/', { description: 'Updated' })
+    expect(mockRequest.put).toHaveBeenCalledWith('/assets/waste-assets/WA001/', {
+      description: 'Updated',
+    })
   })
 
   it('deleteWasteAsset calls DELETE /assets/waste-assets/{code}/', async () => {
@@ -54,7 +63,9 @@ describe('wasteAssetAPI', () => {
 
   it('batchDeleteWasteAssets calls POST /assets/waste-assets/batch-delete/', async () => {
     await wasteAssetAPI.batchDeleteWasteAssets(['WA001', 'WA002'])
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/waste-assets/batch-delete/', { ids: ['WA001', 'WA002'] })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/waste-assets/batch-delete/', {
+      ids: ['WA001', 'WA002'],
+    })
   })
 
   it('getWasteAssetsByAsset calls GET /assets/waste-assets/by-asset/{code}/', async () => {
@@ -69,6 +80,9 @@ describe('wasteAssetAPI', () => {
 
   it('getWasteAssetsByDateRange calls GET /assets/waste-assets/by-date-range/', async () => {
     await wasteAssetAPI.getWasteAssetsByDateRange('2026-01-01', '2026-01-31')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/waste-assets/by-date-range/', { start_date: '2026-01-01', end_date: '2026-01-31' })
+    expect(mockRequest.get).toHaveBeenCalledWith('/assets/waste-assets/by-date-range/', {
+      start_date: '2026-01-01',
+      end_date: '2026-01-31',
+    })
   })
 })

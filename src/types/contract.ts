@@ -7,26 +7,38 @@
 
 /**
  * 合同类型枚举
- * purchase: 采购合同
- * service: 服务合同
- * information_construction: 信息化建设合同
- * direct_procurement: 直接采购合同
+ * tender_procurement", "招标采购合同,
+ * service", "服务合同,
+ * information_construction", "信息化建设合同,
+ * direct_procurement", "直接采购合同
  */
 export enum ContractType {
-  PURCHASE = 'purchase',
+  TENDER_PROCUREMENT = 'tender_procurement',
   SERVICE = 'service',
   INFORMATION_CONSTRUCTION = 'information_construction',
-  DIRECT_PROCUREMENT = 'direct_procurement'
+  DIRECT_PROCUREMENT = 'direct_procurement',
 }
 
 /**
  * 合同结算状态枚举
- * pending: 待结算
- * settled: 已结算
+ * purchasing", "供货中,
+ * purchase_finished", "供货完成,
+ * receive_check", "到货验收,
+ * initial_check", "初步验收,
+ * project_settlement", "结算中,
+ * settlement_done", "结算完成,
+ * final_check", "最终验收,
+ * project_finished", "项目结束
  */
 export enum ContractSettlementStatus {
-  PENDING = 'pending',
-  SETTLED = 'settled'
+  PURCHASING = 'purchasing',
+  PURCHASE_FINISHED = 'purchase_finished',
+  RECEIVE_CHECK = 'receive_check',
+  INITIAL_CHECK = 'initial_check',
+  PROJECT_SETTLEMENT = 'project_settlement',
+  SETTLEMENT_DONE = 'settlement_done',
+  FINAL_CHECK = 'final_check',
+  PROJECT_FINISHED = 'project_finished',
 }
 
 // ==================== 基础接口定义 ====================
@@ -180,7 +192,9 @@ export interface ContractListResponse {
  */
 export interface ContractForTable extends Omit<
   Contract,
-  'contract_signing_date' | 'contract_preliminary_acceptance_date' | 'contract_final_acceptance_date'
+  | 'contract_signing_date'
+  | 'contract_preliminary_acceptance_date'
+  | 'contract_final_acceptance_date'
 > {
   contract_signing_date: string | null
   contract_preliminary_acceptance_date: string | null

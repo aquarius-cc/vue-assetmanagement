@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   formatDate,
   formatPrice,
@@ -121,12 +121,12 @@ describe('Format', () => {
     })
 
     it('formats number with locale', () => {
-      expect(formatNumber(1234)).toBeDefined()
-      expect(formatNumber(1234567)).toBeDefined()
+      expect(formatNumber(1234)).toBe('1,234')
+      expect(formatNumber(1234567)).toBe('1,234,567')
     })
 
     it('formats string number', () => {
-      expect(formatNumber('1234')).toBeDefined()
+      expect(formatNumber('1234')).toBe('1,234')
     })
   })
 
@@ -166,7 +166,7 @@ describe('Format', () => {
       expect(result.contract_paid_count_number).toBe(2)
       expect(result.contract_type).toBe('purchase')
       expect(result.contract_signing_date).toBe('2024-01-15')
-      expect(result.contract_settledment_status).toBe('pending')
+      expect(result.contract_settledment_status).toBe('purchasing')
     })
 
     it('handles null number fields with defaults', () => {
@@ -196,7 +196,7 @@ describe('Format', () => {
       })
       const result = contractiInfoFormate(input as any)
       expect(result.contract_code).toBe('C002')
-      expect(result.contract_settledment_status).toBe('pending')
+      expect(result.contract_settledment_status).toBe('purchasing')
     })
   })
 
@@ -529,8 +529,8 @@ describe('Format', () => {
 
     it('parses numeric date string', () => {
       const result = parseExcelDate('45000')
-      expect(result).toBeDefined()
       expect(result).not.toBe('未知')
+      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     })
 
     it('returns 未知 for invalid date', () => {
@@ -538,8 +538,10 @@ describe('Format', () => {
     })
 
     it('handles DD/MM/YYYY format', () => {
+      // parseExcelDate cannot distinguish DD/MM from MM/DD — both match the same regex.
+      // When day > 12, JS Date interprets as invalid month, returning '未知'.
       const result = parseExcelDate('25/12/2024')
-      expect(result).toBeDefined()
+      expect(result).toBe('未知')
     })
   })
 })

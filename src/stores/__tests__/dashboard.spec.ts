@@ -160,7 +160,14 @@ describe('DashboardStore', () => {
         timestamp: '2026-01-01T00:00:00Z',
       })
       vi.mocked(dashboardAPI.getRecentOutAssets).mockResolvedValue([
-        { id: 1, asset_name: '电脑', asset_code: 'A001', distribute_time: '', recipient_name: '', department_name: '' },
+        {
+          id: 1,
+          asset_name: '电脑',
+          asset_code: 'A001',
+          distribute_time: '',
+          recipient_name: '',
+          department_name: '',
+        },
       ])
       vi.mocked(dashboardAPI.getRecentRecycleAssets).mockResolvedValue([])
 
@@ -255,7 +262,14 @@ describe('DashboardStore', () => {
   describe('fetchRecentOutAssets', () => {
     it('应该获取最近发放记录', async () => {
       const mockData = [
-        { id: 1, asset_name: '电脑', asset_code: 'A001', distribute_time: '2026-01-01', recipient_name: '张三', department_name: '技术部' },
+        {
+          id: 1,
+          asset_name: '电脑',
+          asset_code: 'A001',
+          distribute_time: '2026-01-01',
+          recipient_name: '张三',
+          department_name: '技术部',
+        },
       ]
       const { dashboardAPI } = await import('@/api/dashboard')
       vi.mocked(dashboardAPI.getRecentOutAssets).mockResolvedValue(mockData as any)
@@ -290,7 +304,13 @@ describe('DashboardStore', () => {
   describe('fetchRecentRecycleAssets', () => {
     it('应该获取最近回收记录', async () => {
       const mockData = [
-        { id: 1, asset_name: '显示器', asset_code: 'B001', recycle_time: '2026-01-01', operator_name: '李四' },
+        {
+          id: 1,
+          asset_name: '显示器',
+          asset_code: 'B001',
+          recycle_time: '2026-01-01',
+          operator_name: '李四',
+        },
       ]
       const { dashboardAPI } = await import('@/api/dashboard')
       vi.mocked(dashboardAPI.getRecentRecycleAssets).mockResolvedValue(mockData as any)

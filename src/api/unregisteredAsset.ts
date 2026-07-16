@@ -23,8 +23,15 @@ export const unregisteredAssetAPI = {
    * @param params 查询参数
    * @returns 未登记资产列表响应
    */
-  getUnregisteredAssets: (params?: UnregisteredAssetQueryParams): Promise<UnregisteredAssetListResponse> => {
-    return unwrapResponse(request.get<UnregisteredAssetListResponse>('/unregisteredassets/unregistered-assets/', params))
+  getUnregisteredAssets: (
+    params?: UnregisteredAssetQueryParams,
+  ): Promise<UnregisteredAssetListResponse> => {
+    return unwrapResponse(
+      request.get<UnregisteredAssetListResponse>(
+        '/unregisteredassets/unregistered-assets/',
+        params,
+      ),
+    )
   },
 
   /**
@@ -33,12 +40,14 @@ export const unregisteredAssetAPI = {
    * @returns 未登记资产详情
    */
   getUnregisteredAsset: (code: string): Promise<UnregisteredAsset> => {
-    return unwrapResponse(request.get(
-      `/unregisteredassets/unregistered-assets/${code}/`,
-      undefined,
-      true, // 使用缓存
-      300000, // 缓存时间 5 分钟
-    ))
+    return unwrapResponse(
+      request.get(
+        `/unregisteredassets/unregistered-assets/${code}/`,
+        undefined,
+        true, // 使用缓存
+        300000, // 缓存时间 5 分钟
+      ),
+    )
   },
 
   /**
@@ -47,7 +56,9 @@ export const unregisteredAssetAPI = {
    * @returns 创建的未登记资产
    */
   createUnregisteredAsset: (data: UnregisteredAssetCreateForm): Promise<UnregisteredAsset> => {
-    return unwrapResponse(request.post<UnregisteredAsset>('/unregisteredassets/unregistered-assets/', data))
+    return unwrapResponse(
+      request.post<UnregisteredAsset>('/unregisteredassets/unregistered-assets/', data),
+    )
   },
 
   /**
@@ -56,8 +67,13 @@ export const unregisteredAssetAPI = {
    * @param data 未登记资产更新表单数据
    * @returns 更新后的未登记资产
    */
-  updateUnregisteredAsset: (code: string, data: Partial<UnregisteredAssetUpdateForm>): Promise<UnregisteredAsset> => {
-    return unwrapResponse(request.put<UnregisteredAsset>(`/unregisteredassets/unregistered-assets/${code}/`, data))
+  updateUnregisteredAsset: (
+    code: string,
+    data: Partial<UnregisteredAssetUpdateForm>,
+  ): Promise<UnregisteredAsset> => {
+    return unwrapResponse(
+      request.put<UnregisteredAsset>(`/unregisteredassets/unregistered-assets/${code}/`, data),
+    )
   },
 
   /**
@@ -87,7 +103,15 @@ export const unregisteredAssetAPI = {
    * @param data 审批表单数据
    * @returns 更新后的未登记资产
    */
-  approveUnregisteredAsset: (code: string, data: UnregisteredAssetApproveForm): Promise<UnregisteredAsset> => {
-    return unwrapResponse(request.post<UnregisteredAsset>(`/unregisteredassets/unregistered-assets/${code}/approve/`, data))
+  approveUnregisteredAsset: (
+    code: string,
+    data: UnregisteredAssetApproveForm,
+  ): Promise<UnregisteredAsset> => {
+    return unwrapResponse(
+      request.post<UnregisteredAsset>(
+        `/unregisteredassets/unregistered-assets/${code}/approve/`,
+        data,
+      ),
+    )
   },
 }

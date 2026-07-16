@@ -389,7 +389,7 @@ $breakpoint-tablet: 1024px;
       box-sizing: border-box;
     }
 
-    .el-table__body-wrapper .el-table__cell>div {
+    .el-table__body-wrapper .el-table__cell > div {
       width: 100%;
       text-align: inherit;
     }
@@ -615,7 +615,6 @@ $breakpoint-tablet: 1024px;
 // ========== 7. 响应式设计混合（兼容旧版调用） ==========
 @mixin responsive-design {
   @media (max-width: 768px) {
-
     .form-container,
     .detail-container,
     .list-container {

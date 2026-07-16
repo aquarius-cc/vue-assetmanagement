@@ -8,11 +8,13 @@ const { mockRequest, mockUnwrapResponse } = vi.hoisted(() => ({
     patch: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
     delete: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
   },
-  mockUnwrapResponse: vi.fn(async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
-    const res = await promise
-    if (res.code !== 0) throw new Error(res.message || '请求失败')
-    return res.data
-  }),
+  mockUnwrapResponse: vi.fn(
+    async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
+      const res = await promise
+      if (res.code !== 0) throw new Error(res.message || '请求失败')
+      return res.data
+    },
+  ),
 }))
 
 vi.mock('@/api/index', () => ({
@@ -34,7 +36,12 @@ describe('damagedAssetAPI', () => {
 
   it('getDamagedAsset calls GET /assets/damaged-assets/{code}/', async () => {
     await damagedAssetAPI.getDamagedAsset('DA001')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/damaged-assets/DA001/', undefined, true, 300000)
+    expect(mockRequest.get).toHaveBeenCalledWith(
+      '/assets/damaged-assets/DA001/',
+      undefined,
+      true,
+      300000,
+    )
   })
 
   it('createDamagedAsset calls POST /assets/damaged-assets/', async () => {
@@ -44,7 +51,9 @@ describe('damagedAssetAPI', () => {
 
   it('updateDamagedAsset calls PUT /assets/damaged-assets/{code}/', async () => {
     await damagedAssetAPI.updateDamagedAsset('DA001', { description: 'Updated' })
-    expect(mockRequest.put).toHaveBeenCalledWith('/assets/damaged-assets/DA001/', { description: 'Updated' })
+    expect(mockRequest.put).toHaveBeenCalledWith('/assets/damaged-assets/DA001/', {
+      description: 'Updated',
+    })
   })
 
   it('deleteDamagedAsset calls DELETE /assets/damaged-assets/{code}/', async () => {
@@ -54,7 +63,9 @@ describe('damagedAssetAPI', () => {
 
   it('batchDeleteDamagedAssets calls POST /assets/damaged-assets/batch-delete/', async () => {
     await damagedAssetAPI.batchDeleteDamagedAssets(['DA001', 'DA002'])
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/damaged-assets/batch-delete/', { ids: ['DA001', 'DA002'] })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/damaged-assets/batch-delete/', {
+      ids: ['DA001', 'DA002'],
+    })
   })
 
   it('getDamagedAssetsByAsset calls GET /assets/damaged-assets/by-asset/{code}/', async () => {
@@ -64,11 +75,15 @@ describe('damagedAssetAPI', () => {
 
   it('approveDamagedAsset calls POST /assets/damaged-assets/{code}/approve/', async () => {
     await damagedAssetAPI.approveDamagedAsset('DA001', { approver_jobcode: 'E001' })
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/damaged-assets/DA001/approve/', { approver_jobcode: 'E001' })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/damaged-assets/DA001/approve/', {
+      approver_jobcode: 'E001',
+    })
   })
 
   it('rejectDamagedAsset calls POST /assets/damaged-assets/{code}/reject/', async () => {
     await damagedAssetAPI.rejectDamagedAsset('DA001', { approver_jobcode: 'E001' })
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/damaged-assets/DA001/reject/', { approver_jobcode: 'E001' })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/damaged-assets/DA001/reject/', {
+      approver_jobcode: 'E001',
+    })
   })
 })

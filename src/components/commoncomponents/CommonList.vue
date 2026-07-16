@@ -51,17 +51,9 @@
 
         <!-- 动态列渲染 -->
         <template v-for="column in columns" :key="column.prop || column.label">
-          <CommonListColumn
-            :column="column"
-            :current-page="currentPage"
-            :page-size="pageSize"
-          >
+          <CommonListColumn :column="column" :current-page="currentPage" :page-size="pageSize">
             <!-- 透传自定义列插槽 -->
-            <template
-              v-for="(_, slotName) in $slots"
-              :key="slotName"
-              #[slotName]="slotProps"
-            >
+            <template v-for="(_, slotName) in $slots" :key="slotName" #[slotName]="slotProps">
               <slot :name="slotName" v-bind="slotProps" />
             </template>
           </CommonListColumn>
@@ -260,10 +252,20 @@ const getRowKey = (row: T): string | number | undefined => {
     }
   }
   const fields = [
-    'id', 'code', 'asset_code', 'asset_type_code', 'contract_code',
-    'damaged_asset_code', 'department_code', 'employee_jobcode',
-    'harddisk_sn_code', 'logging_id', 'outasset_recordcode',
-    'storage_code', 'user_jobcode', 'waste_asset_code',
+    'id',
+    'code',
+    'asset_code',
+    'asset_type_code',
+    'contract_code',
+    'damaged_asset_code',
+    'department_code',
+    'employee_jobcode',
+    'harddisk_sn_code',
+    'logging_id',
+    'outasset_recordcode',
+    'storage_code',
+    'user_jobcode',
+    'waste_asset_code',
   ]
   for (const field of fields) {
     const val = obj[field]

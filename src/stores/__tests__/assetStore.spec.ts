@@ -110,9 +110,7 @@ describe('AssetStore', () => {
       const { assetAPI } = await import('@/api/asset')
       vi.mocked(assetAPI.createAsset).mockRejectedValue(new Error('创建失败'))
 
-      await expect(
-        store.create({ asset_name: '笔记本电脑' } as any),
-      ).rejects.toThrow('创建失败')
+      await expect(store.create({ asset_name: '笔记本电脑' } as any)).rejects.toThrow('创建失败')
     })
   })
 
@@ -131,9 +129,7 @@ describe('AssetStore', () => {
     it('searchAssets应该调用searchAssets API', async () => {
       const mockResponse = {
         count: 1,
-        results: [
-          { asset_code: 'AS-001', asset_name: '笔记本电脑' },
-        ],
+        results: [{ asset_code: 'AS-001', asset_name: '笔记本电脑' }],
       }
 
       const { assetAPI } = await import('@/api/asset')
@@ -185,9 +181,9 @@ describe('AssetStore', () => {
       const { assetAPI } = await import('@/api/asset')
       vi.mocked(assetAPI.searchAssets).mockRejectedValue(new Error('搜索失败'))
 
-      await expect(
-        store.searchAssets({ page: 1, page_size: 10 } as any),
-      ).rejects.toThrow('搜索失败')
+      await expect(store.searchAssets({ page: 1, page_size: 10 } as any)).rejects.toThrow(
+        '搜索失败',
+      )
     })
 
     it('combineSearch应该调用combineSearch API', async () => {
@@ -252,9 +248,7 @@ describe('AssetStore', () => {
       const { assetAPI } = await import('@/api/asset')
       vi.mocked(assetAPI.combineSearch).mockRejectedValue(new Error('联合搜索失败'))
 
-      await expect(
-        store.combineSearch({ asset_name: '电脑' }),
-      ).rejects.toThrow('联合搜索失败')
+      await expect(store.combineSearch({ asset_name: '电脑' })).rejects.toThrow('联合搜索失败')
     })
 
     it('combineSearch应支持多条件组合', async () => {
@@ -349,9 +343,7 @@ describe('AssetStore', () => {
   describe('按名称查询', () => {
     it('应该调用API按名称搜索资产', async () => {
       const mockResponse = {
-        results: [
-          { asset_code: 'AS-001', asset_name: '笔记本电脑' },
-        ],
+        results: [{ asset_code: 'AS-001', asset_name: '笔记本电脑' }],
       }
 
       const { assetAPI } = await import('@/api/asset')

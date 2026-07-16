@@ -23,7 +23,13 @@
         @clear="selectedRecords = []"
       />
 
-      <el-form ref="formRef" :model="formData" :rules="currentRules" label-width="140px" size="default">
+      <el-form
+        ref="formRef"
+        :model="formData"
+        :rules="currentRules"
+        label-width="140px"
+        size="default"
+      >
         <template v-if="isEditMode">
           <el-row :gutter="20">
             <el-col :span="24"><h3 class="section-title">关联出库记录</h3></el-col>
@@ -39,7 +45,10 @@
             </el-col>
             <el-col :xs="24" :sm="24" :md="12">
               <el-form-item label="使用人工号">
-                <el-input :model-value="selectedOutAsset?.outasset_manager_jobcode || ''" disabled />
+                <el-input
+                  :model-value="selectedOutAsset?.outasset_manager_jobcode || ''"
+                  disabled
+                />
               </el-form-item>
             </el-col>
             <el-col :xs="24" :sm="24" :md="12">
@@ -60,7 +69,12 @@
             </el-col>
             <el-col :xs="24" :sm="24" :md="12">
               <el-form-item label="回收数量" prop="recycle_asset_number" required>
-                <el-input-number v-model="formData.recycle_asset_number" :min="1" :max="maxRecycleNumber" style="width: 100%" />
+                <el-input-number
+                  v-model="formData.recycle_asset_number"
+                  :min="1"
+                  :max="maxRecycleNumber"
+                  style="width: 100%"
+                />
               </el-form-item>
             </el-col>
           </el-row>
@@ -73,7 +87,9 @@
           :user-suggestions="personLinkage.userSuggestions"
           :disabled="isEditMode"
           @update:recycle_asset_storage_code="formData.recycle_asset_storage_code = $event"
-          @update:recycle_asset_recycle_person_jobcode="formData.recycle_asset_recycle_person_jobcode = $event"
+          @update:recycle_asset_recycle_person_jobcode="
+            formData.recycle_asset_recycle_person_jobcode = $event
+          "
           @update:recycle_asset_date="formData.recycle_asset_date = $event"
           @update:recycle_type="formData.recycle_type = $event"
           @update:recycle_asset_description="formData.recycle_asset_description = $event"
@@ -97,22 +113,39 @@
         <p v-if="submitState.confirmData.value.recordCount > 1">
           <strong>记录数量：</strong>{{ submitState.confirmData.value.recordCount }} 条
         </p>
-        <el-table v-if="submitState.confirmData.value.records.length > 0"
-          :data="submitState.confirmData.value.records" size="small" style="width: 100%">
+        <el-table
+          v-if="submitState.confirmData.value.records.length > 0"
+          :data="submitState.confirmData.value.records"
+          size="small"
+          style="width: 100%"
+        >
           <el-table-column prop="recycle_asset" label="资产编码" width="160" />
           <el-table-column prop="outasset_name" label="资产名称" />
           <el-table-column prop="outasset_manager_name" label="使用人" width="100" />
         </el-table>
         <el-descriptions :column="2" border size="small" style="margin-top: 12px">
-          <el-descriptions-item label="回收仓库">{{ submitState.confirmData.value.storageName }}</el-descriptions-item>
-          <el-descriptions-item label="回收人">{{ submitState.confirmData.value.personName }}</el-descriptions-item>
-          <el-descriptions-item label="回收日期">{{ submitState.confirmData.value.recycleDate }}</el-descriptions-item>
-          <el-descriptions-item label="回收原因">{{ submitState.confirmData.value.recycleType }}</el-descriptions-item>
+          <el-descriptions-item label="回收仓库">{{
+            submitState.confirmData.value.storageName
+          }}</el-descriptions-item>
+          <el-descriptions-item label="回收人">{{
+            submitState.confirmData.value.personName
+          }}</el-descriptions-item>
+          <el-descriptions-item label="回收日期">{{
+            submitState.confirmData.value.recycleDate
+          }}</el-descriptions-item>
+          <el-descriptions-item label="回收原因">{{
+            submitState.confirmData.value.recycleType
+          }}</el-descriptions-item>
         </el-descriptions>
       </div>
       <template #footer>
         <el-button @click="submitState.confirmVisible.value = false">取消</el-button>
-        <el-button type="primary" :loading="submitState.submitting.value" @click="submitState.doSubmit">确认提交</el-button>
+        <el-button
+          type="primary"
+          :loading="submitState.submitting.value"
+          @click="submitState.doSubmit"
+          >确认提交</el-button
+        >
       </template>
     </el-dialog>
   </div>
@@ -140,7 +173,9 @@ import { useDepartmentCache } from '@/composables/useDepartmentCache'
 import { useRecycleFormSubmit } from '@/composables/useRecycleFormSubmit'
 
 import RecyclableOutAssetsSearch from './detilschildcomponents/RecyclableOutAssetsSearch.vue'
-import SelectedRecordsTable, { type SelectedRecord } from './detilschildcomponents/SelectedRecordsTable.vue'
+import SelectedRecordsTable, {
+  type SelectedRecord,
+} from './detilschildcomponents/SelectedRecordsTable.vue'
 import RecycleSharedInfo from './detilschildcomponents/RecycleSharedInfo.vue'
 
 const router = useRouter()
@@ -160,9 +195,14 @@ const departmentName = ref('')
 
 // ==================== 共享表单 ====================
 const formData = reactive({
-  outasset_recordcode: '', recycle_asset: '', recycle_asset_number: 1,
-  recycle_asset_storage_code: '', recycle_asset_recycle_person_jobcode: '',
-  recycle_asset_date: '', recycle_type: '', recycle_asset_description: '',
+  outasset_recordcode: '',
+  recycle_asset: '',
+  recycle_asset_number: 1,
+  recycle_asset_storage_code: '',
+  recycle_asset_recycle_person_jobcode: '',
+  recycle_asset_date: '',
+  recycle_type: '',
+  recycle_asset_description: '',
   id: undefined as number | undefined,
 })
 
@@ -175,7 +215,9 @@ const associations = useRecycleFormAssociations()
 const personLinkage = useRecyclePersonLinkage(
   (name) => userStore.getByName(name),
   (code) => userStore.getById(code),
-  (code) => { formData.recycle_asset_recycle_person_jobcode = code },
+  (code) => {
+    formData.recycle_asset_recycle_person_jobcode = code
+  },
 )
 
 const deptCache = useDepartmentCache()
@@ -197,30 +239,41 @@ const addRecord = (row: OutAssetDetail, deptName: string) => {
     return
   }
   selectedRecords.value.push({
-    recordcode, recycle_asset: row.asset_code ?? '',
-    outasset_name: row.asset_name ?? '', outasset_manager_name: row.outasset_manager?.employee_name ?? '',
-    manager_jobcode: row.outasset_manager?.employee_jobcode ?? '', department_name: deptName,
+    recordcode,
+    recycle_asset: row.asset_code ?? '',
+    outasset_name: row.asset_name ?? '',
+    outasset_manager_name: row.outasset_manager?.employee_name ?? '',
+    manager_jobcode: row.outasset_manager?.employee_jobcode ?? '',
+    department_name: deptName,
     outasset_number: row.outasset_number ?? 1,
   })
   deptCache.prefetch(selectedRecords.value.map((r) => r.manager_jobcode))
   ElMessage.success('已添加')
 }
 
-const removeRecord = (index: number) => { selectedRecords.value.splice(index, 1) }
+const removeRecord = (index: number) => {
+  selectedRecords.value.splice(index, 1)
+}
 
 // ==================== 校验规则 ====================
 const sharedRules: FormRules = {
   recycle_asset_storage_code: [{ required: true, message: '请选择回收仓库', trigger: 'change' }],
-  recycle_asset_recycle_person_jobcode: [{ required: true, message: '请选择回收人', trigger: 'change' }],
+  recycle_asset_recycle_person_jobcode: [
+    { required: true, message: '请选择回收人', trigger: 'change' },
+  ],
   recycle_asset_date: [{ required: true, message: '请选择回收日期', trigger: 'change' }],
   recycle_type: [{ required: true, message: '请输入回收原因', trigger: 'blur' }],
 }
 const editRules: FormRules = {
   outasset_recordcode: [{ required: true, message: '请选择出库记录', trigger: 'blur' }],
   recycle_asset: [{ required: true, message: '请输入资产编码', trigger: 'blur' }],
-  recycle_asset_number: [{ required: true, type: 'number', min: 1, message: '数量必须大于0', trigger: 'blur' }],
+  recycle_asset_number: [
+    { required: true, type: 'number', min: 1, message: '数量必须大于0', trigger: 'blur' },
+  ],
 }
-const currentRules = computed(() => isEditMode.value ? { ...sharedRules, ...editRules } : sharedRules)
+const currentRules = computed(() =>
+  isEditMode.value ? { ...sharedRules, ...editRules } : sharedRules,
+)
 
 // ==================== 按钮文本 ====================
 const submitButtonText = computed(() => {
@@ -233,13 +286,20 @@ const submitButtonText = computed(() => {
 const loadEditData = async (recordcode: string) => {
   try {
     const detail = (await recycleStore.getById(recordcode)) as RecycleAssetExtended
-    if (!detail) { ElMessage.error('回收记录不存在'); return }
+    if (!detail) {
+      ElMessage.error('回收记录不存在')
+      return
+    }
     Object.assign(formData, {
-      outasset_recordcode: detail.outasset_recordcode, recycle_asset: detail.asset_code ?? detail.asset?.asset_code ?? '',
-      recycle_asset_number: detail.recycle_asset_number, recycle_asset_storage_code: detail.recycle_asset_storage_code,
+      outasset_recordcode: detail.outasset_recordcode,
+      recycle_asset: detail.asset_code ?? detail.asset?.asset_code ?? '',
+      recycle_asset_number: detail.recycle_asset_number,
+      recycle_asset_storage_code: detail.recycle_asset_storage_code,
       recycle_asset_recycle_person_jobcode: detail.recycle_asset_recycle_person_jobcode,
-      recycle_asset_date: detail.recycle_asset_date, recycle_type: detail.recycle_type ?? '',
-      recycle_asset_description: detail.recycle_asset_description ?? '', id: detail.id,
+      recycle_asset_date: detail.recycle_asset_date,
+      recycle_type: detail.recycle_type ?? '',
+      recycle_asset_description: detail.recycle_asset_description ?? '',
+      id: detail.id,
     })
     if (detail.recycle_asset_recycle_person_jobcode) {
       const name = await personLinkage.getNameByCode(detail.recycle_asset_recycle_person_jobcode)
@@ -251,7 +311,9 @@ const loadEditData = async (recordcode: string) => {
         if (outDetail) {
           selectedOutAsset.value = outDetail as RecyclableOutAsset
         }
-      } catch (e) { console.warn('加载关联出库记录失败', e) }
+      } catch (e) {
+        console.warn('加载关联出库记录失败', e)
+      }
     }
   } catch (error) {
     console.error('加载回收记录失败:', error)
@@ -262,21 +324,31 @@ const loadEditData = async (recordcode: string) => {
 // ==================== 提交入口 ====================
 const submitForm = () => {
   formRef.value?.validate((valid) => {
-    if (!valid) { ElMessage.error('请填写所有必填项'); return }
-    if (!isEditMode.value && selectedRecords.value.length === 0) {
-      ElMessage.warning('请至少选择一条回收记录'); return
+    if (!valid) {
+      ElMessage.error('请填写所有必填项')
+      return
     }
-    const storageName = associations.storages.value.find(
-      (s) => s.storage_code === formData.recycle_asset_storage_code,
-    )?.storage_name ?? formData.recycle_asset_storage_code
+    if (!isEditMode.value && selectedRecords.value.length === 0) {
+      ElMessage.warning('请至少选择一条回收记录')
+      return
+    }
+    const storageName =
+      associations.storages.value.find(
+        (s) => s.storage_code === formData.recycle_asset_storage_code,
+      )?.storage_name ?? formData.recycle_asset_storage_code
 
     submitState.showConfirm({
-      actionType: isEditMode.value ? '更新回收记录'
-        : selectedRecords.value.length === 1 ? '新增回收记录' : '批量新增回收记录',
+      actionType: isEditMode.value
+        ? '更新回收记录'
+        : selectedRecords.value.length === 1
+          ? '新增回收记录'
+          : '批量新增回收记录',
       recordCount: isEditMode.value ? 1 : selectedRecords.value.length,
       records: selectedRecords.value,
-      storageName, personName: personLinkage.name.value,
-      recycleDate: formData.recycle_asset_date, recycleType: formData.recycle_type,
+      storageName,
+      personName: personLinkage.name.value,
+      recycleDate: formData.recycle_asset_date,
+      recycleType: formData.recycle_type,
     })
   })
 }
@@ -287,8 +359,12 @@ const resetForm = () => {
   } else {
     formRef.value?.resetFields()
     Object.assign(formData, {
-      recycle_asset_number: 1, recycle_asset_description: '', recycle_type: '',
-      recycle_asset_storage_code: '', recycle_asset_recycle_person_jobcode: '', recycle_asset_date: '',
+      recycle_asset_number: 1,
+      recycle_asset_description: '',
+      recycle_type: '',
+      recycle_asset_storage_code: '',
+      recycle_asset_recycle_person_jobcode: '',
+      recycle_asset_date: '',
     })
     selectedRecords.value = []
     selectedOutAsset.value = null
@@ -308,17 +384,33 @@ onMounted(async () => {
 <style scoped lang="scss">
 .recycle-asset-form {
   padding: 24px;
-  .box-card { height: 100%; }
-  .card-header { display: flex; align-items: center; gap: 8px; font-weight: bold; color: var(--color-primary-light); }
+  .box-card {
+    height: 100%;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    color: var(--color-primary-light);
+  }
   .section-title {
-    color: var(--text-primary); font-size: 16px; font-weight: 600;
-    margin: 28px 0 20px; padding: 12px 16px;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 28px 0 20px;
+    padding: 12px 16px;
     background: var(--gradient-card-highlight);
-    border-left: 4px solid var(--color-primary-light); border-radius: 4px;
+    border-left: 4px solid var(--color-primary-light);
+    border-radius: 4px;
   }
   .form-actions {
-    display: flex; gap: 12px; justify-content: center;
-    margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--border-color-light);
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color-light);
   }
 }
 </style>

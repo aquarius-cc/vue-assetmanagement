@@ -61,12 +61,12 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
-import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
+import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { BrokenAssetExtended } from '@/utils/BrokenAsset'
@@ -94,52 +94,10 @@ const columns: TableColumn[] = [
   { prop: 'operator_name', label: 'Operator', width: 100, align: 'center' },
 ]
 
-const storeConfig: PaginationSearchConfig<BrokenAssetExtended> = {
-  store: {
-    getList: async (params) => {
-      const response = await brokenAssetStore.getList(params)
-      return {
-        count: brokenAssetStore.pagination.total,
-        results: response,
-        next: null,
-        previous: null,
-      }
-    },
-    pagination: {
-      page: {
-        get: () => brokenAssetStore.pagination.page,
-        set: (val: number) => { brokenAssetStore.pagination.page = val },
-      },
-      page_size: {
-        get: () => brokenAssetStore.pagination.page_size,
-        set: (val: number) => { brokenAssetStore.pagination.page_size = val },
-      },
-      total: {
-        get: () => brokenAssetStore.pagination.total,
-        set: (val: number) => { brokenAssetStore.pagination.total = val },
-      },
-    },
-    list: computed(() => brokenAssetStore.list),
-    loading: computed(() => brokenAssetStore.loading),
-    refreshFlag: computed(() => brokenAssetStore.refreshFlag),
-    setRefreshFlag: (flag: boolean) => brokenAssetStore.setRefreshFlag(flag),
-  },
-  search: {
-    performSearch: async (keyword: string, page: number, page_size: number) => {
-      const response = await brokenAssetStore.getList({ search: keyword, page, page_size })
-      return {
-        count: brokenAssetStore.pagination.total,
-        results: response,
-      }
-    },
-  },
-  defaultPageSize: 20,
-  messages: {
-    loadFailed: 'Failed to load broken asset list',
-    searchFailed: 'Failed to search broken assets',
-    invalidPage: 'Page out of range, jumped to last page',
-  },
-}
+const storeConfig = useSmartListConfig<BrokenAssetExtended>({
+  store: brokenAssetStore,
+  entityName: '损坏资产',
+})
 
 const handleDelete = (row: BrokenAssetExtended) => {
   if (!row.recordcode) {

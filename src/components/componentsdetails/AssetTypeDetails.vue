@@ -50,15 +50,14 @@
     </div>
 
     <!-- 新增/编辑表单弹窗 -->
-    <el-dialog
-      v-model="formDialogVisible"
-      :title="formDialogTitle"
-      width="560px"
-      destroy-on-close
-    >
+    <el-dialog v-model="formDialogVisible" :title="formDialogTitle" width="560px" destroy-on-close>
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="110px">
         <el-form-item label="类型编码" prop="type_code">
-          <el-input v-model="formData.type_code" :disabled="isEditMode" placeholder="请输入类型编码" />
+          <el-input
+            v-model="formData.type_code"
+            :disabled="isEditMode"
+            placeholder="请输入类型编码"
+          />
         </el-form-item>
         <el-form-item label="类型名称" prop="type_name">
           <el-input v-model="formData.type_name" placeholder="请输入类型名称" />
@@ -70,10 +69,20 @@
           <el-input-number v-model="formData.level" :min="0" :max="6" disabled />
         </el-form-item>
         <el-form-item label="排序">
-          <el-input-number v-model="formData.sort_order" :min="0" controls-position="right" style="width: 100%" />
+          <el-input-number
+            v-model="formData.sort_order"
+            :min="0"
+            controls-position="right"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="描述">
-          <el-input v-model="formData.type_description" type="textarea" :rows="3" placeholder="请输入描述" />
+          <el-input
+            v-model="formData.type_description"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入描述"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -83,12 +92,7 @@
     </el-dialog>
 
     <!-- 批量新增子分类弹窗 -->
-    <el-dialog
-      v-model="batchAddVisible"
-      title="批量新增子分类"
-      width="600px"
-      destroy-on-close
-    >
+    <el-dialog v-model="batchAddVisible" title="批量新增子分类" width="600px" destroy-on-close>
       <el-form label-width="110px">
         <el-form-item label="父级分类">
           <el-tag>{{ selectedType?.type_name }} ({{ selectedType?.type_code }})</el-tag>
@@ -98,7 +102,11 @@
             <div v-for="(item, index) in batchAddList" :key="index" class="batch-add-item">
               <el-input v-model="item.type_code" placeholder="类型编码" style="width: 150px" />
               <el-input v-model="item.type_name" placeholder="类型名称" style="width: 150px" />
-              <el-input v-model="item.type_description" placeholder="描述（可选）" style="flex: 1" />
+              <el-input
+                v-model="item.type_description"
+                placeholder="描述（可选）"
+                style="flex: 1"
+              />
               <el-button type="danger" link @click="batchAddList.splice(index, 1)">
                 <el-icon><Delete /></el-icon>
               </el-button>
@@ -111,7 +119,9 @@
       </el-form>
       <template #footer>
         <el-button @click="batchAddVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleBatchAddSubmit">确定</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleBatchAddSubmit"
+          >确定</el-button
+        >
       </template>
     </el-dialog>
   </div>
@@ -141,7 +151,10 @@ const route = useRoute()
 const router = useRouter()
 
 const isChildRouteActive = computed(() => {
-  return route.name !== 'AssetTypeDetails' && ['AssetTypeForm', 'AssetTypeBatchImport'].includes(route.name as string)
+  return (
+    route.name !== 'AssetTypeDetails' &&
+    ['AssetTypeForm', 'AssetTypeBatchImport'].includes(route.name as string)
+  )
 })
 
 // ==================== 状态 ====================
@@ -162,7 +175,7 @@ const isEditMode = ref(false)
 const editingRecordcode = ref('')
 const formRef = ref<FormInstance>()
 
-const formDialogTitle = computed(() => isEditMode.value ? '编辑资产分类' : '新增资产分类')
+const formDialogTitle = computed(() => (isEditMode.value ? '编辑资产分类' : '新增资产分类'))
 
 const formData = ref<AssetTypeCreateForm>({
   type_code: '',
@@ -186,7 +199,9 @@ const formRules: FormRules = {
 
 // ==================== 批量新增弹窗 ====================
 const batchAddVisible = ref(false)
-const batchAddList = ref<Array<{ type_code: string; type_name: string; type_description: string }>>([])
+const batchAddList = ref<Array<{ type_code: string; type_name: string; type_description: string }>>(
+  [],
+)
 
 const addBatchItem = () => {
   batchAddList.value.push({ type_code: '', type_name: '', type_description: '' })
@@ -229,7 +244,14 @@ const handleTypeSelect = (assetType: AssetType) => {
 const handleAddRootType = () => {
   isEditMode.value = false
   editingRecordcode.value = ''
-  formData.value = { type_code: '', type_name: '', parent_type_code: null, level: 0, type_description: '', sort_order: 0 }
+  formData.value = {
+    type_code: '',
+    type_name: '',
+    parent_type_code: null,
+    level: 0,
+    type_description: '',
+    sort_order: 0,
+  }
   formDialogVisible.value = true
 }
 
@@ -302,7 +324,9 @@ const handleSubmitForm = async () => {
 
 /** 批量新增提交 */
 const handleBatchAddSubmit = async () => {
-  const validItems = batchAddList.value.filter((item) => item.type_code.trim() && item.type_name.trim())
+  const validItems = batchAddList.value.filter(
+    (item) => item.type_code.trim() && item.type_name.trim(),
+  )
   if (validItems.length === 0) {
     ElMessage.warning('请至少填写一条有效的子分类数据')
     return
@@ -320,14 +344,18 @@ const handleBatchAddSubmit = async () => {
     }))
     const result = await assetTypeAPI.batchCreateAssetTypes(items)
     if (result.fail_count > 0) {
-      ElMessage.warning(`批量新增完成：成功 ${result.success_count} 条，失败 ${result.fail_count} 条`)
+      ElMessage.warning(
+        `批量新增完成：成功 ${result.success_count} 条，失败 ${result.fail_count} 条`,
+      )
     } else {
       ElMessage.success(`批量新增成功：共 ${result.success_count} 条`)
     }
     batchAddVisible.value = false
     await fetchAllData()
   } catch (error) {
-    const msg = isAxiosError(error) ? error.response?.data?.message || error.message : '批量新增失败'
+    const msg = isAxiosError(error)
+      ? error.response?.data?.message || error.message
+      : '批量新增失败'
     ElMessage.error(`批量新增失败：${msg}`)
   } finally {
     submitting.value = false
@@ -398,11 +426,15 @@ const handleBatchDelete = async (rows: AssetType[]) => {
   if (rows.length === 0) return
   const typeCodes = rows.map((r) => r.type_code).filter(Boolean)
   try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${typeCodes.length} 条资产分类吗？`, '批量删除确认', {
-      confirmButtonText: '确定删除',
-      cancelButtonText: '取消',
-      type: 'warning',
-    })
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${typeCodes.length} 条资产分类吗？`,
+      '批量删除确认',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+      },
+    )
     await assetTypeAPI.batchDeleteAssetTypes(typeCodes)
     ElMessage.success('批量删除成功')
     await fetchAllData()

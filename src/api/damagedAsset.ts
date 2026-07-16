@@ -32,12 +32,14 @@ export const damagedAssetAPI = {
    * @returns 损坏资产详情
    */
   getDamagedAsset: (code: string): Promise<DamagedAsset> => {
-    return unwrapResponse(request.get(
-      `/assets/damaged-assets/${code}/`,
-      undefined,
-      true, // 使用缓存
-      300000, // 缓存时间 5 分钟
-    ))
+    return unwrapResponse(
+      request.get(
+        `/assets/damaged-assets/${code}/`,
+        undefined,
+        true, // 使用缓存
+        300000, // 缓存时间 5 分钟
+      ),
+    )
   },
 
   /**
@@ -55,7 +57,10 @@ export const damagedAssetAPI = {
    * @param data 损坏记录更新表单数据
    * @returns 更新后的损坏记录
    */
-  updateDamagedAsset: (code: string, data: Partial<DamagedAssetUpdateForm>): Promise<DamagedAsset> => {
+  updateDamagedAsset: (
+    code: string,
+    data: Partial<DamagedAssetUpdateForm>,
+  ): Promise<DamagedAsset> => {
     return unwrapResponse(request.put<DamagedAsset>(`/assets/damaged-assets/${code}/`, data))
   },
 
@@ -86,7 +91,9 @@ export const damagedAssetAPI = {
    * @returns 损坏记录列表响应
    */
   getDamagedAssetsByAsset: (asset_code: string): Promise<DamagedAssetListResponse> => {
-    return unwrapResponse(request.get<DamagedAssetListResponse>(`/assets/damaged-assets/by-asset/${asset_code}/`))
+    return unwrapResponse(
+      request.get<DamagedAssetListResponse>(`/assets/damaged-assets/by-asset/${asset_code}/`),
+    )
   },
 
   /**
@@ -95,13 +102,14 @@ export const damagedAssetAPI = {
    * @param data 审批数据（可选 approver_jobcode 和 operator_name）
    * @returns 审批结果
    */
-  approveDamagedAsset: (code: string, data?: { approver_jobcode?: string; operator_name?: string }): Promise<{
+  approveDamagedAsset: (
+    code: string,
+    data?: { approver_jobcode?: string; operator_name?: string },
+  ): Promise<{
     damaged_asset: DamagedAsset
     waste_asset: Record<string, unknown>
   }> => {
-    return unwrapResponse(
-      request.post(`/assets/damaged-assets/${code}/approve/`, data),
-    )
+    return unwrapResponse(request.post(`/assets/damaged-assets/${code}/approve/`, data))
   },
 
   /**
@@ -110,9 +118,10 @@ export const damagedAssetAPI = {
    * @param data 审批数据（可选 approver_jobcode 和 operator_name）
    * @returns 审批结果
    */
-  rejectDamagedAsset: (code: string, data?: { approver_jobcode?: string; operator_name?: string }): Promise<DamagedAsset> => {
-    return unwrapResponse(
-      request.post(`/assets/damaged-assets/${code}/reject/`, data),
-    )
+  rejectDamagedAsset: (
+    code: string,
+    data?: { approver_jobcode?: string; operator_name?: string },
+  ): Promise<DamagedAsset> => {
+    return unwrapResponse(request.post(`/assets/damaged-assets/${code}/reject/`, data))
   },
 }

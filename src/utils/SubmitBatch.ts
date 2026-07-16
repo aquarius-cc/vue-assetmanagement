@@ -44,9 +44,7 @@ export function extractErrorMessage(error: unknown): string {
     if (data && typeof data === 'object') {
       // DRF 常见格式：{ detail: "..." } 或 { detail: ["...", "..."] }
       if ('detail' in data && data.detail != null) {
-        return Array.isArray(data.detail)
-          ? data.detail.map(String).join('；')
-          : String(data.detail)
+        return Array.isArray(data.detail) ? data.detail.map(String).join('；') : String(data.detail)
       }
       // DRF 字段级错误：{ field_name: ["错误1", "错误2"] }
       if ('message' in data && typeof data.message === 'string') {
@@ -86,7 +84,7 @@ export function extractErrorMessage(error: unknown): string {
 export async function submitBatch<T extends object>(
   dataList: T[],
   createFn: (item: T) => Promise<unknown>,
-  options: SubmitBatchOptions<T>
+  options: SubmitBatchOptions<T>,
 ): Promise<SubmitBatchResult<T>> {
   const { entityName, idField, concurrency = 5 } = options
   const batchSize = concurrency

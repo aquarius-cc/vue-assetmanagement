@@ -27,10 +27,14 @@
         <el-tag size="small">第 {{ assetType.level ?? 0 }} 层</el-tag>
       </el-descriptions-item>
       <el-descriptions-item label="排序">{{ assetType.sort_order ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="父级编码">{{ assetType.parent_type_code || '—' }}</el-descriptions-item>
+      <el-descriptions-item label="父级编码">{{
+        assetType.parent_type_code || '—'
+      }}</el-descriptions-item>
       <el-descriptions-item label="物化路径">{{ assetType.path || '—' }}</el-descriptions-item>
       <el-descriptions-item label="记录编码">{{ assetType.recordcode }}</el-descriptions-item>
-      <el-descriptions-item label="描述" :span="2">{{ assetType.type_description || '—' }}</el-descriptions-item>
+      <el-descriptions-item label="描述" :span="2">{{
+        assetType.type_description || '—'
+      }}</el-descriptions-item>
     </el-descriptions>
   </el-card>
 </template>

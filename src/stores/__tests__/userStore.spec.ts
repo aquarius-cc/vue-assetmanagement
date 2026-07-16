@@ -119,9 +119,9 @@ describe('UserStore', () => {
     })
 
     it('应该校验必填字段并抛出错误', async () => {
-      await expect(
-        store.create({ employee_name: '张三' }),
-      ).rejects.toThrow('employee_jobcode 不能为空')
+      await expect(store.create({ employee_name: '张三' })).rejects.toThrow(
+        'employee_jobcode 不能为空',
+      )
     })
 
     it('应该校验员工状态', async () => {
@@ -325,9 +325,7 @@ describe('UserStore', () => {
 
   describe('更新校验', () => {
     it('更新缺少employee_jobcode时应抛出异常', async () => {
-      await expect(
-        store.update({ employee_name: '张三' }),
-      ).rejects.toThrow('Missing ID for update')
+      await expect(store.update({ employee_name: '张三' })).rejects.toThrow('Missing ID for update')
     })
 
     it('更新无效状态时应抛出异常', async () => {
@@ -517,9 +515,7 @@ describe('UserStore', () => {
     it('应该调用getByName获取员工', async () => {
       const { userAPI } = await import('@/api/user')
       vi.mocked(userAPI.getUserByName).mockResolvedValue({
-        results: [
-          { employee_jobcode: 'EMP001', employee_name: '张三' },
-        ],
+        results: [{ employee_jobcode: 'EMP001', employee_name: '张三' }],
       } as any)
 
       const result = await store.getByName('张三')

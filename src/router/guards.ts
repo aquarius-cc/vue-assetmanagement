@@ -1,6 +1,6 @@
 // guards.ts
 // 路由守卫配置（含 RBAC 角色检查）
-import type { Router , RouteLocationNormalized} from 'vue-router'
+import type { Router, RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { getDecryptedToken } from '@/utils/tokenCrypto'
@@ -33,10 +33,7 @@ const roleWhitelist: Record<string, string[]> = {
 /**
  * 检查用户角色是否允许访问目标路由
  */
-function checkRoleAccess(
-  targetPath: string,
-  userRole: string,
-): boolean {
+function checkRoleAccess(targetPath: string, userRole: string): boolean {
   // 精确匹配：从最长前缀开始
   const sortedPrefixes = Object.keys(roleWhitelist).sort((a, b) => b.length - a.length)
   for (const prefix of sortedPrefixes) {
@@ -152,8 +149,9 @@ export const setupAuthGuard = (router: Router) => {
  * @param route - 当前路由对象（标准化后的路由位置）
  * @returns 面包屑数组，每个元素包含名称和路径
  */
-const generateBreadcrumbs = (route: RouteLocationNormalized) => {  // 【修改】any → RouteLocationNormalized
-  const breadcrumbs: Array<{ name: string; path: string }> = []     // 【新增】为 breadcrumbs 添加类型
+const generateBreadcrumbs = (route: RouteLocationNormalized) => {
+  // 【修改】any → RouteLocationNormalized
+  const breadcrumbs: Array<{ name: string; path: string }> = [] // 【新增】为 breadcrumbs 添加类型
 
   // 首页面包屑
   breadcrumbs.push({ name: '首页', path: '/main' })

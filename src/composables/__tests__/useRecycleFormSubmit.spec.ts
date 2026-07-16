@@ -136,9 +136,7 @@ describe('useRecycleFormSubmit', () => {
   describe('doSubmit - single record', () => {
     it('calls createRecycleAsset for single selected record', async () => {
       const options = createDefaultOptions()
-      options.selectedRecords = vi.fn(() => [
-        { recordcode: 'OUT-001', recycle_asset: 'Asset1' },
-      ])
+      options.selectedRecords = vi.fn(() => [{ recordcode: 'OUT-001', recycle_asset: 'Asset1' }])
       const { doSubmit } = useRecycleFormSubmit(options)
 
       await doSubmit()
@@ -204,9 +202,7 @@ describe('useRecycleFormSubmit', () => {
       mockCreateRecycleAsset.mockRejectedValue(new Error('Create failed'))
 
       const options = createDefaultOptions()
-      options.selectedRecords = vi.fn(() => [
-        { recordcode: 'OUT-001', recycle_asset: 'Asset1' },
-      ])
+      options.selectedRecords = vi.fn(() => [{ recordcode: 'OUT-001', recycle_asset: 'Asset1' }])
       const { doSubmit } = useRecycleFormSubmit(options)
 
       await doSubmit()
@@ -216,9 +212,7 @@ describe('useRecycleFormSubmit', () => {
 
     it('sets submitting state correctly', async () => {
       const options = createDefaultOptions()
-      options.selectedRecords = vi.fn(() => [
-        { recordcode: 'OUT-001', recycle_asset: 'Asset1' },
-      ])
+      options.selectedRecords = vi.fn(() => [{ recordcode: 'OUT-001', recycle_asset: 'Asset1' }])
       const { doSubmit, submitting } = useRecycleFormSubmit(options)
 
       await doSubmit()

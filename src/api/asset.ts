@@ -1,9 +1,10 @@
 /**
  * 资产管理 API
  * 对应后端接口: /api/assets/assets/
- * 与后竀AssetViewSet 接口完全一臀 */
+ * 与后竀AssetViewSet 接口完全一致
+ */
 import { request, unwrapResponse } from '@/api/index'
-import { isAxiosError, } from 'axios'
+import { isAxiosError } from 'axios'
 import type {
   Asset,
   AssetDetail,
@@ -38,7 +39,9 @@ export interface AssetBatchCreateResult {
 }
 
 /**
- * [LR-01] 资产操作历史记录页 * 对应 GET /api/assets/assets/{asset_code}/history/ 返回的每条记录 */
+ * [LR-01] 资产操作历史记录页
+ * 对应 GET /api/assets/assets/{asset_code}/history/ 返回的每条记录
+ */
 interface AssetHistoryItem {
   id: number
   operation_type: string
@@ -49,7 +52,9 @@ interface AssetHistoryItem {
 }
 
 /**
- * [LR-01] 资产状态时间线页 * 对应 GET /api/assets/assets/{asset_code}/timeline/ 返回的每条记录 */
+ * [LR-01] 资产状态时间线页
+ * 对应 GET /api/assets/assets/{asset_code}/timeline/ 返回的每条记录
+ */
 interface AssetTimelineItem {
   status: string
   timestamp: string
@@ -64,7 +69,7 @@ export const assetAPI = {
   /**
    * 获取资产列表
    * GET /api/assets/assets/
-   * 查询参数: page, page_size, asset_current_status, asset_type_code, asset_storage_code, keyword, ordering
+   * 查询参数: page, page_size, status, asset_type, asset_storage_code, keyword, ordering
    */
   getAssets: (params?: AssetQueryParams): Promise<AssetListResponse> => {
     return unwrapResponse(request.get<AssetListResponse>('/assets/assets/', params))
@@ -74,8 +79,10 @@ export const assetAPI = {
    * 创建资产
    * POST /api/assets/assets/
    *
-   * 后端规则＀   * - asset_code 由后端自动生戀   * - 录asset_purchase_number > 1 时，后端创建多条 Asset 记录
-   * - 返回 List[AssetDetail]，单条时数组长度一
+   * 后端规则：
+   * - asset_code 由后端自动生成
+   * - 当 asset_purchase_number > 1 时，后端创建多条 Asset 记录
+   * - 返回 List[AssetDetail]，单条时数组长度为 1
    *
    * 字段映射（前竀AssetCreateForm ↀ后端 AssetCreateSerializer）：
    * - asset_type ↀSlugRelatedField(slug_field='asset_type_code')
@@ -92,15 +99,18 @@ export const assetAPI = {
   /**
    * 获取资产详情
    * GET /api/assets/assets/{asset_code}/
-   * 包含嵌套的关联对豀   */
+   * 包含嵌套的关联对象（如 asset_type, asset_contract, asset_storage 等）
+   */
   getAssetByCode: async (asset_code: string): Promise<AssetDetail | null> => {
     try {
-      return unwrapResponse(request.get<AssetDetail>(
-        `/assets/assets/${asset_code}/`,
-        undefined,
-        true, // 使用缓存
-        300000, // 缓存时间 5 分钟
-      ))
+      return unwrapResponse(
+        request.get<AssetDetail>(
+          `/assets/assets/${asset_code}/`,
+          undefined,
+          true, // 使用缓存
+          300000, // 缓存时间 5 分钟
+        ),
+      )
     } catch (error) {
       // 使用 isAxiosError 守卫进行类型安全的错误处理
       if (isAxiosError(error) && error.response?.status === 404) {
@@ -125,7 +135,8 @@ export const assetAPI = {
   },
 
   /**
-   * 删除资产（软删除＀   * DELETE /api/assets/assets/{asset_code}/
+   * 删除资产（软删除）
+   * DELETE /api/assets/assets/{asset_code}/
    */
   deleteAsset: (asset_code: string): Promise<void> => {
     return unwrapResponse(request.delete<void>(`/assets/assets/${asset_code}/`))
@@ -137,9 +148,11 @@ export const assetAPI = {
    */
   getAssetByName: async (name: string): Promise<AssetListResponse | null> => {
     try {
-      return unwrapResponse(request.get<AssetListResponse>(
-        `/assets/assets/getassetbyname/${encodeURIComponent(name)}/`,
-      ))
+      return unwrapResponse(
+        request.get<AssetListResponse>(
+          `/assets/assets/getassetbyname/${encodeURIComponent(name)}/`,
+        ),
+      )
     } catch (error) {
       // 使用 isAxiosError 守卫进行类型安全的错误处理
       if (isAxiosError(error) && error.response?.status === 404) {
@@ -150,14 +163,21 @@ export const assetAPI = {
   },
 
   /**
-   * 获取可用资产（状态为 in_store＀   * GET /api/assets/assets/search_available/
+   * 获取可用资产（状态为 in_store）
+   * GET /api/assets/assets/search_available/
    */
-  searchAvailableAssets: (params?: { page?: number; page_size?: number }): Promise<AssetListSimpleResponse> => {
-    return unwrapResponse(request.get<AssetListSimpleResponse>('/assets/assets/search_available/', params))
+  searchAvailableAssets: (params?: {
+    page?: number
+    page_size?: number
+  }): Promise<AssetListSimpleResponse> => {
+    return unwrapResponse(
+      request.get<AssetListSimpleResponse>('/assets/assets/search_available/', params),
+    )
   },
 
   /**
-   * 全局搜索资产（使用后竀search_assets action＀   * GET /api/assets/assets/search/
+   * 全局搜索资产（使用后竀search_assets action）
+   * GET /api/assets/assets/search/
    *
    * 后端 AssetSelector.search_assets() 会：
    * - 过滤 is_deleted=False
@@ -165,8 +185,13 @@ export const assetAPI = {
    * - 支持多条件组合搜索
    *
    * @param params 搜索参数
-   *   - keyword: 搜索关键词（匹配资产名称、编码等＀   *   - status: 资产状态筛退   *   - asset_type: 资产类型编码筛退   *   - storage_code: 仓库编码筛退   *   - contract_code: 合同编码筛退   *   - page: 页码
-   *   - page_size: 每页条数
+   *   - keyword: 搜索关键词（匹配资产名称、编码等）
+   *   - status: 资产状态筛选（in_store, in_use, out_of_service, destroyed）
+   *   - asset_type: 资产类型编码筛选
+   *   - storage_code: 仓库编码筛选
+   *   - contract_code: 合同编码筛选
+   *   - page: 页码 （默认 1）
+   *   - page_size: 每页条数 （默认 10）
    */
   searchAssets: (params: {
     keyword?: string
@@ -181,7 +206,8 @@ export const assetAPI = {
   },
 
   /**
-   * 联合搜索资产（多条件组合搜索＀   * GET /api/assets/assets/combine_search/
+   * 联合搜索资产（多条件组合搜索）
+   * GET /api/assets/assets/combine_search/
    *
    * 后端 CombineSearchSerializer 支持的参数：
    * - asset_name: 资产名称（模糊匹配）
@@ -223,10 +249,7 @@ export const assetAPI = {
    * 请求参数: status (必填), description (可选）
    */
   changeAssetStatus: (asset_code: string, data: AssetChangeStatusForm): Promise<Asset> => {
-    return unwrapResponse(request.post<Asset>(
-      `/assets/assets/${asset_code}/change_status/`,
-      data,
-    ))
+    return unwrapResponse(request.post<Asset>(`/assets/assets/${asset_code}/change_status/`, data))
   },
 
   /**
@@ -234,14 +257,14 @@ export const assetAPI = {
    * POST /api/assets/assets/{asset_code}/mark-broken/
    * 对应后端 AssetViewSet.mark_broken action
    */
-  markAssetAsBroken: (asset_code: string, data: {
-    broken_reason?: string
-    broken_description?: string
-  }): Promise<Asset> => {
-    return unwrapResponse(request.post<Asset>(
-      `/assets/assets/${asset_code}/mark-broken/`,
-      data,
-    ))
+  markAssetAsBroken: (
+    asset_code: string,
+    data: {
+      broken_reason?: string
+      broken_description?: string
+    },
+  ): Promise<Asset> => {
+    return unwrapResponse(request.post<Asset>(`/assets/assets/${asset_code}/mark-broken/`, data))
   },
 
   /**
@@ -250,7 +273,9 @@ export const assetAPI = {
    * 查询参数: asset_code (必填)
    */
   getCombinedDetails: (asset_code: string): Promise<AssetDetail> => {
-    return unwrapResponse(request.get<AssetDetail>('/assets/assets/combined_details/', { asset_code }))
+    return unwrapResponse(
+      request.get<AssetDetail>('/assets/assets/combined_details/', { asset_code }),
+    )
   },
 
   /**
@@ -278,7 +303,9 @@ export const assetAPI = {
    * @returns 状态时间线数据
    */
   getAssetTimeline: (asset_code: string): Promise<AssetTimelineItem[]> => {
-    return unwrapResponse(request.get<AssetTimelineItem[]>(`/assets/assets/${asset_code}/timeline/`))
+    return unwrapResponse(
+      request.get<AssetTimelineItem[]>(`/assets/assets/${asset_code}/timeline/`),
+    )
   },
 
   /**
@@ -298,7 +325,7 @@ export const assetAPI = {
    * 批量创建资产
    * POST /api/assets/assets/batch-create/
    * 对应后端 AssetViewSet.batch_create action
-   * 一次性提交多条资产数据，后端逐条处理并返回成劀失败明细
+   * 一次性提交多条资产数据，后端逐条处理并返回成功和失败明细
    */
   batchCreateAssets: (items: AssetCreateForm[]): Promise<AssetBatchCreateResult> => {
     return unwrapResponse(

@@ -8,7 +8,12 @@
         </div>
       </template>
 
-      <el-result v-if="!assetCode" icon="warning" title="缺少资产编码" sub-title="请通过正确的方式访问此页面">
+      <el-result
+        v-if="!assetCode"
+        icon="warning"
+        title="缺少资产编码"
+        sub-title="请通过正确的方式访问此页面"
+      >
         <template #extra>
           <el-button type="primary" @click="router.push('/main')">返回首页</el-button>
         </template>
@@ -20,8 +25,12 @@
         <el-descriptions :column="2" border class="asset-info">
           <el-descriptions-item label="资产编码">{{ asset.asset_code }}</el-descriptions-item>
           <el-descriptions-item label="资产名称">{{ asset.asset_name }}</el-descriptions-item>
-          <el-descriptions-item label="资产规格">{{ asset.asset_specification || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="当前状态">{{ asset.asset_current_status }}</el-descriptions-item>
+          <el-descriptions-item label="资产规格">{{
+            asset.asset_specification || '-'
+          }}</el-descriptions-item>
+          <el-descriptions-item label="当前状态">{{
+            asset.asset_current_status
+          }}</el-descriptions-item>
         </el-descriptions>
 
         <el-divider />
@@ -31,7 +40,12 @@
             <el-input-number v-model="formData.recycle_asset_number" :min="1" :max="1000" />
           </el-form-item>
           <el-form-item label="回收备注" prop="remark">
-            <el-input v-model="formData.remark" type="textarea" :rows="3" placeholder="请输入回收备注" />
+            <el-input
+              v-model="formData.remark"
+              type="textarea"
+              :rows="3"
+              placeholder="请输入回收备注"
+            />
           </el-form-item>
         </el-form>
 

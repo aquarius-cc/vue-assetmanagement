@@ -1,53 +1,35 @@
-﻿<template>
+<template>
   <div class="dashboard-page-content">
     <!-- 
-      仪表盘布局设计
+      �Ǳ��̲������
       
-      响应式策略：
-      - xs (<768px): 单列布局，每个卡片占满整行
-      - sm (≥768px): 单列布局，保持可读性
-      - md (≥992px): 双列布局，两个卡片并排
-      - lg/xl (≥1200px): 双列布局，最优显示
+      ��Ӧʽ���ԣ�
+      - xs (<768px): ���в��֣�ÿ����Ƭռ������
+      - sm (��768px): ���в��֣����ֿɶ���
+      - md (��992px): ˫�в��֣�������Ƭ����
+      - lg/xl (��1200px): ˫�в��֣�������ʾ
       
-      使用 Element Plus 的响应式栅格系统实现
+      ʹ�� Element Plus ����Ӧʽդ��ϵͳʵ��
     -->
-    <!-- 第一行：资产发放信息 + 用户信息 -->
+    <!-- ��һ�У��ʲ�������Ϣ + �û���Ϣ -->
     <el-row class="top-row" :gutter="16">
-      <!-- 资产发放信息卡片 -->
+      <!-- �ʲ�������Ϣ��Ƭ -->
       <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
-        <el-card class="info-card distribute-card">
-          <template #header>
-            <div class="card-header">
-              <el-icon><Download /></el-icon>
-              <span>资产发放信息</span>
-              <el-button
-                link
-                size="small"
-                :icon="Refresh"
-                @click="refreshData"
-                :loading="dashboardStore.outAssetsLoading"
-                class="refresh-btn"
-              >
-                刷新
-              </el-button>
-            </div>
-          </template>
-          <div class="statistics">
-            <div class="stat-item">
-              <div class="stat-number">{{ distributeStats.monthlyDistributed }}</div>
-              <div class="stat-label">本月发放</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-number">{{ distributeStats.totalDistributed }}</div>
-              <div class="stat-label">总发放数</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-number">{{ distributeStats.totalAssets }}</div>
-              <div class="stat-label">总资产数</div>
-            </div>
-          </div>
+        <DashboardStatCard
+          title="�ʲ�������Ϣ"
+          icon="Download"
+          :stats="[
+            { value: distributeStats.monthlyDistributed, label: '���·���' },
+            { value: distributeStats.totalDistributed, label: '�ܷ�����' },
+            { value: distributeStats.totalAssets, label: '���ʲ���' },
+          ]"
+          refreshable
+          :loading="dashboardStore.outAssetsLoading"
+          card-class="distribute-card"
+          @refresh="refreshData"
+        >
           <div class="recent-list">
-            <h4>最近发放记录</h4>
+            <h4>������ż�¼</h4>
             <div class="list-item" v-for="item in recentOutAssets" :key="item.id">
               <div class="item-info">
                 <span class="item-name">{{ item.asset_name }}</span>
@@ -55,22 +37,22 @@
               </div>
               <span class="item-date">{{ formatDateTime(item.distribute_time) }}</span>
             </div>
-            <div v-if="recentOutAssets.length === 0" class="empty-state">暂无发放记录</div>
+            <div v-if="recentOutAssets.length === 0" class="empty-state">���޷��ż�¼</div>
           </div>
-        </el-card>
+        </DashboardStatCard>
       </el-col>
 
-      <!-- 用户信息卡片 -->
+      <!-- �û���Ϣ��Ƭ -->
       <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
         <el-card class="info-card user-info-card">
           <template #header>
             <div class="card-header">
               <div class="user-info-header">
                 <el-icon><User /></el-icon>
-                <span>用户信息</span>
+                <span>�û���Ϣ</span>
               </div>
               <el-button type="primary" size="small" class="logout-btn" @click="logout"
-                >退出</el-button
+                >�˳�</el-button
               >
             </div>
           </template>
@@ -81,13 +63,13 @@
               </el-avatar>
             </div>
             <div class="user-details">
-              <h3>{{ authInfo.real_name || '用户' }}</h3>
-              <p>账号: {{ authInfo.auth_name || '--' }}</p>
+              <h3>{{ authInfo.real_name || '�û�' }}</h3>
+              <p>�˺�: {{ authInfo.auth_name || '--' }}</p>
             </div>
           </div>
           <div class="session-info">
             <div class="session-item">
-              <span class="session-label">本次登录时长</span>
+              <span class="session-label">���ε�¼ʱ��</span>
               <span class="session-value">{{ loginDuration }}</span>
             </div>
           </div>
@@ -99,43 +81,25 @@
       </el-col>
     </el-row>
 
-    <!-- 第二行：资产回收信息 + 其他资产信息 -->
+    <!-- �ڶ��У��ʲ�������Ϣ + �����ʲ���Ϣ -->
     <el-row class="bottom-row" :gutter="16">
-      <!-- 资产回收信息卡片 -->
+      <!-- �ʲ�������Ϣ��Ƭ -->
       <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
-        <el-card class="info-card recycle-card">
-          <template #header>
-            <div class="card-header">
-              <el-icon><Upload /></el-icon>
-              <span>资产回收信息</span>
-              <el-button
-                link
-                size="small"
-                :icon="Refresh"
-                @click="refreshRecycleData"
-                :loading="dashboardStore.recycleAssetsLoading"
-                class="refresh-btn"
-              >
-                刷新
-              </el-button>
-            </div>
-          </template>
-          <div class="statistics">
-            <div class="stat-item">
-              <div class="stat-number">{{ recycleStats.monthlyRecycled }}</div>
-              <div class="stat-label">本月回收</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-number">{{ recycleStats.totalRecycled }}</div>
-              <div class="stat-label">总回收数</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-number">{{ recycleStats.inStockAssets }}</div>
-              <div class="stat-label">在库资产</div>
-            </div>
-          </div>
+        <DashboardStatCard
+          title="�ʲ�������Ϣ"
+          icon="Upload"
+          :stats="[
+            { value: recycleStats.monthlyRecycled, label: '���»���' },
+            { value: recycleStats.totalRecycled, label: '�ܻ�����' },
+            { value: recycleStats.inStockAssets, label: '�ڿ��ʲ�' },
+          ]"
+          refreshable
+          :loading="dashboardStore.recycleAssetsLoading"
+          card-class="recycle-card"
+          @refresh="refreshRecycleData"
+        >
           <div class="recent-list">
-            <h4>最近回收记录</h4>
+            <h4>������ռ�¼</h4>
             <div class="list-item" v-for="item in recentRecycleAssets" :key="item.id">
               <div class="item-info">
                 <span class="item-name">{{ item.asset_name }}</span>
@@ -143,51 +107,43 @@
               </div>
               <span class="item-date">{{ formatDateTime(item.recycle_time) }}</span>
             </div>
-            <div v-if="recentRecycleAssets.length === 0" class="empty-state">暂无回收记录</div>
+            <div v-if="recentRecycleAssets.length === 0" class="empty-state">���޻��ռ�¼</div>
           </div>
-        </el-card>
+        </DashboardStatCard>
       </el-col>
 
-      <!-- 其他资产信息卡片 -->
+      <!-- �����ʲ���Ϣ��Ƭ -->
       <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
-        <el-card class="info-card other-info-card">
-          <template #header>
-            <div class="card-header">
-              <el-icon><DataAnalysis /></el-icon>
-              <span>其他资产信息</span>
-            </div>
-          </template>
-          <div class="statistics">
-            <div class="stat-item">
-              <div class="stat-number pending-waste">{{ wasteStats.pendingWaste }}</div>
-              <div class="stat-label">待报废</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-number wasted">{{ wasteStats.wastedAssets }}</div>
-              <div class="stat-label">已报废</div>
-            </div>
-          </div>
+        <DashboardStatCard
+          title="�����ʲ���Ϣ"
+          icon="DataAnalysis"
+          :stats="[
+            { value: wasteStats.pendingWaste, label: '������', class: 'pending-waste' },
+            { value: wasteStats.wastedAssets, label: '�ѱ���', class: 'wasted' },
+          ]"
+          card-class="other-info-card"
+        >
           <div class="waste-overview">
-            <h4>报废状态概览</h4>
+            <h4>����״̬����</h4>
             <div class="waste-chart">
               <div class="waste-item">
                 <div class="waste-bar pending">
                   <span>{{ wasteStats.pendingWaste }}</span>
                 </div>
-                <span class="waste-label">待报废</span>
+                <span class="waste-label">������</span>
               </div>
               <div class="waste-item">
                 <div class="waste-bar wasted">
                   <span>{{ wasteStats.wastedAssets }}</span>
                 </div>
-                <span class="waste-label">已报废</span>
+                <span class="waste-label">�ѱ���</span>
               </div>
             </div>
             <div class="waste-summary">
-              <span>报废合计: {{ wasteStats.pendingWaste + wasteStats.wastedAssets }}</span>
+              <span>���Ϻϼ�: {{ wasteStats.pendingWaste + wasteStats.wastedAssets }}</span>
             </div>
           </div>
-        </el-card>
+        </DashboardStatCard>
       </el-col>
     </el-row>
   </div>
@@ -195,39 +151,40 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { User, Download, Upload, DataAnalysis, Refresh } from '@element-plus/icons-vue'
+import { User } from '@element-plus/icons-vue'
 import { useDashboardStore } from '@/stores/dashboard'
 import { useAuthStore } from '@/stores/auth'
+import DashboardStatCard from '@/components/commoncomponents/DashboardStatCard.vue'
 import { ElMessage } from 'element-plus'
 import type { AuthInfo } from '@/utils/AuthUser'
 
-// 初始化 Store
+// ��ʼ�� Store
 const dashboardStore = useDashboardStore()
 const authStore = useAuthStore()
 
-// 用户信息计算属性
+// �û���Ϣ��������
 const authInfo = computed(() => {
   const info = authStore.authInfo as AuthInfo | undefined
   if (!info) {
     return {
-      real_name: '暂无用户',
-      auth_name: '暂无管理员用户名',
+      real_name: '�����û�',
+      auth_name: '���޹���Ա�û���',
     }
   }
   return {
-    real_name: info.auth_username || '暂无用户',
-    auth_name: info.auth_username || '暂无管理员用户名',
+    real_name: info.auth_username || '�����û�',
+    auth_name: info.auth_username || '���޹���Ա�û���',
     isactive: info.isactive || false,
   }
 })
 
-// 当前时间信息
+// ��ǰʱ����Ϣ
 const currentTime = ref('')
 const currentDate = ref('')
 
-// 登录时长
-// 使用 sessionStorage 持久化登录开始时间，避免组件卸载/重新挂载时重置
-// 注意：sessionStorage 在同一浏览器会话内共享，关闭浏览器标签页后清除
+// ��¼ʱ��
+// ʹ�� sessionStorage �־û���¼��ʼʱ�䣬�������ж��/���¹���ʱ����
+// ע�⣺sessionStorage ��ͬһ������Ự�ڹ������ر��������ǩҳ�����
 const LOGIN_START_TIME_KEY = 'loginStartTime'
 const loginDuration = ref('00:00:00')
 const getLoginStartTime = (): number => {
@@ -236,75 +193,75 @@ const getLoginStartTime = (): number => {
     const parsed = parseInt(stored, 10)
     if (!isNaN(parsed)) return parsed
   }
-  // 首次访问时记录时间并持久化
+  // �״η���ʱ��¼ʱ�䲢�־û�
   const now = Date.now()
   sessionStorage.setItem(LOGIN_START_TIME_KEY, String(now))
   return now
 }
 const loginStartTime = getLoginStartTime()
 
-// 仪表盘数据
+// �Ǳ�������
 const distributeStats = computed(() => dashboardStore.distributeStats)
 const recycleStats = computed(() => dashboardStore.recycleStats)
 const wasteStats = computed(() => dashboardStore.wasteStats)
 const recentOutAssets = computed(() => dashboardStore.recentOutAssets)
 const recentRecycleAssets = computed(() => dashboardStore.recentRecycleAssets)
 
-// 获取仪表盘数据
+// ��ȡ�Ǳ�������
 const fetchDashboardData = async () => {
   try {
     await dashboardStore.initDashboardData()
   } catch (error) {
-    console.error('获取仪表盘数据失败:', error)
+    console.error('��ȡ�Ǳ�������ʧ��:', error)
   }
 }
 
-// 刷新发放数据
+// ˢ�·�������
 const refreshData = async () => {
-  ElMessage.info('正在刷新发放数据...')
+  ElMessage.info('����ˢ�·�������...')
   try {
     await dashboardStore.fetchRecentOutAssets(5)
     await dashboardStore.fetchDashboardOverview()
-    ElMessage.success('发放数据刷新成功')
+    ElMessage.success('��������ˢ�³ɹ�')
   } catch {
-    ElMessage.error('刷新失败')
+    ElMessage.error('ˢ��ʧ��')
   }
 }
 
-// 刷新回收数据
+// ˢ�»�������
 const refreshRecycleData = async () => {
-  ElMessage.info('正在刷新回收数据...')
+  ElMessage.info('����ˢ�»�������...')
   try {
     await dashboardStore.fetchRecentRecycleAssets(5)
     await dashboardStore.fetchDashboardOverview()
-    ElMessage.success('回收数据刷新成功')
+    ElMessage.success('��������ˢ�³ɹ�')
   } catch {
-    ElMessage.error('刷新失败')
+    ElMessage.error('ˢ��ʧ��')
   }
 }
 
-// 退出登录状态（防止重复点击）
+// �˳���¼״̬����ֹ�ظ������
 const isLoggingOut = ref(false)
 
-// 退出登录
+// �˳���¼
 const logout = async () => {
-  if (isLoggingOut.value) return // 防止重复点击
+  if (isLoggingOut.value) return // ��ֹ�ظ����
   isLoggingOut.value = true
   try {
-    // 清除 sessionStorage 中的登录开始时间，下次登录时重新记录
+    // ��� sessionStorage �еĵ�¼��ʼʱ�䣬�´ε�¼ʱ���¼�¼
     sessionStorage.removeItem(LOGIN_START_TIME_KEY)
-    await authStore.logout() // 调用后端 API 作废 Token，并清除本地状态
-    location.reload() // 退出成功后刷新页面，跳转到登录页
+    await authStore.logout() // ���ú�� API ���� Token�����������״̬
+    location.reload() // �˳��ɹ���ˢ��ҳ�棬��ת����¼ҳ
   } catch (error) {
-    console.error('退出登录失败:', error)
-    // 即使异常也刷新页面，因为 silentLogout 或 finally 已清除本地状态
+    console.error('�˳���¼ʧ��:', error)
+    // ��ʹ�쳣Ҳˢ��ҳ�棬��Ϊ silentLogout �� finally ���������״̬
     location.reload()
   } finally {
     isLoggingOut.value = false
   }
 }
 
-// 格式化日期时间
+// ��ʽ������ʱ��
 const formatDateTime = (dateStr: string): string => {
   const date = new Date(dateStr)
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -314,7 +271,7 @@ const formatDateTime = (dateStr: string): string => {
   return `${month}-${day} ${hours}:${minutes}`
 }
 
-// 更新时间
+// ����ʱ��
 const updateTime = () => {
   const now = new Date()
   currentTime.value = now.toLocaleTimeString('zh-CN', {
@@ -330,7 +287,7 @@ const updateTime = () => {
     weekday: 'long',
   })
 
-  // 更新登录时长
+  // ���µ�¼ʱ��
   const diff = Math.floor((now.getTime() - loginStartTime) / 1000)
   const hours = String(Math.floor(diff / 3600)).padStart(2, '0')
   const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0')
@@ -338,23 +295,23 @@ const updateTime = () => {
   loginDuration.value = `${hours}:${minutes}:${seconds}`
 }
 
-// 定时器
+// ��ʱ��
 let timer: number | null = null
 
-// 组件挂载时启动定时器并获取数据
+// �������ʱ������ʱ������ȡ����
 onMounted(async () => {
-  // 登录开始时间已在上方通过 getLoginStartTime() 初始化（从 sessionStorage 恢复或首次记录）
-  // 不再重置为 Date.now()，确保页面切换后登录时长连续计算
+  // ��¼��ʼʱ�������Ϸ�ͨ�� getLoginStartTime() ��ʼ������ sessionStorage �ָ����״μ�¼��
+  // ��������Ϊ Date.now()��ȷ��ҳ���л����¼ʱ����������
 
-  // 更新时间
+  // ����ʱ��
   updateTime()
   timer = window.setInterval(updateTime, 1000)
 
-  // 获取仪表盘数据
+  // ��ȡ�Ǳ�������
   await fetchDashboardData()
 })
 
-// 组件卸载时清除定时器
+// ���ж��ʱ�����ʱ��
 onUnmounted(() => {
   if (timer) {
     window.clearInterval(timer)
@@ -416,23 +373,23 @@ onUnmounted(() => {
     }
   }
 
-  // 资产发放卡片样式
+  // �ʲ����ſ�Ƭ��ʽ
   .distribute-card {
     background: var(--gradient-purple);
 
     :deep(.el-card__header) {
-      background: rgba(255, 255, 255, 0.15);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      background: var(--overlay-white-light);
+      border-bottom: 1px solid var(--overlay-white-medium);
     }
   }
 
-  // 用户信息卡片样式
+  // �û���Ϣ��Ƭ��ʽ
   .user-info-card {
     background: var(--gradient-pink);
 
     :deep(.el-card__header) {
-      background: rgba(255, 255, 255, 0.15);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      background: var(--overlay-white-light);
+      border-bottom: 1px solid var(--overlay-white-medium);
     }
 
     :deep(.el-card__body) {
@@ -459,25 +416,25 @@ onUnmounted(() => {
 
         p {
           margin: 0;
-          color: rgba(255, 255, 255, 0.9);
+          color: var(--overlay-white-text);
           font-size: 14px;
         }
       }
 
       .logout-btn {
-        background: rgba(255, 255, 255, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: var(--overlay-white-medium);
+        border: 1px solid var(--overlay-white-strong);
         color: $white;
         margin-left: auto;
 
         &:hover {
-          background: rgba(255, 255, 255, 0.3);
+          background: var(--overlay-white-strong);
         }
       }
     }
 
     .session-info {
-      background: rgba(255, 255, 255, 0.15);
+      background: var(--overlay-white-light);
       border-radius: 8px;
       padding: 12px 16px;
       margin-bottom: 16px;
@@ -504,7 +461,7 @@ onUnmounted(() => {
     .time-info {
       text-align: center;
       padding: 16px;
-      background: rgba(255, 255, 255, 0.15);
+      background: var(--overlay-white-light);
       border-radius: 8px;
       backdrop-filter: blur(10px);
 
@@ -524,53 +481,23 @@ onUnmounted(() => {
     }
   }
 
-  // 资产回收卡片样式
+  // �ʲ����տ�Ƭ��ʽ
   .recycle-card {
     background: var(--gradient-cyan);
 
     :deep(.el-card__header) {
-      background: rgba(255, 255, 255, 0.15);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      background: var(--overlay-white-light);
+      border-bottom: 1px solid var(--overlay-white-medium);
     }
   }
 
-  // 其他资产信息卡片样式
+  // �����ʲ���Ϣ��Ƭ��ʽ
   .other-info-card {
     background: var(--gradient-green);
 
     :deep(.el-card__header) {
-      background: rgba(255, 255, 255, 0.15);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    }
-  }
-
-  .statistics {
-    display: flex;
-    justify-content: space-around;
-    margin-bottom: 20px;
-
-    .stat-item {
-      text-align: center;
-
-      .stat-number {
-        font-size: 28px;
-        font-weight: 700;
-        margin-bottom: 8px;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-
-        &.pending-waste {
-          color: $warning-color;
-        }
-
-        &.wasted {
-          color: $danger-color;
-        }
-      }
-
-      .stat-label {
-        font-size: 13px;
-        opacity: 0.85;
-      }
+      background: var(--overlay-white-light);
+      border-bottom: 1px solid var(--overlay-white-medium);
     }
   }
 
@@ -588,12 +515,12 @@ onUnmounted(() => {
       align-items: center;
       padding: 8px 12px;
       border-radius: 4px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      border-bottom: 1px solid var(--overlay-white-medium);
       font-size: 13px;
       transition: background 0.2s ease;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.1);
+        background: var(--overlay-white-subtle);
       }
 
       &:last-child {
@@ -684,17 +611,17 @@ onUnmounted(() => {
     .waste-summary {
       margin-top: 16px;
       padding-top: 8px;
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      border-top: 1px solid var(--overlay-white-medium);
       text-align: center;
       font-size: 13px;
       opacity: 0.9;
     }
   }
 
-  // 将原本泄漏到 .dashboard-page-content 外的 ::deep() 规则移入
+  // ��ԭ��й©�� .dashboard-page-content ��� ::deep() ��������
   :deep(.el-card__header) {
     padding: 16px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 1px solid var(--overlay-white-medium);
   }
 
   :deep(.el-card__body) {
@@ -704,28 +631,28 @@ onUnmounted(() => {
   }
 
   /**
-   * 响应式布局优化
+   * ��Ӧʽ�����Ż�
    * 
-   * 断点说明：
-   * - < 768px (xs/sm): 移动端，单列布局，调整字体和间距
-   * - 768px - 991px (md): 平板端，保持单列但增加间距
-   * - ≥ 992px (lg/xl): 桌面端，双列布局
+   * �ϵ�˵����
+   * - < 768px (xs/sm): �ƶ��ˣ����в��֣���������ͼ��
+   * - 768px - 991px (md): ƽ��ˣ����ֵ��е����Ӽ��
+   * - �� 992px (lg/xl): ����ˣ�˫�в���
    */
 
-  /* 平板端适配 (768px - 991px) */
+  /* ƽ������� (768px - 991px) */
   @media (max-width: 991px) {
     .top-row,
     .bottom-row {
-      height: auto; // 取消固定高度，允许内容自适应
+      height: auto; // ȡ���̶��߶ȣ�������������Ӧ
       min-height: calc(50% - 8px);
     }
 
     .info-card {
-      margin-bottom: 16px; // 增加卡片间距
+      margin-bottom: 16px; // ���ӿ�Ƭ���
     }
   }
 
-  /* 移动端适配 (< 768px) */
+  /* �ƶ������� (< 768px) */
   @media (max-width: 767px) {
     padding: 12px;
 
@@ -749,7 +676,7 @@ onUnmounted(() => {
       }
     }
 
-    // 统计区域响应式调整
+    // ͳ��������Ӧʽ����
     .statistics {
       flex-wrap: wrap;
       gap: 16px;
@@ -760,7 +687,7 @@ onUnmounted(() => {
         min-width: 80px;
 
         .stat-number {
-          font-size: 24px; // 缩小字体
+          font-size: 24px; // ��С����
         }
 
         .stat-label {
@@ -769,7 +696,7 @@ onUnmounted(() => {
       }
     }
 
-    // 列表项响应式调整
+    // �б�����Ӧʽ����
     .recent-list {
       .list-item {
         flex-direction: column;
@@ -788,7 +715,7 @@ onUnmounted(() => {
       }
     }
 
-    // 用户信息卡片响应式调整
+    // �û���Ϣ��Ƭ��Ӧʽ����
     .user-info-card {
       .user-profile {
         flex-direction: column;
@@ -818,7 +745,7 @@ onUnmounted(() => {
         padding: 12px;
 
         .current-time {
-          font-size: 24px; // 缩小时间字体
+          font-size: 24px; // ��Сʱ������
         }
 
         .current-date {
@@ -827,7 +754,7 @@ onUnmounted(() => {
       }
     }
 
-    // 报废概览响应式调整
+    // ���ϸ�����Ӧʽ����
     .waste-overview {
       .waste-chart {
         .waste-item {
@@ -840,7 +767,7 @@ onUnmounted(() => {
     }
   }
 
-  /* 小屏移动端适配 (< 480px) */
+  /* С���ƶ������� (< 480px) */
   @media (max-width: 479px) {
     padding: 8px;
 

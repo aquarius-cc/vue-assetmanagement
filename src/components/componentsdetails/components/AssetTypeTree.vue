@@ -33,7 +33,12 @@
           <span class="node-label" :title="data.type_name">
             {{ data.type_name }}
           </span>
-          <el-tag v-if="data.level !== undefined && data.level > 0" size="small" type="info" class="level-tag">
+          <el-tag
+            v-if="data.level !== undefined && data.level > 0"
+            size="small"
+            type="info"
+            class="level-tag"
+          >
             L{{ data.level }}
           </el-tag>
         </div>

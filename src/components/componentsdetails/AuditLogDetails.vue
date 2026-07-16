@@ -14,23 +14,66 @@
     <div class="filter-container">
       <el-form :model="filterForm" inline class="filter-form">
         <el-form-item label="应用模块">
-          <el-select v-model="filterForm.app_label" placeholder="全部模块" clearable style="width: 150px" @change="handleFilter">
-            <el-option v-for="(label, value) in appLabelMapping" :key="value" :label="label" :value="value" />
+          <el-select
+            v-model="filterForm.app_label"
+            placeholder="全部模块"
+            clearable
+            style="width: 150px"
+            @change="handleFilter"
+          >
+            <el-option
+              v-for="(label, value) in appLabelMapping"
+              :key="value"
+              :label="label"
+              :value="value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="操作类型">
-          <el-select v-model="filterForm.operation_type" placeholder="全部类型" clearable style="width: 150px" @change="handleFilter">
-            <el-option v-for="(label, value) in auditOperationTypeMapping" :key="value" :label="label" :value="value" />
+          <el-select
+            v-model="filterForm.operation_type"
+            placeholder="全部类型"
+            clearable
+            style="width: 150px"
+            @change="handleFilter"
+          >
+            <el-option
+              v-for="(label, value) in auditOperationTypeMapping"
+              :key="value"
+              :label="label"
+              :value="value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="操作人">
-          <el-input v-model="filterForm.operator_jobcode" placeholder="请输入工号" clearable style="width: 150px" @keyup.enter="handleFilter" />
+          <el-input
+            v-model="filterForm.operator_jobcode"
+            placeholder="请输入工号"
+            clearable
+            style="width: 150px"
+            @keyup.enter="handleFilter"
+          />
         </el-form-item>
         <el-form-item label="记录编码">
-          <el-input v-model="filterForm.record_code" placeholder="请输入记录编码" clearable style="width: 180px" @keyup.enter="handleFilter" />
+          <el-input
+            v-model="filterForm.record_code"
+            placeholder="请输入记录编码"
+            clearable
+            style="width: 180px"
+            @keyup.enter="handleFilter"
+          />
         </el-form-item>
         <el-form-item label="操作时间">
-          <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 260px" @change="handleFilter" />
+          <el-date-picker
+            v-model="dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            style="width: 260px"
+            @change="handleFilter"
+          />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleFilter">查询</el-button>
@@ -42,11 +85,22 @@
 
     <!-- 表格 -->
     <div class="table-container">
-      <el-table :data="tableData" v-loading="loading" border stripe style="width: 100%" max-height="calc(100vh - 260px)" @row-click="handleRowClick" highlight-current-row>
+      <el-table
+        :data="tableData"
+        v-loading="loading"
+        border
+        stripe
+        style="width: 100%"
+        max-height="calc(100vh - 260px)"
+        @row-click="handleRowClick"
+        highlight-current-row
+      >
         <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="app_label" label="应用模块" width="120" align="center">
           <template #default="{ row }">
-            <el-tag size="small" type="info">{{ appLabelMapping[row.app_label] || row.app_label }}</el-tag>
+            <el-tag size="small" type="info">{{
+              appLabelMapping[row.app_label] || row.app_label
+            }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="operation_type" label="操作类型" width="120" align="center">
@@ -57,7 +111,13 @@
           </template>
         </el-table-column>
         <el-table-column prop="record_code" label="记录编码" width="180" align="left" />
-        <el-table-column prop="description" label="操作描述" width="200" align="left" show-overflow-tooltip />
+        <el-table-column
+          prop="description"
+          label="操作描述"
+          width="200"
+          align="left"
+          show-overflow-tooltip
+        />
         <el-table-column prop="operator_jobcode" label="操作人工号" width="120" align="center" />
         <el-table-column prop="operator_name" label="操作人" width="100" align="center" />
         <el-table-column prop="operation_time" label="操作时间" width="180" align="center" />
@@ -143,7 +203,8 @@ const loadData = async () => {
     }
     if (filterForm.value.app_label) params.app_label = filterForm.value.app_label
     if (filterForm.value.operation_type) params.operation_type = filterForm.value.operation_type
-    if (filterForm.value.operator_jobcode) params.operator_jobcode = filterForm.value.operator_jobcode
+    if (filterForm.value.operator_jobcode)
+      params.operator_jobcode = filterForm.value.operator_jobcode
     if (filterForm.value.record_code) params.record_code = filterForm.value.record_code
     if (dateRange.value) {
       params.start_date = dateRange.value[0]

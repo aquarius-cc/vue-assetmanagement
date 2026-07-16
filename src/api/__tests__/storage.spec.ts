@@ -8,11 +8,13 @@ const { mockRequest, mockUnwrapResponse } = vi.hoisted(() => ({
     patch: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
     delete: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
   },
-  mockUnwrapResponse: vi.fn(async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
-    const res = await promise
-    if (res.code !== 0) throw new Error(res.message || '请求失败')
-    return res.data
-  }),
+  mockUnwrapResponse: vi.fn(
+    async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
+      const res = await promise
+      if (res.code !== 0) throw new Error(res.message || '请求失败')
+      return res.data
+    },
+  ),
 }))
 
 vi.mock('@/api/index', () => ({
@@ -49,20 +51,30 @@ describe('storageAPI', () => {
 
   it('updateStorage calls PUT /assets/storages/{code}/', async () => {
     await storageAPI.updateStorage({ recordcode: 'ST001', storage_name: 'Updated' })
-    expect(mockRequest.put).toHaveBeenCalledWith('/assets/storages/ST001/', { recordcode: 'ST001', storage_name: 'Updated' })
+    expect(mockRequest.put).toHaveBeenCalledWith('/assets/storages/ST001/', {
+      recordcode: 'ST001',
+      storage_name: 'Updated',
+    })
   })
 
   it('updateStorage throws when recordcode is missing', () => {
-    expect(() => storageAPI.updateStorage({ storage_name: 'Test' })).toThrow('recordcode is required')
+    expect(() => storageAPI.updateStorage({ storage_name: 'Test' })).toThrow(
+      'recordcode is required',
+    )
   })
 
   it('partialUpdateStorage calls PATCH /assets/storages/{code}/', async () => {
     await storageAPI.partialUpdateStorage({ recordcode: 'ST001', storage_name: 'Patched' })
-    expect(mockRequest.patch).toHaveBeenCalledWith('/assets/storages/ST001/', { recordcode: 'ST001', storage_name: 'Patched' })
+    expect(mockRequest.patch).toHaveBeenCalledWith('/assets/storages/ST001/', {
+      recordcode: 'ST001',
+      storage_name: 'Patched',
+    })
   })
 
   it('partialUpdateStorage throws when recordcode is missing', () => {
-    expect(() => storageAPI.partialUpdateStorage({ storage_name: 'Test' })).toThrow('recordcode is required')
+    expect(() => storageAPI.partialUpdateStorage({ storage_name: 'Test' })).toThrow(
+      'recordcode is required',
+    )
   })
 
   it('deleteStorage calls DELETE /assets/storages/{code}/', async () => {
@@ -72,7 +84,9 @@ describe('storageAPI', () => {
 
   it('batchDeleteStorages calls POST /assets/storages/batch-delete/', async () => {
     await storageAPI.batchDeleteStorages(['ST001', 'ST002'])
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/storages/batch-delete/', { ids: ['ST001', 'ST002'] })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/storages/batch-delete/', {
+      ids: ['ST001', 'ST002'],
+    })
   })
 
   it('getStorageStatistics calls GET /assets/storages/statistics/', async () => {
@@ -82,6 +96,8 @@ describe('storageAPI', () => {
 
   it('batchCreateStorages calls POST /assets/storages/batch-create/', async () => {
     await storageAPI.batchCreateStorages([{ storage_name: 'X' } as never])
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/storages/batch-create/', { items: [{ storage_name: 'X' }] })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/storages/batch-create/', {
+      items: [{ storage_name: 'X' }],
+    })
   })
 })

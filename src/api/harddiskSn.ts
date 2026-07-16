@@ -55,12 +55,9 @@ export const harddiskSnAPI = {
    * @returns 硬盘序列号详情
    */
   getHardDiskSN: (harddisksn_asset: string): Promise<HardDiskSN> => {
-    return unwrapResponse(request.get<HardDiskSN>(
-      `/assets/harddisk-sn/${harddisksn_asset}/`,
-      undefined,
-      true,
-      300000,
-    ))
+    return unwrapResponse(
+      request.get<HardDiskSN>(`/assets/harddisk-sn/${harddisksn_asset}/`, undefined, true, 300000),
+    )
   },
 
   /**
@@ -69,10 +66,11 @@ export const harddiskSnAPI = {
    * @returns 硬盘序列号详情
    */
   getHardDiskSNByCode: (harddisk_sn_code: string): Promise<HardDiskSN> => {
-    return unwrapResponse(request.post(
-      '/assets/harddisk-sn/search_by_serial_number/',
-      { harddisk_sn_code : harddisk_sn_code },
-    ))
+    return unwrapResponse(
+      request.post('/assets/harddisk-sn/search_by_serial_number/', {
+        harddisk_sn_code: harddisk_sn_code,
+      }),
+    )
   },
 
   /**
@@ -118,7 +116,9 @@ export const harddiskSnAPI = {
    * @param data 批量保存表单数据
    * @returns 保存结果（包含 success、created、updated、errors 数组）
    */
-  saveHardDiskSNBatch: (data: HardDiskSNBatchSaveForm): Promise<{
+  saveHardDiskSNBatch: (
+    data: HardDiskSNBatchSaveForm,
+  ): Promise<{
     success: boolean
     created: number
     updated: number
@@ -133,6 +133,8 @@ export const harddiskSnAPI = {
    * @returns 硬盘序列号列表响应
    */
   getHardDiskSNsByAsset: (asset_code: string): Promise<HardDiskSNListResponse> => {
-    return unwrapResponse(request.get<HardDiskSNListResponse>(`/assets/harddisk-sn/by-asset/${asset_code}/`))
+    return unwrapResponse(
+      request.get<HardDiskSNListResponse>(`/assets/harddisk-sn/by-asset/${asset_code}/`),
+    )
   },
 }

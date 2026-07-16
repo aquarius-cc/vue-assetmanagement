@@ -21,11 +21,7 @@ function toLogin() {
     <div class="login-box">
       <div class="form-item">
         <span class="form-label">用户名：</span>
-        <el-input
-          v-model="userName"
-          placeholder="请输入用户名"
-          clearable
-        />
+        <el-input v-model="userName" placeholder="请输入用户名" clearable />
       </div>
       <div class="form-item">
         <span class="form-label">密码：</span>

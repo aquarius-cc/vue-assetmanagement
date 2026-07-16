@@ -125,9 +125,12 @@ export function useOutAssetDetailCards(data: Ref<OutAssetDetailCardData>) {
       title: '合同信息',
       icon: 'Tickets',
       fields: [
-        [{ label: '所在合同号', value: c?.contract_code, defaultValue: 'N/A' },
-          { label: '供应商', value: c?.contract_supplier, defaultValue: 'N/A' }],
-        [{ label: '所在合同名称', value: c?.contract_name, defaultValue: 'N/A' },
+        [
+          { label: '所在合同号', value: c?.contract_code, defaultValue: 'N/A' },
+          { label: '供应商', value: c?.contract_supplier, defaultValue: 'N/A' },
+        ],
+        [
+          { label: '所在合同名称', value: c?.contract_name, defaultValue: 'N/A' },
           { label: '合同总价', value: c?.contract_price, defaultValue: 'N/A' },
         ],
       ],
@@ -145,18 +148,32 @@ export function useOutAssetDetailCards(data: Ref<OutAssetDetailCardData>) {
       title: '申请人信息',
       icon: 'User',
       fields: [
-        [{ label: '部门', value: d?.outasset_applicant?.employee_department_name, defaultValue: 'N/A' }],
+        [
+          {
+            label: '部门',
+            value: d?.outasset_applicant?.employee_department_name,
+            defaultValue: 'N/A',
+          },
+        ],
         [
           {
             label: '申请人',
             value:
-              d?.outasset_applicant?.employee_name && d?.outasset_applicant?.employee_department_name
+              d?.outasset_applicant?.employee_name &&
+              d?.outasset_applicant?.employee_department_name
                 ? `${d.outasset_applicant.employee_name}`
                 : null,
             defaultValue: 'N/A',
           },
         ],
-        [{ label: '申请人工号', value: d?.outasset_applicant?.employee_jobcode || d?.outasset_applicant?.employee_jobcode, defaultValue: 'N/A' }],
+        [
+          {
+            label: '申请人工号',
+            value:
+              d?.outasset_applicant?.employee_jobcode || d?.outasset_applicant?.employee_jobcode,
+            defaultValue: 'N/A',
+          },
+        ],
       ],
     }
   })
@@ -172,7 +189,13 @@ export function useOutAssetDetailCards(data: Ref<OutAssetDetailCardData>) {
       title: '保管人信息',
       icon: 'UserFilled',
       fields: [
-        [{ label: '部门', value: d?.outasset_manager?.employee_department_name, defaultValue: 'N/A' }],
+        [
+          {
+            label: '部门',
+            value: d?.outasset_manager?.employee_department_name,
+            defaultValue: 'N/A',
+          },
+        ],
         [
           {
             label: '保管人',
@@ -183,7 +206,13 @@ export function useOutAssetDetailCards(data: Ref<OutAssetDetailCardData>) {
             defaultValue: 'N/A',
           },
         ],
-        [{ label: '保管人工号', value: d?.outasset_manager?.employee_jobcode || d?.outasset_manager?.employee_jobcode, defaultValue: 'N/A' }],
+        [
+          {
+            label: '保管人工号',
+            value: d?.outasset_manager?.employee_jobcode || d?.outasset_manager?.employee_jobcode,
+            defaultValue: 'N/A',
+          },
+        ],
       ],
     }
   })

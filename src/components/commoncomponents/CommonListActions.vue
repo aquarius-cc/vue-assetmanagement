@@ -118,9 +118,12 @@ const router = useRouter()
 const localSearch = ref(props.search || '')
 
 // 监听父组件 search 变化，同步到本地（用于清空等场景）
-watch(() => props.search, (newVal) => {
-  localSearch.value = newVal || ''
-})
+watch(
+  () => props.search,
+  (newVal) => {
+    localSearch.value = newVal || ''
+  },
+)
 
 // ===== 方法 =====
 /**
@@ -128,11 +131,7 @@ watch(() => props.search, (newVal) => {
  * 用于路由跳转时构建 query 参数
  */
 function getIdentifierValue(entity: Record<string, unknown>): Record<string, string> | null {
-  const identifierFields = [
-    'code',
-    'recordcode',
-    'id',
-  ] as const
+  const identifierFields = ['code', 'recordcode', 'id'] as const
 
   for (const field of identifierFields) {
     if (field in entity && entity[field] !== undefined && entity[field] !== null) {
@@ -157,7 +156,7 @@ function buildQueryParams(row: Record<string, unknown>): Record<string, string> 
   }
 
   const queryParam: Record<string, string> = {}
-  for (const [key, value] of Object.entries(identifier)) {
+  for (const [, value] of Object.entries(identifier)) {
     queryParam['code'] = value
   }
 

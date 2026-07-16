@@ -26,52 +26,18 @@
         <el-button type="warning" @click="handleExportTemplate">导出模板</el-button>
       </div>
 
-      <div class="import-guide-card">
-        <div class="guide-header">
-          <el-icon><InfoFilled /></el-icon>
-          <span>导入格式参考</span>
-        </div>
-        <div class="guide-content">
-          <div class="guide-section">
-            <div class="section-title">必填列说明</div>
-            <el-table :data="headerExamples" border size="small" style="width: 100%">
-              <el-table-column prop="headerName" label="Excel 表头（中文）" width="160" />
-              <el-table-column prop="field" label="对应字段" width="180" />
-              <el-table-column prop="required" label="必填" width="80">
-                <template #default="{ row }">
-                  <el-tag :type="row.required ? 'danger' : 'info'" size="small">
-                    {{ row.required ? '是' : '否' }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="example" label="示例值" />
-              <el-table-column prop="remark" label="备注" />
-            </el-table>
-          </div>
-          <div class="guide-section">
-            <div class="section-title">示例数据（参考填写）</div>
-            <el-table :data="exampleRows" border size="small" style="width: 100%">
-              <el-table-column
-                v-for="col in exampleColumns"
-                :key="col.prop"
-                :prop="col.prop"
-                :label="col.label"
-                min-width="120"
-              />
-            </el-table>
-          </div>
-          <div class="guide-section">
-            <div class="section-title">注意事项</div>
-            <ul class="notice-list">
-              <li>编码长度 3-30 个字符，名称长度 2-100 个字符</li>
-              <li>「层级」为数字，顶级分类填 0，子级依次递增（最大 6 层）</li>
-              <li>「父级编码」填写父级类型的 recordcode，顶级分类留空</li>
-              <li>Excel 首行必须与「表头说明」中的中文列名完全一致</li>
-              <li>导入前建议先「导出模板」，在模板基础上填写数据</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      <BatchImportGuideCard
+        :header-examples="headerExamples"
+        :example-rows="exampleRows"
+        :example-columns="exampleColumns"
+        :notices="[
+          '编码长度 3-30 个字符，名称长度 2-100 个字符',
+          '「层级」为数字，顶级分类填 0，子级依次递增（最大 6 层）',
+          '「父级编码」填写父级类型的 recordcode，顶级分类留空',
+          'Excel 首行必须与「表头说明」中的中文列名完全一致',
+          '导入前建议先「导出模板」，在模板基础上填写数据',
+        ]"
+      />
 
       <div v-if="previewData.length > 0" class="preview-table">
         <h3 class="section-title">
@@ -128,25 +94,23 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
 import { isAxiosError } from 'axios'
-import { Upload, InfoFilled } from '@element-plus/icons-vue'
+import { Upload } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import ExcelJS from 'exceljs'
 import { useBatchImport } from '@/composables/useBatchImport'
-import type { ValidatedRow } from '@/composables/useBatchImport'
+import {
+  validationTagType,
+  validationTagText,
+  type HeaderExample,
+  type ExampleColumn,
+} from '@/utils/batchImportHelpers'
+import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { assetTypeAPI } from '@/api/assetType'
 import { useAssetTypeStore } from '@/stores/assetTypeStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import type { AssetTypeCreateForm } from '@/utils/AssetType'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
-
-interface AssetTypeExcelRow {
-  type_code: string
-  type_name: string
-  parent_type_code?: string
-  level?: string
-  type_description?: string
-  sort_order?: string
-}
+import type { AssetTypeExcelRow } from '@/types/batch-import'
 
 const router = useRouter()
 const assetTypeStore = useAssetTypeStore()
@@ -215,20 +179,6 @@ const handleUploadChange = (uploadFile: UploadFile) => {
   }
 }
 
-const validationTagType = (row: ValidatedRow<AssetTypeExcelRow>) => {
-  if (row.submitStatus === 'error') return 'danger'
-  if (row.submitStatus === 'success') return 'success'
-  if (row.validationStatus === 'error') return 'danger'
-  return 'success'
-}
-
-const validationTagText = (row: ValidatedRow<AssetTypeExcelRow>) => {
-  if (row.submitStatus === 'error') return '提交失败'
-  if (row.submitStatus === 'success') return '已提交'
-  if (row.validationStatus === 'error') return '验证失败'
-  return '有效'
-}
-
 const handleExportTemplate = async () => {
   try {
     const headers = Object.keys(importConfig.excelHeaderMap)
@@ -268,7 +218,7 @@ const handleExportTemplate = async () => {
   }
 }
 
-const headerExamples = [
+const headerExamples: HeaderExample[] = [
   {
     headerName: '类型编码',
     field: 'type_code',
@@ -313,7 +263,7 @@ const headerExamples = [
   },
 ]
 
-const exampleColumns = [
+const exampleColumns: ExampleColumn[] = [
   { prop: 'type_code', label: '类型编码' },
   { prop: 'type_name', label: '类型名称' },
   { prop: 'parent_type_code', label: '父级编码' },
@@ -492,53 +442,6 @@ const goBack = () => {
     margin-top: 8px;
     color: var(--text-secondary);
     font-size: 13px;
-  }
-
-  .import-guide-card {
-    background-color: var(--card-background-muted);
-    border: 1px solid var(--border-color-light);
-    border-radius: 8px;
-    margin-bottom: 24px;
-    overflow: hidden;
-    .guide-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background-color: var(--color-primary-lighter);
-      padding: 12px 16px;
-      font-weight: 600;
-      color: var(--color-primary-light);
-      border-bottom: 1px solid var(--color-primary-light-border);
-      .el-icon {
-        font-size: 18px;
-      }
-    }
-    .guide-content {
-      padding: 16px;
-      .guide-section {
-        margin-bottom: 20px;
-        &:last-child {
-          margin-bottom: 0;
-        }
-        .section-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--text-primary);
-          margin-bottom: 12px;
-          padding-left: 4px;
-          border-left: 3px solid var(--color-primary-light);
-        }
-      }
-      .notice-list {
-        margin: 0;
-        padding-left: 20px;
-        li {
-          line-height: 1.8;
-          color: var(--text-regular);
-          font-size: 13px;
-        }
-      }
-    }
   }
 
   .preview-table {

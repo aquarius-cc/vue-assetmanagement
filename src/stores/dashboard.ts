@@ -9,7 +9,7 @@ import {
   // [MR-10] DashboardStats 类型已删除 — /dashboard/stats/ 端点废弃
   type DashboardOverview,
   type OutAssetRecord,
-  type RecycleAssetRecord
+  type RecycleAssetRecord,
 } from '@/api/dashboard'
 import { ElMessage } from 'element-plus'
 import { getStatusColor as getStatusColorFromMapping } from '@/utils/statusMapping'
@@ -47,14 +47,14 @@ export const useDashboardStore = defineStore('dashboard', () => {
       return {
         monthlyDistributed: 0,
         totalDistributed: 0,
-        totalAssets: 0
+        totalAssets: 0,
       }
     }
 
     return {
       monthlyDistributed: overview.value.monthly_distributed,
       totalDistributed: overview.value.total_distributed,
-      totalAssets: overview.value.total_assets
+      totalAssets: overview.value.total_assets,
     }
   })
 
@@ -66,14 +66,14 @@ export const useDashboardStore = defineStore('dashboard', () => {
       return {
         monthlyRecycled: 0,
         totalRecycled: 0,
-        inStockAssets: 0
+        inStockAssets: 0,
       }
     }
 
     return {
       monthlyRecycled: overview.value.monthly_recycled,
       totalRecycled: overview.value.total_recycled,
-      inStockAssets: overview.value.in_stock_assets
+      inStockAssets: overview.value.in_stock_assets,
     }
   })
 
@@ -84,13 +84,13 @@ export const useDashboardStore = defineStore('dashboard', () => {
     if (!overview.value) {
       return {
         pendingWaste: 0,
-        wastedAssets: 0
+        wastedAssets: 0,
       }
     }
 
     return {
       pendingWaste: overview.value.pending_waste,
-      wastedAssets: overview.value.wasted_assets
+      wastedAssets: overview.value.wasted_assets,
     }
   })
 
@@ -173,7 +173,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     return Promise.all([
       fetchDashboardOverview(true),
       fetchRecentOutAssets(),
-      fetchRecentRecycleAssets()
+      fetchRecentRecycleAssets(),
     ])
   }
 
@@ -185,7 +185,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       await Promise.all([
         fetchDashboardOverview(),
         fetchRecentOutAssets(5),
-        fetchRecentRecycleAssets(5)
+        fetchRecentRecycleAssets(5),
       ])
     } catch (error) {
       console.error('初始化仪表盘数据失败:', error)
@@ -263,6 +263,6 @@ export const useDashboardStore = defineStore('dashboard', () => {
     // 工具方法
     formatNumber,
     formatCurrency,
-    getStatusColor
+    getStatusColor,
   }
 })

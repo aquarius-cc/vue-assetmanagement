@@ -161,6 +161,7 @@ import type { DiskItem, HardDiskSNBatchSaveForm } from '@/utils/HardDiskSN'
 import { HardDiskType, HardDiskStatus } from '@/utils/HardDiskSN'
 import { harddiskSnAPI } from '@/api/harddiskSn'
 import type { AssetDetail } from '@/types/asset'
+import type { AssetSuggestion } from '@/types/form-helpers'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
 
 // ===== 状态与实例 =====
@@ -284,12 +285,6 @@ const rules: FormRules = {
 }
 
 // ===== 资产编码联动 =====
-interface AssetSuggestion {
-  value: string
-  asset_name: string
-  asset_code: string
-}
-
 const fetchAssetSuggestions = createSuggestionFetcher<AssetDetail, AssetSuggestion>({
   fetchData: (query: string) => assetStore.getByName(query),
   transform: (asset: AssetDetail): AssetSuggestion => ({

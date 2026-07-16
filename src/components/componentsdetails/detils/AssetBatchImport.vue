@@ -98,56 +98,21 @@
         />
       </div>
       <!-- 导入格式参考卡 -->
-      <div class="import-guide-card">
-        <div class="guide-header">
-          <el-icon><InfoFilled /></el-icon>
-          <span>导入格式参考</span>
-        </div>
-        <div class="guide-content">
-          <div class="guide-section">
-            <div class="section-title">📌 必填列说明</div>
-            <el-table :data="headerExamples" border size="small" style="width: 100%">
-              <el-table-column prop="headerName" label="Excel 表头（中文）" width="180" />
-              <el-table-column prop="field" label="对应字段" width="180" />
-              <el-table-column prop="required" label="必填" width="80">
-                <template #default="{ row }">
-                  <el-tag :type="row.required ? 'danger' : 'info'" size="small">
-                    {{ row.required ? '是' : '否' }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="example" label="示例" />
-              <el-table-column prop="remark" label="备注" />
-            </el-table>
-          </div>
-          <div class="guide-section">
-            <div class="section-title">📝 示例数据（参考填写）</div>
-            <el-table :data="exampleRows" border size="small" style="width: 100%">
-              <el-table-column
-                v-for="col in exampleColumns"
-                :key="col.prop"
-                :prop="col.prop"
-                :label="col.label"
-                min-width="120"
-              />
-            </el-table>
-          </div>
-          <div class="guide-section">
-            <div class="section-title">⚠️ 注意事项</div>
-            <ul class="notice-list">
-              <!-- 后端规则变更：asset_code 由后端自动生成 -->
-              <li><strong>资产编码由系统自动生成</strong>，Excel 中可留空，无需填写</li>
-              <li>资产名称长度 2-100 个字符，必填</li>
-              <li>规格型号、单价、采购数量、入库日期、资产分类编码为必填</li>
-              <li>单价和采购数量必须为有效数字，采购日期和入库日期格式为：YYYY-MM-DD</li>
-              <li>新旧状态可选值：newly / used / damaged / waste</li>
-              <li>当前状态可选值：in_store / in_use / in_scrapped</li>
-              <li>Excel 首行必须与「表头说明」中的中文列名完全一致</li>
-              <li>导入前建议先「导出模板」，在模板基础上填写数据</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      <BatchImportGuideCard
+        :header-examples="headerExamples"
+        :example-rows="exampleRows"
+        :example-columns="exampleColumns"
+        :notices="[
+          '资产编码由系统自动生成，Excel 中可留空，无需填写',
+          '资产名称长度 2-100 个字符，必填',
+          '规格型号、单价、采购数量、入库日期、资产分类编码为必填',
+          '单价和采购数量必须为有效数字，采购日期和入库日期格式为：YYYY-MM-DD',
+          '新旧状态可选值：newly / used / damaged / waste',
+          '当前状态可选值：in_store / in_use / in_scrapped',
+          'Excel 首行必须与「表头说明」中的中文列名完全一致',
+          '导入前建议先「导出模板」，在模板基础上填写数据',
+        ]"
+      />
 
       <!-- 操作按钮 -->
       <div class="form-actions">
@@ -174,41 +139,24 @@ export default { name: 'AssetBatchImport' }
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile, UploadInstance } from 'element-plus'
-import { Upload, InfoFilled } from '@element-plus/icons-vue'
+import { Upload } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import ExcelJS from 'exceljs'
 import { useBatchImport } from '@/composables/useBatchImport'
-import type { ValidatedRow } from '@/composables/useBatchImport'
+import {
+  validationTagType,
+  validationTagText,
+  type HeaderExample,
+  type ExampleColumn,
+} from '@/utils/batchImportHelpers'
+import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { request } from '@/api/index'
 import { useAssetStore } from '@/stores/assetStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import { isAxiosError } from 'axios'
-import type { AssetCreateForm, AssetCurrentStatus } from '@/types/asset'
+import type { AssetCreateForm } from '@/types/asset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
-
-// ===== Excel 行数据类型（对应导入模板的列?=====
-// 后端规则变更：asset_code 由后端自动生成，Excel 中可为空
-interface AssetExcelRow {
-  asset_code?: string // 可选，后端自动生成
-  asset_name: string
-  asset_specification: string
-  asset_brand?: string
-  asset_unit?: string
-  asset_purchase_price: number | string
-  asset_purchase_number: number | string
-  asset_purchase_date?: string
-  asset_warranty_period?: number | string
-  asset_entry_date: string
-  asset_current_status?: AssetCurrentStatus | string
-  asset_type: string
-  asset_entry_person?: string
-  asset_contract?: string
-  asset_applicant?: string
-  asset_manager?: string
-  asset_using_location?: string
-  asset_storage?: string
-  asset_description?: string
-}
+import type { AssetExcelRow } from '@/types/batch-import'
 
 const router = useRouter()
 const assetStore = useAssetStore()
@@ -393,21 +341,6 @@ const handleUploadChange = async (uploadFile: UploadFile, uploadFileList: Upload
   resetPreviewPage()
 }
 
-// ===== 验证状态标签辅助方?=====
-const validationTagType = (row: ValidatedRow<AssetExcelRow>) => {
-  if (row.submitStatus === 'error') return 'danger'
-  if (row.submitStatus === 'success') return 'success'
-  if (row.validationStatus === 'error') return 'danger'
-  return 'success'
-}
-
-const validationTagText = (row: ValidatedRow<AssetExcelRow>) => {
-  if (row.submitStatus === 'error') return '提交失败'
-  if (row.submitStatus === 'success') return '已提交'
-  if (row.validationStatus === 'error') return '验证失败'
-  return '有效'
-}
-
 // ===== 分页页码改变 =====
 const handlePreviewPageChange = (page: number) => {
   currentPreviewPage.value = page
@@ -473,13 +406,14 @@ const handleExportTemplate = async () => {
   }
 }
 
-// ===== 导入格式参考卡片数据（基于正确字段?====
+// ===== 导入格式参考卡片数据（基于正确字段）=====
 // 注意：后端规则变更：asset_code 由后端自动生成，Excel 中无需填写
-const headerExamples = [
+const headerExamples: HeaderExample[] = [
   {
     headerName: '资产编码',
     field: 'asset_code',
-    required: false, // 改为非必?    example: '（留空）',
+    required: false, // 改为非必填
+    example: '（留空）',
     remark: '系统自动生成，无需填写',
   },
   {
@@ -598,7 +532,10 @@ const headerExamples = [
   },
 ]
 
-const exampleColumns = headerExamples.map((h) => ({ prop: h.field, label: h.headerName }))
+const exampleColumns: ExampleColumn[] = headerExamples.map((h) => ({
+  prop: h.field,
+  label: h.headerName,
+}))
 
 // 注意：后端规则变更：asset_code 由后端自动生成，示例数据中可为空
 const exampleRows = [
@@ -795,52 +732,6 @@ const goBack = () => {
     font-size: 13px;
   }
 
-  .import-guide-card {
-    background-color: var(--card-background-muted);
-    border: 1px solid var(--border-color-light);
-    border-radius: 8px;
-    margin-bottom: 24px;
-    overflow: hidden;
-    .guide-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background-color: var(--color-primary-lighter);
-      padding: 12px 16px;
-      font-weight: 600;
-      color: var(--color-primary-light);
-      border-bottom: 1px solid var(--color-primary-light-border);
-      .el-icon {
-        font-size: 18px;
-      }
-    }
-    .guide-content {
-      padding: 16px;
-      .guide-section {
-        margin-bottom: 20px;
-        &:last-child {
-          margin-bottom: 0;
-        }
-        .section-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--text-primary);
-          margin-bottom: 12px;
-          padding-left: 4px;
-          border-left: 3px solid var(--color-primary-light);
-        }
-      }
-      .notice-list {
-        margin: 0;
-        padding-left: 20px;
-        li {
-          line-height: 1.8;
-          color: var(--text-regular);
-          font-size: 13px;
-        }
-      }
-    }
-  }
   .parse-error-card {
     margin-bottom: 24px;
     :deep(.el-alert) {

@@ -15,7 +15,7 @@ import type { Contract } from '@/types/contract'
  */
 export enum OutAssetType {
   RECEIVE = 'receive',
-  BORROW = 'borrow'
+  BORROW = 'borrow',
 }
 
 /**
@@ -32,10 +32,10 @@ export enum OutAssetCurrentStatus {
  * 出库资产状态枚举文本映尀 */
 
 export const outassetStatusMapping = {
-  recycled_pending:'已回收待发放',
+  recycled_pending: '已回收待发放',
   in_use: '在用',
   damaged: '待报废',
-  scrapped:'已报废'
+  scrapped: '已报废',
 }
 
 // ==================== 基础接口定义 ====================

@@ -461,7 +461,8 @@ const handleSubmit = async () => {
     if (isEdit.value) {
       // 编辑部门：调用 moveDepartment 或 updateDepartment
       const editDept = props.editDepartment
-      const parentChanged = editDept && editDept.parent_department_code !== formData.value.parent_department_code
+      const parentChanged =
+        editDept && editDept.parent_department_code !== formData.value.parent_department_code
 
       // 如果上级部门变更，需要调用 moveDepartment
       // 后端字段名为 target_parent_department_code，与 MoveDepartmentSerializer 保持一致

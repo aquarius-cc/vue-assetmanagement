@@ -65,12 +65,14 @@ export const userAPI = {
    */
   getUserByCode: async (employee_jobcode: string): Promise<EmployeeExtended> => {
     try {
-      return unwrapResponse(request.get<EmployeeExtended>(
-        `/users/employees/${employee_jobcode}/`,
-        undefined,
-        true, // 使用缓存
-        300000, // 缓存时间 5 分钟
-      ))
+      return unwrapResponse(
+        request.get<EmployeeExtended>(
+          `/users/employees/${employee_jobcode}/`,
+          undefined,
+          true, // 使用缓存
+          300000, // 缓存时间 5 分钟
+        ),
+      )
     } catch (error) {
       console.error('获取员工详情失败:', error)
       throw error
@@ -84,10 +86,11 @@ export const userAPI = {
    */
   getUserByName: async (employee_name: string): Promise<EmployeeListResponse> => {
     try {
-      return unwrapResponse(request.get<EmployeeListResponse>(
-        `/users/employees/search/`,
-        { keyword: employee_name } as Record<string, string>,
-      ))
+      return unwrapResponse(
+        request.get<EmployeeListResponse>(`/users/employees/search/`, {
+          keyword: employee_name,
+        } as Record<string, string>),
+      )
     } catch (error) {
       console.error('根据姓名搜索员工失败:', error)
       throw error
@@ -120,7 +123,9 @@ export const userAPI = {
     if (!data.employee_jobcode) {
       throw new Error('employee_jobcode is required for update')
     }
-    return unwrapResponse(request.put<EmployeeExtended>(`/users/employees/${data.employee_jobcode}/`, data))
+    return unwrapResponse(
+      request.put<EmployeeExtended>(`/users/employees/${data.employee_jobcode}/`, data),
+    )
   },
 
   /**
@@ -165,7 +170,11 @@ export const userAPI = {
    * @returns 更新后的员工信息
    */
   changeUserStatus: (employee_jobcode: string, status: string): Promise<EmployeeExtended> => {
-    return unwrapResponse(request.post<EmployeeExtended>(`/users/employees/${employee_jobcode}/change_status/`, { status }))
+    return unwrapResponse(
+      request.post<EmployeeExtended>(`/users/employees/${employee_jobcode}/change_status/`, {
+        status,
+      }),
+    )
   },
 
   /**
@@ -174,8 +183,12 @@ export const userAPI = {
    * @param sortData 排序数据列表 { employee_jobcode, sort_order }
    * @returns 更新后的员工列表
    */
-  batchUpdateSort: (sortData: { employee_jobcode: string; sort_order: number }[]): Promise<EmployeeExtended[]> => {
-    return unwrapResponse(request.put<EmployeeExtended[]>('/users/employees/sort/', { items: sortData }))
+  batchUpdateSort: (
+    sortData: { employee_jobcode: string; sort_order: number }[],
+  ): Promise<EmployeeExtended[]> => {
+    return unwrapResponse(
+      request.put<EmployeeExtended[]>('/users/employees/sort/', { items: sortData }),
+    )
   },
 
   /**
@@ -185,11 +198,13 @@ export const userAPI = {
    * @returns 部门简要信息（department_code, department_name, level, parent_department_code）
    */
   getEmployeeDepartment: (employee_jobcode: string): Promise<DepartmentBrief> => {
-    return unwrapResponse(request.get<DepartmentBrief>(
-      `/users/employees/${employee_jobcode}/department/`,
-      undefined,
-      true, // 使用缓存
-      300000,
-    ))
+    return unwrapResponse(
+      request.get<DepartmentBrief>(
+        `/users/employees/${employee_jobcode}/department/`,
+        undefined,
+        true, // 使用缓存
+        300000,
+      ),
+    )
   },
 }

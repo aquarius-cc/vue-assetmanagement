@@ -72,7 +72,12 @@ export interface TableColumn {
   minWidth?: string | number
   fixed?: boolean | 'left' | 'right'
   sortable?: boolean
-  formatter?: (row: Record<string, unknown>, column: TableColumn, cellValue: unknown, index: number) => string
+  formatter?: (
+    row: Record<string, unknown>,
+    column: TableColumn,
+    cellValue: unknown,
+    index: number,
+  ) => string
   type?: 'selection' | 'index' | 'expand'
 }
 

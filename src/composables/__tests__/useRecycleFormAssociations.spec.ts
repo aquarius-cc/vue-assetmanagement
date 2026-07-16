@@ -93,7 +93,10 @@ describe('useRecycleFormAssociations', () => {
     it('sets loading state during request', async () => {
       let resolvePromise!: (value: unknown) => void
       mockStorageGetList.mockImplementation(
-        () => new Promise((resolve) => { resolvePromise = resolve }),
+        () =>
+          new Promise((resolve) => {
+            resolvePromise = resolve
+          }),
       )
 
       const { loadStorages, loading } = useRecycleFormAssociations()

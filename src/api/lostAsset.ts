@@ -34,12 +34,9 @@ export const lostAssetAPI = {
    * @returns 遗失资产详情
    */
   getLostAssetByCode: (recordcode: string): Promise<LostAssetExtended> => {
-    return unwrapResponse(request.get<LostAssetExtended>(
-      `/assets/lost-assets/${recordcode}/`,
-      undefined,
-      true,
-      300000,
-    ))
+    return unwrapResponse(
+      request.get<LostAssetExtended>(`/assets/lost-assets/${recordcode}/`, undefined, true, 300000),
+    )
   },
 
   /**
@@ -62,7 +59,9 @@ export const lostAssetAPI = {
     if (!recordcode) {
       throw new Error('recordcode is required for update')
     }
-    return unwrapResponse(request.put<LostAssetExtended>(`/assets/lost-assets/${recordcode}/`, data))
+    return unwrapResponse(
+      request.put<LostAssetExtended>(`/assets/lost-assets/${recordcode}/`, data),
+    )
   },
 
   /**
@@ -103,7 +102,9 @@ export const lostAssetAPI = {
    * @returns 遗失记录列表响应
    */
   getLostAssetsByAsset: (asset_code: string): Promise<LostAssetListResponse> => {
-    return unwrapResponse(request.get<LostAssetListResponse>(`/assets/lost-assets/by-asset/${asset_code}/`))
+    return unwrapResponse(
+      request.get<LostAssetListResponse>(`/assets/lost-assets/by-asset/${asset_code}/`),
+    )
   },
 
   /**
@@ -114,10 +115,9 @@ export const lostAssetAPI = {
    * @returns 资产详情
    */
   markAssetAsLost: (asset_code: string, data: LostAssetCreateForm): Promise<LostAssetExtended> => {
-    return unwrapResponse(request.post<LostAssetExtended>(
-      `/assets/assets/${asset_code}/mark-lost/`,
-      data,
-    ))
+    return unwrapResponse(
+      request.post<LostAssetExtended>(`/assets/assets/${asset_code}/mark-lost/`, data),
+    )
   },
 
   /**
@@ -127,13 +127,15 @@ export const lostAssetAPI = {
    * @param data 找回信息
    * @returns 资产详情
    */
-  foundAsset: (asset_code: string, data: {
-    found_location?: string
-    found_description?: string
-  }): Promise<LostAssetExtended> => {
-    return unwrapResponse(request.post<LostAssetExtended>(
-      `/assets/assets/${asset_code}/found/`,
-      data,
-    ))
+  foundAsset: (
+    asset_code: string,
+    data: {
+      found_location?: string
+      found_description?: string
+    },
+  ): Promise<LostAssetExtended> => {
+    return unwrapResponse(
+      request.post<LostAssetExtended>(`/assets/assets/${asset_code}/found/`, data),
+    )
   },
 }

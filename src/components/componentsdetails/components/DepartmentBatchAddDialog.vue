@@ -20,7 +20,8 @@
     <!-- 目标部门提示 -->
     <el-alert type="info" :closable="false" show-icon>
       <template #title>
-        在「<strong>{{ parentDepartment?.department_name }}</strong>」下批量新增子部门
+        在「<strong>{{ parentDepartment?.department_name }}</strong
+        >」下批量新增子部门
       </template>
     </el-alert>
 
@@ -105,9 +106,7 @@
 
     <template #footer>
       <el-button @click="handleClose" :disabled="submitting">取消</el-button>
-      <el-button type="primary" :loading="submitting" @click="handleSubmit">
-        提交
-      </el-button>
+      <el-button type="primary" :loading="submitting" @click="handleSubmit"> 提交 </el-button>
     </template>
   </el-dialog>
 </template>
@@ -180,7 +179,7 @@ const handleSubmit = async () => {
 
   // 校验：至少有一行且必填字段不为空
   const validItems = formItems.value.filter(
-    (item) => item.department_code.trim() && item.department_name.trim()
+    (item) => item.department_code.trim() && item.department_name.trim(),
   )
   if (validItems.length === 0) {
     ElMessage.warning('请至少填写一条有效的部门信息（编码和名称为必填）')
@@ -234,6 +233,6 @@ watch(
       formItems.value = [createEmptyRow()]
       submitResult.value = null
     }
-  }
+  },
 )
 </script>

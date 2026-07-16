@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   HardDiskSNDetails.vue
   硬盘序列号列表页面（重构版）
 
@@ -106,13 +106,13 @@ export default {
 
 <script lang="ts" setup>
 // ===== 导入顺序：Vue 核心 → 第三方库 → @/ 内部模块 =====
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
-import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
+import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { HardDiskSN } from '@/utils/HardDiskSN'
@@ -269,89 +269,10 @@ const columns: TableColumn[] = [
  * - loading: 加载状态（computed）
  * - search: 搜索配置（可选）
  */
-const storeConfig: PaginationSearchConfig<HardDiskSN> = {
-  store: {
-    /**
-     * 获取列表数据
-     * @param params 分页查询参数
-     * @returns 包含 count 和 results 的响应对象
-     */
-    getList: async (params) => {
-      const response = await harddiskSnStore.getList(params)
-      return {
-        count: harddiskSnStore.pagination.total,
-        results: response,
-        next: null,
-        previous: null,
-      }
-    },
-    /**
-     * 分页状态
-     * 使用 getter/setter 对象实现与 Pinia store 的双向绑定
-     */
-    pagination: {
-      page: {
-        get: () => harddiskSnStore.pagination.page,
-        set: (val: number) => {
-          harddiskSnStore.pagination.page = val
-        },
-      },
-      page_size: {
-        get: () => harddiskSnStore.pagination.page_size,
-        set: (val: number) => {
-          harddiskSnStore.pagination.page_size = val
-        },
-      },
-      total: {
-        get: () => harddiskSnStore.pagination.total,
-        set: (val: number) => {
-          harddiskSnStore.pagination.total = val
-        },
-      },
-    },
-    /**
-     * 列表数据（computed 保持响应式）
-     */
-    list: computed(() => harddiskSnStore.list),
-    /**
-     * 加载状态（computed 保持响应式）
-     */
-    loading: computed(() => harddiskSnStore.loading),
-    /**
-     * 刷新标志（computed 保持响应式）
-     * 用于子页面（如批量导入、表单编辑）通知列表刷新
-     */
-    refreshFlag: computed(() => harddiskSnStore.refreshFlag),
-    /**
-     * 设置刷新标志
-     * 子页面调用后，usePaginationSearch 会自动监听并触发列表刷新
-     */
-    setRefreshFlag: (flag: boolean) => harddiskSnStore.setRefreshFlag(flag),
-  },
-  /**
-   * 搜索配置
-   * 配置后可使用搜索功能
-   */
-  search: {
-    performSearch: async (keyword: string, page: number, page_size: number) => {
-      const response = await harddiskSnStore.getList({
-        search: keyword,
-        page,
-        page_size,
-      })
-      return {
-        count: harddiskSnStore.pagination.total,
-        results: response,
-      }
-    },
-  },
-  defaultPageSize: 20,
-  messages: {
-    loadFailed: '加载硬盘序列号列表失败',
-    searchFailed: '搜索硬盘序列号失败',
-    invalidPage: '页码超出范围，已跳转至最后一页',
-  },
-}
+const storeConfig = useSmartListConfig<HardDiskSN>({
+  store: harddiskSnStore,
+  entityName: '硬盘序列号',
+})
 
 // ===== 路由监听：控制子路由遮罩 =====
 /**
@@ -436,9 +357,7 @@ const handleBatchDelete = async (rows: HardDiskSN[] | undefined) => {
   }
 
   // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows
-    .map((row) => row.harddisk_sn_code)
-    .filter((code): code is string => !!code)
+  const codes = rows.map((row) => row.harddisk_sn_code).filter((code): code is string => !!code)
 
   if (codes.length === 0) {
     ElMessage.error('无法删除：选中的数据缺少唯一标识')

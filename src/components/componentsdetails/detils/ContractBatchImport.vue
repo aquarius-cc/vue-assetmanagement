@@ -90,60 +90,19 @@
         />
       </div>
       <!-- 导入格式参考卡片 -->
-      <div class="import-guide-card">
-        <div class="guide-header">
-          <el-icon><InfoFilled /></el-icon>
-          <span>导入格式参考</span>
-        </div>
-        <div class="guide-content">
-          <!-- 必填列说明 -->
-          <div class="guide-section">
-            <div class="section-title">📌 必填列说明</div>
-            <el-table :data="headerExamples" border size="small" style="width: 100%">
-              <el-table-column prop="headerName" label="Excel 表头（中文）" width="180" />
-              <el-table-column prop="field" label="对应字段" width="180" />
-              <el-table-column prop="required" label="必填" width="80">
-                <template #default="{ row }">
-                  <el-tag :type="row.required ? 'danger' : 'info'" size="small">
-                    {{ row.required ? '必填' : '选填' }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="example" label="示例" />
-              <el-table-column prop="remark" label="备注" />
-            </el-table>
-          </div>
-          <!-- 示例数据 -->
-          <div class="guide-section">
-            <div class="section-title">📝 示例数据（参考填写）</div>
-            <el-table :data="exampleRows" border size="small" style="width: 100%">
-              <el-table-column
-                v-for="col in exampleColumns"
-                :key="col.prop"
-                :prop="col.prop"
-                :label="col.label"
-                min-width="120"
-              />
-            </el-table>
-          </div>
-          <!-- 注意事项 -->
-          <div class="guide-section">
-            <div class="section-title">⚠️ 注意事项</div>
-            <ul class="notice-list">
-              <li>
-                合同编码、合同名称、供应商、合同价格、签订日期、合同类型、保修期、结算状态为必填项
-              </li>
-              <li>
-                合同类型可选值：purchase / service / information_construction / direct_procurement
-              </li>
-              <li>结算状态可选值：pending / settled</li>
-              <li>日期格式统一为YYYY-MM-DD，签订日期不可为空，初验/终验日期可为空</li>
-              <li>Excel 首行必须与「表头说明」中的中文列名完全一致</li>
-              <li>导入前建议先「导出模板」，在模板基础上填写数据</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      <BatchImportGuideCard
+        :header-examples="headerExamples"
+        :example-rows="exampleRows"
+        :example-columns="exampleColumns"
+        :notices="[
+          '合同编码、合同名称、供应商、合同价格、签订日期、合同类型、保修期、结算状态为必填项',
+          '合同类型可选值：purchase / service / information_construction / direct_procurement',
+          '结算状态可选值：pending / settled',
+          '日期格式统一为YYYY-MM-DD，签订日期不可为空，初验/终验日期可为空',
+          'Excel 首行必须与「表头说明」中的中文列名完全一致',
+          '导入前建议先「导出模板」，在模板基础上填写数据',
+        ]"
+      />
 
       <!-- 操作按钮 -->
       <div class="form-actions">
@@ -170,34 +129,23 @@ export default { name: 'ContractBatchImport' }
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile, UploadInstance } from 'element-plus'
-import { Upload, InfoFilled } from '@element-plus/icons-vue'
+import { Upload } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import ExcelJS from 'exceljs'
 import { useBatchImport } from '@/composables/useBatchImport'
-import type { ValidatedRow } from '@/composables/useBatchImport'
+import {
+  validationTagType,
+  validationTagText,
+  type HeaderExample,
+  type ExampleColumn,
+} from '@/utils/batchImportHelpers'
+import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { contractAPI } from '@/api/contract'
 import { useContractStore } from '@/stores/contractStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import type { ContractCreateForm, ContractSettlementStatus } from '@/types/contract'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
-
-// ===== Excel 行数据类?=====
-interface ContractExcelRow {
-  contract_code: string
-  contract_name: string
-  contract_supplier: string
-  contract_price: number | string
-  contract_signing_date: string
-  contract_type: string
-  contract_warranty_period: number | string
-  contract_preliminary_acceptance_date?: string
-  contract_final_acceptance_date?: string
-  contract_settledment_status: string
-  contract_settledment_price?: number | string
-  contract_paid_count_number?: number | string
-  contract_paid_price?: number | string
-  contract_paid_record?: string
-}
+import type { ContractExcelRow } from '@/types/batch-import'
 
 const router = useRouter()
 const contractStore = useContractStore()
@@ -280,12 +228,17 @@ const importConfig: BatchImportConfig<ContractExcelRow, ContractCreateForm> = {
     }
 
     // 合同类型校验
-    const validTypes = ['purchase', 'service', 'information_construction', 'direct_procurement']
+    const validTypes = [
+      'tender_procurement',
+      'service',
+      'information_construction',
+      'direct_procurement',
+    ]
     if (!item.contract_type?.trim()) {
       errors.contract_type = '合同类型不能为空'
     } else if (!validTypes.includes(item.contract_type)) {
       errors.contract_type =
-        '合同类型无效，可选：purchase / service / information_construction / direct_procurement'
+        '合同类型无效，可选：tender_procurement / service / information_construction / direct_procurement'
     }
 
     // 保修期校验
@@ -295,11 +248,21 @@ const importConfig: BatchImportConfig<ContractExcelRow, ContractCreateForm> = {
     }
 
     // 结算状态校验
-    const validStatuses = ['pending', 'settled']
+    const validStatuses = [
+      'purchasing',
+      'purchase_finished',
+      'receive_check',
+      'initial_check',
+      'project_settlement',
+      'settlement_done',
+      'final_check',
+      'project_finished',
+    ]
     if (!item.contract_settledment_status?.trim()) {
       errors.contract_settledment_status = '结算状态不能为空'
     } else if (!validStatuses.includes(item.contract_settledment_status)) {
-      errors.contract_settledment_status = '结算状态无效，可选：pending / settled'
+      errors.contract_settledment_status =
+        '结算状态无效，可选：purchasing / purchase_finished / receive_check / initial_check / project_settlement / settlement_done / final_check / project_finished'
     }
 
     // 可选字段校验（如果有值）
@@ -421,21 +384,6 @@ const handleUploadChange = async (uploadFile: UploadFile, uploadFileList: Upload
   resetPreviewPage() // 新文件加载后重置页码
 }
 
-// ===== 验证状态标签辅助函数 =====
-const validationTagType = (row: ValidatedRow<ContractExcelRow>) => {
-  if (row.submitStatus === 'error') return 'danger'
-  if (row.submitStatus === 'success') return 'success'
-  if (row.validationStatus === 'error') return 'danger'
-  return 'success'
-}
-
-const validationTagText = (row: ValidatedRow<ContractExcelRow>) => {
-  if (row.submitStatus === 'error') return '提交失败'
-  if (row.submitStatus === 'success') return '已提交'
-  if (row.validationStatus === 'error') return '验证失败'
-  return '有效'
-}
-
 // ===== 分页页码改变 =====
 const handlePreviewPageChange = (page: number) => {
   currentPreviewPage.value = page
@@ -495,7 +443,7 @@ const handleExportTemplate = async () => {
 }
 
 // ===== 导入格式参考卡片 =====
-const headerExamples = [
+const headerExamples: HeaderExample[] = [
   {
     headerName: '合同编码',
     field: 'contract_code',
@@ -596,7 +544,10 @@ const headerExamples = [
   },
 ]
 
-const exampleColumns = headerExamples.map((h) => ({ prop: h.field, label: h.headerName }))
+const exampleColumns: ExampleColumn[] = headerExamples.map((h) => ({
+  prop: h.field,
+  label: h.headerName,
+}))
 
 const exampleRows = [
   {
@@ -635,7 +586,7 @@ const exampleRows = [
 
 /**
  * 提交处理：调用后端批量创建接口，一次性提交所有有效数据
- * * 解决原有逐条创建因并发请求去重导致的数据丢失问题
+ * 解决原有逐条创建因并发请求去重导致的数据丢失问题
  */
 const handleSubmit = async () => {
   if (validDataCount.value === 0) {
@@ -691,7 +642,7 @@ const handleSubmit = async () => {
   }
 }
 
-// ===== 清空数据 （同时重置上传组件状态和分页） =====
+// ===== 清空数据 （同时重置上传组件状态和分页）====
 const handleClear = () => {
   clearData()
   fileList.value = []
@@ -700,7 +651,7 @@ const handleClear = () => {
   ElMessage.info('已清空所有数据')
 }
 
-// ===== 返回上一页 =====
+// ===== 返回上一?=====
 const goBack = () => {
   router.go(-1)
 }
@@ -734,52 +685,6 @@ const goBack = () => {
     font-size: 13px;
   }
 
-  .import-guide-card {
-    background-color: var(--card-background-muted);
-    border: 1px solid var(--border-color-light);
-    border-radius: 8px;
-    margin-bottom: 24px;
-    overflow: hidden;
-    .guide-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background-color: var(--color-primary-lighter);
-      padding: 12px 16px;
-      font-weight: 600;
-      color: var(--color-primary-light);
-      border-bottom: 1px solid var(--color-primary-light-border);
-      .el-icon {
-        font-size: 18px;
-      }
-    }
-    .guide-content {
-      padding: 16px;
-      .guide-section {
-        margin-bottom: 20px;
-        &:last-child {
-          margin-bottom: 0;
-        }
-        .section-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--text-primary);
-          margin-bottom: 12px;
-          padding-left: 4px;
-          border-left: 3px solid var(--color-primary-light);
-        }
-      }
-      .notice-list {
-        margin: 0;
-        padding-left: 20px;
-        li {
-          line-height: 1.8;
-          color: var(--text-regular);
-          font-size: 13px;
-        }
-      }
-    }
-  }
   .parse-error-card {
     margin-bottom: 24px;
     :deep(.el-alert) {

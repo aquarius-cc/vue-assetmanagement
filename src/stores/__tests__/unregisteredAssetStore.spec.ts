@@ -80,9 +80,7 @@ describe('UnregisteredAssetStore', () => {
 
     it('应该处理API错误', async () => {
       const { unregisteredAssetAPI } = await import('@/api/unregisteredAsset')
-      vi.mocked(unregisteredAssetAPI.getUnregisteredAssets).mockRejectedValue(
-        new Error('网络错误'),
-      )
+      vi.mocked(unregisteredAssetAPI.getUnregisteredAssets).mockRejectedValue(new Error('网络错误'))
 
       await expect(store.getList()).rejects.toThrow('网络错误')
     })

@@ -51,11 +51,9 @@ export const contractAPI = {
    * @returns 合同详情
    */
   getContractByRecordcode: (recordcode: string): Promise<Contract> => {
-    return unwrapResponse(request.get<Contract>(`/assets/contracts/${recordcode}/`,
-      undefined,
-      true,
-      300000,
-    ))
+    return unwrapResponse(
+      request.get<Contract>(`/assets/contracts/${recordcode}/`, undefined, true, 300000),
+    )
   },
 
   /**
@@ -64,11 +62,9 @@ export const contractAPI = {
    * @returns 合同详情
    */
   getContractByCodeOrId: (code: string): Promise<Contract> => {
-    return unwrapResponse(request.get<Contract>(`/assets/contracts/${code}/`,
-      undefined,
-      true,
-      300000,
-    ))
+    return unwrapResponse(
+      request.get<Contract>(`/assets/contracts/${code}/`, undefined, true, 300000),
+    )
   },
 
   /**
@@ -76,9 +72,11 @@ export const contractAPI = {
    * 对应后端 ContractViewSet.getcontractByname action
    */
   getContractByName: (contract_name: string): Promise<ContractListResponse> => {
-    return unwrapResponse(request.get<ContractListResponse>(
-      `/assets/contracts/getcontractByname/${encodeURIComponent(contract_name)}/`
-    ))
+    return unwrapResponse(
+      request.get<ContractListResponse>(
+        `/assets/contracts/getcontractByname/${encodeURIComponent(contract_name)}/`,
+      ),
+    )
   },
 
   /**
@@ -106,7 +104,9 @@ export const contractAPI = {
    * 更新合同信息
    * @param data 合同更新表单数据（需包含 contract_code＀   * @returns 更新后的合同
    */
-  updateContract: (data: Partial<ContractUpdateForm> & { recordcode?: string }): Promise<Contract> => {
+  updateContract: (
+    data: Partial<ContractUpdateForm> & { recordcode?: string },
+  ): Promise<Contract> => {
     const recordcode = data.recordcode
     if (!recordcode) {
       throw new Error('recordcode is required for update')
@@ -117,7 +117,9 @@ export const contractAPI = {
   /**
    * 局部更新合同信息   * @param data 合同更新表单数据（需包含 contract_code＀   * @returns 更新后的合同
    */
-  partialUpdateContract: (data: Partial<ContractUpdateForm> & { recordcode?: string }): Promise<Contract> => {
+  partialUpdateContract: (
+    data: Partial<ContractUpdateForm> & { recordcode?: string },
+  ): Promise<Contract> => {
     const recordcode = data.recordcode
     if (!recordcode) {
       throw new Error('recordcode is required for update')
@@ -165,8 +167,13 @@ export const contractAPI = {
    * @param data 付款记录数据
    * @returns 更新后的合同信息
    */
-  addPaymentRecord: (recordcode: string, data: { amount: number; description?: string }): Promise<Contract> => {
-    return unwrapResponse(request.post<Contract>(`/assets/contracts/${recordcode}/payment_record/`, data))
+  addPaymentRecord: (
+    recordcode: string,
+    data: { amount: number; description?: string },
+  ): Promise<Contract> => {
+    return unwrapResponse(
+      request.post<Contract>(`/assets/contracts/${recordcode}/payment_record/`, data),
+    )
   },
 
   /**
@@ -174,11 +181,15 @@ export const contractAPI = {
    * POST /api/assets/contracts/{recordcode}/update_settlement_status/
    * 对应后端 ContractViewSet.update_settlement_status action
    */
-  updateSettlementStatus: (recordcode: string, status: 'pending' | 'settled'): Promise<Contract> => {
-    return unwrapResponse(request.post<Contract>(
-      `/assets/contracts/${recordcode}/update_settlement_status/`,
-      { status }
-    ))
+  updateSettlementStatus: (
+    recordcode: string,
+    status: 'pending' | 'settled',
+  ): Promise<Contract> => {
+    return unwrapResponse(
+      request.post<Contract>(`/assets/contracts/${recordcode}/update_settlement_status/`, {
+        status,
+      }),
+    )
   },
 
   /**

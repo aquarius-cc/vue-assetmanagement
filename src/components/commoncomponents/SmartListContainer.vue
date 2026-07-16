@@ -83,6 +83,51 @@ import type { PropType } from 'vue'
 import { ElMessage } from 'element-plus'
 import { usePaginationSearch, type PaginationSearchConfig } from '@/composables/usePaginationSearch'
 
+// ======================================================================
+// 调用链文档（调试用）
+//
+// 【页面级调用链】
+// 页面 (如 AssetDetails.vue)
+//   └─ SmartListContainer(:store-config="storeConfig")
+//       ├─ usePaginationSearch(storeConfig)          ← 核心 composable
+//       │   ├─ reactiveAccess.readReactive()         ← 读取 pagination page/page_size/total
+//       │   ├─ reactiveAccess.writeReactive()        ← 写入 pagination
+//       │   ├─ usePaginationSearchState()            ← 搜索状态管理
+//       │   │   ├─ performSearch()                   ← 单关键词搜索
+//       │   │   │   └─ searchConfig.performSearch()  ← 调用 store 的搜索 API
+//       │   │   └─ performSearchWithParams()         ← 多参数搜索
+//       │   │       └─ searchConfig.performSearchWithParams()
+//       │   ├─ loadList(page, page_size)             ← 加载列表数据
+//       │   │   └─ store.getList(params)             ← 调用 createEntityStore 的 API
+//       │   ├─ handleSizeChange(newSize)             ← 每页条数变更
+//       │   │   ├─ performSearch() 或 loadList()     ← 根据是否有搜索词决定
+//       │   ├─ handleCurrentChange(newPage)          ← 页码变更
+//       │   │   ├─ performSearch() 或 loadList()
+//       │   └─ refreshCurrentPage()                  ← 刷新当前页
+//       │       └─ performSearch() 或 loadList()
+//       │
+//       ├─ CommonList(:data="tableData")             ← UI 展示层
+//       │   ├─ el-pagination                         ← 分页控件
+//       │   │   ├─ @current-change → handleCurrentChange
+//       │   │   └─ @size-change → handleSizeChange
+//       │   ├─ SearchBar                             ← 搜索栏
+//       │   │   └─ @search → performSearch / performSearchWithParams
+//       │   └─ CommonListActions                     ← 操作按钮（新增/删除/导出）
+//       │
+//       └─ defineExpose({ refresh, reset, performSearch })
+//           └─ 父组件可通过 ref 调用
+//
+// 【数据流】
+// 用户操作 → SmartListContainer → usePaginationSearch → store API → 后端
+// 后端响应 → store.pagination.total 更新 → total computed 触发 → 模板响应式更新
+// 搜索结果 → searchResults ref → tableData computed 切换数据源 → CommonList 展示
+//
+// 【refreshFlag 自动刷新机制】
+// 子页面（如批量导入成功）→ store.setRefreshFlag(true)
+//   → watch(refreshFlag) 触发 → refreshCurrentPage()
+//   → performSearch() 或 loadList() → 列表自动刷新
+// ======================================================================
+
 // ===== Props 定义 =====
 /**
  * Props 接口定义

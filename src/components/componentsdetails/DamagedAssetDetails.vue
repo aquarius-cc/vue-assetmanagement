@@ -224,10 +224,10 @@ const columns: TableColumn[] = [
 /**
  * Store 配置对象（使用 computed 实现动态筛选条件合并）
  * 传递给 SmartListContainer 用于数据管理
- * 
+ *
  * 【业务逻辑】本页面只显示 approval_status=pending（待审批）的记录
  * 筛选条件在 getList 和 performSearch 中统一添加
- * 
+ *
  * 包含：
  * - getList: 获取列表数据的方法
  * - pagination: 分页状态（使用 getter/setter 实现双向绑定）
@@ -513,9 +513,7 @@ const handleBatchDelete = async (rows: DamagedAsset[] | undefined) => {
   }
 
   // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows
-    .map((row) => row.damaged_asset_code)
-    .filter((code): code is string => !!code)
+  const codes = rows.map((row) => row.damaged_asset_code).filter((code): code is string => !!code)
 
   if (codes.length === 0) {
     ElMessage.error('无法删除：选中的数据缺少唯一标识')

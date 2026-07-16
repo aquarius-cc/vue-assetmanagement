@@ -725,10 +725,7 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
             )
 
             // 同步更新分页总记录数
-            pagination.value.total = Math.max(
-              0,
-              pagination.value.total - result.success_count,
-            )
+            pagination.value.total = Math.max(0, pagination.value.total - result.success_count)
           }
 
           // 根据结果给出消息提示（适配后端 fail_items 格式）
@@ -811,4 +808,4 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
       removeBatch,
     }
   })
-  }
+}

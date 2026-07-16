@@ -150,7 +150,10 @@ export const operationTypeMapping: Record<string, string> = {
  * 操作类型标签颜色映射
  * 用于 el-tag 组件的 type 属性，不同操作类型使用不同颜色
  */
-export const operationTypeTagMapping: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary' | 'default'> = {
+export const operationTypeTagMapping: Record<
+  string,
+  'success' | 'warning' | 'danger' | 'info' | 'primary' | 'default'
+> = {
   [OperationType.CREATE]: 'success',
   [OperationType.UPDATE]: 'primary',
   [OperationType.DELETE]: 'danger',

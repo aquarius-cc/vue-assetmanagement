@@ -30,7 +30,8 @@ export const useWasteAssetStore = createEntityStore<WasteAsset, PaginationQuery>
     },
     getById: (code) => wasteAssetAPI.getWasteAsset(code),
     create: (data) => wasteAssetAPI.createWasteAsset(data as WasteAssetCreateForm),
-    update: (data) => wasteAssetAPI.updateWasteAsset(data.asset_code!, data as WasteAssetUpdateForm),
+    update: (data) =>
+      wasteAssetAPI.updateWasteAsset(data.asset_code!, data as WasteAssetUpdateForm),
     delete: (code) => wasteAssetAPI.deleteWasteAsset(code),
     batchDelete: (codes) => wasteAssetAPI.batchDeleteWasteAssets(codes),
   },

@@ -144,19 +144,13 @@ const levelTagType = computed(() => {
  * @param targetCode 目标部门编码
  * @returns 人员总数（包含子部门）
  */
-const calculateTotalEmployeeCount = (
-  nodes: DepartmentTreeNode[],
-  targetCode: string
-): number => {
+const calculateTotalEmployeeCount = (nodes: DepartmentTreeNode[], targetCode: string): number => {
   for (const node of nodes) {
     if (node.department_code === targetCode) {
       // 找到目标部门，递归计算所有子部门人员
       let count = node.employee_count || 0
       if (node.children?.length) {
-        count += node.children.reduce(
-          (sum, child) => sum + calculateSubtreeCount(child),
-          0
-        )
+        count += node.children.reduce((sum, child) => sum + calculateSubtreeCount(child), 0)
       }
       return count
     }
@@ -188,10 +182,7 @@ const totalEmployeeCount = computed(() => {
     // 没有部门树数据时，使用部门自身的 employee_count
     return props.department.employee_count || 0
   }
-  return calculateTotalEmployeeCount(
-    props.departmentTree,
-    props.department.department_code
-  )
+  return calculateTotalEmployeeCount(props.departmentTree, props.department.department_code)
 })
 
 // ==================== 方法定义 ====================

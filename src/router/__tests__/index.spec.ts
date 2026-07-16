@@ -36,7 +36,7 @@ describe('Router Configuration', () => {
   async function loadRouter() {
     const routerModule = await import('../index')
     const { createRouter, createWebHistory } = await import('vue-router')
-    const vueRouter = await import('vue-router') as any
+    const vueRouter = (await import('vue-router')) as any
     return {
       router: routerModule.default,
       createRouter: vi.mocked(createRouter),

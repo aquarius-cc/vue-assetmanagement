@@ -22,7 +22,13 @@
         <div class="panel-header">
           <span class="panel-title">通知</span>
           <div class="panel-actions">
-            <el-button link type="primary" size="small" @click="handleMarkAllRead" v-if="unreadCount > 0">
+            <el-button
+              link
+              type="primary"
+              size="small"
+              @click="handleMarkAllRead"
+              v-if="unreadCount > 0"
+            >
               全部已读
             </el-button>
             <el-button link type="info" size="small" @click="showPanel = false">
@@ -65,7 +71,15 @@ import { Bell, Close } from '@element-plus/icons-vue'
 import { useNotification, type Notification } from '@/composables/useNotification'
 
 const router = useRouter()
-const { notifications, unreadCount, isConnected, isLoading, markAsRead, markAllAsRead, fetchNotifications } = useNotification()
+const {
+  notifications,
+  unreadCount,
+  isConnected,
+  isLoading,
+  markAsRead,
+  markAllAsRead,
+  fetchNotifications,
+} = useNotification()
 
 const showPanel = ref(false)
 const bellRef = ref<HTMLElement | null>(null)
@@ -235,7 +249,9 @@ function formatTime(iso: string) {
 
 .panel-fade-enter-active,
 .panel-fade-leave-active {
-  transition: opacity 0.2s, transform 0.2s;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
 }
 
 .panel-fade-enter-from,

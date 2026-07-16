@@ -1,32 +1,32 @@
 /* CSS 变量定义 - 亮色模式（默认） */
 :root {
   /* 主色 - 符合 F1 规范 */
-  --color-primary: #2B5FD7;
+  --color-primary: #2b5fd7;
   --color-primary-light: #409eff;
   --color-primary-lighter: #ecf5ff;
   --color-primary-dark: #1e429f;
-  
+
   /* 功能色 - 符合 F2 规范 */
-  --color-success: #52C41A;
+  --color-success: #52c41a;
   --color-success-light: #67c23a;
   --color-success-lighter: #f0f9eb;
   --color-success-dark: #389e0d;
-  
-  --color-warning: #FAAD14;
+
+  --color-warning: #faad14;
   --color-warning-light: #e6a23c;
   --color-warning-lighter: #fdf6ec;
   --color-warning-dark: #d48806;
-  
-  --color-danger: #FF4D4F;
+
+  --color-danger: #ff4d4f;
   --color-danger-light: #f56c6c;
   --color-danger-lighter: #fef0f0;
   --color-danger-dark: #cf1322;
-  
-  --color-info: #1677FF;
+
+  --color-info: #1677ff;
   --color-info-light: #909399;
   --color-info-lighter: #f4f4f5;
   --color-info-dark: #73767a;
-  
+
   /* 文本色 */
   --text-primary: #303133;
   --text-regular: #606266;
@@ -35,7 +35,7 @@
   --text-light: #6b7280;
   --text-muted: #8492a6;
   --text-placeholder: #c1c1c1;
-  
+
   /* 边框与背景 */
   --border-color: #e8e8e8;
   --border-color-light: #e4e7ed;
@@ -46,18 +46,18 @@
   --background-color: #f5f7fa;
   --background-color-light: #f9fafb;
   --background-color-lighter: #fafafa;
-  
+
   /* 卡片背景 */
   --card-background: #ffffff;
   --card-background-light: #f9fafb;
   --card-background-muted: #f8f9fc;
   --card-background-subtle: #f3f4f6;
   --card-background-page: #f8f9fa;
-  
+
   /* 阴影 */
   --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   --card-hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  
+
   /* 渐变 */
   --gradient-primary: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
   --gradient-background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
@@ -71,7 +71,7 @@
   --color-primary-light-mid: #66b1ff;
   --color-primary-light-lighter: #79bbff;
   --color-primary-light-border: #d9ecff;
-  
+
   /* 透明度 */
   --opacity-primary-light: rgba(43, 95, 215, 0.08);
   --opacity-primary-lighter: rgba(43, 95, 215, 0.12);
@@ -84,28 +84,28 @@ html.dark {
   --color-primary-light: #69b1ff;
   --color-primary-lighter: rgba(74, 144, 226, 0.1);
   --color-primary-dark: #2b5fd7;
-  
+
   /* 功能色 - 调整亮度以适应深色背景 */
   --color-success: #73d13d;
   --color-success-light: #95de64;
   --color-success-lighter: rgba(115, 209, 61, 0.1);
   --color-success-dark: #52c41a;
-  
+
   --color-warning: #ffc53d;
   --color-warning-light: #ffd666;
   --color-warning-lighter: rgba(255, 197, 61, 0.1);
   --color-warning-dark: #faad14;
-  
+
   --color-danger: #ff7875;
   --color-danger-light: #ffa39e;
   --color-danger-lighter: rgba(255, 120, 117, 0.1);
   --color-danger-dark: #ff4d4f;
-  
+
   --color-info: #40a9ff;
   --color-info-light: #69c0ff;
   --color-info-lighter: rgba(64, 169, 255, 0.1);
   --color-info-dark: #1677ff;
-  
+
   /* 文本色 - 深色背景下的文本 */
   --text-primary: #e5eaf3;
   --text-regular: #cfd3dc;
@@ -114,7 +114,7 @@ html.dark {
   --text-light: #9ca3af;
   --text-muted: #8d9095;
   --text-placeholder: #6b7280;
-  
+
   /* 边框与背景 - 深色主题 */
   --border-color: #4c4d4f;
   --border-color-light: #414243;
@@ -125,36 +125,47 @@ html.dark {
   --background-color: #141414;
   --background-color-light: #1d1e1f;
   --background-color-lighter: #262727;
-  
+
   /* 卡片背景 */
   --card-background: #1d1e1f;
   --card-background-light: #262727;
   --card-background-muted: #262727;
   --card-background-subtle: #1d1e1f;
   --card-background-page: #141414;
-  
+
   /* 阴影 - 调整为深色阴影 */
   --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   --card-hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  
+
   /* 渐变 - 深色渐变 */
   --gradient-primary: linear-gradient(135deg, #1d1e1f 0%, #262727 100%);
   --gradient-background: linear-gradient(180deg, #141414 0%, #1d1e1f 100%);
-  --gradient-card-highlight: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(74, 144, 226, 0.05) 100%);
+  --gradient-card-highlight: linear-gradient(
+    135deg,
+    rgba(74, 144, 226, 0.1) 0%,
+    rgba(74, 144, 226, 0.05) 100%
+  );
   --gradient-purple: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --gradient-pink: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   --gradient-cyan: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
   --gradient-green: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
 
+  /* 渐变卡片上的白色叠加层 — 亮暗模式通用 */
+  --overlay-white-subtle: rgba(255, 255, 255, 0.1);
+  --overlay-white-light: rgba(255, 255, 255, 0.15);
+  --overlay-white-medium: rgba(255, 255, 255, 0.2);
+  --overlay-white-strong: rgba(255, 255, 255, 0.3);
+  --overlay-white-text: rgba(255, 255, 255, 0.9);
+
   /* 主色衍生 - 深色 */
   --color-primary-light-mid: #85c1ff;
   --color-primary-light-lighter: #a0cfff;
   --color-primary-light-border: rgba(74, 144, 226, 0.2);
-  
+
   /* 透明度 */
   --opacity-primary-light: rgba(74, 144, 226, 0.15);
   --opacity-primary-lighter: rgba(74, 144, 226, 0.2);
-  
+
   /* Element Plus 暗色变量覆盖 */
   --el-bg-color: #141414;
   --el-bg-color-overlay: #1d1e1f;

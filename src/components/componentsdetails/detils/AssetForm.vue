@@ -69,9 +69,7 @@ import { ElMessage } from 'element-plus'
 import { Edit, Plus } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
 import { isAxiosError } from 'axios'
-import type {
-  AssetCreateFormExtended,
-} from '@/types/asset'
+import type { AssetCreateFormExtended } from '@/types/asset'
 import { getAssetStatusText } from '@/utils/Format'
 import { assetAPI } from '@/api/asset'
 import {
@@ -149,8 +147,8 @@ const getAssetCreateForm = computed(() => {
     asset_specification: assetForm.asset_specification ?? '',
     asset_brand: assetForm.asset_brand ?? '',
     asset_unit: assetForm.asset_unit ?? '',
-    asset_purchase_price: assetForm.asset_purchase_price != null
-      ? String(assetForm.asset_purchase_price) : '',
+    asset_purchase_price:
+      assetForm.asset_purchase_price != null ? String(assetForm.asset_purchase_price) : '',
     asset_purchase_number: assetForm.asset_purchase_number ?? 1,
     asset_purchase_date: assetForm.asset_purchase_date ?? '',
     asset_warranty_period: assetForm.asset_warranty_period ?? 0,
@@ -250,7 +248,9 @@ const loadAssetDetail = async (assetCode: string) => {
     const [at, st, ep, ap, mg, ct] = await Promise.all([
       detail.asset_type_code ? assetTypeStore.getById(detail.asset_type_code) : null,
       detail.asset_storage_code ? storageStore.getById(detail.asset_storage_code) : null,
-      detail.asset_entry_person_jobcode ? userStore.getById(detail.asset_entry_person_jobcode) : null,
+      detail.asset_entry_person_jobcode
+        ? userStore.getById(detail.asset_entry_person_jobcode)
+        : null,
       detail.asset_applicant_jobcode ? userStore.getById(detail.asset_applicant_jobcode) : null,
       detail.asset_manager_jobcode ? userStore.getById(detail.asset_manager_jobcode) : null,
       detail.asset_contract_code ? contractStore.getById(detail.asset_contract_code) : null,

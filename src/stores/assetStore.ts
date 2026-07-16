@@ -4,7 +4,12 @@
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { assetAPI } from '@/api/asset'
-import type { AssetDetail, AssetCreateForm, AssetUpdateForm, AssetListResponse } from '@/types/asset'
+import type {
+  AssetDetail,
+  AssetCreateForm,
+  AssetUpdateForm,
+  AssetListResponse,
+} from '@/types/asset'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery, EntityStore } from '@/stores/createEntityStore'
 
@@ -22,7 +27,9 @@ interface AssetStore extends EntityStore<AssetDetail, PaginationQuery> {
    * 使用后端 search_assets action
    * @param params 查询参数
    * @returns 资产列表响应（包吀count 咀results＀   */
-  searchAssets: (params: PaginationQuery & Record<string, string | number>) => Promise<AssetListResponse>
+  searchAssets: (
+    params: PaginationQuery & Record<string, string | number>,
+  ) => Promise<AssetListResponse>
 
   /**
    * 联合搜索资产（多条件组合搜索＀   * 使用后端 combine_search action
@@ -89,7 +96,9 @@ export const useAssetStore = (): AssetStore => {
         searchParams.keyword = searchParams.search
         delete searchParams.search
       }
-      const response = await assetAPI.searchAssets(searchParams as Parameters<typeof assetAPI.searchAssets>[0])
+      const response = await assetAPI.searchAssets(
+        searchParams as Parameters<typeof assetAPI.searchAssets>[0],
+      )
       return response
     }
 
@@ -107,9 +116,7 @@ export const useAssetStore = (): AssetStore => {
      *
      * 输出使用 AssetDetailSerializer，包含完整的嵌套关联数据
      */
-    extendedStore.combineSearch = async (
-      params: Record<string, string | number>,
-    ) => {
+    extendedStore.combineSearch = async (params: Record<string, string | number>) => {
       // 过滤空值参数，只传递有值的字段
       const cleanParams: Record<string, string | number> = {}
       Object.entries(params).forEach(([key, value]) => {
@@ -117,7 +124,9 @@ export const useAssetStore = (): AssetStore => {
           cleanParams[key] = value
         }
       })
-      const response = await assetAPI.combineSearch(cleanParams as Parameters<typeof assetAPI.combineSearch>[0])
+      const response = await assetAPI.combineSearch(
+        cleanParams as Parameters<typeof assetAPI.combineSearch>[0],
+      )
       return response
     }
 

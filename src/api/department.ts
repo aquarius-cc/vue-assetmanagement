@@ -58,12 +58,14 @@ export const departmentAPI = {
    * @returns 部门详情
    */
   getDepartment: (department_code: string): Promise<Department> => {
-    return unwrapResponse(request.get<Department>(
-      `/users/departments/${department_code}/`,
-      undefined,
-      true, // 使用缓存
-      300000, // 缓存时间 5 分钟
-    ))
+    return unwrapResponse(
+      request.get<Department>(
+        `/users/departments/${department_code}/`,
+        undefined,
+        true, // 使用缓存
+        300000, // 缓存时间 5 分钟
+      ),
+    )
   },
 
   /**
@@ -84,7 +86,9 @@ export const departmentAPI = {
     if (!data.department_code) {
       throw new Error('department_code is required for update')
     }
-    return unwrapResponse(request.put<Department>(`/users/departments/${data.department_code}/`, data))
+    return unwrapResponse(
+      request.put<Department>(`/users/departments/${data.department_code}/`, data),
+    )
   },
 
   /**
@@ -138,13 +142,13 @@ export const departmentAPI = {
    */
   getDepartmentEmployeeList: (
     department_code: string,
-    params?: DepartmentEmployeeListQueryParams
+    params?: DepartmentEmployeeListQueryParams,
   ): Promise<DepartmentEmployeeListResponse> => {
     return unwrapResponse(
       request.get<DepartmentEmployeeListResponse>(
         `/users/departments/${department_code}/employees/`,
-        params
-      )
+        params,
+      ),
     )
   },
 
@@ -165,7 +169,9 @@ export const departmentAPI = {
    * @returns 直接子部门列表
    */
   getDepartmentChildren: (department_code: string): Promise<DepartmentTreeNode[]> => {
-    return unwrapResponse(request.get<DepartmentTreeNode[]>(`/users/departments/${department_code}/children/`))
+    return unwrapResponse(
+      request.get<DepartmentTreeNode[]>(`/users/departments/${department_code}/children/`),
+    )
   },
 
   /**
@@ -175,7 +181,9 @@ export const departmentAPI = {
    * @returns 移动后的部门信息
    */
   moveDepartment: (department_code: string, params: MoveDepartmentParams): Promise<Department> => {
-    return unwrapResponse(request.put<Department>(`/users/departments/${department_code}/move/`, params))
+    return unwrapResponse(
+      request.put<Department>(`/users/departments/${department_code}/move/`, params),
+    )
   },
 
   /**
@@ -185,7 +193,9 @@ export const departmentAPI = {
    * @returns 更新后的部门列表
    */
   sortDepartments: (sortData: DepartmentSortItem[]): Promise<Department[]> => {
-    return unwrapResponse(request.put<Department[]>('/users/departments/sort/', { items: sortData }))
+    return unwrapResponse(
+      request.put<Department[]>('/users/departments/sort/', { items: sortData }),
+    )
   },
 
   /**
@@ -195,11 +205,13 @@ export const departmentAPI = {
    * @returns 父部门简要信息（recordcode, department_code, department_name, level, parent_department_code, path）
    */
   getParentDepartment: (department_code: string): Promise<DepartmentBrief> => {
-    return unwrapResponse(request.get<DepartmentBrief>(
-      `/users/departments/${department_code}/parent/`,
-      undefined,
-      true,
-      300000,
-    ))
+    return unwrapResponse(
+      request.get<DepartmentBrief>(
+        `/users/departments/${department_code}/parent/`,
+        undefined,
+        true,
+        300000,
+      ),
+    )
   },
 }

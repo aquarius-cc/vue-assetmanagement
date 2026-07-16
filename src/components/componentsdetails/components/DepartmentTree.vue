@@ -175,10 +175,7 @@ const treeProps = {
 const calculateTotalEmployeeCount = (node: DepartmentTreeNode): number => {
   let count = node.employee_count || 0
   if (node.children?.length) {
-    count += node.children.reduce(
-      (sum, child) => sum + calculateTotalEmployeeCount(child),
-      0
-    )
+    count += node.children.reduce((sum, child) => sum + calculateTotalEmployeeCount(child), 0)
   }
   return count
 }

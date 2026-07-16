@@ -20,12 +20,14 @@ export const brokenAssetAPI = {
   },
 
   getBrokenAssetByCode: (recordcode: string): Promise<BrokenAssetExtended> => {
-    return unwrapResponse(request.get<BrokenAssetExtended>(
-      `/assets/broken-assets/${recordcode}/`,
-      undefined,
-      true,
-      300000,
-    ))
+    return unwrapResponse(
+      request.get<BrokenAssetExtended>(
+        `/assets/broken-assets/${recordcode}/`,
+        undefined,
+        true,
+        300000,
+      ),
+    )
   },
 
   createBrokenAsset: (data: BrokenAssetCreateForm): Promise<BrokenAssetExtended> => {
@@ -37,7 +39,9 @@ export const brokenAssetAPI = {
     if (!recordcode) {
       throw new Error('recordcode is required for update')
     }
-    return unwrapResponse(request.put<BrokenAssetExtended>(`/assets/broken-assets/${recordcode}/`, data))
+    return unwrapResponse(
+      request.put<BrokenAssetExtended>(`/assets/broken-assets/${recordcode}/`, data),
+    )
   },
 
   deleteBrokenAsset: (recordcode: string): Promise<void> => {
@@ -52,13 +56,17 @@ export const brokenAssetAPI = {
     )
   },
 
-  batchCreateBrokenAssets: (data: BrokenAssetBatchCreateForm): Promise<BrokenAssetBatchCreateResult> => {
+  batchCreateBrokenAssets: (
+    data: BrokenAssetBatchCreateForm,
+  ): Promise<BrokenAssetBatchCreateResult> => {
     return unwrapResponse(
       request.post<BrokenAssetBatchCreateResult>('/assets/broken-assets/batch-create/', data),
     )
   },
 
   getBrokenAssetsByAsset: (asset_code: string): Promise<BrokenAssetListResponse> => {
-    return unwrapResponse(request.get<BrokenAssetListResponse>(`/assets/broken-assets/by-asset/${asset_code}/`))
+    return unwrapResponse(
+      request.get<BrokenAssetListResponse>(`/assets/broken-assets/by-asset/${asset_code}/`),
+    )
   },
 }

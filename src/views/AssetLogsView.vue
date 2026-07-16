@@ -8,7 +8,12 @@
         </div>
       </template>
 
-      <el-result v-if="!assetCode" icon="warning" title="缺少资产编码" sub-title="请通过正确的方式访问此页面">
+      <el-result
+        v-if="!assetCode"
+        icon="warning"
+        title="缺少资产编码"
+        sub-title="请通过正确的方式访问此页面"
+      >
         <template #extra>
           <el-button type="primary" @click="router.push('/main')">返回首页</el-button>
         </template>

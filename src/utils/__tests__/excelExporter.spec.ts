@@ -142,9 +142,7 @@ describe('excelExporter', () => {
     it('should handle formatter function', async () => {
       await exportToExcel({
         data: [{ name: 'Test', value: 42 }],
-        columns: [
-          { title: 'Name', key: 'name', formatter: (val: unknown) => `Custom: ${val}` },
-        ],
+        columns: [{ title: 'Name', key: 'name', formatter: (val: unknown) => `Custom: ${val}` }],
         fileName: 'test.xlsx',
       })
       expect(mockAddRow).toHaveBeenCalled()

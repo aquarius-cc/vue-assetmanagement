@@ -71,7 +71,8 @@ const ensureEmployeeUpdateForm = (data: Partial<EmployeeExtended>): EmployeeUpda
   if (data.employee_description !== undefined) {
     ensureData.employee_description = data.employee_description?.trim() || null
   }
-  if (data.employee_department_code) ensureData.employee_department_code = data.employee_department_code.trim()
+  if (data.employee_department_code)
+    ensureData.employee_department_code = data.employee_department_code.trim()
   // 排序顺序：可选字段，有值则透传，无值则不传（保持后端原值）
   if (data.sort_order !== undefined) ensureData.sort_order = data.sort_order
 
@@ -81,10 +82,7 @@ const ensureEmployeeUpdateForm = (data: Partial<EmployeeExtended>): EmployeeUpda
 /**
  * 员工 Store
  */
-export const useUserStore = createEntityStore<
-  EmployeeExtended,
-  PaginationQuery
->('user', {
+export const useUserStore = createEntityStore<EmployeeExtended, PaginationQuery>('user', {
   idKey: 'employee_jobcode',
   nameField: 'employee_name',
   displayName: '员工',

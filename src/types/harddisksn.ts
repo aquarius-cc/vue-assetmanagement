@@ -16,7 +16,7 @@ export enum HardDiskType {
   HDD = 'HDD',
   SSD = 'SSD',
   NVMe = 'NVMe',
-  OTHER = 'Other'
+  OTHER = 'Other',
 }
 
 /**
@@ -32,7 +32,7 @@ export enum HardDiskStatus {
   REPAIR = 'repair',
   SCRAP = 'scrap',
   LOST = 'lost',
-  DAMAGED = 'damaged'
+  DAMAGED = 'damaged',
 }
 
 // ==================== 基础接口定义 ====================
@@ -95,12 +95,12 @@ export interface HardDiskSN extends HardDiskSNCreateForm {
 }
 
 export interface HardDiskSNListResponse extends Partial<HardDiskSN> {
-  id: number,
-  harddisk_sn_code: string,
-  harddisk_no: number,
-  harddisk_type: HardDiskType | null,
-  harddisk_status: HardDiskStatus | null,
-  harddisk_sn_description: string | null,
+  id: number
+  harddisk_sn_code: string
+  harddisk_no: number
+  harddisk_type: HardDiskType | null
+  harddisk_status: HardDiskStatus | null
+  harddisk_sn_description: string | null
 }
 
 // ==================== 批量保存相关接口 ====================

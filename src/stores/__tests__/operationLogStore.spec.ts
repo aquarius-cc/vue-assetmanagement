@@ -89,9 +89,9 @@ describe('OperationLogStore', () => {
     })
 
     it('update应该抛出只读错误', async () => {
-      await expect(
-        store.update({ logging_id: 'LOG-001' } as any),
-      ).rejects.toThrow('操作日志为只读模块，不支持更新操作')
+      await expect(store.update({ logging_id: 'LOG-001' } as any)).rejects.toThrow(
+        '操作日志为只读模块，不支持更新操作',
+      )
     })
 
     it('remove应该抛出只读错误', async () => {

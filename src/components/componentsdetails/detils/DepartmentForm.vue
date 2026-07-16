@@ -195,7 +195,9 @@ const submitForm = () => {
           department_name: departmentForm.value.department_name,
           department_information: departmentForm.value.department_information,
           // 排序顺序：有值则传，undefined 时不传（保持后端原值）
-          ...(departmentForm.value.sort_order !== undefined && { sort_order: departmentForm.value.sort_order }),
+          ...(departmentForm.value.sort_order !== undefined && {
+            sort_order: departmentForm.value.sort_order,
+          }),
         })
         ElMessage.success('部门修改成功！')
       } else {

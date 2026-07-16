@@ -48,7 +48,7 @@ export function createSuggestionFetcher<T, R>(options: SuggestionFetcherOptions<
 
       // 4. 关键词二次过滤（可选）
       if (keywordMatch) {
-        suggestions = suggestions.filter(item => keywordMatch(item, queryString))
+        suggestions = suggestions.filter((item) => keywordMatch(item, queryString))
       }
 
       // 5. 排序

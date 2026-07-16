@@ -6,9 +6,7 @@
   <div v-if="records.length > 0" class="selected-records">
     <div class="records-header">
       <h3 class="section-title">已选回收记录（{{ records.length }} 条）</h3>
-      <el-button link type="danger" size="small" @click="$emit('clear')">
-        清空全部
-      </el-button>
+      <el-button link type="danger" size="small" @click="$emit('clear')"> 清空全部 </el-button>
     </div>
     <el-table :data="records" size="small" style="width: 100%">
       <el-table-column prop="recycle_asset" label="资产编码" width="160" />

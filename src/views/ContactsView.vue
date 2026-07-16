@@ -9,11 +9,7 @@
             <span>部门</span>
           </div>
         </template>
-        <DepartmentTree
-          ref="departmentTreeRef"
-          selectable
-          @select="handleDepartmentSelect"
-        />
+        <DepartmentTree ref="departmentTreeRef" selectable @select="handleDepartmentSelect" />
       </el-card>
     </div>
 
@@ -25,7 +21,12 @@
             <div class="header-left">
               <el-icon><User /></el-icon>
               <span>{{ selectedDepartmentName || '全部人员' }}</span>
-              <el-tag v-if="selectedDepartmentCode" size="small" closable @close="clearDepartmentFilter">
+              <el-tag
+                v-if="selectedDepartmentCode"
+                size="small"
+                closable
+                @close="clearDepartmentFilter"
+              >
                 {{ selectedDepartmentName }}
               </el-tag>
             </div>
@@ -34,7 +35,7 @@
                 v-model="searchKeyword"
                 placeholder="搜索姓名、工号..."
                 clearable
-                style="width: 240px;"
+                style="width: 240px"
                 @input="handleSearch"
               >
                 <template #prefix>

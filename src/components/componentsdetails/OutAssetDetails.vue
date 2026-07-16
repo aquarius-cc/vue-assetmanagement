@@ -114,19 +114,19 @@ export default {
 
 <script lang="ts" setup>
 // ===== 导入顺序：Vue 核心 → 第三方库 → @/ 内部模块 =====
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
-import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
+import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { OutAsset, OutAssetDetail } from '@/utils/OutAsset'
 import { useOutAssetStore } from '@/stores/outAssetStore'
-import { formatDate, outassetTypeMapping, getOutAssetStatusText } from '@/utils/Format'
+import { formatDate, outassetTypeMapping } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'
 
 // ===== 状态与实例 =====
@@ -201,85 +201,10 @@ const columns: TableColumn[] = [
  * - loading: 加载状态（computed）
  * - search: 搜索配置
  */
-const storeConfig: PaginationSearchConfig<OutAssetDetail> = {
-  store: {
-    /**
-     * 获取列表数据
-     * @param params 分页查询参数
-     * @returns 包含 count 和 results 的响应对象
-     */
-    getList: async (params) => {
-      const response = await outAssetStore.getList(params)
-      return {
-        count: outAssetStore.pagination.total,
-        results: response,
-        next: null,
-        previous: null,
-      }
-    },
-    /**
-     * 分页状态
-     * 使用 getter/setter 对象实现与 Pinia store 的双向绑定
-     */
-    pagination: {
-      page: {
-        get: () => outAssetStore.pagination.page,
-        set: (val: number) => {
-          outAssetStore.pagination.page = val
-        },
-      },
-      page_size: {
-        get: () => outAssetStore.pagination.page_size,
-        set: (val: number) => {
-          outAssetStore.pagination.page_size = val
-        },
-      },
-      total: {
-        get: () => outAssetStore.pagination.total,
-        set: (val: number) => {
-          outAssetStore.pagination.total = val
-        },
-      },
-    },
-    /**
-     * 列表数据（computed 保持响应式）
-     */
-    list: computed(() => outAssetStore.list),
-    /**
-     * 加载状态（computed 保持响应式）
-     */
-    loading: computed(() => outAssetStore.loading),
-    /**
-     * 刷新标志（computed 保持响应式）
-     * 用于子页面（如批量导入、表单编辑）通知列表刷新
-     */
-    refreshFlag: computed(() => outAssetStore.refreshFlag),
-    /**
-     * 设置刷新标志
-     * 子页面调用后，usePaginationSearch 会自动监听并触发列表刷新
-     */
-    setRefreshFlag: (flag: boolean) => outAssetStore.setRefreshFlag(flag),
-  },
-  /**
-   * 搜索配置
-   * 配置后可使用搜索功能
-   */
-  search: {
-    performSearch: async (keyword: string, page: number, page_size: number) => {
-      const response = await outAssetStore.getList({ search: keyword, page, page_size })
-      return {
-        count: outAssetStore.pagination.total,
-        results: response,
-      }
-    },
-  },
-  defaultPageSize: 20,
-  messages: {
-    loadFailed: '加载出库资产列表失败',
-    searchFailed: '搜索出库资产失败',
-    invalidPage: '页码超出范围，已跳转至最后一页',
-  },
-}
+const storeConfig = useSmartListConfig<OutAssetDetail>({
+  store: outAssetStore,
+  entityName: '出库记录',
+})
 
 // ===== 路由监听：控制子路由遮罩 =====
 /**

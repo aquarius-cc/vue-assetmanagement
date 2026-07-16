@@ -4,7 +4,10 @@
  */
 
 // ===== 资产状态映射 =====
-export const ASSET_STATUS_MAP: Record<string, { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }> = {
+export const ASSET_STATUS_MAP: Record<
+  string,
+  { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
+> = {
   in_store: { label: '在库', type: 'success' },
   in_use: { label: '在用', type: 'primary' },
   recycled_pending: { label: '已回收待发放', type: 'info' },
@@ -16,28 +19,40 @@ export const ASSET_STATUS_MAP: Record<string, { label: string; type: 'success' |
 }
 
 // ===== 出库状态映射 =====
-export const OUTASSET_STATUS_MAP: Record<string, { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }> = {
+export const OUTASSET_STATUS_MAP: Record<
+  string,
+  { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
+> = {
   active: { label: '在用', type: 'primary' },
   returned: { label: '已归还', type: 'success' },
   overdue: { label: '逾期', type: 'danger' },
 }
 
 // ===== 审批状态映射 =====
-export const APPROVAL_STATUS_MAP: Record<string, { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }> = {
+export const APPROVAL_STATUS_MAP: Record<
+  string,
+  { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
+> = {
   pending: { label: '待审批', type: 'warning' },
   approved: { label: '已通过', type: 'success' },
   rejected: { label: '已拒绝', type: 'danger' },
 }
 
 // ===== 维修状态映射 =====
-export const REPAIR_STATUS_MAP: Record<string, { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }> = {
+export const REPAIR_STATUS_MAP: Record<
+  string,
+  { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
+> = {
   repairing: { label: '维修中', type: 'warning' },
   completed: { label: '已完成', type: 'success' },
   failed: { label: '维修失败', type: 'danger' },
 }
 
 // ===== 硬盘状态映射 =====
-export const HARD_DISK_STATUS_MAP: Record<string, { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }> = {
+export const HARD_DISK_STATUS_MAP: Record<
+  string,
+  { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
+> = {
   normal: { label: '正常', type: 'success' },
   bad_sector: { label: '坏道', type: 'warning' },
   damaged: { label: '损坏', type: 'danger' },
@@ -46,14 +61,20 @@ export const HARD_DISK_STATUS_MAP: Record<string, { label: string; type: 'succes
 }
 
 // ===== 员工状态映射 =====
-export const EMPLOYEE_STATUS_MAP: Record<string, { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }> = {
+export const EMPLOYEE_STATUS_MAP: Record<
+  string,
+  { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
+> = {
   active: { label: '在职', type: 'success' },
   inactive: { label: '离职', type: 'danger' },
   probation: { label: '试用期', type: 'warning' },
 }
 
 // ===== 资产分类映射 =====
-export const ASSET_TYPE_MAP: Record<string, { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }> = {
+export const ASSET_TYPE_MAP: Record<
+  string,
+  { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
+> = {
   electronic: { label: '电子设备', type: 'primary' },
   furniture: { label: '办公家具', type: 'success' },
   vehicle: { label: '交通工具', type: 'warning' },

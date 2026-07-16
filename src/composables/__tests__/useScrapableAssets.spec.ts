@@ -79,9 +79,7 @@ describe('useScrapableAssets', () => {
 
       await search({ keyword: 'new' })
 
-      expect(mockCombineSearch).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 1 }),
-      )
+      expect(mockCombineSearch).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }))
       expect(currentPage.value).toBe(1)
     })
 
@@ -99,7 +97,10 @@ describe('useScrapableAssets', () => {
     it('shows loading state during request', async () => {
       let resolvePromise!: (value: unknown) => void
       mockCombineSearch.mockImplementation(
-        () => new Promise((resolve) => { resolvePromise = resolve }),
+        () =>
+          new Promise((resolve) => {
+            resolvePromise = resolve
+          }),
       )
 
       const { search, loading } = useScrapableAssets()
@@ -132,9 +133,7 @@ describe('useScrapableAssets', () => {
       await changePage(3)
 
       expect(currentPage.value).toBe(3)
-      expect(mockCombineSearch).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 3 }),
-      )
+      expect(mockCombineSearch).toHaveBeenCalledWith(expect.objectContaining({ page: 3 }))
     })
 
     it('does nothing if page is same as current', async () => {

@@ -79,9 +79,7 @@ describe('useWastedAssets', () => {
 
       await search({ keyword: 'new' })
 
-      expect(mockSearchAssets).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 1 }),
-      )
+      expect(mockSearchAssets).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }))
       expect(currentPage.value).toBe(1)
     })
 
@@ -99,7 +97,10 @@ describe('useWastedAssets', () => {
     it('shows loading state during request', async () => {
       let resolvePromise!: (value: unknown) => void
       mockSearchAssets.mockImplementation(
-        () => new Promise((resolve) => { resolvePromise = resolve }),
+        () =>
+          new Promise((resolve) => {
+            resolvePromise = resolve
+          }),
       )
 
       const { search, loading } = useWastedAssets()
@@ -132,9 +133,7 @@ describe('useWastedAssets', () => {
       await changePage(3)
 
       expect(currentPage.value).toBe(3)
-      expect(mockSearchAssets).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 3 }),
-      )
+      expect(mockSearchAssets).toHaveBeenCalledWith(expect.objectContaining({ page: 3 }))
     })
 
     it('does nothing if page is same as current', async () => {
@@ -180,9 +179,7 @@ describe('useWastedAssets', () => {
 
       await search()
 
-      expect(mockSearchAssets).toHaveBeenCalledWith(
-        expect.not.objectContaining({ keyword: 'old' }),
-      )
+      expect(mockSearchAssets).toHaveBeenCalledWith(expect.not.objectContaining({ keyword: 'old' }))
     })
   })
 })

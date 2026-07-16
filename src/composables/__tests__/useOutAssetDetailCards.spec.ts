@@ -103,9 +103,7 @@ describe('useOutAssetDetailCards', () => {
       expect(leftCol).toContainEqual(
         expect.objectContaining({ label: '出库唯一标识码', value: 'OA001' }),
       )
-      expect(leftCol).toContainEqual(
-        expect.objectContaining({ label: '资产码', value: 'A001' }),
-      )
+      expect(leftCol).toContainEqual(expect.objectContaining({ label: '资产码', value: 'A001' }))
 
       const rightCol = basicInfoConfig.value.fields[1]
       expect(rightCol).toContainEqual(
@@ -181,17 +179,13 @@ describe('useOutAssetDetailCards', () => {
       expect(leftCol).toContainEqual(
         expect.objectContaining({ label: '所在合同号', value: 'C001' }),
       )
-      expect(leftCol).toContainEqual(
-        expect.objectContaining({ label: '供应商', value: '供应商A' }),
-      )
+      expect(leftCol).toContainEqual(expect.objectContaining({ label: '供应商', value: '供应商A' }))
 
       const rightCol = contractInfoConfig.value.fields[1]
       expect(rightCol).toContainEqual(
         expect.objectContaining({ label: '所在合同名称', value: '采购合同' }),
       )
-      expect(rightCol).toContainEqual(
-        expect.objectContaining({ label: '合同总价', value: 5000 }),
-      )
+      expect(rightCol).toContainEqual(expect.objectContaining({ label: '合同总价', value: 5000 }))
     })
 
     it('uses N/A default when contract is null', () => {

@@ -2,21 +2,8 @@
  * useAssetInfoCards.ts
  * 资产详情页面卡片配置 composable
  *
- * @module composables/useAssetInfoCards
- * @description
- * 根据资产详情数据生成 InfoCard 组件所需的配置对象　 * 支持响应式更新，录assetDetail 变化时自动重新计算卡片配置　 *
- * @features
- * - 响应式：基于 computed 实现，数据变化自动更斀 * - 条件可见：自动处理可选字段的 visible 状态 * - 格式化集成：内置日期、价格、枚举映射等格式化逻辑
- * - 类型安全：完整的 TypeScript 类型支持
- *
- * @usage
- * ```ts
- * const assetDetail = ref<AssetDetail | null>(null)
- * const { basicInfoCard, contractCard, ... } = useAssetInfoCards(assetDetail)
- * ```
- *
- * @author System
- * @date 2025-06-02
+ * 基础卡片（基本信息/类型/合同/录入人）在此文件定义。
+ * 扩展卡片（申请人/保管人/仓库/描述）已拆分至 useAssetExtendedInfoCards.ts。
  */
 
 import { computed } from 'vue'
@@ -29,127 +16,68 @@ import {
   getStatusDisplay,
   contractTypeMapping,
   contractSettlementStatusMapping,
-  storageMapping,
 } from '@/utils/Format'
 
-/**
- * 资产详情卡片配置 composable
- *
- * @param assetDetail - 资产详情响应式引甀 * @returns 各卡片的配置对象（响应式＀ *
- * @example
- * ```vue
- * <script setup>
- * import { useAssetInfoCards } from '@/composables/useAssetInfoCards'
- *
- * const assetDetail = ref<AssetDetail | null>(null)
- * const { basicInfoCard, contractCard } = useAssetInfoCards(assetDetail)
- * </script>
- *
- * <template>
- *   <InfoCard :config="basicInfoCard" />
- *   <InfoCard :config="contractCard" />
- * </template>
- * ```
- */
+// 向后兼容：扩展卡片通过 re-export 保持原有 API
+export { useAssetExtendedInfoCards } from './useAssetExtendedInfoCards'
+import { useAssetExtendedInfoCards } from './useAssetExtendedInfoCards'
+
 export function useAssetInfoCards(assetDetail: Ref<AssetDetail | null>) {
   // ===== 基本信息卡片 =====
-  /**
-   * 基本信息卡片配置
-   * 包含资产编码、名称、品牌、价格等核心字段
-   */
   const basicInfoCard = computed<InfoCardConfig>(() => {
     const asset = assetDetail.value
     return {
       title: '基本信息',
       icon: 'Document',
       fields: [
-        // 左列字段
         [
-          { label: '编码', value: asset?.asset_code },
-          { label: '名称', value: asset?.asset_name },
+          { label: '资产编码', value: asset?.asset_code },
+          { label: '资产名称', value: asset?.asset_name },
           { label: '品牌', value: asset?.asset_brand },
-          { label: '单位', value: asset?.asset_unit },
-          { label: '型号规格', value: asset?.asset_specification },
-          { label: '资产分类码', value: asset?.asset_type?.type_code || '' },
-          { label: '资产使用地点', value: asset?.asset_using_location || '' },
         ],
-        // 右列字段
         [
           {
-            label: '单价',
+            label: '资产单价',
             value: asset?.asset_purchase_price,
             isPrice: true,
             formatter: (v: unknown) => `¥${formatNumber(v as string | number)}`,
           },
           {
-            label: '采购数量',
-            value: asset?.asset_purchase_number,
-            formatter: (v) => String(v ?? 0),
+            label: '当前状态',
+            value: asset?.asset_current_status,
+            formatter: (v: unknown) => getStatusDisplay(v as string | undefined),
           },
-          {
-            label: '采购日期',
-            value: asset?.asset_purchase_date,
-            formatter: (v) => formatDate(v as string) ?? '',
-          },
-          {
-            label: '质保期限',
-            value: asset?.asset_warranty_period,
-            formatter: (v) => `${v ?? 0} 个月`,
-          },
-          {
-            label: '录入日期',
-            value: asset?.asset_entry_date,
-            formatter: (v) => formatDate(v as string) ?? '',
-          },
-          {
-            label: '录入人工号',
-            value: asset?.asset_entry_person_jobcode,
-          },
+          { label: '资产型号', value: asset?.asset_specification },
         ],
       ],
     }
   })
 
-  // ===== 资产分类信息卡片 =====
-  /**
-   * 资产分类信息卡片配置
-   * 展示资产的一级分类、二级分类等信息
-   * 仅当 asset_type 存在时显礀   */
+  // ===== 资产类型卡片 =====
   const assetTypeCard = computed<InfoCardConfig>(() => {
-    const asset = assetDetail.value
-    const type = asset?.asset_type
+    const type = assetDetail.value?.asset_type
     return {
-      title: '资产分类信息',
-      icon: 'Document',
+      title: '资产类型',
+      icon: 'Menu',
       visible: !!type,
       fields: [
-        [
-          { label: '类型编码', value: type?.type_code || '' },
-          { label: '类型名称', value: type?.type_name || '' },
-        ],
-        [
-          { label: '父级编码', value: type?.parent_type_code || '' },
-          { label: '层级', value: type?.level ?? 0 },
-          { label: '类型描述', value: type?.type_description || '' },
-        ],
+        [{ label: '类型编码', value: type?.type_code }],
+        [{ label: '类型名称', value: type?.type_name }],
       ],
     }
   })
 
   // ===== 合同信息卡片 =====
-  /**
-   * 合同信息卡片配置
-   * 展示关联合同的详细信息   * 仅当 asset_contract 存在时显礀   */
   const contractCard = computed<InfoCardConfig>(() => {
     const contract = assetDetail.value?.asset_contract
     return {
       title: '合同信息',
-      icon: 'Document',
+      icon: 'Tickets',
       visible: !!contract,
       fields: [
+        [{ label: '合同编码', value: contract?.contract_code }],
+        [{ label: '合同名称', value: contract?.contract_name }],
         [
-          { label: '合同编码', value: contract?.contract_code },
-          { label: '合同名称', value: contract?.contract_name },
           {
             label: '合同类型',
             value: contract?.contract_type,
@@ -179,10 +107,7 @@ export function useAssetInfoCards(assetDetail: Ref<AssetDetail | null>) {
     }
   })
 
-  // ===== 录入人信息卡牀=====
-  /**
-   * 录入人信息卡片配置   * 展示资产录入人员的工号和姓名
-   * 仅当 asset_entry_person 存在时显礀   */
+  // ===== 录入人信息卡片 =====
   const entryPersonCard = computed<InfoCardConfig>(() => {
     const person = assetDetail.value?.asset_entry_person
     return {
@@ -191,118 +116,14 @@ export function useAssetInfoCards(assetDetail: Ref<AssetDetail | null>) {
       visible: !!person,
       fields: [
         [{ label: '录入人工号', value: person?.employee_jobcode }],
-        [{ label: '录入人姓吀', value: person?.employee_name }],
+        [{ label: '录入人姓名', value: person?.employee_name }],
       ],
     }
   })
 
-  // ===== 申请人信息卡牀=====
-  /**
-   * 资产申请人信息卡片配置   * 展示申请人的部门、工号、姓名、状态等信息
-   * 仅当 asset_applicant 存在时显礀   */
-  const applicantCard = computed<InfoCardConfig>(() => {
-    const applicant = assetDetail.value?.asset_applicant
-    return {
-      title: '资产申请人信息',
-      icon: 'User',
-      visible: !!applicant,
-      fields: [
-        [
-          {
-            label: '申请人部门',
-            value: applicant?.employee_department_name,
-          },
-          { label: '申请人工号', value: applicant?.employee_jobcode },
-          { label: '申请人姓吀', value: applicant?.employee_name },
-        ],
-        [
-          {
-            label: '申请人状态',
-            value: applicant?.employee_status,
-            formatter: (v: unknown) => getStatusDisplay(v as string | undefined),
-          },
-          { label: '申请人手机号', value: applicant?.employee_phone },
-          { label: '使用人办公点', value: applicant?.employee_location },
-        ],
-      ],
-    }
-  })
-
-  // ===== 保管人信息卡牀=====
-  /**
-   * 资产保管人信息卡片配置   * 展示保管人的部门、工号、姓名、状态等信息
-   * 仅当 asset_manager 存在时显礀   */
-  const managerCard = computed<InfoCardConfig>(() => {
-    const manager = assetDetail.value?.asset_manager
-    return {
-      title: '资产保管人信息',
-      icon: 'User',
-      visible: !!manager,
-      fields: [
-        [
-          {
-            label: '保管人部门',
-            value: manager?.employee_department_name,
-          },
-          { label: '保管员工号', value: manager?.employee_jobcode },
-          { label: '保管人姓吀', value: manager?.employee_name },
-        ],
-        [
-          {
-            label: '保管人状态',
-            value: manager?.employee_status,
-            formatter: (v: unknown) => getStatusDisplay(v as string | undefined),
-          },
-          { label: '保管人手机号', value: manager?.employee_phone },
-          { label: '保管人办公点', value: manager?.employee_location },
-        ],
-      ],
-    }
-  })
-
-  // ===== 存储位置卡片 =====
-  /**
-   * 存储位置卡片配置
-   * 展示仓库编码、名称、类型、地址等信息   * 仅当 asset_storage 存在时显礀   */
-  const storageCard = computed<InfoCardConfig>(() => {
-    const storage = assetDetail.value?.asset_storage
-    return {
-      title: '存储位置',
-      icon: 'Location',
-      visible: !!storage,
-      fields: [
-        [
-          { label: '仓库编码', value: storage?.storage_code },
-          { label: '仓库名称', value: storage?.storage_name },
-          {
-            label: '仓库类型',
-            value: storage?.storage_type,
-            formatter: (v) => storageMapping[v as string] ?? '未知类型',
-          },
-        ],
-        [
-          { label: '仓库地址', value: storage?.storage_address },
-          { label: '仓库描述', value: storage?.storage_description },
-        ],
-      ],
-    }
-  })
-
-  // ===== 资产描述卡片 =====
-  /**
-   * 资产描述卡片配置
-   * 使用单列文本布局展示长文本描迀   * 仅当 asset_description 存在且非空时显示
-   */
-  const descriptionCard = computed<InfoCardConfig>(() => {
-    const desc = assetDetail.value?.asset_description
-    return {
-      title: '资产描述',
-      icon: 'InfoFilled',
-      visible: !!desc?.trim(),
-      layout: 'description',
-      fields: [[{ label: '', value: desc }]],
-    }
-  })
+  // ===== 合并扩展卡片 =====
+  const { applicantCard, managerCard, storageCard, descriptionCard } =
+    useAssetExtendedInfoCards(assetDetail)
 
   return {
     basicInfoCard,

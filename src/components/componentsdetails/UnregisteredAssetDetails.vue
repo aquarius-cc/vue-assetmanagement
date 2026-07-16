@@ -119,13 +119,13 @@ export default {
 
 <script lang="ts" setup>
 // ===== 导入顺序：Vue 核心 → 第三方库 → @/ 内部模块 =====
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
-import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
+import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { UnregisteredAsset } from '@/utils/UnregisteredAsset'
@@ -147,7 +147,7 @@ const router = useRouter()
 /**
  * SmartListContainer 组件引用
  * 用于调用容器暴露的方法（如 refresh、reset）
- * 
+ *
  * 注意：SmartListContainer 是泛型组件，使用 ComponentPublicInstance 获取公共实例类型
  * 通过类型断言访问 expose 的方法
  */
@@ -194,7 +194,9 @@ const getApprovalStatusTagType = (
   status: string | null | undefined,
 ): 'success' | 'warning' | 'danger' | 'info' => {
   if (!status) return 'info'
-  return (unregisteredAssetStatusTagMap[status] as 'success' | 'warning' | 'danger' | 'info') || 'info'
+  return (
+    (unregisteredAssetStatusTagMap[status] as 'success' | 'warning' | 'danger' | 'info') || 'info'
+  )
 }
 
 /**
@@ -249,7 +251,7 @@ const columns: TableColumn[] = [
 /**
  * Store 配置对象
  * 传递给 SmartListContainer 用于数据管理
- * 
+ *
  * 包含：
  * - getList: 获取列表数据的方法
  * - pagination: 分页状态（使用 getter/setter 实现双向绑定）
@@ -257,89 +259,10 @@ const columns: TableColumn[] = [
  * - loading: 加载状态（computed）
  * - search: 搜索配置
  */
-const storeConfig: PaginationSearchConfig<UnregisteredAsset> = {
-  store: {
-    /**
-     * 获取列表数据
-     * @param params 分页查询参数
-     * @returns 包含 count 和 results 的响应对象
-     */
-    getList: async (params) => {
-      const response = await unregisteredAssetStore.getList(params)
-      return {
-        count: unregisteredAssetStore.pagination.total,
-        results: response,
-        next: null,
-        previous: null,
-      }
-    },
-    /**
-     * 分页状态
-     * 使用 getter/setter 对象实现与 Pinia store 的双向绑定
-     */
-    pagination: {
-      page: {
-        get: () => unregisteredAssetStore.pagination.page,
-        set: (val: number) => {
-          unregisteredAssetStore.pagination.page = val
-        },
-      },
-      page_size: {
-        get: () => unregisteredAssetStore.pagination.page_size,
-        set: (val: number) => {
-          unregisteredAssetStore.pagination.page_size = val
-        },
-      },
-      total: {
-        get: () => unregisteredAssetStore.pagination.total,
-        set: (val: number) => {
-          unregisteredAssetStore.pagination.total = val
-        },
-      },
-    },
-    /**
-     * 列表数据（computed 保持响应式）
-     */
-    list: computed(() => unregisteredAssetStore.list),
-    /**
-     * 加载状态（computed 保持响应式）
-     */
-    loading: computed(() => unregisteredAssetStore.loading),
-    /**
-     * 刷新标志（computed 保持响应式）
-     * 用于子页面（如批量导入、表单编辑）通知列表刷新
-     */
-    refreshFlag: computed(() => unregisteredAssetStore.refreshFlag),
-    /**
-     * 设置刷新标志
-     * 子页面调用后，usePaginationSearch 会自动监听并触发列表刷新
-     */
-    setRefreshFlag: (flag: boolean) => unregisteredAssetStore.setRefreshFlag(flag),
-  },
-  /**
-   * 搜索配置
-   * 配置后可使用搜索功能
-   */
-  search: {
-    performSearch: async (keyword: string, page: number, page_size: number) => {
-      const response = await unregisteredAssetStore.getList({
-        search: keyword,
-        page,
-        page_size,
-      })
-      return {
-        count: unregisteredAssetStore.pagination.total,
-        results: response,
-      }
-    },
-  },
-  defaultPageSize: 20,
-  messages: {
-    loadFailed: '加载未登记资产列表失败',
-    searchFailed: '搜索未登记资产失败',
-    invalidPage: '页码超出范围，已跳转至最后一页',
-  },
-}
+const storeConfig = useSmartListConfig<UnregisteredAsset>({
+  store: unregisteredAssetStore,
+  entityName: '未登记资产',
+})
 
 // ===== 路由监听：控制子路由遮罩 =====
 /**
@@ -368,12 +291,10 @@ const handleEdit = (row: UnregisteredAsset) => {
     ElMessage.error('资产编码不存在，无法编辑')
     return
   }
-  router
-    .push({ name: 'UnregisteredAssetForm', query: { code: row.code } })
-    .catch((err) => {
-      console.error('编辑跳转失败:', err)
-      ElMessage.error('跳转编辑页失败，请重试')
-    })
+  router.push({ name: 'UnregisteredAssetForm', query: { code: row.code } }).catch((err) => {
+    console.error('编辑跳转失败:', err)
+    ElMessage.error('跳转编辑页失败，请重试')
+  })
 }
 
 /**
@@ -541,9 +462,7 @@ const handleBatchDelete = async (rows: UnregisteredAsset[] | undefined) => {
   }
 
   // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows
-    .map((row) => row.code)
-    .filter((code): code is string => !!code)
+  const codes = rows.map((row) => row.code).filter((code): code is string => !!code)
 
   if (codes.length === 0) {
     ElMessage.error('无法删除：选中的数据缺少唯一标识')

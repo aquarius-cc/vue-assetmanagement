@@ -18,7 +18,7 @@ export const useAppStore = defineStore('app', () => {
     showBreadcrumbs: true,
     autoSave: true,
     pageSize: 20,
-    language: 'zh-CN'
+    language: 'zh-CN',
   })
 
   // 操作方法
@@ -113,7 +113,7 @@ export const useAppStore = defineStore('app', () => {
       showBreadcrumbs: true,
       autoSave: true,
       pageSize: 20,
-      language: 'zh-CN'
+      language: 'zh-CN',
     }
 
     // 清除本地存储
@@ -143,6 +143,6 @@ export const useAppStore = defineStore('app', () => {
     setPrimaryColor,
     updateSettings,
     initAppState,
-    resetAppState
+    resetAppState,
   }
 })

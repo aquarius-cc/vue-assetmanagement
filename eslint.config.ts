@@ -40,4 +40,13 @@ export default defineConfigWithVueTs(
   pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
   skipFormatting,
+
+  // 测试文件允许 any 类型（mock 场景必需）
+  {
+    name: 'app/test-files-relaxed',
+    files: ['**/__tests__/**', '**/*.spec.ts', '**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 )

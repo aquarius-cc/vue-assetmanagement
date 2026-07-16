@@ -73,11 +73,7 @@
           <!-- 资产名称 -->
           <el-col :xs="24" :sm="24" :md="12">
             <el-form-item label="资产名称" prop="asset_name">
-              <el-input
-                v-model="formData.asset_name"
-                placeholder="请输入资产名称"
-                clearable
-              />
+              <el-input v-model="formData.asset_name" placeholder="请输入资产名称" clearable />
             </el-form-item>
           </el-col>
 
@@ -115,10 +111,7 @@
                 @change="handleAssetTypeCodeChange"
               >
                 <template #default="{ item }">
-                  <div>
-                    类型编码：{{ item.type_code }} /
-                    类型名称：{{ item.type_name }}
-                  </div>
+                  <div>类型编码：{{ item.type_code }} / 类型名称：{{ item.type_name }}</div>
                 </template>
               </el-autocomplete>
             </el-form-item>
@@ -143,7 +136,8 @@
             <el-form-item
               label="关联资产编码"
               prop="related_asset_code_display"
-              :required="isRelatedAssetRequired">
+              :required="isRelatedAssetRequired"
+            >
               <el-autocomplete
                 v-model="formData.related_asset_code_display"
                 :fetch-suggestions="fetchAssetSuggestions"
@@ -154,13 +148,15 @@
               >
                 <template #default="{ item }">
                   <div>
-                    资产名称：{{ item.asset_name }} / 资产编码：{{ item.asset_code }} /
-                    规格型号：{{ item.asset_specification || '' }}
+                    资产名称：{{ item.asset_name }} / 资产编码：{{ item.asset_code }} / 规格型号：{{
+                      item.asset_specification || ''
+                    }}
                   </div>
                 </template>
               </el-autocomplete>
               <div v-if="isRelatedAssetRequired" class="field-hint">
-                当前场景下关联资产编码为必填</div>
+                当前场景下关联资产编码为必填
+              </div>
             </el-form-item>
           </el-col>
 
@@ -232,6 +228,7 @@ import { ScenarioType } from '@/utils/UnregisteredAsset'
 import type { AssetDetail } from '@/types/asset'
 import type { AssetType } from '@/utils/AssetType'
 import type { Storage } from '@/utils/Storage'
+import type { AssetTypeSuggestion } from '@/types/form-helpers'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
 
 // ===== 状态与实例 =====
@@ -338,12 +335,6 @@ const handleScenarioTypeChange = (value: string) => {
 }
 
 // ===== 资产类型编码联动 =====
-interface AssetTypeSuggestion {
-  value: string
-  type_code: string
-  type_name: string
-}
-
 const fetchAssetTypeSuggestions = createSuggestionFetcher<AssetType, AssetTypeSuggestion>({
   fetchData: async (query: string) => {
     const response = await assetTypeStore.getList({ search: query, page: 1, page_size: 20 })

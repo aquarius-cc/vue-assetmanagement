@@ -25,11 +25,8 @@
 //   concurrency?: number
 // }
 // 批量导入通用配置类型，确保类型安全
-export interface BatchImportConfig<
-  TExcel extends object,
-  TApi extends object,
-  > {
-   /** 实体名称，用于日志提示 */
+export interface BatchImportConfig<TExcel extends object, TApi extends object> {
+  /** 实体名称，用于日志提示 */
   entityName: string // 实体名称（用于提示）
   /** Excel 表头到数据字段的映射，如 { "编码": "asset_type_code" } */
   requiredFields: (keyof TExcel)[] // 必填字段（用于验证）

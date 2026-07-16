@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   DamagedAssetBatchImport.vue
   待报废资产批量导入页面
   功能：上传 Excel → 数据预览与验证 → 并发批量提交
@@ -98,7 +98,11 @@
           <el-table-column label="待报废日期" prop="data.damaged_date" width="110" />
           <el-table-column label="审批状态" prop="data.approval_status" width="100" />
           <el-table-column label="审批人" prop="data.approver" width="100" />
-          <el-table-column label="描述" prop="data.damaged_asset_description" show-overflow-tooltip />
+          <el-table-column
+            label="描述"
+            prop="data.damaged_asset_description"
+            show-overflow-tooltip
+          />
           <el-table-column label="错误信息" min-width="200" show-overflow-tooltip>
             <template #default="{ row }">
               <span v-if="row.validationStatus === 'error'" class="error-text">
@@ -144,18 +148,7 @@ import type { ValidatedRow } from '@/composables/useBatchImport'
 import { useDamagedAssetStore } from '@/stores/damagedAssetStore'
 import type { DamagedAssetCreateForm } from '@/utils/DamagedAsset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
-
-// ===== Excel 行数据接口 =====
-interface DamagedAssetExcelRow {
-  damaged_asset_code: string
-  damaged_asset_number: number | string
-  damaged_asset_storage_code: string
-  damaged_asset_contract_code?: string
-  damaged_date?: string
-  approval_status?: string
-  approver?: string
-  damaged_asset_description?: string
-}
+import type { DamagedAssetExcelRow } from '@/types/batch-import'
 
 // ===== 状态与实例 =====
 const router = useRouter()
@@ -287,14 +280,62 @@ const handleExportTemplate = async () => {
 
 // ===== 导入格式参考数据 =====
 const headerExamples = [
-  { headerName: '资产编码', field: 'damaged_asset_code', required: true, example: 'ASSET-001', remark: '关联资产编码' },
-  { headerName: '待报废数量', field: 'damaged_asset_number', required: true, example: '1', remark: '正整数' },
-  { headerName: '仓库编码', field: 'damaged_asset_storage_code', required: true, example: 'STG001', remark: '关联仓库编码' },
-  { headerName: '合同编码', field: 'damaged_asset_contract_code', required: false, example: 'CT-001', remark: '关联合同编码' },
-  { headerName: '待报废日期', field: 'damaged_date', required: false, example: '2025-06-01', remark: 'YYYY-MM-DD' },
-  { headerName: '审批状态', field: 'approval_status', required: false, example: 'pending', remark: 'pending/approved/rejected' },
-  { headerName: '审批人', field: 'approver', required: false, example: '张三', remark: '审批人姓名' },
-  { headerName: '描述', field: 'damaged_asset_description', required: false, example: '设备老化', remark: '报废原因描述' },
+  {
+    headerName: '资产编码',
+    field: 'damaged_asset_code',
+    required: true,
+    example: 'ASSET-001',
+    remark: '关联资产编码',
+  },
+  {
+    headerName: '待报废数量',
+    field: 'damaged_asset_number',
+    required: true,
+    example: '1',
+    remark: '正整数',
+  },
+  {
+    headerName: '仓库编码',
+    field: 'damaged_asset_storage_code',
+    required: true,
+    example: 'STG001',
+    remark: '关联仓库编码',
+  },
+  {
+    headerName: '合同编码',
+    field: 'damaged_asset_contract_code',
+    required: false,
+    example: 'CT-001',
+    remark: '关联合同编码',
+  },
+  {
+    headerName: '待报废日期',
+    field: 'damaged_date',
+    required: false,
+    example: '2025-06-01',
+    remark: 'YYYY-MM-DD',
+  },
+  {
+    headerName: '审批状态',
+    field: 'approval_status',
+    required: false,
+    example: 'pending',
+    remark: 'pending/approved/rejected',
+  },
+  {
+    headerName: '审批人',
+    field: 'approver',
+    required: false,
+    example: '张三',
+    remark: '审批人姓名',
+  },
+  {
+    headerName: '描述',
+    field: 'damaged_asset_description',
+    required: false,
+    example: '设备老化',
+    remark: '报废原因描述',
+  },
 ]
 
 const exampleColumns = [
@@ -309,8 +350,26 @@ const exampleColumns = [
 ]
 
 const exampleRows = [
-  { damaged_asset_code: 'ASSET-001', damaged_asset_number: 1, damaged_asset_storage_code: 'STG001', damaged_asset_contract_code: 'CT-001', damaged_date: '2025-06-01', approval_status: 'pending', approver: '张三', damaged_asset_description: '设备老化无法使用' },
-  { damaged_asset_code: 'ASSET-002', damaged_asset_number: 2, damaged_asset_storage_code: 'STG002', damaged_asset_contract_code: 'CT-002', damaged_date: '2025-05-15', approval_status: 'approved', approver: '李四', damaged_asset_description: '主板损坏无法修复' },
+  {
+    damaged_asset_code: 'ASSET-001',
+    damaged_asset_number: 1,
+    damaged_asset_storage_code: 'STG001',
+    damaged_asset_contract_code: 'CT-001',
+    damaged_date: '2025-06-01',
+    approval_status: 'pending',
+    approver: '张三',
+    damaged_asset_description: '设备老化无法使用',
+  },
+  {
+    damaged_asset_code: 'ASSET-002',
+    damaged_asset_number: 2,
+    damaged_asset_storage_code: 'STG002',
+    damaged_asset_contract_code: 'CT-002',
+    damaged_date: '2025-05-15',
+    approval_status: 'approved',
+    approver: '李四',
+    damaged_asset_description: '主板损坏无法修复',
+  },
 ]
 
 // ===== 提交与清空 =====
@@ -335,23 +394,95 @@ const goBack = () => {
 <style scoped lang="scss">
 .batch-import {
   padding: 24px;
-  .box-card { height: 100%; }
-  .card-header { display: flex; align-items: center; gap: 8px; font-weight: bold; color: var(--color-primary-light); }
-  .upload-actions { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 24px; .upload-section { flex: 1; } }
-  .upload-tip { margin-top: 8px; color: var(--text-secondary); font-size: 13px; }
-  .import-guide-card { background-color: var(--card-background-muted); border: 1px solid var(--border-color-light); border-radius: 8px; margin-bottom: 24px; overflow: hidden;
-    .guide-header { display: flex; align-items: center; gap: 8px; background-color: var(--color-primary-lighter); padding: 12px 16px; font-weight: 600; color: var(--color-primary-light); border-bottom: 1px solid var(--color-primary-light-border); .el-icon { font-size: 18px; } }
-    .guide-content { padding: 16px;
-      .guide-section { margin-bottom: 20px; &:last-child { margin-bottom: 0; }
-        .section-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px; padding-left: 4px; border-left: 3px solid var(--color-primary-light); }
-      }
-      .notice-list { margin: 0; padding-left: 20px; li { line-height: 1.8; color: var(--text-regular); font-size: 13px; } }
+  .box-card {
+    height: 100%;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    color: var(--color-primary-light);
+  }
+  .upload-actions {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 24px;
+    .upload-section {
+      flex: 1;
     }
   }
-  .preview-table { margin-bottom: 24px;
-    .section-title { color: var(--text-primary); font-size: 16px; font-weight: 600; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--color-primary-light); }
+  .upload-tip {
+    margin-top: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
   }
-  .error-text { color: var(--color-danger-light); font-size: 13px; }
-  .form-actions { display: flex; gap: 12px; justify-content: center; }
+  .import-guide-card {
+    background-color: var(--card-background-muted);
+    border: 1px solid var(--border-color-light);
+    border-radius: 8px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    .guide-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background-color: var(--color-primary-lighter);
+      padding: 12px 16px;
+      font-weight: 600;
+      color: var(--color-primary-light);
+      border-bottom: 1px solid var(--color-primary-light-border);
+      .el-icon {
+        font-size: 18px;
+      }
+    }
+    .guide-content {
+      padding: 16px;
+      .guide-section {
+        margin-bottom: 20px;
+        &:last-child {
+          margin-bottom: 0;
+        }
+        .section-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text-primary);
+          margin-bottom: 12px;
+          padding-left: 4px;
+          border-left: 3px solid var(--color-primary-light);
+        }
+      }
+      .notice-list {
+        margin: 0;
+        padding-left: 20px;
+        li {
+          line-height: 1.8;
+          color: var(--text-regular);
+          font-size: 13px;
+        }
+      }
+    }
+  }
+  .preview-table {
+    margin-bottom: 24px;
+    .section-title {
+      color: var(--text-primary);
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--color-primary-light);
+    }
+  }
+  .error-text {
+    color: var(--color-danger-light);
+    font-size: 13px;
+  }
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
 }
 </style>

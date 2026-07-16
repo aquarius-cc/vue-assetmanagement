@@ -29,12 +29,14 @@ export const operationLogAPI = {
    * @returns 操作日志详情
    */
   getOperationLogDetail: (pk: number | string): Promise<OperationLog> => {
-    return unwrapResponse(request.get(
-      `/assets/operation-logs/${pk}/`,
-      undefined,
-      true, // 使用缓存
-      300000, // 缓存时间 5 分钟
-    ))
+    return unwrapResponse(
+      request.get(
+        `/assets/operation-logs/${pk}/`,
+        undefined,
+        true, // 使用缓存
+        300000, // 缓存时间 5 分钟
+      ),
+    )
   },
 
   /**
@@ -52,7 +54,9 @@ export const operationLogAPI = {
    * @returns 操作日志列表响应
    */
   getRecentOperationLogs: (days: number = 7): Promise<OperationLogListResponse> => {
-    return unwrapResponse(request.get<OperationLogListResponse>('/assets/operation-logs/recent/', { days }))
+    return unwrapResponse(
+      request.get<OperationLogListResponse>('/assets/operation-logs/recent/', { days }),
+    )
   },
 
   /**
@@ -61,7 +65,12 @@ export const operationLogAPI = {
    * @param params 额外查询参数（分页等）
    * @returns 操作日志列表响应
    */
-  getUserOperationLogs: (jobcode: string, params?: OperationLogQueryParams): Promise<OperationLogListResponse> => {
-    return unwrapResponse(request.get<OperationLogListResponse>(`/assets/operation-logs/user/${jobcode}/`, params))
+  getUserOperationLogs: (
+    jobcode: string,
+    params?: OperationLogQueryParams,
+  ): Promise<OperationLogListResponse> => {
+    return unwrapResponse(
+      request.get<OperationLogListResponse>(`/assets/operation-logs/user/${jobcode}/`, params),
+    )
   },
 }

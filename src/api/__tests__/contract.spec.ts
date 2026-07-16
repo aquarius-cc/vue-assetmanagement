@@ -8,11 +8,13 @@ const { mockRequest, mockUnwrapResponse } = vi.hoisted(() => ({
     patch: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
     delete: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
   },
-  mockUnwrapResponse: vi.fn(async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
-    const res = await promise
-    if (res.code !== 0) throw new Error(res.message || '请求失败')
-    return res.data
-  }),
+  mockUnwrapResponse: vi.fn(
+    async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
+      const res = await promise
+      if (res.code !== 0) throw new Error(res.message || '请求失败')
+      return res.data
+    },
+  ),
 }))
 
 vi.mock('@/api/index', () => ({
@@ -44,7 +46,9 @@ describe('contractAPI', () => {
 
   it('getContractByName calls GET /assets/contracts/getcontractByname/{name}/', async () => {
     await contractAPI.getContractByName('Test Contract')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/contracts/getcontractByname/Test%20Contract/')
+    expect(mockRequest.get).toHaveBeenCalledWith(
+      '/assets/contracts/getcontractByname/Test%20Contract/',
+    )
   })
 
   it('getFuzzySearch calls GET /assets/contracts/search/', async () => {
@@ -59,20 +63,33 @@ describe('contractAPI', () => {
 
   it('updateContract calls PUT /assets/contracts/{code}/', async () => {
     await contractAPI.updateContract({ recordcode: 'C001', contract_name: 'Updated' } as never)
-    expect(mockRequest.put).toHaveBeenCalledWith('/assets/contracts/C001/', { recordcode: 'C001', contract_name: 'Updated' })
+    expect(mockRequest.put).toHaveBeenCalledWith('/assets/contracts/C001/', {
+      recordcode: 'C001',
+      contract_name: 'Updated',
+    })
   })
 
   it('updateContract throws when recordcode is missing', () => {
-    expect(() => contractAPI.updateContract({ contract_name: 'Test' } as never)).toThrow('recordcode is required')
+    expect(() => contractAPI.updateContract({ contract_name: 'Test' } as never)).toThrow(
+      'recordcode is required',
+    )
   })
 
   it('partialUpdateContract calls PATCH /assets/contracts/{code}/', async () => {
-    await contractAPI.partialUpdateContract({ recordcode: 'C001', contract_name: 'Patched' } as never)
-    expect(mockRequest.patch).toHaveBeenCalledWith('/assets/contracts/C001/', { recordcode: 'C001', contract_name: 'Patched' })
+    await contractAPI.partialUpdateContract({
+      recordcode: 'C001',
+      contract_name: 'Patched',
+    } as never)
+    expect(mockRequest.patch).toHaveBeenCalledWith('/assets/contracts/C001/', {
+      recordcode: 'C001',
+      contract_name: 'Patched',
+    })
   })
 
   it('partialUpdateContract throws when recordcode is missing', () => {
-    expect(() => contractAPI.partialUpdateContract({ contract_name: 'Test' } as never)).toThrow('recordcode is required')
+    expect(() => contractAPI.partialUpdateContract({ contract_name: 'Test' } as never)).toThrow(
+      'recordcode is required',
+    )
   })
 
   it('deleteContract calls DELETE /assets/contracts/{code}/', async () => {
@@ -82,7 +99,9 @@ describe('contractAPI', () => {
 
   it('batchDeleteContracts calls POST /assets/contracts/batch-delete/', async () => {
     await contractAPI.batchDeleteContracts(['C001', 'C002'])
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/contracts/batch-delete/', { ids: ['C001', 'C002'] })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/contracts/batch-delete/', {
+      ids: ['C001', 'C002'],
+    })
   })
 
   it('getContractStatistics calls GET /assets/contracts/statistics/', async () => {
@@ -92,16 +111,24 @@ describe('contractAPI', () => {
 
   it('addPaymentRecord calls POST /assets/contracts/{code}/payment_record/', async () => {
     await contractAPI.addPaymentRecord('C001', { amount: 1000, description: 'payment' })
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/contracts/C001/payment_record/', { amount: 1000, description: 'payment' })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/contracts/C001/payment_record/', {
+      amount: 1000,
+      description: 'payment',
+    })
   })
 
   it('updateSettlementStatus calls POST /assets/contracts/{code}/update_settlement_status/', async () => {
     await contractAPI.updateSettlementStatus('C001', 'settled')
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/contracts/C001/update_settlement_status/', { status: 'settled' })
+    expect(mockRequest.post).toHaveBeenCalledWith(
+      '/assets/contracts/C001/update_settlement_status/',
+      { status: 'settled' },
+    )
   })
 
   it('batchCreateContracts calls POST /assets/contracts/batch-create/', async () => {
     await contractAPI.batchCreateContracts([{ contract_name: 'X' } as never])
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/contracts/batch-create/', { items: [{ contract_name: 'X' }] })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/contracts/batch-create/', {
+      items: [{ contract_name: 'X' }],
+    })
   })
 })

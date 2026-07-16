@@ -10,11 +10,7 @@ import axios, {
 import { isAxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
 import { MemoryCache } from '@/api/cache'
-import {
-  setEncryptedToken,
-  getDecryptedToken,
-  clearAllAuthTokens
-} from '@/utils/tokenCrypto'
+import { setEncryptedToken, getDecryptedToken, clearAllAuthTokens } from '@/utils/tokenCrypto'
 
 // ---------- 扩展 Axios 类型，添加自定义属性 _retry ----------
 declare module 'axios' {
@@ -75,6 +71,12 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
     config.headers['X-Requested-With'] = 'XMLHttpRequest'
+    // OC-1: 传递 trace_id 实现调用链透传
+    const traceId =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    config.headers['X-Request-ID'] = traceId
     return config
   },
   (error: unknown) => {
@@ -120,7 +122,9 @@ api.interceptors.response.use(
         if (!loginExpiredMessageShown) {
           loginExpiredMessageShown = true
           ElMessage.error('登录已过期，请重新登录')
-          setTimeout(() => { loginExpiredMessageShown = false }, LOGIN_EXPIRED_MESSAGE_DURATION)
+          setTimeout(() => {
+            loginExpiredMessageShown = false
+          }, LOGIN_EXPIRED_MESSAGE_DURATION)
         }
         window.location.href = '/login'
         return Promise.reject(error)
@@ -157,7 +161,9 @@ api.interceptors.response.use(
         if (!loginExpiredMessageShown) {
           loginExpiredMessageShown = true
           ElMessage.error('登录已过期，请重新登录')
-          setTimeout(() => { loginExpiredMessageShown = false }, LOGIN_EXPIRED_MESSAGE_DURATION)
+          setTimeout(() => {
+            loginExpiredMessageShown = false
+          }, LOGIN_EXPIRED_MESSAGE_DURATION)
         }
         window.location.href = '/login'
         return Promise.reject(refreshError)
@@ -169,10 +175,11 @@ api.interceptors.response.use(
       const { status: code, data } = error.response
       // 优先提取错误信息：detail > message > error
       // DRF 返回格式：{ detail: "..." } 或 { message: "..." }
-      const msg = (data as Record<string, unknown>)?.detail
-        || (data as Record<string, unknown>)?.message
-        || (data as Record<string, unknown>)?.error
-        || '请求失败'
+      const msg =
+        (data as Record<string, unknown>)?.detail ||
+        (data as Record<string, unknown>)?.message ||
+        (data as Record<string, unknown>)?.error ||
+        '请求失败'
 
       switch (code) {
         case 401:
@@ -180,7 +187,9 @@ api.interceptors.response.use(
           if (!loginExpiredMessageShown) {
             loginExpiredMessageShown = true
             ElMessage.error('登录已过期，请重新登录')
-            setTimeout(() => { loginExpiredMessageShown = false }, LOGIN_EXPIRED_MESSAGE_DURATION)
+            setTimeout(() => {
+              loginExpiredMessageShown = false
+            }, LOGIN_EXPIRED_MESSAGE_DURATION)
           }
           break
         case 403:
@@ -245,11 +254,11 @@ export async function get<T>(
 
   // 构建查询参数
   const paramsObj = params
-    ? Object.fromEntries(
-        Object.entries(params).filter(([, v]) => v != null),
-      )
+    ? Object.fromEntries(Object.entries(params).filter(([, v]) => v != null))
     : undefined
-  const paramsStr = paramsObj ? new URLSearchParams(paramsObj as Record<string, string>).toString() : ''
+  const paramsStr = paramsObj
+    ? new URLSearchParams(paramsObj as Record<string, string>).toString()
+    : ''
   const cacheKey = `${url}?${paramsStr}`
 
   // 启用缓存时优先返回缓存数据
@@ -281,37 +290,26 @@ export async function get<T>(
   }
 }
 
-export async function post<T>(
-  url: string,
-  data?: unknown,
-): Promise<ApiResponse<T>> {
+export async function post<T>(url: string, data?: unknown): Promise<ApiResponse<T>> {
   const response = await api.post<ApiResponse<T>>(url, data)
   // 注意：缓存清除已由响应拦截器处理（按URL模式清除）
   // 此处不再调用 cache.clear()，避免清除不相关的缓存条目
   return response.data
 }
 
-export async function put<T>(
-  url: string,
-  data?: unknown,
-): Promise<ApiResponse<T>> {
+export async function put<T>(url: string, data?: unknown): Promise<ApiResponse<T>> {
   const response = await api.put<ApiResponse<T>>(url, data)
   // 注意：缓存清除已由响应拦截器处理
   return response.data
 }
 
-export async function patch<T>(
-  url: string,
-  data?: unknown,
-): Promise<ApiResponse<T>> {
+export async function patch<T>(url: string, data?: unknown): Promise<ApiResponse<T>> {
   const response = await api.patch<ApiResponse<T>>(url, data)
   // 注意：缓存清除已由响应拦截器处理
   return response.data
 }
 
-export async function del<T>(
-  url: string,
-): Promise<ApiResponse<T>> {
+export async function del<T>(url: string): Promise<ApiResponse<T>> {
   const response = await api.delete<ApiResponse<T>>(url)
   // 注意：缓存清除已由响应拦截器处理
   return response.data

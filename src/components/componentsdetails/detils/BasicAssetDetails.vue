@@ -37,8 +37,12 @@
         <el-button v-if="canMarkLost" type="danger" @click="handleMarkLost">标记遗失</el-button>
         <el-button v-if="canFound" type="success" @click="handleFound">找回</el-button>
         <el-button v-if="canRepair" type="warning" @click="handleRepair">送修</el-button>
-        <el-button v-if="canRepairDone" type="success" @click="handleRepairDone">维修完成</el-button>
-        <el-button v-if="canRepairFailed" type="danger" @click="handleRepairFailed">维修失败</el-button>
+        <el-button v-if="canRepairDone" type="success" @click="handleRepairDone"
+          >维修完成</el-button
+        >
+        <el-button v-if="canRepairFailed" type="danger" @click="handleRepairFailed"
+          >维修失败</el-button
+        >
         <el-button v-if="canScrap" type="danger" @click="handleScrap">报废申请</el-button>
 
         <!-- 查看日志（始终显示） -->
@@ -50,11 +54,7 @@
 
     <!-- 资产状态标签-->
     <div class="status-badges">
-      <StatusTag
-        :status="assetDetail.asset_current_status"
-        size="large"
-        class="status-tag"
-      >
+      <StatusTag :status="assetDetail.asset_current_status" size="large" class="status-tag">
         {{ '资产状态：' + getCurrentStatusText(assetDetail.asset_current_status) }}
       </StatusTag>
     </div>
@@ -71,12 +71,7 @@
           </div>
         </template>
         <div class="qr-image-wrapper">
-          <img
-            v-if="qrCodeUrl"
-            :src="qrCodeUrl"
-            alt="资产二维码"
-            class="qr-image"
-          />
+          <img v-if="qrCodeUrl" :src="qrCodeUrl" alt="资产二维码" class="qr-image" />
           <div v-else class="qr-loading">
             <el-icon class="is-loading"><Loading /></el-icon>
           </div>
@@ -176,33 +171,19 @@ const getCurrentStatusText = (value: string | null | undefined): string => {
 // ===== 状态流转按钮可见性 =====
 const currentStatus = computed(() => assetDetail.value?.asset_current_status ?? '')
 
-const canMarkBroken = computed(() =>
-  ['in_store', 'in_use'].includes(currentStatus.value),
-)
+const canMarkBroken = computed(() => ['in_store', 'in_use'].includes(currentStatus.value))
 
-const canMarkLost = computed(() =>
-  currentStatus.value === 'in_use',
-)
+const canMarkLost = computed(() => currentStatus.value === 'in_use')
 
-const canFound = computed(() =>
-  currentStatus.value === 'lost',
-)
+const canFound = computed(() => currentStatus.value === 'lost')
 
-const canRepair = computed(() =>
-  currentStatus.value === 'broken',
-)
+const canRepair = computed(() => currentStatus.value === 'broken')
 
-const canRepairDone = computed(() =>
-  currentStatus.value === 'repairing',
-)
+const canRepairDone = computed(() => currentStatus.value === 'repairing')
 
-const canRepairFailed = computed(() =>
-  currentStatus.value === 'repairing',
-)
+const canRepairFailed = computed(() => currentStatus.value === 'repairing')
 
-const canScrap = computed(() =>
-  currentStatus.value === 'broken',
-)
+const canScrap = computed(() => currentStatus.value === 'broken')
 
 // ===== 刷新详情 =====
 const refreshDetail = async () => {

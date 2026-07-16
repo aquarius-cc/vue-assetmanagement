@@ -99,7 +99,9 @@ export const dashboardAPI = {
    * @returns 发放记录列表
    */
   getRecentOutAssets: async (limit?: number): Promise<OutAssetRecord[]> => {
-    return unwrapResponse(request.get<OutAssetRecord[]>('/dashboard/recent_out_assets/', { limit: limit || 10 }))
+    return unwrapResponse(
+      request.get<OutAssetRecord[]>('/dashboard/recent_out_assets/', { limit: limit || 10 }),
+    )
   },
 
   /**
@@ -108,7 +110,11 @@ export const dashboardAPI = {
    * @returns 回收记录列表
    */
   getRecentRecycleAssets: async (limit?: number): Promise<RecycleAssetRecord[]> => {
-    return unwrapResponse(request.get<RecycleAssetRecord[]>('/dashboard/recent_recycle_assets/', { limit: limit || 10 }))
+    return unwrapResponse(
+      request.get<RecycleAssetRecord[]>('/dashboard/recent_recycle_assets/', {
+        limit: limit || 10,
+      }),
+    )
   },
 
   /**
@@ -144,13 +150,15 @@ export const dashboardAPI = {
       console.warn('[dashboardAPI] getDepartmentDistribution: 后端暂未实现此端点')
       return []
     }
-    return unwrapResponse(request.get<
-      Array<{
-        department_name: string
-        asset_count: number
-        percentage: number
-      }>
-    >('/dashboard/department_distribution/'))
+    return unwrapResponse(
+      request.get<
+        Array<{
+          department_name: string
+          asset_count: number
+          percentage: number
+        }>
+      >('/dashboard/department_distribution/'),
+    )
   },
 
   /**
@@ -169,13 +177,15 @@ export const dashboardAPI = {
       console.warn('[dashboardAPI] getAssetTypeDistribution: 后端暂未实现此端点')
       return Promise.resolve([])
     }
-    return unwrapResponse(request.get<
-      Array<{
-        type_name: string
-        count: number
-        percentage: number
-      }>
-    >('/dashboard/type_distribution/'))
+    return unwrapResponse(
+      request.get<
+        Array<{
+          type_name: string
+          count: number
+          percentage: number
+        }>
+      >('/dashboard/type_distribution/'),
+    )
   },
 
   /**
@@ -188,7 +198,9 @@ export const dashboardAPI = {
       console.warn('[dashboardAPI] getExpiringAssets: 后端暂未实现此端点')
       return []
     }
-    return unwrapResponse(request.get<ExpiringAsset[]>('/dashboard/expiring_assets/', { days: days || 30 }))
+    return unwrapResponse(
+      request.get<ExpiringAsset[]>('/dashboard/expiring_assets/', { days: days || 30 }),
+    )
   },
 
   /**

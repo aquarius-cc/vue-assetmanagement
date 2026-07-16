@@ -33,12 +33,14 @@ export const wasteAssetAPI = {
    * @returns 报废资产详情
    */
   getWasteAsset: (code: string): Promise<WasteAsset> => {
-    return unwrapResponse(request.get(
-      `/assets/waste-assets/${code}/`,
-      undefined,
-      true, // 使用缓存
-      300000, // 缓存时间 5 分钟
-    ))
+    return unwrapResponse(
+      request.get(
+        `/assets/waste-assets/${code}/`,
+        undefined,
+        true, // 使用缓存
+        300000, // 缓存时间 5 分钟
+      ),
+    )
   },
 
   /**
@@ -87,7 +89,9 @@ export const wasteAssetAPI = {
    * @returns 报废记录列表响应
    */
   getWasteAssetsByAsset: (asset_code: string): Promise<WasteAssetListResponse> => {
-    return unwrapResponse(request.get<WasteAssetListResponse>(`/assets/waste-assets/by-asset/${asset_code}/`))
+    return unwrapResponse(
+      request.get<WasteAssetListResponse>(`/assets/waste-assets/by-asset/${asset_code}/`),
+    )
   },
 
   /**
@@ -104,10 +108,15 @@ export const wasteAssetAPI = {
    * @param end_date 结束日期 (YYYY-MM-DD)
    * @returns 已报废记录列表响应
    */
-  getWasteAssetsByDateRange: (start_date: string, end_date: string): Promise<WasteAssetListResponse> => {
-    return unwrapResponse(request.get<WasteAssetListResponse>(
-      '/assets/waste-assets/by-date-range/',
-      { start_date, end_date }
-    ))
+  getWasteAssetsByDateRange: (
+    start_date: string,
+    end_date: string,
+  ): Promise<WasteAssetListResponse> => {
+    return unwrapResponse(
+      request.get<WasteAssetListResponse>('/assets/waste-assets/by-date-range/', {
+        start_date,
+        end_date,
+      }),
+    )
   },
 }

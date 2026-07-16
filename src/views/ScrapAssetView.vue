@@ -8,7 +8,12 @@
         </div>
       </template>
 
-      <el-result v-if="!assetCode" icon="warning" title="缺少资产编码" sub-title="请通过正确的方式访问此页面">
+      <el-result
+        v-if="!assetCode"
+        icon="warning"
+        title="缺少资产编码"
+        sub-title="请通过正确的方式访问此页面"
+      >
         <template #extra>
           <el-button type="primary" @click="router.push('/main')">返回首页</el-button>
         </template>
@@ -20,20 +25,31 @@
         <el-descriptions :column="2" border class="asset-info">
           <el-descriptions-item label="资产编码">{{ asset.asset_code }}</el-descriptions-item>
           <el-descriptions-item label="资产名称">{{ asset.asset_name }}</el-descriptions-item>
-          <el-descriptions-item label="资产规格">{{ asset.asset_specification || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="当前状态">{{ asset.asset_current_status }}</el-descriptions-item>
+          <el-descriptions-item label="资产规格">{{
+            asset.asset_specification || '-'
+          }}</el-descriptions-item>
+          <el-descriptions-item label="当前状态">{{
+            asset.asset_current_status
+          }}</el-descriptions-item>
         </el-descriptions>
 
         <el-divider />
 
         <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
           <el-form-item label="报废原因" prop="reason">
-            <el-input v-model="formData.reason" type="textarea" :rows="3" placeholder="请输入报废原因" />
+            <el-input
+              v-model="formData.reason"
+              type="textarea"
+              :rows="3"
+              placeholder="请输入报废原因"
+            />
           </el-form-item>
         </el-form>
 
         <div class="action-buttons">
-          <el-button type="danger" :loading="submitting" @click="handleSubmit">提交报废申请</el-button>
+          <el-button type="danger" :loading="submitting" @click="handleSubmit"
+            >提交报废申请</el-button
+          >
           <el-button @click="router.back()">取消</el-button>
         </div>
       </template>

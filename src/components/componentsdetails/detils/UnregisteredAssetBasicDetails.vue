@@ -4,11 +4,13 @@
   功能：展示未登记资产的完整信息，支持导出 Excel，支持审批操作（通过/拒绝）
 -->
 <template>
-  <div class="unregistered-asset-detail-page" v-loading="isLoading" element-loading-text="加载中...">
+  <div
+    class="unregistered-asset-detail-page"
+    v-loading="isLoading"
+    element-loading-text="加载中..."
+  >
     <div class="child-page-header">
-      <h1 class="page-title">
-        {{ detailData?.asset_name || '未知资产' }} — 未登记资产详情
-      </h1>
+      <h1 class="page-title">{{ detailData?.asset_name || '未知资产' }} — 未登记资产详情</h1>
       <div class="action-buttons">
         <el-button type="primary" :icon="Back" @click="handleBack">返回</el-button>
         <el-button type="warning" :icon="Download" @click="handleExport">导出</el-button>
@@ -190,7 +192,9 @@ const getApprovalStatusTagType = (
   status: string | null | undefined,
 ): 'success' | 'warning' | 'danger' | 'info' => {
   if (!status) return 'info'
-  return (unregisteredAssetStatusTagMap[status] as 'success' | 'warning' | 'danger' | 'info') || 'info'
+  return (
+    (unregisteredAssetStatusTagMap[status] as 'success' | 'warning' | 'danger' | 'info') || 'info'
+  )
 }
 
 const getApprovalStatusText = (status: string | null | undefined): string => {
@@ -315,16 +319,12 @@ const handleApprove = async () => {
 const handleReject = async () => {
   if (!detailData.value) return
   try {
-    const { value: remark } = await ElMessageBox.prompt(
-      '请输入拒绝原因（可选）：',
-      '拒绝审批',
-      {
-        confirmButtonText: '确定拒绝',
-        cancelButtonText: '取消',
-        inputPlaceholder: '请输入拒绝原因',
-        inputType: 'textarea',
-      },
-    )
+    const { value: remark } = await ElMessageBox.prompt('请输入拒绝原因（可选）：', '拒绝审批', {
+      confirmButtonText: '确定拒绝',
+      cancelButtonText: '取消',
+      inputPlaceholder: '请输入拒绝原因',
+      inputType: 'textarea',
+    })
     await unregisteredAssetAPI.approveUnregisteredAsset(detailData.value.code, {
       handle_type: HandleType.REJECT,
       approval_remark: remark || '审批拒绝',
@@ -358,14 +358,25 @@ const selectHandleType = async (): Promise<string | null> => {
     ElMessageBox({
       title: '选择处理类型',
       message: h('div', null, [
-        h('p', { style: 'margin-bottom: 12px; color: var(--text-regular);' }, '请选择审批通过后的处理方式：'),
-        h('div', { style: 'display: flex; flex-direction: column; gap: 8px;' },
+        h(
+          'p',
+          { style: 'margin-bottom: 12px; color: var(--text-regular);' },
+          '请选择审批通过后的处理方式：',
+        ),
+        h(
+          'div',
+          { style: 'display: flex; flex-direction: column; gap: 8px;' },
           handleTypes.map((item) =>
-            h('div', {
-              key: item.value,
-              style: 'padding: 8px 12px; border: 1px solid var(--border-color-light); border-radius: 4px; cursor: pointer; transition: all 0.2s;',
-              onClick: () => resolve(item.value),
-            }, `${item.label}（${item.value}）`),
+            h(
+              'div',
+              {
+                key: item.value,
+                style:
+                  'padding: 8px 12px; border: 1px solid var(--border-color-light); border-radius: 4px; cursor: pointer; transition: all 0.2s;',
+                onClick: () => resolve(item.value),
+              },
+              `${item.label}（${item.value}）`,
+            ),
           ),
         ),
       ]),

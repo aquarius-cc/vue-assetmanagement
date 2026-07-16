@@ -111,12 +111,14 @@ describe('RepairAssetStore', () => {
       const { repairAssetAPI } = await import('@/api/repairAsset')
       vi.mocked(repairAssetAPI.createRepairAsset).mockRejectedValue(new Error('创建失败'))
 
-      await expect(repairAssetStore.create({
-        asset_code: 'asset-001',
-        repair_asset_number: 1,
-        repair_date: '2026-07-09',
-        repair_reason: '测试维修',
-      })).rejects.toThrow('创建失败')
+      await expect(
+        repairAssetStore.create({
+          asset_code: 'asset-001',
+          repair_asset_number: 1,
+          repair_date: '2026-07-09',
+          repair_reason: '测试维修',
+        }),
+      ).rejects.toThrow('创建失败')
     })
   })
 

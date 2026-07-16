@@ -10,9 +10,7 @@
         clearable
         @select="associationMethods.handleContractSelect"
         @change="associationMethods.handleContractNameChange"
-        @blur="
-          () => associationMethods.handleContractNameChange(form.asset_contract_name ?? '')
-        "
+        @blur="() => associationMethods.handleContractNameChange(form.asset_contract_name ?? '')"
       >
         <template #default="{ item }">
           <div>{{ item.contract_name }}/{{ item.contract_code }}</div>

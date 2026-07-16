@@ -138,7 +138,12 @@ describe('useAssetFormAssociationMethods', () => {
   describe('handleContractSelect', () => {
     it('should call onContractUpdate with selected contract', () => {
       const { handleContractSelect } = createMethods()
-      handleContractSelect({ value: '合同A', contract_name: '合同A', contract_code: 'C001', recordcode: 'R001' })
+      handleContractSelect({
+        value: '合同A',
+        contract_name: '合同A',
+        contract_code: 'C001',
+        recordcode: 'R001',
+      })
       expect(onContractUpdate).toHaveBeenCalledWith('合同A', 'C001')
     })
   })
@@ -274,9 +279,7 @@ describe('useEmployeeLinkage', () => {
     })
 
     it('should call onUpdate with single match', async () => {
-      getUserByName.mockResolvedValue([
-        { employee_name: '张三', employee_jobcode: 'E001' },
-      ])
+      getUserByName.mockResolvedValue([{ employee_name: '张三', employee_jobcode: 'E001' }])
       const { handleNameChange } = createLinkage()
       await handleNameChange('张三')
       expect(onUpdate).toHaveBeenCalledWith('张三', 'E001')

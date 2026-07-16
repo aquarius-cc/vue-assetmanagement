@@ -67,12 +67,12 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
-import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
+import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { RepairAssetExtended } from '@/utils/RepairAsset'
@@ -83,21 +83,31 @@ import type { SmartListContainerExpose } from '@/types/common'
 const repairAssetStore = useRepairAssetStore()
 const smartListRef = ref<SmartListContainerExpose | null>(null)
 
-const getRepairStatusTagType = (status: string | null | undefined): 'success' | 'warning' | 'danger' | 'info' => {
+const getRepairStatusTagType = (
+  status: string | null | undefined,
+): 'success' | 'warning' | 'danger' | 'info' => {
   switch (status) {
-    case 'completed': return 'success'
-    case 'failed': return 'danger'
-    case 'in_progress': return 'warning'
-    default: return 'info'
+    case 'completed':
+      return 'success'
+    case 'failed':
+      return 'danger'
+    case 'in_progress':
+      return 'warning'
+    default:
+      return 'info'
   }
 }
 
 const getRepairStatusText = (status: string | null | undefined): string => {
   switch (status) {
-    case 'completed': return 'Completed'
-    case 'failed': return 'Failed'
-    case 'in_progress': return 'In Progress'
-    default: return 'Unknown'
+    case 'completed':
+      return 'Completed'
+    case 'failed':
+      return 'Failed'
+    case 'in_progress':
+      return 'In Progress'
+    default:
+      return 'Unknown'
   }
 }
 
@@ -126,52 +136,10 @@ const columns: TableColumn[] = [
   { prop: 'operator_name', label: 'Operator', width: 100, align: 'center' },
 ]
 
-const storeConfig: PaginationSearchConfig<RepairAssetExtended> = {
-  store: {
-    getList: async (params) => {
-      const response = await repairAssetStore.getList(params)
-      return {
-        count: repairAssetStore.pagination.total,
-        results: response,
-        next: null,
-        previous: null,
-      }
-    },
-    pagination: {
-      page: {
-        get: () => repairAssetStore.pagination.page,
-        set: (val: number) => { repairAssetStore.pagination.page = val },
-      },
-      page_size: {
-        get: () => repairAssetStore.pagination.page_size,
-        set: (val: number) => { repairAssetStore.pagination.page_size = val },
-      },
-      total: {
-        get: () => repairAssetStore.pagination.total,
-        set: (val: number) => { repairAssetStore.pagination.total = val },
-      },
-    },
-    list: computed(() => repairAssetStore.list),
-    loading: computed(() => repairAssetStore.loading),
-    refreshFlag: computed(() => repairAssetStore.refreshFlag),
-    setRefreshFlag: (flag: boolean) => repairAssetStore.setRefreshFlag(flag),
-  },
-  search: {
-    performSearch: async (keyword: string, page: number, page_size: number) => {
-      const response = await repairAssetStore.getList({ search: keyword, page, page_size })
-      return {
-        count: repairAssetStore.pagination.total,
-        results: response,
-      }
-    },
-  },
-  defaultPageSize: 20,
-  messages: {
-    loadFailed: 'Failed to load repair asset list',
-    searchFailed: 'Failed to search repair assets',
-    invalidPage: 'Page out of range, jumped to last page',
-  },
-}
+const storeConfig = useSmartListConfig<RepairAssetExtended>({
+  store: repairAssetStore,
+  entityName: '维修记录',
+})
 
 const handleDelete = (row: RepairAssetExtended) => {
   if (!row.recordcode) {

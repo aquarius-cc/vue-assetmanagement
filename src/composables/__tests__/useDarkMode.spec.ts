@@ -29,7 +29,7 @@ const createMockMediaQueryList = (matches: boolean) => ({
   dispatchEvent: vi.fn(),
 })
 
-const mockMatchMedia = vi.fn().mockImplementation((query: string) => {
+const mockMatchMedia = vi.fn().mockImplementation((_query: string) => {
   return createMockMediaQueryList(false)
 })
 
@@ -42,8 +42,8 @@ describe('useDarkMode', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     localStorageMock.clear()
-    mockMatchMedia.mockImplementation((query: string) => createMockMediaQueryList(false))
-    
+    mockMatchMedia.mockImplementation((_query: string) => createMockMediaQueryList(false))
+
     // Dynamic import to get fresh module
     const module = await import('../useDarkMode')
     useDarkMode = module.useDarkMode
@@ -56,9 +56,9 @@ describe('useDarkMode', () => {
   describe('initialization', () => {
     it('initializes with light mode by default', () => {
       localStorageMock.getItem.mockReturnValue(null)
-      
+
       const { isDark } = useDarkMode()
-      
+
       expect(isDark.value).toBe(false)
     })
 
@@ -67,18 +67,18 @@ describe('useDarkMode', () => {
         if (key === 'theme') return 'dark'
         return null
       })
-      
+
       const { isDark } = useDarkMode()
-      
+
       expect(isDark.value).toBe(true)
     })
 
     it('initializes with dark mode from system preference', () => {
       localStorageMock.getItem.mockReturnValue(null)
-      mockMatchMedia.mockImplementation((query: string) => createMockMediaQueryList(true))
-      
+      mockMatchMedia.mockImplementation((_query: string) => createMockMediaQueryList(true))
+
       const { isDark } = useDarkMode()
-      
+
       expect(isDark.value).toBe(true)
     })
   })
@@ -86,13 +86,13 @@ describe('useDarkMode', () => {
   describe('toggleDark', () => {
     it('toggles dark mode from light to dark', () => {
       localStorageMock.getItem.mockReturnValue(null)
-      
+
       const { isDark, toggleDark } = useDarkMode()
-      
+
       expect(isDark.value).toBe(false)
-      
+
       toggleDark()
-      
+
       expect(isDark.value).toBe(true)
       expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'dark')
     })
@@ -102,28 +102,28 @@ describe('useDarkMode', () => {
         if (key === 'theme') return 'dark'
         return null
       })
-      
+
       const { isDark, toggleDark } = useDarkMode()
-      
+
       expect(isDark.value).toBe(true)
-      
+
       toggleDark()
-      
+
       expect(isDark.value).toBe(false)
       expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'light')
     })
 
     it('persists theme to localStorage', () => {
       localStorageMock.getItem.mockReturnValue(null)
-      
+
       const { toggleDark } = useDarkMode()
-      
+
       toggleDark()
-      
+
       expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'dark')
-      
+
       toggleDark()
-      
+
       expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'light')
     })
   })
@@ -131,11 +131,11 @@ describe('useDarkMode', () => {
   describe('setDark', () => {
     it('sets dark mode to true', () => {
       localStorageMock.getItem.mockReturnValue(null)
-      
+
       const { isDark, setDark } = useDarkMode()
-      
+
       setDark(true)
-      
+
       expect(isDark.value).toBe(true)
       expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'dark')
     })
@@ -145,26 +145,26 @@ describe('useDarkMode', () => {
         if (key === 'theme') return 'dark'
         return null
       })
-      
+
       const { isDark, setDark } = useDarkMode()
-      
+
       setDark(false)
-      
+
       expect(isDark.value).toBe(false)
       expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'light')
     })
 
     it('persists theme to localStorage', () => {
       localStorageMock.getItem.mockReturnValue(null)
-      
+
       const { setDark } = useDarkMode()
-      
+
       setDark(true)
-      
+
       expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'dark')
-      
+
       setDark(false)
-      
+
       expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'light')
     })
   })
@@ -175,18 +175,18 @@ describe('useDarkMode', () => {
         if (key === 'theme') return 'dark'
         return null
       })
-      
+
       useDarkMode()
-      
+
       // We can't test classList without full document mock, just verify it doesn't throw
       expect(true).toBe(true)
     })
 
     it('removes dark class when isDark is false', () => {
       localStorageMock.getItem.mockReturnValue(null)
-      
+
       useDarkMode()
-      
+
       // We can't test classList without full document mock, just verify it doesn't throw
       expect(true).toBe(true)
     })
@@ -195,9 +195,9 @@ describe('useDarkMode', () => {
   describe('system preference listener', () => {
     it('listens for system preference changes', () => {
       localStorageMock.getItem.mockReturnValue(null)
-      
+
       useDarkMode()
-      
+
       expect(mockMatchMedia).toHaveBeenCalledWith('(prefers-color-scheme: dark)')
     })
   })
@@ -205,13 +205,13 @@ describe('useDarkMode', () => {
   describe('edge cases', () => {
     it('handles localStorage not available', () => {
       localStorageMock.getItem.mockReturnValue(null)
-      
+
       expect(() => useDarkMode()).not.toThrow()
     })
 
     it('handles document not available', () => {
       localStorageMock.getItem.mockReturnValue(null)
-      
+
       expect(() => useDarkMode()).not.toThrow()
     })
   })

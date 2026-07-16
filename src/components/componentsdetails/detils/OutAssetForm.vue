@@ -133,8 +133,8 @@
                 :fetch-suggestions="fetchEmployeeSuggestions"
                 placeholder="请输入申请人姓名，如：张三"
                 clearable
-                @select="handleApplicantSelect"
-                @change="handleApplicantChange"
+                @select="applicantField.handleSelect"
+                @change="applicantField.handleChange"
               >
                 <template #default="{ item }">
                   <div>
@@ -162,8 +162,8 @@
                 :fetch-suggestions="fetchEmployeeSuggestions"
                 placeholder="请输入保管人姓名，如：李四"
                 clearable
-                @select="handleManagerSelect"
-                @change="handleManagerChange"
+                @select="managerField.handleSelect"
+                @change="managerField.handleChange"
               >
                 <template #default="{ item }">
                   <div>
@@ -239,7 +239,6 @@ import type {
   OutAssetCreateForm,
   OutAssetCreateExtended,
   AssetAutocompleteItem,
-  EmployeeAutocompleteItem,
 } from '@/utils/OutAsset'
 import type { AssetDetail, AssetUpdateForm } from '@/types/asset'
 // [HR-01] 后端 v1.1.0 改为 read_only，移陀EmployeeExtended（用户搜索联动已移除了// [HR-01] 后端 v1.1.0 改为 read_only，移陀useEmployeeLinkage（用户搜索联动已移除了import { formatDate } from '@/utils/Format'
@@ -358,39 +357,24 @@ const fetchAssetSuggestions = createSuggestionFetcher({
 // [HR-02] 员工建议获取器（用于申请人保管人自动完成）
 const fetchEmployeeSuggestions = useEmployeeSuggestionFetcher()
 
-// ========== 员工选择相关逻辑 ==========
-const selectedApplicant = ref<EmployeeAutocompleteItem | null>(null)
-const selectedManager = ref<EmployeeAutocompleteItem | null>(null)
+// ========== 员工选择相关逻辑（使用 useAutocompleteField） ==========
+import { useAutocompleteField } from '@/composables/useAutocompleteField'
 
-/** 申请人下拉选择 */
-const handleApplicantSelect = (item: EmployeeAutocompleteItem) => {
-  selectedApplicant.value = item
-  outAssetCreateExtendedForm.outasset_applicant_name = item.employee_name
-  outAssetCreateExtendedForm.outasset_applicant_jobcode = item.employee_jobcode
-}
+const applicantField = useAutocompleteField({
+  form: outAssetCreateExtendedForm,
+  nameField: 'outasset_applicant_name',
+  codeField: 'outasset_applicant_jobcode',
+  itemKey: 'employee_name',
+  codeKey: 'employee_jobcode',
+})
 
-/** 申请人手动输入变化时，若与已选不一致则清空工号 */
-const handleApplicantChange = (value: string) => {
-  if (selectedApplicant.value?.employee_name !== value) {
-    selectedApplicant.value = null
-    outAssetCreateExtendedForm.outasset_applicant_jobcode = ''
-  }
-}
-
-/** 保管人下拉选择 */
-const handleManagerSelect = (item: EmployeeAutocompleteItem) => {
-  selectedManager.value = item
-  outAssetCreateExtendedForm.outasset_manager_name = item.employee_name
-  outAssetCreateExtendedForm.outasset_manager_jobcode = item.employee_jobcode
-}
-
-/** 保管人手动输入变化时，若与已选不一致则清空工号 */
-const handleManagerChange = (value: string) => {
-  if (selectedManager.value?.employee_name !== value) {
-    selectedManager.value = null
-    outAssetCreateExtendedForm.outasset_manager_jobcode = ''
-  }
-}
+const managerField = useAutocompleteField({
+  form: outAssetCreateExtendedForm,
+  nameField: 'outasset_manager_name',
+  codeField: 'outasset_manager_jobcode',
+  itemKey: 'employee_name',
+  codeKey: 'employee_jobcode',
+})
 
 // ========== 资产选择相关逻辑（用于自动完成） ==========
 const selectedAsset = ref<AssetAutocompleteItem | null>(null)

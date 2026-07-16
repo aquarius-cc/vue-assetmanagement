@@ -137,13 +137,13 @@ export default {
 
 <script lang="ts" setup>
 // ===== 导入顺序：Vue 核心 ↀ第三方库 ↀ@/ 内部模块 =====
-import { ref, watch, computed, h } from 'vue'
+import { ref, watch, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
-import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
+import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { Contract } from '@/types/contract'
@@ -230,82 +230,10 @@ const columns: TableColumn[] = [
  *
  * 包含' * - getList: 获取列表数据的方泀 * - pagination: 分页状态（使用 getter/setter 实现双向绑定' * - list: 列表数据（computed' * - loading: 加载状态（computed' * - search: 搜索配置（后端搜索）
  */
-const storeConfig: PaginationSearchConfig<Contract> = {
-  store: {
-    /**
-     * 获取列表数据
-     * @param params 分页查询参数
-     * @returns 包含 count 咀results 的响应对豀     */
-    getList: async (params) => {
-      const response = await contractStore.getList(params)
-      return {
-        count: contractStore.pagination.total,
-        results: response,
-        next: null,
-        previous: null,
-      }
-    },
-    /**
-     * 分页状态     * 使用 getter/setter 对象实现一Pinia store 的双向绑宀     */
-    pagination: {
-      page: {
-        get: () => contractStore.pagination.page,
-        set: (val: number) => {
-          contractStore.pagination.page = val
-        },
-      },
-      page_size: {
-        get: () => contractStore.pagination.page_size,
-        set: (val: number) => {
-          contractStore.pagination.page_size = val
-        },
-      },
-      total: {
-        get: () => contractStore.pagination.total,
-        set: (val: number) => {
-          contractStore.pagination.total = val
-        },
-      },
-    },
-    /**
-     * 列表数据（computed 保持响应式）
-     */
-    list: computed(() => contractStore.list),
-    /**
-     * 加载状态（computed 保持响应式）
-     */
-    loading: computed(() => contractStore.loading),
-    /**
-     * 刷新标志（computed 保持响应式）
-     * 用于子页面（如批量导入、表单编辑）通知列表刷新
-     */
-    refreshFlag: computed(() => contractStore.refreshFlag),
-    /**
-     * 设置刷新标志
-     * 子页面调用后，usePaginationSearch 会自动监听并触发列表刷新
-     */
-    setRefreshFlag: (flag: boolean) => contractStore.setRefreshFlag(flag),
-  },
-  /**
-   * 搜索配置
-   * 【优化】改为后端搜索，支持多字段搜紀   * 统一使用 contractStore.getList({ search: keyword })
-   */
-  search: {
-    performSearch: async (keyword: string, page: number, page_size: number) => {
-      const response = await contractStore.getList({ search: keyword, page, page_size })
-      return {
-        count: contractStore.pagination.total,
-        results: response,
-      }
-    },
-  },
-  defaultPageSize: 20,
-  messages: {
-    loadFailed: '加载合同列表失败',
-    searchFailed: '搜索合同失败',
-    invalidPage: '页码超出范围，已跳转至最后一页',
-  },
-}
+const storeConfig = useSmartListConfig<Contract>({
+  store: contractStore,
+  entityName: '合同',
+})
 
 // ===== 路由监听：控制子路由遮罩 =====
 /**

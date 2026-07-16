@@ -125,7 +125,12 @@ const isChildRouteActive = ref(false)
 
 // ===== 辅助函数 =====
 const getAssetTypeTagType = (category: string) => {
-  const map: Record<string, string> = { hardware: 'success', software: 'primary', lowvalue: 'warning', other: 'danger' }
+  const map: Record<string, string> = {
+    hardware: 'success',
+    software: 'primary',
+    lowvalue: 'warning',
+    other: 'danger',
+  }
   return (map[category] || 'info') as 'success' | 'primary' | 'warning' | 'danger' | 'info'
 }
 
@@ -144,9 +149,30 @@ const columns: TableColumn[] = [
   { prop: 'asset_name', label: '名称', width: 180, align: 'left' },
   { prop: 'asset_specification', label: '型号规格', width: 180, align: 'left' },
   { prop: 'asset_brand', label: '品牌', width: 120, align: 'center' },
-  { type: 'custom', prop: 'type_category', label: '资产分类', width: 130, align: 'center', slotName: 'type_category' },
-  { type: 'custom', prop: 'asset_current_status', label: '当前状态', width: 130, align: 'center', slotName: 'asset_current_status' },
-  { type: 'custom', prop: 'contract_code', label: '合同号', width: 150, align: 'center', slotName: 'contract_code' },
+  {
+    type: 'custom',
+    prop: 'type_category',
+    label: '资产分类',
+    width: 130,
+    align: 'center',
+    slotName: 'type_category',
+  },
+  {
+    type: 'custom',
+    prop: 'asset_current_status',
+    label: '当前状态',
+    width: 130,
+    align: 'center',
+    slotName: 'asset_current_status',
+  },
+  {
+    type: 'custom',
+    prop: 'contract_code',
+    label: '合同号',
+    width: 150,
+    align: 'center',
+    slotName: 'contract_code',
+  },
 ]
 
 // ===== 搜索栏事件 =====
@@ -170,28 +196,45 @@ watch(
 
 // ===== 事件处理 =====
 const handleEdit = (row: AssetDetail) => {
-  if (!row.asset_code) { ElMessage.error('资产编码不存在，无法编辑'); return }
+  if (!row.asset_code) {
+    ElMessage.error('资产编码不存在，无法编辑')
+    return
+  }
   router.push({ name: 'AssetForm', query: { code: row.asset_code } }).catch((err) => {
     ElMessage.error(`跳转失败: ${err.message || '未知错误'}`)
   })
 }
 
 const handleDelete = (row: AssetDetail) => {
-  if (!row.asset_code) { ElMessage.error('资产编码不存在，无法删除'); return }
+  if (!row.asset_code) {
+    ElMessage.error('资产编码不存在，无法删除')
+    return
+  }
   ElMessageBox.confirm('确定要删除该资产吗？删除后不可恢复。', '删除确认', {
-    confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning',
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
   })
     .then(() => assetStore.remove(row.asset_code))
-    .then(() => { ElMessage.success('资产删除成功'); smartListRef.value?.refresh() })
-    .catch((error) => { if (error !== 'cancel') ElMessage.error(`删除失败: ${error.message || '未知错误'}`) })
+    .then(() => {
+      ElMessage.success('资产删除成功')
+      smartListRef.value?.refresh()
+    })
+    .catch((error) => {
+      if (error !== 'cancel') ElMessage.error(`删除失败: ${error.message || '未知错误'}`)
+    })
 }
 
 const handleAddAsset = () => {
-  router.push({ name: 'AssetForm' }).catch((err) => { ElMessage.error(`跳转失败: ${err.message || '未知错误'}`) })
+  router.push({ name: 'AssetForm' }).catch((err) => {
+    ElMessage.error(`跳转失败: ${err.message || '未知错误'}`)
+  })
 }
 
 const handleBatchImport = () => {
-  router.push({ name: 'AssetBatchImport' }).catch((err) => { ElMessage.error(`跳转失败: ${err.message || '未知错误'}`) })
+  router.push({ name: 'AssetBatchImport' }).catch((err) => {
+    ElMessage.error(`跳转失败: ${err.message || '未知错误'}`)
+  })
 }
 
 // ===== Excel 导出 =====
@@ -203,20 +246,33 @@ const handleExportExcel = async () => {
     columns: exportColumns,
     currentData: assetStore.list,
     totalCount: assetStore.pagination.total,
-    fetchAllData: async () => assetStore.getList({ page: 1, page_size: assetStore.pagination.total }),
+    fetchAllData: async () =>
+      assetStore.getList({ page: 1, page_size: assetStore.pagination.total }),
     sheetName: '资产列表',
   })
 }
 
 // ===== 批量删除 =====
 const handleBatchDelete = async (rows: AssetDetail[] | undefined) => {
-  if (!rows || rows.length === 0) { ElMessage.warning('请先选择要删除的数据'); return }
+  if (!rows || rows.length === 0) {
+    ElMessage.warning('请先选择要删除的数据')
+    return
+  }
   const codes = rows.map((row) => row.asset_code).filter((code): code is string => !!code)
-  if (codes.length === 0) { ElMessage.error('无法删除：选中的数据缺少唯一标识'); return }
+  if (codes.length === 0) {
+    ElMessage.error('无法删除：选中的数据缺少唯一标识')
+    return
+  }
   try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${codes.length} 条数据吗？删除后数据不可恢复！`, '批量删除确认', {
-      confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning',
-    })
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${codes.length} 条数据吗？删除后数据不可恢复！`,
+      '批量删除确认',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+      },
+    )
     await assetStore.removeBatch(codes)
     smartListRef.value?.clearSelection()
     await smartListRef.value?.refresh()
@@ -227,7 +283,9 @@ const handleBatchDelete = async (rows: AssetDetail[] | undefined) => {
   }
 }
 
-const handleMaskBack = () => { router.go(-1) }
+const handleMaskBack = () => {
+  router.go(-1)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -235,12 +293,20 @@ const handleMaskBack = () => { router.go(-1) }
 
 .asset-details-root {
   @include list-container;
-  .table-container { @include table-container; }
-  .bottom-buttons { @include bottom-buttons; }
+  .table-container {
+    @include table-container;
+  }
+  .bottom-buttons {
+    @include bottom-buttons;
+  }
   .router-mask-container {
     @include router-mask-container;
-    .mask { @include mask; }
-    .child-router-container { @include child-router-container; }
+    .mask {
+      @include mask;
+    }
+    .child-router-container {
+      @include child-router-container;
+    }
   }
 }
 @include responsive-design;

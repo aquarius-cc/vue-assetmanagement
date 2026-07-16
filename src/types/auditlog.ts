@@ -97,7 +97,10 @@ export const appLabelMapping: Record<string, string> = {
   [AppLabel.AUTHUSER]: '用户认证',
 }
 
-export const auditOperationTypeTagMapping: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary' | 'default'> = {
+export const auditOperationTypeTagMapping: Record<
+  string,
+  'success' | 'warning' | 'danger' | 'info' | 'primary' | 'default'
+> = {
   [AuditOperationType.CREATE]: 'success',
   [AuditOperationType.UPDATE]: 'primary',
   [AuditOperationType.DELETE]: 'danger',

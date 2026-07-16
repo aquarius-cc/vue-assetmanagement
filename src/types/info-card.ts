@@ -98,7 +98,15 @@ export interface InfoCardConfig {
    * - UserFilled: 填充用户图标，用于保管人信息
    * - Avatar: 头像图标，用于人员信息
    */
-  icon: 'Document' | 'User' | 'Location' | 'InfoFilled' | 'Tickets' | 'Stamp' | 'UserFilled' | 'Avatar'
+  icon:
+    | 'Document'
+    | 'User'
+    | 'Location'
+    | 'InfoFilled'
+    | 'Tickets'
+    | 'Stamp'
+    | 'UserFilled'
+    | 'Avatar'
 
   /**
    * 字段配置

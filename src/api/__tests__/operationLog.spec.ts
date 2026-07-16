@@ -8,11 +8,13 @@ const { mockRequest, mockUnwrapResponse } = vi.hoisted(() => ({
     patch: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
     delete: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
   },
-  mockUnwrapResponse: vi.fn(async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
-    const res = await promise
-    if (res.code !== 0) throw new Error(res.message || '请求失败')
-    return res.data
-  }),
+  mockUnwrapResponse: vi.fn(
+    async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
+      const res = await promise
+      if (res.code !== 0) throw new Error(res.message || '请求失败')
+      return res.data
+    },
+  ),
 }))
 
 vi.mock('@/api/index', () => ({
@@ -34,7 +36,12 @@ describe('operationLogAPI', () => {
 
   it('getOperationLogDetail calls GET /assets/operation-logs/{pk}/', async () => {
     await operationLogAPI.getOperationLogDetail(1)
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/operation-logs/1/', undefined, true, 300000)
+    expect(mockRequest.get).toHaveBeenCalledWith(
+      '/assets/operation-logs/1/',
+      undefined,
+      true,
+      300000,
+    )
   })
 
   it('getOperationLogByLoggingId calls GET /assets/operation-logs/by-logging-id/{id}/', async () => {

@@ -47,7 +47,9 @@ describe('useRecyclableOutAssets', () => {
   describe('search', () => {
     it('calls API with correct params and updates state', async () => {
       const items = [{ id: 1 }, { id: 2 }]
-      mockGetRecyclableOutAssets.mockResolvedValue(mockSuccessResponse({ results: items, count: 2 }))
+      mockGetRecyclableOutAssets.mockResolvedValue(
+        mockSuccessResponse({ results: items, count: 2 }),
+      )
 
       const { search, list, total, currentPage } = useRecyclableOutAssets()
       await search()
@@ -78,9 +80,7 @@ describe('useRecyclableOutAssets', () => {
       currentPage.value = 5
       await search({ keyword: 'new' })
 
-      expect(mockGetRecyclableOutAssets).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 1 }),
-      )
+      expect(mockGetRecyclableOutAssets).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }))
       expect(currentPage.value).toBe(1)
     })
 
@@ -100,7 +100,10 @@ describe('useRecyclableOutAssets', () => {
     it('shows loading state during request', async () => {
       let resolvePromise!: (value: unknown) => void
       mockGetRecyclableOutAssets.mockImplementation(
-        () => new Promise((resolve) => { resolvePromise = resolve }),
+        () =>
+          new Promise((resolve) => {
+            resolvePromise = resolve
+          }),
       )
 
       const { search, loading } = useRecyclableOutAssets()
@@ -176,7 +179,9 @@ describe('useRecyclableOutAssets', () => {
   describe('reset', () => {
     it('clears all state', async () => {
       const items = [{ id: 1 }, { id: 2 }]
-      mockGetRecyclableOutAssets.mockResolvedValue(mockSuccessResponse({ results: items, count: 2 }))
+      mockGetRecyclableOutAssets.mockResolvedValue(
+        mockSuccessResponse({ results: items, count: 2 }),
+      )
 
       const { search, reset, list, total, currentPage } = useRecyclableOutAssets()
 

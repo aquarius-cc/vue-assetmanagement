@@ -10,7 +10,7 @@ export function useDarkMode() {
   // 初始化：检查系统偏好或本地存储
   const initDarkMode = () => {
     if (typeof window === 'undefined') return
-    
+
     // 检查本地存储
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
     if (savedTheme) {
@@ -25,7 +25,7 @@ export function useDarkMode() {
   // 应用暗色模式到 HTML 元素
   const applyDarkMode = () => {
     if (typeof document === 'undefined') return
-    
+
     if (isDark.value) {
       document.documentElement.classList.add('dark')
     } else {
@@ -72,6 +72,6 @@ export function useDarkMode() {
   return {
     isDark,
     toggleDark,
-    setDark
+    setDark,
   }
 }

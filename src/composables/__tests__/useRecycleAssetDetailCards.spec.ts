@@ -109,15 +109,11 @@ describe('useRecycleAssetDetailCards', () => {
       expect(leftCol).toContainEqual(
         expect.objectContaining({ label: '回收标识码', value: 'RA001' }),
       )
-      expect(leftCol).toContainEqual(
-        expect.objectContaining({ label: '资产码', value: 'A001' }),
-      )
+      expect(leftCol).toContainEqual(expect.objectContaining({ label: '资产码', value: 'A001' }))
       expect(leftCol).toContainEqual(
         expect.objectContaining({ label: '资产名称', value: '测试资产' }),
       )
-      expect(leftCol).toContainEqual(
-        expect.objectContaining({ label: '规格型号', value: '型号X' }),
-      )
+      expect(leftCol).toContainEqual(expect.objectContaining({ label: '规格型号', value: '型号X' }))
     })
 
     it('formats recycle date using formatDate', () => {
@@ -151,9 +147,7 @@ describe('useRecycleAssetDetailCards', () => {
       const { contractInfoConfig } = useRecycleAssetDetailCards(data)
 
       const leftCol = contractInfoConfig.value.fields[0]
-      expect(leftCol).toContainEqual(
-        expect.objectContaining({ label: '合同编码', value: 'C001' }),
-      )
+      expect(leftCol).toContainEqual(expect.objectContaining({ label: '合同编码', value: 'C001' }))
       expect(leftCol).toContainEqual(
         expect.objectContaining({ label: '合同名称', value: '采购合同' }),
       )
@@ -258,9 +252,7 @@ describe('useRecycleAssetDetailCards', () => {
       const { storageInfoConfig } = useRecycleAssetDetailCards(data)
 
       const leftCol = storageInfoConfig.value.fields[0]
-      expect(leftCol).toContainEqual(
-        expect.objectContaining({ label: '仓库编码', value: 'S001' }),
-      )
+      expect(leftCol).toContainEqual(expect.objectContaining({ label: '仓库编码', value: 'S001' }))
       expect(leftCol).toContainEqual(
         expect.objectContaining({ label: '仓库名称', value: '主仓库' }),
       )

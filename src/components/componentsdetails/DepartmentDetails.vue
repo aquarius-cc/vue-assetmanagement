@@ -99,13 +99,13 @@ export default {
 
 <script lang="ts" setup>
 // ===== 导入顺序：Vue 核心 → 第三方库 → @/ 内部模块 =====
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
-import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
+import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { Department } from '@/utils/Department'
 import { useDepartmentStore } from '@/stores/departmentStore'
 import type { SmartListContainerExpose } from '@/types/common'
@@ -155,85 +155,10 @@ const columns: TableColumn[] = [
  * - loading: 加载状态（computed）
  * - search: 搜索配置（后端搜索）
  */
-const storeConfig: PaginationSearchConfig<Department> = {
-  store: {
-    /**
-     * 获取列表数据
-     * @param params 分页查询参数
-     * @returns 包含 count 和 results 的响应对象
-     */
-    getList: async (params) => {
-      const response = await departmentStore.getList(params)
-      return {
-        count: departmentStore.pagination.total,
-        results: response,
-        next: null,
-        previous: null,
-      }
-    },
-    /**
-     * 分页状态
-     * 使用 getter/setter 对象实现与 Pinia store 的双向绑定
-     */
-    pagination: {
-      page: {
-        get: () => departmentStore.pagination.page,
-        set: (val: number) => {
-          departmentStore.pagination.page = val
-        },
-      },
-      page_size: {
-        get: () => departmentStore.pagination.page_size,
-        set: (val: number) => {
-          departmentStore.pagination.page_size = val
-        },
-      },
-      total: {
-        get: () => departmentStore.pagination.total,
-        set: (val: number) => {
-          departmentStore.pagination.total = val
-        },
-      },
-    },
-    /**
-     * 列表数据（computed 保持响应式）
-     */
-    list: computed(() => departmentStore.list),
-    /**
-     * 加载状态（computed 保持响应式）
-     */
-    loading: computed(() => departmentStore.loading),
-    /**
-     * 刷新标志（computed 保持响应式）
-     * 用于子页面（如批量导入、表单编辑）通知列表刷新
-     */
-    refreshFlag: computed(() => departmentStore.refreshFlag),
-    /**
-     * 设置刷新标志
-     * 子页面调用后，usePaginationSearch 会自动监听并触发列表刷新
-     */
-    setRefreshFlag: (flag: boolean) => departmentStore.setRefreshFlag(flag),
-  },
-  /**
-   * 搜索配置
-   * 使用后端搜索，统一调用 departmentStore.getList({ search: keyword })
-   */
-  search: {
-    performSearch: async (keyword: string, page: number, page_size: number) => {
-      const response = await departmentStore.getList({ search: keyword, page, page_size })
-      return {
-        count: departmentStore.pagination.total,
-        results: response,
-      }
-    },
-  },
-  defaultPageSize: 20,
-  messages: {
-    loadFailed: '加载部门列表失败',
-    searchFailed: '搜索部门失败',
-    invalidPage: '页码超出范围，已跳转至最后一页',
-  },
-}
+const storeConfig = useSmartListConfig<Department>({
+  store: departmentStore,
+  entityName: '部门',
+})
 
 // ===== 路由监听：控制子路由遮罩 =====
 /**

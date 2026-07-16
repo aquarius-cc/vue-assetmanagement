@@ -34,12 +34,14 @@ export const repairAssetAPI = {
    * @returns 维修资产详情
    */
   getRepairAssetByCode: (recordcode: string): Promise<RepairAssetExtended> => {
-    return unwrapResponse(request.get<RepairAssetExtended>(
-      `/assets/repair-assets/${recordcode}/`,
-      undefined,
-      true,
-      300000,
-    ))
+    return unwrapResponse(
+      request.get<RepairAssetExtended>(
+        `/assets/repair-assets/${recordcode}/`,
+        undefined,
+        true,
+        300000,
+      ),
+    )
   },
 
   /**
@@ -62,7 +64,9 @@ export const repairAssetAPI = {
     if (!recordcode) {
       throw new Error('recordcode is required for update')
     }
-    return unwrapResponse(request.put<RepairAssetExtended>(`/assets/repair-assets/${recordcode}/`, data))
+    return unwrapResponse(
+      request.put<RepairAssetExtended>(`/assets/repair-assets/${recordcode}/`, data),
+    )
   },
 
   /**
@@ -91,7 +95,9 @@ export const repairAssetAPI = {
    * POST /api/assets/repair-assets/batch-create/
    * 对应后端 RepairAssetViewSet.batch_create action
    */
-  batchCreateRepairAssets: (data: RepairAssetBatchCreateForm): Promise<RepairAssetBatchCreateResult> => {
+  batchCreateRepairAssets: (
+    data: RepairAssetBatchCreateForm,
+  ): Promise<RepairAssetBatchCreateResult> => {
     return unwrapResponse(
       request.post<RepairAssetBatchCreateResult>('/assets/repair-assets/batch-create/', data),
     )
@@ -103,7 +109,9 @@ export const repairAssetAPI = {
    * @returns 维修记录列表响应
    */
   getRepairAssetsByAsset: (asset_code: string): Promise<RepairAssetListResponse> => {
-    return unwrapResponse(request.get<RepairAssetListResponse>(`/assets/repair-assets/by-asset/${asset_code}/`))
+    return unwrapResponse(
+      request.get<RepairAssetListResponse>(`/assets/repair-assets/by-asset/${asset_code}/`),
+    )
   },
 
   /**
@@ -114,10 +122,9 @@ export const repairAssetAPI = {
    * @returns 维修记录详情
    */
   repairAsset: (asset_code: string, data: RepairAssetCreateForm): Promise<RepairAssetExtended> => {
-    return unwrapResponse(request.post<RepairAssetExtended>(
-      `/assets/assets/${asset_code}/repair/`,
-      data,
-    ))
+    return unwrapResponse(
+      request.post<RepairAssetExtended>(`/assets/assets/${asset_code}/repair/`, data),
+    )
   },
 
   /**
@@ -128,10 +135,9 @@ export const repairAssetAPI = {
    * @returns 维修记录详情
    */
   repairDone: (asset_code: string, data: RepairAssetUpdateForm): Promise<RepairAssetExtended> => {
-    return unwrapResponse(request.post<RepairAssetExtended>(
-      `/assets/assets/${asset_code}/repair-done/`,
-      data,
-    ))
+    return unwrapResponse(
+      request.post<RepairAssetExtended>(`/assets/assets/${asset_code}/repair-done/`, data),
+    )
   },
 
   /**
@@ -142,9 +148,8 @@ export const repairAssetAPI = {
    * @returns 维修记录详情
    */
   repairFailed: (asset_code: string, data: RepairAssetUpdateForm): Promise<RepairAssetExtended> => {
-    return unwrapResponse(request.post<RepairAssetExtended>(
-      `/assets/assets/${asset_code}/repair-failed/`,
-      data,
-    ))
+    return unwrapResponse(
+      request.post<RepairAssetExtended>(`/assets/assets/${asset_code}/repair-failed/`, data),
+    )
   },
 }

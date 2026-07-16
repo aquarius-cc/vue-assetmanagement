@@ -259,7 +259,7 @@ const isSavingSort = ref(false)
 const isBatchDeleting = ref(false)
 
 /** 表格组件引用，用于调用 clearSelection 等方法 */
-const tableRef = ref<InstanceType<typeof import('element-plus')['ElTable']> | null>(null)
+const tableRef = ref<InstanceType<(typeof import('element-plus'))['ElTable']> | null>(null)
 
 /** 当前选中的行数据（批量删除用） */
 const selectedRows = ref<EmployeeExtended[]>([])
@@ -344,7 +344,7 @@ const loadEmployeeList = async () => {
       const allCodes = extractAllDepartmentCodes(props.departmentTree)
       // 并发获取所有部门人员（携带筛选参数）
       const allEmployees = await Promise.all(
-        allCodes.map((code) => getDepartmentEmployees(code, queryParams))
+        allCodes.map((code) => getDepartmentEmployees(code, queryParams)),
       )
       // 合并所有人员并去重（根据 employee_jobcode）
       const employeeMap = new Map<string, EmployeeExtended>()
@@ -526,9 +526,7 @@ const handleBatchDelete = async () => {
 
     // 处理部分失败情况
     if (result && 'fail_count' in result && result.fail_count > 0) {
-      ElMessage.warning(
-        `成功删除 ${result.success_count} 条，失败 ${result.fail_count} 条`,
-      )
+      ElMessage.warning(`成功删除 ${result.success_count} 条，失败 ${result.fail_count} 条`)
     } else {
       ElMessage.success(`成功删除 ${jobcodes.length} 条数据`)
     }

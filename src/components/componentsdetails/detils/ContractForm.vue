@@ -374,7 +374,7 @@ const loadContractDetail = async (code: string) => {
       contract_final_acceptance_date: safeFormatDate(targetContract.contract_final_acceptance_date),
       // 确保结算状态值为枚举字符
       contract_settledment_status:
-        targetContract.contract_settledment_status === 'settled' ? 'settled' : 'pending',
+        targetContract.contract_settledment_status as ContractSettlementStatus,
     })
   } catch (error) {
     console.error('获取合同详情失败:', error)

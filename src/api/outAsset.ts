@@ -52,7 +52,9 @@ export const outAssetAPI = {
    * @returns 可回收资产列表响应
    */
   getRecyclableOutAssets: (params?: OutAssetQueryParams): Promise<RecyclableOutAssetResponse> => {
-    return unwrapResponse(request.get<RecyclableOutAssetResponse>('/assets/out-assets/recyclable/', params))
+    return unwrapResponse(
+      request.get<RecyclableOutAssetResponse>('/assets/out-assets/recyclable/', params),
+    )
   },
 
   /**
@@ -61,12 +63,14 @@ export const outAssetAPI = {
    * @returns 出库记录详情
    */
   getOutAssetByCode: (recordcode: string): Promise<OutAssetDetail> => {
-    return unwrapResponse(request.get<OutAssetDetail>(
-      `/assets/out-assets/${recordcode}/`,
-      undefined,
-      true, // 使用缓存
-      300000, // 缓存时间 5 分钟
-    ))
+    return unwrapResponse(
+      request.get<OutAssetDetail>(
+        `/assets/out-assets/${recordcode}/`,
+        undefined,
+        true, // 使用缓存
+        300000, // 缓存时间 5 分钟
+      ),
+    )
   },
 
   /**
@@ -84,7 +88,8 @@ export const outAssetAPI = {
     const { outasset_code, ...rest } = data as unknown as Record<string, unknown>
     const backendData = {
       ...rest,
-      ...(outasset_code !== undefined && outasset_code !== null && { outasset_asset: outasset_code }),
+      ...(outasset_code !== undefined &&
+        outasset_code !== null && { outasset_asset: outasset_code }),
     }
     return unwrapResponse(request.post<OutAssetDetail>('/assets/out-assets/', backendData))
   },
@@ -102,12 +107,19 @@ export const outAssetAPI = {
     if (!recordcode) {
       throw new Error('recordcode is required for update')
     }
-    const { outasset_recordcode: _, outasset_code, ...rest } = data as unknown as Record<string, unknown>
+    const {
+      outasset_recordcode: _,
+      outasset_code,
+      ...rest
+    } = data as unknown as Record<string, unknown>
     const backendData = {
       ...rest,
-      ...(outasset_code !== undefined && outasset_code !== null && { outasset_asset: outasset_code }),
+      ...(outasset_code !== undefined &&
+        outasset_code !== null && { outasset_asset: outasset_code }),
     }
-    return unwrapResponse(request.put<OutAssetDetail>(`/assets/out-assets/${recordcode}/`, backendData))
+    return unwrapResponse(
+      request.put<OutAssetDetail>(`/assets/out-assets/${recordcode}/`, backendData),
+    )
   },
 
   /**
@@ -151,14 +163,19 @@ export const outAssetAPI = {
    * @returns 出库记录列表响应
    */
   getOutAssetsByAsset: (asset_code: string): Promise<OutAssetResponse> => {
-    return unwrapResponse(request.get<OutAssetResponse>(`/assets/out-assets/by-asset/${asset_code}/`))
+    return unwrapResponse(
+      request.get<OutAssetResponse>(`/assets/out-assets/by-asset/${asset_code}/`),
+    )
   },
 
   /**
    * 获取出库统计信息
    * @returns 出库统计数据
    */
-  getOutAssetStatistics: (): Promise<{ total_out_assets: number; by_type: Record<string, { name: string; count: number }> }> => {
+  getOutAssetStatistics: (): Promise<{
+    total_out_assets: number
+    by_type: Record<string, { name: string; count: number }>
+  }> => {
     return unwrapResponse(request.get('/assets/out-assets/statistics/'))
   },
 
@@ -168,8 +185,8 @@ export const outAssetAPI = {
    * @returns 出库记录列表响应
    */
   getOutAssetsByApplicant: (applicant_jobcode: string): Promise<OutAssetResponse> => {
-    return unwrapResponse(request.get<OutAssetResponse>(
-      `/assets/out-assets/by-applicant/${applicant_jobcode}/`
-    ))
+    return unwrapResponse(
+      request.get<OutAssetResponse>(`/assets/out-assets/by-applicant/${applicant_jobcode}/`),
+    )
   },
 }

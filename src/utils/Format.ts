@@ -88,16 +88,16 @@ const contractiInfoFormate = (
     return {}
   }
 
-    // ----- 安全获取枚举状态的辅助函数 -----
+  // ----- 安全获取枚举状态的辅助函数 -----
   const getSettlementStatus = (value: unknown): ContractSettlementStatus => {
-    if (value == null) return ContractSettlementStatus.PENDING;
-    const trimmed = String(value).trim();
+    if (value == null) return ContractSettlementStatus.PURCHASING
+    const trimmed = String(value).trim()
     // 校验是否为合法的枚举值（利用 Object.values 获取所有枚举值）
-    const validStatuses = Object.values(ContractSettlementStatus); // ['pending', 'settled']
+    const validStatuses = Object.values(ContractSettlementStatus) // ['pending', 'settled']
     return validStatuses.includes(trimmed as ContractSettlementStatus)
       ? (trimmed as ContractSettlementStatus)
-      : ContractSettlementStatus.PENDING; // 非法值降级为默认
-  };
+      : ContractSettlementStatus.PURCHASING // 非法值降级为默认
+  }
   // 格式化 + 修正字段 + 确保类型正确
   // 第二步：格式化数据（确保 rawData 是对象类型，可安入spread）
   const formattedData = {
@@ -108,19 +108,22 @@ const contractiInfoFormate = (
     contract_final_acceptance_date: formatDate(rawData.contract_final_acceptance_date),
     // 数字字段处理（兼容 undefined，避免 Number(undefined) 转为 NaN）
     contract_price: rawData.contract_price !== null ? Number(rawData.contract_price) : undefined,
-    contract_warranty_period: rawData.contract_warranty_period !== null
-      ? Number(rawData.contract_warranty_period)
-      : undefined,
-    contract_settledment_price: rawData.contract_settledment_price !== null
-      ? Number(rawData.contract_settledment_price)
-      : null,
-    contract_paid_price: rawData.contract_paid_price !== null ? Number(rawData.contract_paid_price) : 0, // 默认为 0
-    contract_paid_count_number: rawData.contract_paid_count_number !== null
-      ? Number(rawData.contract_paid_count_number)
-      : 0, // 默认为 0
+    contract_warranty_period:
+      rawData.contract_warranty_period !== null
+        ? Number(rawData.contract_warranty_period)
+        : undefined,
+    contract_settledment_price:
+      rawData.contract_settledment_price !== null
+        ? Number(rawData.contract_settledment_price)
+        : null,
+    contract_paid_price:
+      rawData.contract_paid_price !== null ? Number(rawData.contract_paid_price) : 0, // 默认为 0
+    contract_paid_count_number:
+      rawData.contract_paid_count_number !== null ? Number(rawData.contract_paid_count_number) : 0, // 默认为 0
     // 字符串字段处理（兼容 undefined，避免 String(undefined) 转为 "undefined"）
-    contract_type: rawData.contract_type !== null ? String(rawData.contract_type).trim() : undefined,
-    contract_settledment_status: getSettlementStatus(rawData.contract_settledment_status)
+    contract_type:
+      rawData.contract_type !== null ? String(rawData.contract_type).trim() : undefined,
+    contract_settledment_status: getSettlementStatus(rawData.contract_settledment_status),
   }
   return formattedData
 }
@@ -158,7 +161,7 @@ const assetCurrentStatusMapping: Record<string, string> = {
 /**
  * 根据英文状态获取中文显示文本
  * @param status - 英文状态（可能一undefined 或 null）
- * @returns 中文状态，若未匹配则返回 ' 
+ * @returns 中文状态，若未匹配则返回 '
  */
 export function getAssetStatusText(status?: string | null): string {
   if (!status) return '未知'
@@ -233,7 +236,6 @@ const USER_STATUS_DISPLAY_MAPPING: Record<EmployeeStatus, string> = {
   [EmployeeStatus.ACTIVE]: '在职',
   [EmployeeStatus.LEFT]: '离职',
   [EmployeeStatus.RETIREMENT]: '退休',
-
 }
 // 🌟 新增：验证用户状态合法性校验
 const validateUserStatus = (status: string): EmployeeStatus | null => {
@@ -275,7 +277,7 @@ const transformAndValidateExcelUser = (
   }
 
   // 校验并转换状态
-  const statusValue = excelData.状态?? ''
+  const statusValue = excelData.状态 ?? ''
   const validStatus = validateUserStatus(statusValue)
   if (!validStatus) {
     result.validationStatus = 'error'
@@ -319,7 +321,7 @@ const transformAndValidateExcelDepartment = (
 }
 
 const outassetStatusMapping: Record<string, string> = {
-  recycled_pending:'已回收待发放',
+  recycled_pending: '已回收待发放',
   in_use: '在用',
   damaged: '待报废',
   scrapped: '已报废',
@@ -327,7 +329,7 @@ const outassetStatusMapping: Record<string, string> = {
 /**
  * 根据英文状态获取中文显示文本
  * @param status - 英文状态（可能一undefined 或 null）
- * @returns 中文状态，若未匹配则返回 ' 
+ * @returns 中文状态，若未匹配则返回 '
  */
 export function getOutAssetStatusText(status?: string | null): string {
   if (!status) return '未知'

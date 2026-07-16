@@ -125,7 +125,9 @@ export function useRecycleFormSubmit(options: {
     } catch (error: unknown) {
       const msg = isAxiosError(error)
         ? error.response?.data?.message || '操作失败'
-        : error instanceof Error ? error.message : '未知错误'
+        : error instanceof Error
+          ? error.message
+          : '未知错误'
       ElMessage.error(msg)
     } finally {
       submitting.value = false

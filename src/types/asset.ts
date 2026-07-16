@@ -144,28 +144,28 @@ export interface AssetSimpleReturn {
   asset_name: string
   recordcode: string
   asset_purchase_number: number
-  asset_applicant_jobcode:string | null
-  asset_contract_code:string | null
-  asset_current_status:AssetCurrentStatus | string
-  asset_description:string | null
-  asset_entry_date:string | null
-  asset_entry_person_jobcode:string | null
-  asset_manager_jobcode:string | null
-  asset_purchase_date:string | null
-  asset_purchase_price:string
-  asset_specification:string | null
-  asset_storage_code:string | null
-  asset_type_code:string
-  asset_using_location:string | null
-  asset_warranty_period:number | null
-  is_active:boolean
-  return_asset_category:string
-  return_asset_type_code:string
-  return_asset_type_name:string
-  return_contract_code:string | null
-  return_contract_name:string | null
-  return_storage_code:string | null
-  return_storage_name:string | null
+  asset_applicant_jobcode: string | null
+  asset_contract_code: string | null
+  asset_current_status: AssetCurrentStatus | string
+  asset_description: string | null
+  asset_entry_date: string | null
+  asset_entry_person_jobcode: string | null
+  asset_manager_jobcode: string | null
+  asset_purchase_date: string | null
+  asset_purchase_price: string
+  asset_specification: string | null
+  asset_storage_code: string | null
+  asset_type_code: string
+  asset_using_location: string | null
+  asset_warranty_period: number | null
+  is_active: boolean
+  return_asset_category: string
+  return_asset_type_code: string
+  return_asset_type_name: string
+  return_contract_code: string | null
+  return_contract_name: string | null
+  return_storage_code: string | null
+  return_storage_name: string | null
 }
 
 /**
@@ -294,7 +294,7 @@ export interface AssetListResponse {
 }
 
 export interface AssetListSimpleResponse {
-   /** 总记录数 */
+  /** 总记录数 */
   count: number
   /** 下一页链接 */
   next: string | null

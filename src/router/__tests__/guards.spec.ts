@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getDecryptedToken } from '@/utils/tokenCrypto'
-import { useAuthStore } from '@/stores/auth'
-import { useAppStore } from '@/stores/app'
 import { ElMessage } from 'element-plus'
 import { setupAuthGuard } from '../guards'
 
@@ -63,8 +61,12 @@ describe('Router Guards', () => {
     mockAuthStore.userRole = 'regular_user'
 
     mockRouter = {
-      beforeEach: vi.fn((cb: any) => { beforeEachCallback = cb }),
-      afterEach: vi.fn((cb: any) => { afterEachCallback = cb }),
+      beforeEach: vi.fn((cb: any) => {
+        beforeEachCallback = cb
+      }),
+      afterEach: vi.fn((cb: any) => {
+        afterEachCallback = cb
+      }),
     }
   })
 
@@ -226,22 +228,21 @@ describe('Router Guards', () => {
       expect(result).toBe(true)
     })
 
-    it.each([
-      '/main/assettypedetails',
-      '/main/userdetails',
-      '/main/departmentdetails',
-    ])('should deny regular_user on %s', async (path) => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
-      mockAuthStore.isLoggedIn = true
-      mockAuthStore.access_token = 'valid-token'
-      mockAuthStore.userRole = 'regular_user'
-      mockAuthStore.authInfo = { auth_id: 1, auth_username: 'test' }
+    it.each(['/main/assettypedetails', '/main/userdetails', '/main/departmentdetails'])(
+      'should deny regular_user on %s',
+      async (path) => {
+        ;(getDecryptedToken as any).mockReturnValue('valid-token')
+        mockAuthStore.isLoggedIn = true
+        mockAuthStore.access_token = 'valid-token'
+        mockAuthStore.userRole = 'regular_user'
+        mockAuthStore.authInfo = { auth_id: 1, auth_username: 'test' }
 
-      setupAndCapture()
+        setupAndCapture()
 
-      const result = await beforeEachCallback({ path, meta: {} }, { path: '/' })
-      expect(result).toBe('/main')
-    })
+        const result = await beforeEachCallback({ path, meta: {} }, { path: '/' })
+        expect(result).toBe('/main')
+      },
+    )
   })
 
   describe('roleWhitelist — dept_manager + system_admin routes', () => {
@@ -441,10 +442,7 @@ describe('Router Guards', () => {
 
       setupAndCapture()
 
-      const result = await beforeEachCallback(
-        { path: '/login', meta: {} },
-        { path: '/main' },
-      )
+      const result = await beforeEachCallback({ path: '/login', meta: {} }, { path: '/main' })
       expect(result).toBe('/main')
     })
 
@@ -452,10 +450,7 @@ describe('Router Guards', () => {
       ;(getDecryptedToken as any).mockReturnValue(null)
       setupAndCapture()
 
-      const result = await beforeEachCallback(
-        { path: '/main', meta: {} },
-        { path: '/' },
-      )
+      const result = await beforeEachCallback({ path: '/main', meta: {} }, { path: '/' })
       expect(result).toBe('/login')
       expect(ElMessage.warning).toHaveBeenCalledWith('请先登录')
     })
@@ -469,10 +464,7 @@ describe('Router Guards', () => {
 
       setupAndCapture()
 
-      const result = await beforeEachCallback(
-        { path: '/main', meta: {} },
-        { path: '/' },
-      )
+      const result = await beforeEachCallback({ path: '/main', meta: {} }, { path: '/' })
       expect(result).toBe('/login')
       expect(mockSilentLogout).toHaveBeenCalled()
       expect(ElMessage.error).toHaveBeenCalledWith('登录已过期，请重新登录')

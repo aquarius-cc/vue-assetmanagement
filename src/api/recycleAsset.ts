@@ -34,12 +34,14 @@ export const recycleAssetAPI = {
    * @returns 回收资产详情
    */
   getRecycleAssetByCode: (outasset_recordcode: string): Promise<RecycleAssetExtended> => {
-    return unwrapResponse(request.get<RecycleAssetExtended>(
-      `/assets/recycle-assets/${outasset_recordcode}/`,
-      undefined,
-      true, // 使用缓存
-      300000, // 缓存时间 5 分钟
-    ))
+    return unwrapResponse(
+      request.get<RecycleAssetExtended>(
+        `/assets/recycle-assets/${outasset_recordcode}/`,
+        undefined,
+        true, // 使用缓存
+        300000, // 缓存时间 5 分钟
+      ),
+    )
   },
 
   /**
@@ -62,7 +64,9 @@ export const recycleAssetAPI = {
     if (!recordcode) {
       throw new Error('recordcode is required for update')
     }
-    return unwrapResponse(request.put<RecycleAssetExtended>(`/assets/recycle-assets/${recordcode}/`, data))
+    return unwrapResponse(
+      request.put<RecycleAssetExtended>(`/assets/recycle-assets/${recordcode}/`, data),
+    )
   },
 
   /**
@@ -95,7 +99,9 @@ export const recycleAssetAPI = {
    *   前端 recycle_asset_recycle_person_jobcode → 顶层 recycle_asset_recycle_person_jobcode
    *   每条 outasset_recordcode → items[].recycle_outasset_code
    */
-  batchCreateRecycleAssets: (data: RecycleAssetBatchCreateForm): Promise<RecycleAssetBatchCreateResult> => {
+  batchCreateRecycleAssets: (
+    data: RecycleAssetBatchCreateForm,
+  ): Promise<RecycleAssetBatchCreateResult> => {
     return unwrapResponse(
       request.post<RecycleAssetBatchCreateResult>('/assets/recycle-assets/batch-create/', data),
     )
@@ -107,7 +113,9 @@ export const recycleAssetAPI = {
    * @returns 回收记录列表响应
    */
   getRecycleAssetsByAsset: (asset_code: string): Promise<RecycleAssetListResponse> => {
-    return unwrapResponse(request.get<RecycleAssetListResponse>(`/assets/recycle-assets/by-asset/${asset_code}/`))
+    return unwrapResponse(
+      request.get<RecycleAssetListResponse>(`/assets/recycle-assets/by-asset/${asset_code}/`),
+    )
   },
 
   /**
@@ -116,8 +124,10 @@ export const recycleAssetAPI = {
    * @returns 回收记录列表响应
    */
   getRecycleAssetByOutAsset: (outasset_recordcode: string): Promise<RecycleAssetListResponse> => {
-    return unwrapResponse(request.get<RecycleAssetListResponse>(
-      `/assets/recycle-assets/by-outasset/${outasset_recordcode}/`
-    ))
+    return unwrapResponse(
+      request.get<RecycleAssetListResponse>(
+        `/assets/recycle-assets/by-outasset/${outasset_recordcode}/`,
+      ),
+    )
   },
 }

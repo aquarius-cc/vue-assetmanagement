@@ -373,9 +373,7 @@ const handleBatchDelete = async (rows: EmployeeExtended[] | undefined) => {
   }
 
   // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows
-    .map((row) => row.employee_jobcode)
-    .filter((code): code is string => !!code)
+  const codes = rows.map((row) => row.employee_jobcode).filter((code): code is string => !!code)
 
   if (codes.length === 0) {
     ElMessage.error('无法删除：选中的数据缺少唯一标识')
@@ -417,13 +415,10 @@ const handleMaskBack = () => {
  */
 const handleExportExcel = async () => {
   // 创建部门映射，用于导出时显示部门名称
-  const departmentMapping = departmentStore.list.reduce<Record<string, string>>(
-    (acc, dept) => {
-      acc[dept.department_code] = dept.department_name
-      return acc
-    },
-    {},
-  )
+  const departmentMapping = departmentStore.list.reduce<Record<string, string>>((acc, dept) => {
+    acc[dept.department_code] = dept.department_name
+    return acc
+  }, {})
 
   // 定义导出列配置
   const exportColumns: ColumnConfig<EmployeeExtended>[] = [

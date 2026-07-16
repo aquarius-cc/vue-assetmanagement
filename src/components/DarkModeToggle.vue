@@ -11,7 +11,11 @@ const { isDark, toggleDark } = useDarkMode()
 </script>
 
 <template>
-  <div class="dark-mode-toggle" @click="toggleDark" :title="isDark ? '切换到亮色模式' : '切换到暗色模式'">
+  <div
+    class="dark-mode-toggle"
+    @click="toggleDark"
+    :title="isDark ? '切换到亮色模式' : '切换到暗色模式'"
+  >
     <el-icon class="toggle-icon">
       <Sunny v-if="isDark" />
       <Moon v-else />
@@ -35,7 +39,7 @@ const { isDark, toggleDark } = useDarkMode()
   color: var(--text-primary);
   background-color: var(--background-color-light);
   border: 1px solid var(--border-color);
-  
+
   &:hover {
     background-color: var(--opacity-primary-light);
     color: var(--color-primary);
@@ -43,7 +47,7 @@ const { isDark, toggleDark } = useDarkMode()
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
-  
+
   &:active {
     transform: translateY(0);
   }
@@ -52,7 +56,7 @@ const { isDark, toggleDark } = useDarkMode()
 .toggle-icon {
   font-size: 18px;
   transition: transform 0.3s ease;
-  
+
   .dark-mode-toggle:hover & {
     transform: rotate(15deg);
   }
@@ -68,7 +72,7 @@ const { isDark, toggleDark } = useDarkMode()
 html.dark .dark-mode-toggle {
   background-color: var(--background-color-light);
   border-color: var(--border-color);
-  
+
   &:hover {
     background-color: var(--opacity-primary-light);
     border-color: var(--color-primary);

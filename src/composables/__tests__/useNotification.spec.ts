@@ -123,7 +123,15 @@ describe('useNotification', () => {
     const { notifications, unreadCount, markAsRead } = useNotification()
 
     notifications.value = [
-      { id: 1, type: 'system', title: 'T', message: 'M', priority: 'medium', is_read: false, created_at: '' },
+      {
+        id: 1,
+        type: 'system',
+        title: 'T',
+        message: 'M',
+        priority: 'medium',
+        is_read: false,
+        created_at: '',
+      },
     ]
     unreadCount.value = 1
 
@@ -136,7 +144,15 @@ describe('useNotification', () => {
     const { notifications, unreadCount, markAsRead } = useNotification()
 
     notifications.value = [
-      { id: 1, type: 'system', title: 'T', message: 'M', priority: 'medium', is_read: true, created_at: '' },
+      {
+        id: 1,
+        type: 'system',
+        title: 'T',
+        message: 'M',
+        priority: 'medium',
+        is_read: true,
+        created_at: '',
+      },
     ]
     unreadCount.value = 0
 
@@ -148,8 +164,24 @@ describe('useNotification', () => {
     const { notifications, unreadCount, markAllAsRead } = useNotification()
 
     notifications.value = [
-      { id: 1, type: 'system', title: 'T1', message: 'M1', priority: 'medium', is_read: false, created_at: '' },
-      { id: 2, type: 'system', title: 'T2', message: 'M2', priority: 'low', is_read: false, created_at: '' },
+      {
+        id: 1,
+        type: 'system',
+        title: 'T1',
+        message: 'M1',
+        priority: 'medium',
+        is_read: false,
+        created_at: '',
+      },
+      {
+        id: 2,
+        type: 'system',
+        title: 'T2',
+        message: 'M2',
+        priority: 'low',
+        is_read: false,
+        created_at: '',
+      },
     ]
     unreadCount.value = 2
 

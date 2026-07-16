@@ -30,7 +30,6 @@
 </template>
 
 <script lang="ts" setup>
-
 import { useRoute } from 'vue-router'
 import AsideMenu from '@/components/AsideMenu.vue'
 import { computed } from 'vue'
@@ -41,7 +40,7 @@ const appStore = useAppStore()
 
 // 侧边栏宽度：折叠时 64px（仅图标），展开时 200px（图标+文字）
 // Element Plus el-menu 折叠后宽度固定为 64px
-const asideWidth = computed(() => appStore.sidebarCollapsed ? '64px' : '200px')
+const asideWidth = computed(() => (appStore.sidebarCollapsed ? '64px' : '200px'))
 
 // 动态计算需要缓存的组件名称（从路由 meta 中获取）
 const keepAliveComponents = computed<(string | RegExp)[]>(() => {

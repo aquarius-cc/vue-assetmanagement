@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAppStore } from '../app'
 
@@ -9,9 +9,15 @@ describe('AppStore', () => {
     let store: Record<string, string> = {}
     return {
       getItem: vi.fn((key: string) => store[key] ?? null),
-      setItem: vi.fn((key: string, value: string) => { store[key] = value }),
-      removeItem: vi.fn((key: string) => { delete store[key] }),
-      clear: vi.fn(() => { store = {} }),
+      setItem: vi.fn((key: string, value: string) => {
+        store[key] = value
+      }),
+      removeItem: vi.fn((key: string) => {
+        delete store[key]
+      }),
+      clear: vi.fn(() => {
+        store = {}
+      }),
     }
   })()
 
@@ -79,10 +85,7 @@ describe('AppStore', () => {
 
   describe('setBreadcrumbs', () => {
     it('应该设置面包屑导航', () => {
-      const crumbs = [
-        { name: '首页', path: '/' },
-        { name: '资产管理' },
-      ]
+      const crumbs = [{ name: '首页', path: '/' }, { name: '资产管理' }]
       store.setBreadcrumbs(crumbs)
       expect(store.breadcrumbs).toEqual(crumbs)
     })
@@ -109,7 +112,9 @@ describe('AppStore', () => {
       store.setTheme('dark')
       expect(document.documentElement.classList.toggle).toHaveBeenCalledWith('dark', true)
 
-      vi.mocked(document.documentElement.classList.toggle).mockReturnValue(false as unknown as DOMTokenList)
+      vi.mocked(document.documentElement.classList.toggle).mockReturnValue(
+        false as unknown as DOMTokenList,
+      )
       store.setTheme('light')
       expect(document.documentElement.classList.toggle).toHaveBeenCalledWith('dark', false)
     })
@@ -141,7 +146,10 @@ describe('AppStore', () => {
       })
       store.initAppState()
       expect(store.primaryColor).toBe('#FF0000')
-      expect(document.documentElement.style.setProperty).toHaveBeenCalledWith('--el-color-primary', '#FF0000')
+      expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
+        '--el-color-primary',
+        '#FF0000',
+      )
     })
 
     it('应该从 localStorage 恢复应用设置', () => {

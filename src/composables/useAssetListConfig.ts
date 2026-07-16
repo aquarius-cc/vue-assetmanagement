@@ -20,7 +20,13 @@ export function useAssetListConfig() {
     { key: 'asset_code', label: '编码', type: 'text', placeholder: '资产编码', span: 4 },
     { key: 'asset_name', label: '名称', type: 'text', placeholder: '资产名称', span: 4 },
     { key: 'asset_brand', label: '品牌', type: 'text', placeholder: '品牌名称', span: 4 },
-    { key: 'asset_specification', label: '型号规格', type: 'text', placeholder: '型号规格', span: 4 },
+    {
+      key: 'asset_specification',
+      label: '型号规格',
+      type: 'text',
+      placeholder: '型号规格',
+      span: 4,
+    },
     {
       key: 'asset_type_category',
       label: '资产分类',
@@ -32,10 +38,19 @@ export function useAssetListConfig() {
       key: 'asset_current_status',
       label: '当前状态',
       type: 'select',
-      options: Object.entries(assetCurrentStatusMapping).map(([value, label]) => ({ label, value })),
+      options: Object.entries(assetCurrentStatusMapping).map(([value, label]) => ({
+        label,
+        value,
+      })),
       span: 4,
     },
-    { key: 'asset_contract_name', label: '合同名称', type: 'text', placeholder: '合同名称', span: 4 },
+    {
+      key: 'asset_contract_name',
+      label: '合同名称',
+      type: 'text',
+      placeholder: '合同名称',
+      span: 4,
+    },
     { key: 'asset_contract', label: '合同编码', type: 'text', placeholder: '合同编码', span: 4 },
   ]
 
@@ -54,15 +69,21 @@ export function useAssetListConfig() {
       pagination: {
         page: {
           get: () => assetStore.pagination.page,
-          set: (val: number) => { assetStore.pagination.page = val },
+          set: (val: number) => {
+            assetStore.pagination.page = val
+          },
         },
         page_size: {
           get: () => assetStore.pagination.page_size,
-          set: (val: number) => { assetStore.pagination.page_size = val },
+          set: (val: number) => {
+            assetStore.pagination.page_size = val
+          },
         },
         total: {
           get: () => assetStore.pagination.total,
-          set: (val: number) => { assetStore.pagination.total = val },
+          set: (val: number) => {
+            assetStore.pagination.total = val
+          },
         },
       },
       list: computed(() => assetStore.list),
@@ -105,7 +126,12 @@ export function useAssetListConfig() {
     { title: '型号规格', key: 'asset_specification', default: '' },
     { title: '品牌', key: 'asset_brand', default: '' },
     { title: '单位', key: 'asset_unit', default: '' },
-    { title: '单价', key: 'asset_purchase_price', default: '', formatter: (v: unknown) => String(v ?? '0') },
+    {
+      title: '单价',
+      key: 'asset_purchase_price',
+      default: '',
+      formatter: (v: unknown) => String(v ?? '0'),
+    },
     { title: '采购数量', key: 'asset_purchase_number', default: '' },
     { title: '采购日期', key: 'asset_purchase_date', default: '' },
     { title: '质保期（年）', key: 'asset_warranty_period', default: '0' },

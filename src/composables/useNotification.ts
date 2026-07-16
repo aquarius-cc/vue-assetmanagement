@@ -127,10 +127,13 @@ export function useNotification() {
    */
   function scheduleReconnect() {
     if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return
-    reconnectTimer = setTimeout(() => {
-      reconnectAttempts++
-      connect()
-    }, RECONNECT_DELAY * Math.min(reconnectAttempts + 1, 5))
+    reconnectTimer = setTimeout(
+      () => {
+        reconnectAttempts++
+        connect()
+      },
+      RECONNECT_DELAY * Math.min(reconnectAttempts + 1, 5),
+    )
   }
 
   /**

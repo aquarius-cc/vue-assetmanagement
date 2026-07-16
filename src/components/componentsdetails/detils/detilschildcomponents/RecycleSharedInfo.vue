@@ -104,7 +104,10 @@ defineProps<{
   }
   storages: Storage[]
   recyclePersonName: string
-  userSuggestions: (queryString: string, cb: (results: (EmployeeExtended & { value: string })[]) => void) => void
+  userSuggestions: (
+    queryString: string,
+    cb: (results: (EmployeeExtended & { value: string })[]) => void,
+  ) => void
   disabled?: boolean
 }>()
 

@@ -18,12 +18,14 @@ export const foundAssetAPI = {
   },
 
   getFoundAssetByCode: (recordcode: string): Promise<FoundAssetExtended> => {
-    return unwrapResponse(request.get<FoundAssetExtended>(
-      `/assets/found-assets/${recordcode}/`,
-      undefined,
-      true,
-      300000,
-    ))
+    return unwrapResponse(
+      request.get<FoundAssetExtended>(
+        `/assets/found-assets/${recordcode}/`,
+        undefined,
+        true,
+        300000,
+      ),
+    )
   },
 
   createFoundAsset: (data: FoundAssetCreateForm): Promise<FoundAssetExtended> => {
@@ -35,7 +37,9 @@ export const foundAssetAPI = {
     if (!recordcode) {
       throw new Error('recordcode is required for update')
     }
-    return unwrapResponse(request.put<FoundAssetExtended>(`/assets/found-assets/${recordcode}/`, data))
+    return unwrapResponse(
+      request.put<FoundAssetExtended>(`/assets/found-assets/${recordcode}/`, data),
+    )
   },
 
   deleteFoundAsset: (recordcode: string): Promise<void> => {
@@ -51,6 +55,8 @@ export const foundAssetAPI = {
   },
 
   getFoundAssetsByAsset: (asset_code: string): Promise<FoundAssetListResponse> => {
-    return unwrapResponse(request.get<FoundAssetListResponse>(`/assets/found-assets/by-asset/${asset_code}/`))
+    return unwrapResponse(
+      request.get<FoundAssetListResponse>(`/assets/found-assets/by-asset/${asset_code}/`),
+    )
   },
 }

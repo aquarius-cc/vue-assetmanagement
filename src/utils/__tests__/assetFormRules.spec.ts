@@ -7,7 +7,7 @@ describe('assetFormRules', () => {
       const nameRules = assetFormRules.asset_name as Array<Record<string, unknown>>
       expect(nameRules).toBeDefined()
       expect(nameRules.length).toBeGreaterThanOrEqual(2)
-      
+
       const requiredRule = nameRules.find((rule: Record<string, unknown>) => rule.required === true)
       expect(requiredRule).toBeDefined()
       expect(requiredRule?.message).toBe('请输入资产名称')
@@ -16,7 +16,7 @@ describe('assetFormRules', () => {
     it('has min/max length rules', () => {
       const nameRules = assetFormRules.asset_name as Array<Record<string, unknown>>
       const lengthRule = nameRules.find((rule: Record<string, unknown>) => rule.min !== undefined)
-      
+
       expect(lengthRule).toBeDefined()
       expect(lengthRule?.min).toBe(2)
       expect(lengthRule?.max).toBe(100)
@@ -29,7 +29,7 @@ describe('assetFormRules', () => {
       const typeRules = assetFormRules.asset_type as Array<Record<string, unknown>>
       expect(typeRules).toBeDefined()
       expect(typeRules.length).toBe(1)
-      
+
       const requiredRule = typeRules[0]
       expect(requiredRule.required).toBe(true)
       expect(requiredRule.message).toBe('请选择资产类型')
@@ -41,8 +41,10 @@ describe('assetFormRules', () => {
       const priceRules = assetFormRules.asset_purchase_price as Array<Record<string, unknown>>
       expect(priceRules).toBeDefined()
       expect(priceRules.length).toBeGreaterThanOrEqual(2)
-      
-      const requiredRule = priceRules.find((rule: Record<string, unknown>) => rule.required === true)
+
+      const requiredRule = priceRules.find(
+        (rule: Record<string, unknown>) => rule.required === true,
+      )
       expect(requiredRule).toBeDefined()
       expect(requiredRule?.message).toBe('请输入单价')
     })
@@ -50,7 +52,7 @@ describe('assetFormRules', () => {
     it('has number validation rule', () => {
       const priceRules = assetFormRules.asset_purchase_price as Array<Record<string, unknown>>
       const numberRule = priceRules.find((rule: Record<string, unknown>) => rule.type === 'number')
-      
+
       expect(numberRule).toBeDefined()
       expect(numberRule?.min).toBe(0)
       expect(numberRule?.message).toBe('单价不能为负数')
@@ -62,7 +64,7 @@ describe('assetFormRules', () => {
       const dateRules = assetFormRules.asset_purchase_date as Array<Record<string, unknown>>
       expect(dateRules).toBeDefined()
       expect(dateRules.length).toBe(1)
-      
+
       const requiredRule = dateRules[0]
       expect(requiredRule.required).toBe(true)
       expect(requiredRule.message).toBe('请选择采购日期')
@@ -74,7 +76,7 @@ describe('assetFormRules', () => {
       const dateRules = assetFormRules.asset_entry_date as Array<Record<string, unknown>>
       expect(dateRules).toBeDefined()
       expect(dateRules.length).toBe(1)
-      
+
       const requiredRule = dateRules[0]
       expect(requiredRule.required).toBe(true)
       expect(requiredRule.message).toBe('请选择录入日期')

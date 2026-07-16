@@ -141,7 +141,13 @@ export function useRecycleAssetDetailCards(data: Ref<RecycleAssetDetailCardData>
       fields: [
         [{ label: '使用人', value: d?.employee_name, defaultValue: 'N/A' }],
         [{ label: '使用人工号', value: d?.employee_jobcode, defaultValue: 'N/A' }],
-        [{ label: '使用人部闀', value: d?.employee_department?.department_name, defaultValue: 'N/A' }],
+        [
+          {
+            label: '使用人部闀',
+            value: d?.employee_department?.department_name,
+            defaultValue: 'N/A',
+          },
+        ],
       ],
     }
   })
@@ -160,8 +166,7 @@ export function useRecycleAssetDetailCards(data: Ref<RecycleAssetDetailCardData>
         [
           {
             label: '回收人姓名',
-            value:
-              d?.recycle_person_name,
+            value: d?.recycle_person_name,
             defaultValue: 'N/A',
           },
         ],

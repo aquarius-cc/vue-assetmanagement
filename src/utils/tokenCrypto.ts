@@ -20,16 +20,14 @@ const CRYPTO_KEY = import.meta.env.VITE_TOKEN_CRYPTO_KEY
 if (!CRYPTO_KEY) {
   throw new Error(
     '[tokenCrypto] 缺少必要环境变量 VITE_TOKEN_CRYPTO_KEY。\n' +
-    '请在 .env.development 或 .env.production 中配置此变量。\n' +
-    '示例：VITE_TOKEN_CRYPTO_KEY=your-unique-secret-key-here'
+      '请在 .env.development 或 .env.production 中配置此变量。\n' +
+      '示例：VITE_TOKEN_CRYPTO_KEY=your-unique-secret-key-here',
   )
 }
 
 // 密钥质量验证：至少16个字符，防止弱密钥
 if (CRYPTO_KEY.length < 16) {
-  console.warn(
-    '[tokenCrypto] 加密密钥长度不足16字符，建议使用更长的密钥以提高安全性'
-  )
+  console.warn('[tokenCrypto] 加密密钥长度不足16字符，建议使用更长的密钥以提高安全性')
 }
 
 // 旧版本默认密钥（仅用于兼容性检测，不用于加密）

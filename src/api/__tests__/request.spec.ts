@@ -41,14 +41,7 @@ vi.mock('@/utils/tokenCrypto', () => ({
   clearAllAuthTokens: vi.fn(),
 }))
 
-import {
-  unwrapResponse,
-  get,
-  post,
-  put,
-  patch,
-  del,
-} from '@/api/request'
+import { unwrapResponse, get, post, put, patch, del } from '@/api/request'
 
 describe('request', () => {
   beforeEach(() => {
@@ -57,7 +50,9 @@ describe('request', () => {
 
   describe('unwrapResponse', () => {
     it('returns data when code is 0', async () => {
-      const result = await unwrapResponse(Promise.resolve({ code: 0, data: { id: 1 }, message: '' }))
+      const result = await unwrapResponse(
+        Promise.resolve({ code: 0, data: { id: 1 }, message: '' }),
+      )
       expect(result).toEqual({ id: 1 })
     })
 

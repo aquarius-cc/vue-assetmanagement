@@ -14,7 +14,7 @@
 export enum ApprovalStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
-  REJECTED = 'rejected'
+  REJECTED = 'rejected',
 }
 
 // ==================== 基础接口定义 ====================
@@ -79,8 +79,6 @@ export interface DamagedAsset extends DamagedAssetCreateForm {
   /** 规格型号 */
   damaged_asset_specification: string | null
 }
-
-
 
 // ==================== 查询参数接口 ====================
 

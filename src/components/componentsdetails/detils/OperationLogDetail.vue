@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   OperationLogDetail.vue
   操作日志详情页面（只读展示）
   功能：展示操作日志的完整信息，变更详情（changes 字段）格式化展示，支持导出 Excel
@@ -6,9 +6,7 @@
 <template>
   <div class="operation-log-detail-page" v-loading="isLoading" element-loading-text="加载中...">
     <div class="child-page-header">
-      <h1 class="page-title">
-        操作日志详情
-      </h1>
+      <h1 class="page-title">操作日志详情</h1>
       <div class="action-buttons">
         <el-button type="primary" :icon="Back" @click="handleBack">返回</el-button>
         <el-button type="warning" :icon="Download" @click="handleExport">导出</el-button>
@@ -139,6 +137,7 @@ import type { ColumnConfig } from '@/utils/excelExporter'
 import type { OperationLog } from '@/utils/OperationLog'
 import { operationTypeMapping, operationTypeTagMapping } from '@/utils/OperationLog'
 import { formatDate } from '@/utils/Format'
+import type { ChangeRecord } from '@/types/form-helpers'
 
 // ===== 操作类型辅助函数 =====
 
@@ -158,18 +157,6 @@ const getOperationTypeTagType = (
 const getOperationTypeText = (type: string | null | undefined): string => {
   if (!type) return '未知'
   return operationTypeMapping[type] || type
-}
-
-// ===== 变更详情解析 =====
-
-/** 变更记录条目接口 */
-interface ChangeRecord {
-  /** 字段名称 */
-  field: string
-  /** 变更前的值 */
-  old_value: string
-  /** 变更后的值 */
-  new_value: string
 }
 
 /**

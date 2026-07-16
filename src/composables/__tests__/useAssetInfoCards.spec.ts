@@ -7,7 +7,10 @@ vi.mock('@/utils/Format', () => ({
   formatNumber: vi.fn((v: string | number) => String(v)),
   getStatusDisplay: vi.fn((v: string | undefined) => (v ? `status_${v}` : '')),
   contractTypeMapping: { purchase: '采购合同', lease: '租赁合同' } as Record<string, string>,
-  contractSettlementStatusMapping: { settled: '已结算', pending: '未结算' } as Record<string, string>,
+  contractSettlementStatusMapping: { settled: '已结算', pending: '未结算' } as Record<
+    string,
+    string
+  >,
   storageMapping: { warehouse: '仓库', office: '办公区' } as Record<string, string>,
 }))
 
@@ -20,7 +23,13 @@ const createMockAsset = (overrides?: Partial<AssetDetail>): AssetDetail =>
     asset_brand: '品牌A',
     asset_unit: '台',
     asset_specification: '规格X',
-    asset_type: { type_code: 'T01', type_name: '电子设备', parent_type_code: 'P01', level: 2, type_description: '描述' },
+    asset_type: {
+      type_code: 'T01',
+      type_name: '电子设备',
+      parent_type_code: 'P01',
+      level: 2,
+      type_description: '描述',
+    },
     asset_using_location: '北京',
     asset_purchase_price: 1000,
     asset_purchase_number: 5,

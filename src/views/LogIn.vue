@@ -354,12 +354,20 @@ const handleKeyPress = (event: KeyboardEvent) => {
 }
 
 .login-btn {
-  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary-light-mid) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-light) 0%,
+    var(--color-primary-light-mid) 100%
+  );
   border: none;
 }
 
 .login-btn:hover {
-  background: linear-gradient(135deg, var(--color-primary-light-mid) 0%, var(--color-primary-light-lighter) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-light-mid) 0%,
+    var(--color-primary-light-lighter) 100%
+  );
 }
 
 .el-form-item:last-child {

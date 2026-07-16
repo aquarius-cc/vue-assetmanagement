@@ -7,11 +7,7 @@ import { ref } from 'vue'
 import { authAPI } from '@/api/auth'
 import { ElMessage } from 'element-plus'
 import type { LoginForm, AuthInfo } from '@/utils/AuthUser'
-import {
-  setEncryptedToken,
-  getDecryptedToken,
-  clearAllAuthTokens
-} from '@/utils/tokenCrypto'
+import { setEncryptedToken, getDecryptedToken, clearAllAuthTokens } from '@/utils/tokenCrypto'
 
 /**
  * 从 JWT Token 中解析 payload（不验证签名，仅解码 Base64）
@@ -96,9 +92,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
       } else if (error && typeof error === 'object' && 'response' in error) {
         // AxiosError：网络请求失败时的错误格式
         const axiosError = error as { response?: { data?: { message?: string } } }
-        errorMessage =
-          axiosError.response?.data?.message ||
-          errorMessage
+        errorMessage = axiosError.response?.data?.message || errorMessage
       }
       // 注意：不再调用 ElMessage.error()，由调用方（LogIn.vue）统一处理错误提示显示
       return { success: false, message: errorMessage }
@@ -257,13 +251,13 @@ export const useAuthStore = defineStore('AuthUser', () => {
     isLoggedIn,
     access_token,
     refresh_token,
-    userRole,           // RBAC 角色
+    userRole, // RBAC 角色
     userDepartmentCode, // RBAC 部门编码
 
     // 操作方法
     login,
-    logout,           // 用户主动退出（调 API + 清本地）
-    silentLogout,     // 静默退出（仅清本地，供路由守卫等场景使用）
+    logout, // 用户主动退出（调 API + 清本地）
+    silentLogout, // 静默退出（仅清本地，供路由守卫等场景使用）
     initAuthState,
     updateAuthInfo,
     // [HR-04] 已移除 changePassword 导出，原因：后端端点已无效

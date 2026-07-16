@@ -123,11 +123,11 @@ export function useRecycleFormAssociations() {
   // 由于 ref 在模板中自动解包，使用时直接写 storages 即可（Vue 模板中自动取 .value）
   return {
     // 数据（响应式）
-    storages,        // 类型 Ref<Storage[]>
-    assetTypes,      // 类型 Ref<AssetType[]>
+    storages, // 类型 Ref<Storage[]>
+    assetTypes, // 类型 Ref<AssetType[]>
     // 状态
-    loading,         // 加载中标志
-    error,           // 错误信息
+    loading, // 加载中标志
+    error, // 错误信息
     // 方法
     loadStorages,
     loadAssetTypes,

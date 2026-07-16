@@ -6,9 +6,7 @@
 <template>
   <div class="waste-asset-detail-page" v-loading="isLoading" element-loading-text="加载中...">
     <div class="child-page-header">
-      <h1 class="page-title">
-        {{ detailData?.asset_name || '未知资产' }} — 已报废资产详情
-      </h1>
+      <h1 class="page-title">{{ detailData?.asset_name || '未知资产' }} — 已报废资产详情</h1>
       <div class="action-buttons">
         <el-button type="primary" :icon="Back" @click="handleBack">返回</el-button>
         <el-button type="warning" :icon="Download" @click="handleExport">导出</el-button>
@@ -172,7 +170,11 @@ onMounted(async () => {
   } else if (code) {
     // 通过 waste_asset_code 查询列表，取第一条记录
     try {
-      const response = await wasteAssetStore.getList({ waste_asset_code: code, page: 1, page_size: 1 })
+      const response = await wasteAssetStore.getList({
+        waste_asset_code: code,
+        page: 1,
+        page_size: 1,
+      })
       if (response && response.length > 0) {
         detailData.value = response[0]
       } else {

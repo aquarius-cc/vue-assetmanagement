@@ -35,11 +35,17 @@
             <el-menu-item index="/main/lostassetdetails">遗失资产</el-menu-item>
             <el-menu-item index="/main/foundassetdetails">找回资产</el-menu-item>
             <el-menu-item index="/main/repairassetdetails">维修记录</el-menu-item>
-            <el-menu-item index="/main/damagedassetdetails" v-if="canApproveDamaged">资产待报废</el-menu-item>
+            <el-menu-item index="/main/damagedassetdetails" v-if="canApproveDamaged"
+              >资产待报废</el-menu-item
+            >
             <el-menu-item index="/main/wasteassetdetails">已报废资产</el-menu-item>
-            <el-menu-item index="/main/unregisteredassetdetails" v-if="canHandleUnregistered">未登记资产</el-menu-item>
+            <el-menu-item index="/main/unregisteredassetdetails" v-if="canHandleUnregistered"
+              >未登记资产</el-menu-item
+            >
             <el-menu-item index="/main/harddisksndetails">硬盘序列号</el-menu-item>
-            <el-menu-item index="/main/assettypedetails" v-if="canManageSystem">资产分类</el-menu-item>
+            <el-menu-item index="/main/assettypedetails" v-if="canManageSystem"
+              >资产分类</el-menu-item
+            >
           </el-sub-menu>
 
           <el-menu-item index="/main/contractdetails" v-if="canManageSystem">
@@ -87,7 +93,7 @@
 
           <!-- P1-8 通知铃铛 -->
           <NotificationBell class="notification-bell" />
-          
+
           <!-- 折叠/展开按钮 -->
           <div class="collapse-toggle" @click="appStore.toggleSidebar">
             <el-icon>
@@ -123,7 +129,8 @@ import NotificationBell from '@/components/commoncomponents/NotificationBell.vue
 const router = useRouter()
 const route = useRoute()
 const appStore = useAppStore()
-const { canManageSystem, canApproveDamaged, canHandleUnregistered, canViewAuditLog } = usePermission()
+const { canManageSystem, canApproveDamaged, canHandleUnregistered, canViewAuditLog } =
+  usePermission()
 
 const currentRoute = ref(route.path)
 
@@ -221,7 +228,7 @@ const handleSelect = (path: string) => {
   margin: 8px;
   border-radius: 8px;
   transition: all 0.3s ease;
-  
+
   &:hover {
     transform: translateY(-1px);
   }

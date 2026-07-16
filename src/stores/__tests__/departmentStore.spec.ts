@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useDepartmentStore, getDepartmentTree, getDepartmentChildren, getDepartmentEmployees, moveDepartment, sortDepartments } from '../departmentStore'
+import {
+  useDepartmentStore,
+  getDepartmentTree,
+  getDepartmentChildren,
+  getDepartmentEmployees,
+  moveDepartment,
+  sortDepartments,
+} from '../departmentStore'
 
 vi.mock('@/api/department', () => ({
   departmentAPI: {
@@ -114,9 +121,9 @@ describe('DepartmentStore', () => {
     })
 
     it('应该校验必填字段', async () => {
-      await expect(
-        store.create({ department_name: '技术部' }),
-      ).rejects.toThrow('department_code is required')
+      await expect(store.create({ department_name: '技术部' })).rejects.toThrow(
+        'department_code is required',
+      )
     })
 
     it('department_name为空时应抛出错误', async () => {
@@ -170,9 +177,9 @@ describe('DepartmentStore', () => {
 
   describe('更新记录', () => {
     it('缺少department_code时应抛出异常', async () => {
-      await expect(
-        store.update({ department_name: '新名字' } as any),
-      ).rejects.toThrow('Missing ID for update')
+      await expect(store.update({ department_name: '新名字' } as any)).rejects.toThrow(
+        'Missing ID for update',
+      )
     })
 
     it('更新成功时应调用API', async () => {
@@ -380,9 +387,7 @@ describe('DepartmentStore', () => {
 
   describe('树形结构扩展方法', () => {
     it('应该调用getDepartmentTree获取部门树', async () => {
-      const mockTree = [
-        { department_code: 'DEP001', department_name: '技术部', children: [] },
-      ]
+      const mockTree = [{ department_code: 'DEP001', department_name: '技术部', children: [] }]
 
       const { departmentAPI } = await import('@/api/department')
       vi.mocked(departmentAPI.getDepartmentTree).mockResolvedValue(mockTree as any)
@@ -431,9 +436,7 @@ describe('DepartmentStore', () => {
     })
 
     it('应该调用getDepartmentChildren获取子部门', async () => {
-      const mockChildren = [
-        { department_code: 'DEP002', department_name: '前端组' },
-      ]
+      const mockChildren = [{ department_code: 'DEP002', department_name: '前端组' }]
 
       const { departmentAPI } = await import('@/api/department')
       vi.mocked(departmentAPI.getDepartmentChildren).mockResolvedValue(mockChildren as any)

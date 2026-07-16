@@ -28,7 +28,14 @@ export function useExcelExport() {
    * 列表导出：弹出选择范围（当前页/全部），确认后导出
    */
   const exportList = async <T>(options: ExportOptions<T>): Promise<void> => {
-    const { entityName, columns, currentData, totalCount, fetchAllData, sheetName = '数据' } = options
+    const {
+      entityName,
+      columns,
+      currentData,
+      totalCount,
+      fetchAllData,
+      sheetName = '数据',
+    } = options
 
     let exportCurrent = false
     let exportAll = false

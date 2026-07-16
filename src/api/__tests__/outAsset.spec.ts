@@ -8,11 +8,13 @@ const { mockRequest, mockUnwrapResponse } = vi.hoisted(() => ({
     patch: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
     delete: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
   },
-  mockUnwrapResponse: vi.fn(async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
-    const res = await promise
-    if (res.code !== 0) throw new Error(res.message || '请求失败')
-    return res.data
-  }),
+  mockUnwrapResponse: vi.fn(
+    async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
+      const res = await promise
+      if (res.code !== 0) throw new Error(res.message || '请求失败')
+      return res.data
+    },
+  ),
 }))
 
 vi.mock('@/api/index', () => ({
@@ -39,7 +41,12 @@ describe('outAssetAPI', () => {
 
   it('getOutAssetByCode calls GET /assets/out-assets/{code}/', async () => {
     await outAssetAPI.getOutAssetByCode('OA001')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/out-assets/OA001/', undefined, true, 300000)
+    expect(mockRequest.get).toHaveBeenCalledWith(
+      '/assets/out-assets/OA001/',
+      undefined,
+      true,
+      300000,
+    )
   })
 
   it('createOutAsset calls POST /assets/out-assets/', async () => {
@@ -54,12 +61,16 @@ describe('outAssetAPI', () => {
 
   it('batchDeleteOutAssets calls POST /assets/out-assets/batch-delete/', async () => {
     await outAssetAPI.batchDeleteOutAssets(['OA001', 'OA002'])
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/out-assets/batch-delete/', { ids: ['OA001', 'OA002'] })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/out-assets/batch-delete/', {
+      ids: ['OA001', 'OA002'],
+    })
   })
 
   it('batchCreateOutAssets calls POST /assets/out-assets/batch-create/', async () => {
     await outAssetAPI.batchCreateOutAssets([{ outasset_code: 'A001' } as never])
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/out-assets/batch-create/', { items: [{ outasset_code: 'A001' }] })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/out-assets/batch-create/', {
+      items: [{ outasset_code: 'A001' }],
+    })
   })
 
   it('getOutAssetsByAsset calls GET /assets/out-assets/by-asset/{code}/', async () => {

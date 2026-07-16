@@ -18,7 +18,7 @@ export const request = {
   post,
   put,
   patch,
-  delete: del,   // 注意：旧代码可能调用 request.delete，这里做映射
+  delete: del, // 注意：旧代码可能调用 request.delete，这里做映射
 }
 
 export { unwrapResponse }

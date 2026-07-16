@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   UnregisteredAssetBatchImport.vue
   未登记资产批量导入页面
   功能：上传 Excel → 数据预览与验证 → 并发批量提交
@@ -32,53 +32,19 @@
         <el-button type="warning" @click="handleExportTemplate">导出模板</el-button>
       </div>
 
-      <div class="import-guide-card">
-        <div class="guide-header">
-          <el-icon><InfoFilled /></el-icon>
-          <span>导入格式参考</span>
-        </div>
-        <div class="guide-content">
-          <div class="guide-section">
-            <div class="section-title">📌 必填列说明</div>
-            <el-table :data="headerExamples" border size="small" style="width: 100%">
-              <el-table-column prop="headerName" label="Excel 表头（中文）" width="180" />
-              <el-table-column prop="field" label="对应字段" width="220" />
-              <el-table-column prop="required" label="必填" width="80">
-                <template #default="{ row }">
-                  <el-tag :type="row.required ? 'danger' : 'info'" size="small">
-                    {{ row.required ? '是' : '否' }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="example" label="示例值" />
-              <el-table-column prop="remark" label="备注" />
-            </el-table>
-          </div>
-          <div class="guide-section">
-            <div class="section-title">📝 示例数据（参考填写）</div>
-            <el-table :data="exampleRows" border size="small" style="width: 100%">
-              <el-table-column
-                v-for="col in exampleColumns"
-                :key="col.prop"
-                :prop="col.prop"
-                :label="col.label"
-                min-width="120"
-              />
-            </el-table>
-          </div>
-          <div class="guide-section">
-            <div class="section-title">⚠️ 注意事项</div>
-            <ul class="notice-list">
-              <li>场景类型、发现日期、发现地点、资产名称为必填项</li>
-              <li>场景类型可选值：s1_no_record / s2_no_outasset / s3_status_mismatch</li>
-              <li>S2/S3 场景下，关联资产编码为必填项</li>
-              <li>日期格式统一为 YYYY-MM-DD</li>
-              <li>Excel 首行必须与「表头说明」中的中文列名完全一致</li>
-              <li>导入前建议先「导出模板」，在模板基础上填写数据</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      <BatchImportGuideCard
+        :header-examples="headerExamples"
+        :example-rows="exampleRows"
+        :example-columns="exampleColumns"
+        :notices="[
+          '场景类型、发现日期、发现地点、资产名称为必填项',
+          '场景类型可选值：s1_no_record / s2_no_outasset / s3_status_mismatch',
+          'S2/S3 场景下，关联资产编码为必填项',
+          '日期格式统一为 YYYY-MM-DD',
+          'Excel 首行必须与「表头说明」中的中文列名完全一致',
+          '导入前建议先「导出模板」，在模板基础上填写数据',
+        ]"
+      />
 
       <div v-if="previewData.length > 0" class="preview-table">
         <h3 class="section-title">
@@ -140,30 +106,22 @@ export default { name: 'UnregisteredAssetBatchImport' }
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
-import { Upload, InfoFilled } from '@element-plus/icons-vue'
+import { Upload } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import ExcelJS from 'exceljs'
 import { useBatchImport } from '@/composables/useBatchImport'
-import type { ValidatedRow } from '@/composables/useBatchImport'
+import {
+  validationTagType,
+  validationTagText,
+  type HeaderExample,
+  type ExampleColumn,
+} from '@/utils/batchImportHelpers'
+import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { useUnregisteredAssetStore } from '@/stores/unregisteredAssetStore'
 import type { UnregisteredAssetCreateForm } from '@/utils/UnregisteredAsset'
 import { ScenarioType } from '@/utils/UnregisteredAsset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
-
-// ===== Excel 行数据接口 =====
-interface UnregisteredAssetExcelRow {
-  scenario_type: string
-  discovery_date: string
-  discovery_location: string
-  asset_name: string
-  asset_brand?: string
-  asset_specification?: string
-  asset_type_code?: string
-  estimated_value?: number | string
-  related_asset_code?: string
-  target_storage_code?: string
-  handle_description?: string
-}
+import type { UnregisteredAssetExcelRow } from '@/types/batch-import'
 
 // ===== 状态与实例 =====
 const router = useRouter()
@@ -276,21 +234,6 @@ const handleFileChange = (uploadFile: UploadFile) => {
   }
 }
 
-// ===== 验证状态标签 =====
-const validationTagType = (row: ValidatedRow<UnregisteredAssetExcelRow>) => {
-  if (row.submitStatus === 'error') return 'danger'
-  if (row.submitStatus === 'success') return 'success'
-  if (row.validationStatus === 'error') return 'danger'
-  return 'success'
-}
-
-const validationTagText = (row: ValidatedRow<UnregisteredAssetExcelRow>) => {
-  if (row.submitStatus === 'error') return '提交失败'
-  if (row.submitStatus === 'success') return '已提交'
-  if (row.validationStatus === 'error') return '验证失败'
-  return '有效'
-}
-
 // ===== 导出模板 =====
 const handleExportTemplate = async () => {
   try {
@@ -341,7 +284,7 @@ const handleExportTemplate = async () => {
 }
 
 // ===== 导入格式参考数据 =====
-const headerExamples = [
+const headerExamples: HeaderExample[] = [
   {
     headerName: '场景类型',
     field: 'scenario_type',
@@ -421,7 +364,7 @@ const headerExamples = [
   },
 ]
 
-const exampleColumns = [
+const exampleColumns: ExampleColumn[] = [
   { prop: 'scenario_type', label: '场景类型' },
   { prop: 'discovery_date', label: '发现日期' },
   { prop: 'discovery_location', label: '发现地点' },
@@ -509,52 +452,6 @@ const goBack = () => {
     margin-top: 8px;
     color: var(--text-secondary);
     font-size: 13px;
-  }
-  .import-guide-card {
-    background-color: var(--card-background-muted);
-    border: 1px solid var(--border-color-light);
-    border-radius: 8px;
-    margin-bottom: 24px;
-    overflow: hidden;
-    .guide-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background-color: var(--color-primary-lighter);
-      padding: 12px 16px;
-      font-weight: 600;
-      color: var(--color-primary-light);
-      border-bottom: 1px solid var(--color-primary-light-border);
-      .el-icon {
-        font-size: 18px;
-      }
-    }
-    .guide-content {
-      padding: 16px;
-      .guide-section {
-        margin-bottom: 20px;
-        &:last-child {
-          margin-bottom: 0;
-        }
-        .section-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--text-primary);
-          margin-bottom: 12px;
-          padding-left: 4px;
-          border-left: 3px solid var(--color-primary-light);
-        }
-      }
-      .notice-list {
-        margin: 0;
-        padding-left: 20px;
-        li {
-          line-height: 1.8;
-          color: var(--text-regular);
-          font-size: 13px;
-        }
-      }
-    }
   }
   .preview-table {
     margin-bottom: 24px;

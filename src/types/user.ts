@@ -16,7 +16,7 @@ import type { Department } from '@/types/department'
 export enum EmployeeStatus {
   ACTIVE = 'active',
   LEFT = 'left',
-  RETIREMENT = 'retirement'
+  RETIREMENT = 'retirement',
 }
 
 // ==================== 基础接口定义 ====================

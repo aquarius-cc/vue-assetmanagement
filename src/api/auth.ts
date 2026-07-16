@@ -72,9 +72,11 @@ export const authAPI = {
   async logout(refreshToken: string): Promise<LogoutResponse> {
     try {
       // 调用后端退出登录接口，携带 refresh_token 使服务端作废 Token
-      const response: LogoutResponse = await unwrapResponse(request.post<LogoutResponse>('/auth/logout/', {
-        refresh: refreshToken,
-      }))
+      const response: LogoutResponse = await unwrapResponse(
+        request.post<LogoutResponse>('/auth/logout/', {
+          refresh: refreshToken,
+        }),
+      )
       return response
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -97,7 +99,8 @@ export const authAPI = {
    */
   async verifyToken(): Promise<VerifyTokenResponse> {
     try {
-      const response: VerifyTokenResponse = await request.post<VerifyTokenResponse>('/auth/token/verify/')
+      const response: VerifyTokenResponse =
+        await request.post<VerifyTokenResponse>('/auth/token/verify/')
       return response
     } catch (error: unknown) {
       if (error instanceof Error) {

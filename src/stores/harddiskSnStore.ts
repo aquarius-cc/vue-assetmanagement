@@ -39,7 +39,8 @@ export const useHardDiskSnStore = createEntityStore<HardDiskSN, PaginationQuery>
     /** 创建硬盘序列号记录 */
     create: (data) => harddiskSnAPI.createHardDiskSN(data as HardDiskSNCreateForm),
     /** 更新硬盘序列号记录 */
-    update: (data) => harddiskSnAPI.updateHardDiskSN(data.harddisksn_asset!, data as HardDiskSNUpdateForm),
+    update: (data) =>
+      harddiskSnAPI.updateHardDiskSN(data.harddisksn_asset!, data as HardDiskSNUpdateForm),
     /** 删除硬盘序列号记录 */
     delete: (code) => harddiskSnAPI.deleteHardDiskSN(code),
   },

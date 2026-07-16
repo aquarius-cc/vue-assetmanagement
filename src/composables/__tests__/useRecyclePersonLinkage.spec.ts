@@ -9,7 +9,9 @@ vi.mock('@/composables/useSuggestionFetcher', () => ({
         return
       }
       try {
-        let items = await (options.fetchData as (q: string) => Promise<unknown[]>)(queryString.trim())
+        let items = await (options.fetchData as (q: string) => Promise<unknown[]>)(
+          queryString.trim(),
+        )
         if (options.filter) {
           items = items.filter(options.filter as (item: unknown) => boolean)
         }
@@ -55,7 +57,9 @@ describe('useRecyclePersonLinkage', () => {
   describe('setName', () => {
     it('sets the name value', () => {
       const { name, setName } = useRecyclePersonLinkage(
-        mockGetByName, mockGetById, mockOnJobcodeChange,
+        mockGetByName,
+        mockGetById,
+        mockOnJobcodeChange,
       )
 
       setName('John')
@@ -66,9 +70,7 @@ describe('useRecyclePersonLinkage', () => {
     it('triggers watch to resolve jobcode', async () => {
       mockGetByName.mockResolvedValue([{ employee_jobcode: 'EMP-001' }])
 
-      const { setName } = useRecyclePersonLinkage(
-        mockGetByName, mockGetById, mockOnJobcodeChange,
-      )
+      const { setName } = useRecyclePersonLinkage(mockGetByName, mockGetById, mockOnJobcodeChange)
 
       setName('John')
       await nextTick()
@@ -82,7 +84,9 @@ describe('useRecyclePersonLinkage', () => {
   describe('handleSelect', () => {
     it('sets name and calls onJobcodeChange', () => {
       const { handleSelect, name } = useRecyclePersonLinkage(
-        mockGetByName, mockGetById, mockOnJobcodeChange,
+        mockGetByName,
+        mockGetById,
+        mockOnJobcodeChange,
       )
 
       const suggestion = {
@@ -102,7 +106,9 @@ describe('useRecyclePersonLinkage', () => {
       mockGetById.mockResolvedValue({ employee_name: 'Bob' })
 
       const { getNameByCode } = useRecyclePersonLinkage(
-        mockGetByName, mockGetById, mockOnJobcodeChange,
+        mockGetByName,
+        mockGetById,
+        mockOnJobcodeChange,
       )
 
       const result = await getNameByCode('EMP-003')
@@ -115,7 +121,9 @@ describe('useRecyclePersonLinkage', () => {
       mockGetById.mockResolvedValue(null)
 
       const { getNameByCode } = useRecyclePersonLinkage(
-        mockGetByName, mockGetById, mockOnJobcodeChange,
+        mockGetByName,
+        mockGetById,
+        mockOnJobcodeChange,
       )
 
       const result = await getNameByCode('EMP-999')
@@ -126,9 +134,7 @@ describe('useRecyclePersonLinkage', () => {
 
   describe('watch behavior', () => {
     it('clears jobcode when name becomes empty', async () => {
-      const { name } = useRecyclePersonLinkage(
-        mockGetByName, mockGetById, mockOnJobcodeChange,
-      )
+      const { name } = useRecyclePersonLinkage(mockGetByName, mockGetById, mockOnJobcodeChange)
 
       name.value = 'John'
       await nextTick()
@@ -142,9 +148,7 @@ describe('useRecyclePersonLinkage', () => {
     it('does not call onJobcodeChange if no employees found', async () => {
       mockGetByName.mockResolvedValue([])
 
-      const { setName } = useRecyclePersonLinkage(
-        mockGetByName, mockGetById, mockOnJobcodeChange,
-      )
+      const { setName } = useRecyclePersonLinkage(mockGetByName, mockGetById, mockOnJobcodeChange)
 
       setName('Unknown')
       await nextTick()
