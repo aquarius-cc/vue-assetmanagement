@@ -37,7 +37,10 @@ export function useBatchImport<TExcel extends object, TApi extends object>(
     parseError.value = ''
     fileRef.value = file
     try {
-      const data = await readExcelFile<TExcel>(file, config.excelHeaderMap)
+      const data = await readExcelFile<TExcel>(
+        file,
+        config.excelHeaderMap as Record<string, string>,
+      )
       previewData.value = data.map((item) => {
         const { valid, errors } = config.validateItem(item)
         return {
