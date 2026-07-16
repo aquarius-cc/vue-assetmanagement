@@ -20,7 +20,7 @@ export function useExportableAssets() {
     loading.value = true
     try {
       const params = { page, page_size: pageSize.value, ...extraParams }
-      const response: AssetListSimpleResponse = await assetAPI.searchExportableAssets(params)
+      const response: AssetListSimpleResponse = await assetAPI.searchAvailableAssets(params)
       list.value = response.results
       total.value = response.count
       currentPage.value = page
