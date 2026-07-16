@@ -24,7 +24,7 @@
       </div>
     </template>
     <!-- 统计数据 -->
-    <div v-if="stats.length > 0" class="statistics">
+    <div v-if="stats && stats.length > 0" class="statistics">
       <div v-for="(stat, idx) in stats" :key="idx" class="stat-item">
         <div class="stat-number" :class="stat.class">{{ stat.value }}</div>
         <div class="stat-label">{{ stat.label }}</div>
