@@ -230,9 +230,7 @@ describe('AuthStore', () => {
   describe('getAuthInfo', () => {
     it('成功获取用户信息时应更新authInfo', async () => {
       const { authAPI } = await import('@/api/auth')
-      const { setEncryptedToken } = vi.mocked(
-        await import('@/utils/tokenCrypto'),
-      )
+      const { setEncryptedToken } = vi.mocked(await import('@/utils/tokenCrypto'))
 
       vi.mocked(authAPI.getCurrentUserProfile).mockResolvedValue({
         auth_id: 1,
@@ -303,9 +301,7 @@ describe('AuthStore', () => {
 
     it('登录成功时应持久化存储认证信息', async () => {
       const { authAPI } = await import('@/api/auth')
-      const { setEncryptedToken } = vi.mocked(
-        await import('@/utils/tokenCrypto'),
-      )
+      const { setEncryptedToken } = vi.mocked(await import('@/utils/tokenCrypto'))
 
       vi.mocked(authAPI.login).mockResolvedValue({
         code: 0,
