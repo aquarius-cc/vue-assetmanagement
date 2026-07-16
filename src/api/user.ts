@@ -41,7 +41,11 @@ export const userAPI = {
    * @param params 分页参数
    * @returns 员工列表响应
    */
-  getUserList: (params: { page: number; page_size: number }): Promise<EmployeeListResponse> => {
+  getUserList: (params: {
+    page: number
+    page_size: number
+    department_code?: string
+  }): Promise<EmployeeListResponse> => {
     return unwrapResponse(request.get<EmployeeListResponse>('/users/employees/', params))
   },
 
@@ -52,6 +56,7 @@ export const userAPI = {
    */
   getFuzzySearch: (params: {
     keyword: string
+    department_code?: string
     page?: number
     page_size?: number
   }): Promise<EmployeeListResponse> => {

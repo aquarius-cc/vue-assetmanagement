@@ -9,7 +9,12 @@
             <span>部门</span>
           </div>
         </template>
-        <DepartmentTree ref="departmentTreeRef" selectable @select="handleDepartmentSelect" />
+        <DepartmentTree
+          ref="departmentTreeRef"
+          :data="departmentData"
+          selectable
+          @select="handleDepartmentSelect"
+        />
       </el-card>
     </div>
 
@@ -77,7 +82,9 @@
 import { ref, onMounted } from 'vue'
 import { User, Search, OfficeBuilding } from '@element-plus/icons-vue'
 import { userAPI } from '@/api/user'
+import { departmentAPI } from '@/api/department'
 import type { EmployeeExtended } from '@/utils/User'
+import type { DepartmentTreeNode } from '@/utils/Department'
 import DepartmentTree from '@/components/componentsdetails/components/DepartmentTree.vue'
 
 const loading = ref(true)
@@ -88,9 +95,18 @@ const pageSize = ref(20)
 const searchKeyword = ref('')
 const selectedDepartmentCode = ref<string | null>(null)
 const selectedDepartmentName = ref('')
-const departmentTreeRef = ref<InstanceType<typeof DepartmentTree>>()
+const departmentData = ref<DepartmentTreeNode[]>([])
+const departmentTreeRef = ref()
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
+
+const fetchDepartmentTree = async () => {
+  try {
+    departmentData.value = await departmentAPI.getDepartmentTree()
+  } catch (err) {
+    console.error('获取部门树失败:', err)
+  }
+}
 
 const fetchContacts = async () => {
   loading.value = true
@@ -120,9 +136,9 @@ const fetchContacts = async () => {
   }
 }
 
-const handleDepartmentSelect = (data: { code: string; name: string }) => {
-  selectedDepartmentCode.value = data.code
-  selectedDepartmentName.value = data.name
+const handleDepartmentSelect = (department: DepartmentTreeNode) => {
+  selectedDepartmentCode.value = department.department_code
+  selectedDepartmentName.value = department.department_name
   currentPage.value = 1
   fetchContacts()
 }
@@ -143,6 +159,7 @@ const handleSearch = () => {
 }
 
 onMounted(() => {
+  fetchDepartmentTree()
   fetchContacts()
 })
 </script>
