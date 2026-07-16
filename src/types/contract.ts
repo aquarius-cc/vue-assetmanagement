@@ -21,24 +21,14 @@ export enum ContractType {
 
 /**
  * 合同结算状态枚举
- * purchasing", "供货中,
- * purchase_finished", "供货完成,
- * receive_check", "到货验收,
- * initial_check", "初步验收,
- * project_settlement", "结算中,
- * settlement_done", "结算完成,
- * final_check", "最终验收,
- * project_finished", "项目结束
+ * pending", "待结算,
+ * settling_up", "结算中,
+ * settled", "已结算
  */
 export enum ContractSettlementStatus {
-  PURCHASING = 'purchasing',
-  PURCHASE_FINISHED = 'purchase_finished',
-  RECEIVE_CHECK = 'receive_check',
-  INITIAL_CHECK = 'initial_check',
-  PROJECT_SETTLEMENT = 'project_settlement',
-  SETTLEMENT_DONE = 'settlement_done',
-  FINAL_CHECK = 'final_check',
-  PROJECT_FINISHED = 'project_finished',
+  PENDING = 'pending',
+  SETTLING_UP = 'settling_up',
+  SETTLED = 'settled',
 }
 
 // ==================== 基础接口定义 ====================

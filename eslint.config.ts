@@ -34,6 +34,7 @@ export default defineConfigWithVueTs(
     'everything-claude-code/**',            // 忽略整个工具目录
     '.trae/**',                             // 忽略 .trae 工具目录
     'graphify-out/**',                      // 忽略 graphify 输出
+    '.agents/skills/impeccable/**',         // 忽略 impeccable 技能目录
     'node_modules/**',
   ]),
 

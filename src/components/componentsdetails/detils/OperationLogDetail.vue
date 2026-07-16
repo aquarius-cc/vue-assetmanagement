@@ -159,49 +159,6 @@ const getOperationTypeText = (type: string | null | undefined): string => {
   return operationTypeMapping[type] || type
 }
 
-/**
- * 解析 changes JSON 字符串为变更记录数组
- * 支持两种格式：
- * 1. 对象格式: { "field1": { "old": "a", "new": "b" } }
- * 2. 数组格式: [{ "field": "field1", "old": "a", "new": "b" }]
- */
-const _parseChanges = (changesStr: string): ChangeRecord[] => {
-  if (!changesStr) return []
-
-  try {
-    const parsed: unknown = JSON.parse(changesStr)
-
-    // 格式1：对象格式 { "field1": { "old": "a", "new": "b" } }
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return Object.entries(parsed).map(([field, value]) => {
-        const record = value as Record<string, unknown>
-        return {
-          field,
-          old_value: record.old != null ? String(record.old) : '',
-          new_value: record.new != null ? String(record.new) : '',
-        }
-      })
-    }
-
-    // 格式2：数组格式 [{ "field": "field1", "old": "a", "new": "b" }]
-    if (Array.isArray(parsed)) {
-      return parsed.map((item) => {
-        const record = item as Record<string, unknown>
-        return {
-          field: String(record.field || record.key || ''),
-          old_value: record.old != null ? String(record.old) : '',
-          new_value: record.new != null ? String(record.new) : '',
-        }
-      })
-    }
-
-    return []
-  } catch {
-    // JSON 解析失败，返回空数组
-    return []
-  }
-}
-
 // ===== 状态与实例 =====
 const props = defineProps<{
   /** 操作日志主键 pk（通过路由 query 传入） */

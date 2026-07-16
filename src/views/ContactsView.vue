@@ -96,7 +96,6 @@ const searchKeyword = ref('')
 const selectedDepartmentCode = ref<string | null>(null)
 const selectedDepartmentName = ref('')
 const departmentData = ref<DepartmentTreeNode[]>([])
-const departmentTreeRef = ref()
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 

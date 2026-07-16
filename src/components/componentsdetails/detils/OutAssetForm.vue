@@ -1,9 +1,12 @@
 <!--
   OutAssetForm.vue
-  出库资产表单页面（新墀编辑＀  模式判断：route.query.code 存在且为编辑模式，否则为新增模式
-  功能＀    - 新增出库资产记录
+  出库资产表单页面（新门编辑）
+  模式判断：route.query.code 存在且为编辑模式，否则为新增模式
+  功能：
+    - 新增出库资产记录
     - 编辑已有出库资产记录
-    - 自动完成资产名称、申请人姓名、保管人姓名（使用公共建议获取器＀    - 表单验证（含借用类型归还日期联动、姓名工号一致性校验）
+    - 自动完成资产名称、申请人姓名、保管人姓名（使用公共建议获取器）
+    - 表单验证（含借用类型归还日期联动、姓名工号一致性校验）
 -->
 <template>
   <div class="outasset-form" v-loading="isLoading" element-loading-text="加载中...">
@@ -15,7 +18,7 @@
         </div>
       </template>
 
-      <!-- 资产搜索组件（仅新增模式显示，方便快速选择资产＀-->
+      <!-- 资产搜索组件（仅新增模式显示，方便快速选择资产） -->
       <ExportableAssetsSearch v-if="!isEditMode" @select="handleAssetSelect" />
 
       <el-form
@@ -125,7 +128,7 @@
             </el-form-item>
           </el-col>
 
-          <!-- [HR-02] 出库申请人（自动完成＀-->
+          <!-- [HR-02] 出库申请人（自动完成） -->
           <el-col :xs="24" :sm="24" :md="12">
             <el-form-item label="申请人" prop="outasset_applicant_name">
               <el-autocomplete
@@ -234,20 +237,24 @@ import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { isAxiosError } from 'axios'
 import { useAssetStore } from '@/stores/assetStore'
-// [HR-01] 后端 v1.1.0 改为 read_only，移陀useUserStore（用户搜索联动已移除了import { useOutAssetStore } from '@/stores/outAssetStore'
+// [HR-01] 后端 v1.1.0 改为 read_only，移除UserStore（用户搜索联动已移除了
+import { useOutAssetStore } from '@/stores/outAssetStore'
 import type {
   OutAssetCreateForm,
   OutAssetCreateExtended,
   AssetAutocompleteItem,
 } from '@/utils/OutAsset'
 import type { AssetDetail, AssetUpdateForm } from '@/types/asset'
-// [HR-01] 后端 v1.1.0 改为 read_only，移陀EmployeeExtended（用户搜索联动已移除了// [HR-01] 后端 v1.1.0 改为 read_only，移陀useEmployeeLinkage（用户搜索联动已移除了import { formatDate } from '@/utils/Format'
+import type { EmployeeAutocompleteItem } from '@/types/outasset'
+// [HR-01] 后端 v1.1.0 改为 read_only，移除EmployeeExtended（用户搜索联动已移除了
+// [HR-01] 后端 v1.1.0 改为 read_only，移除useEmployeeLinkage（用户搜索联动已移除了
+import { formatDate } from '@/utils/Format'
 import ExportableAssetsSearch from '@/components/componentsdetails/detils/detilschildcomponents/ExportableAssetsSearch.vue'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
 import { useEmployeeSuggestionFetcher } from '@/composables/useEmployeeSuggestionFetcher'
 import { useAutocompleteField } from '@/composables/useAutocompleteField'
 
-// ========== 类型增强：解冀assetStore 类型定义缺失（运行时方法存在＀==========
+// ========== 类型增强：解决assetStore 类型定义缺失（运行时方法存在）==========
 // 注意：createEntityStore 实际返回了getByName/getById/update 等方法，但TypeScript 未能正确推断
 // 此处使用类型断言，符合“类型严格”原则（不引入any，而是明确扩展类型。
 type ExtendedAssetStore = ReturnType<typeof useAssetStore> & {
@@ -260,14 +267,14 @@ const assetStore = useAssetStore() as ExtendedAssetStore
 // ========== 路由与状态==========
 const route = useRoute()
 const router = useRouter()
-// [HR-01] 后端 v1.1.0 改为 read_only，移除了 userStore（用户搜索联动已移除了const outAssetStore = useOutAssetStore()
+const outAssetStore = useOutAssetStore()
 const formRef = ref()
 const isLoading = ref(false)
 
 // 编辑模式判断
 const isEditMode = ref(!!route.query.code)
 
-// ========== 表单数据（扩展类型，包含关联名称字段＀==========
+// ========== 表单数据（扩展类型，包含关联名称字段）==========
 // [HR-02] 恢复 outasset_applicant_jobcode / outasset_manager_jobcode / outasset_using_location
 //   以及 outasset_applicant_name / outasset_manager_name 用于前端展示
 const outAssetCreateExtendedForm = reactive<OutAssetCreateExtended>({
@@ -341,8 +348,10 @@ const rules = {
 // ========== 建议获取器（使用公共函数＀=========
 // [HR-01] 后端 v1.1.0 改为 read_only，移陀UserSuggestion 接口（用户搜索联动已移除了
 /**
- * 资产名称建议获取噀 * - 使用 assetStore.getByName 获取数据
- * - 仅过滤在库资产（asset_current_status === 'in_store'＀ * - 转换后返囀AssetAutocompleteItem 格式
+ * 资产名称建议获取器
+ * - 使用 assetStore.getByName 获取数据
+ * - 仅过滤在库资产（asset_current_status === 'in_store')
+ * - 转换后返回 AssetAutocompleteItem 格式
  */
 const fetchAssetSuggestions = createSuggestionFetcher({
   fetchData: (query: string) => assetStore.getByName(query),
@@ -469,10 +478,10 @@ const clearAssetInfo = () => {
 }
 
 // ========== 申请人相关逻辑 ==========
-// const selectedApplicantUser = ref<UserSuggestion | null>(null)
+const selectedApplicant = ref<EmployeeAutocompleteItem | null>(null)
 
 // ========== 保管人相关逻辑 ==========
-// const selectedManagerUser = ref<UserSuggestion | null>(null)
+const selectedManager = ref<EmployeeAutocompleteItem | null>(null)
 
 // ========== 资产选择组件回调 ==========
 const handleAssetSelect = (asset: AssetDetail) => {
@@ -517,14 +526,15 @@ const loadEditData = async (recordcode: string) => {
     outAssetCreateExtendedForm.outasset_description = detail.outasset_description || ''
     outAssetCreateExtendedForm.outasset_name = detail.asset_name || ''
     // [HR-02] 回填后同步选中状态（用于变更检测）
-    // 注意：detail.outasset_applicant/outasset_manager 一EmployeeExtended 类型＀    // 包含 employee_department 关联对象；使用类型断言绕过 TypeScript 推断限制
+    // 注意：detail.outasset_applicant/outasset_manager 一EmployeeExtended 类型
+    // 包含 employee_department 关联对象；使用类型断言绕过 TypeScript 推断限制
     if (outAssetCreateExtendedForm.outasset_applicant_name) {
       const applicant = detail.outasset_applicant as Record<string, unknown> | undefined
       const applicantDept = applicant?.employee_department as Record<string, string> | undefined
       selectedApplicant.value = {
         value: outAssetCreateExtendedForm.outasset_applicant_name,
         employee_name: outAssetCreateExtendedForm.outasset_applicant_name,
-        employee_jobcode: outAssetCreateExtendedForm.outasset_applicant_jobcode,
+        employee_jobcode: outAssetCreateExtendedForm.outasset_applicant_jobcode || '',
         employee_department_name: applicantDept?.department_name || '',
       }
     }
@@ -534,7 +544,7 @@ const loadEditData = async (recordcode: string) => {
       selectedManager.value = {
         value: outAssetCreateExtendedForm.outasset_manager_name,
         employee_name: outAssetCreateExtendedForm.outasset_manager_name,
-        employee_jobcode: outAssetCreateExtendedForm.outasset_manager_jobcode,
+        employee_jobcode: outAssetCreateExtendedForm.outasset_manager_jobcode || '',
         employee_department_name: managerDept?.department_name || '',
       }
     }
@@ -579,7 +589,8 @@ const submitForm = () => {
         await outAssetStore.create(outAssetForm.value)
         ElMessage.success('出库资产录入成功')
         // 后台自动更新状态，不需要前端更新
-        // 出库成功后，更新对应资产的状态为“在用”（in_use        // if (outAssetCreateExtendedForm.outasset_code) {
+        // 出库成功后，更新对应资产的状态为“在用”（in_use）
+        // if (outAssetCreateExtendedForm.outasset_code) {
         //   await assetStore.update({
         //     asset_code: outAssetCreateExtendedForm.outasset_code,
         //     asset_current_status: 'in_use',
@@ -590,9 +601,9 @@ const submitForm = () => {
       router.push({ name: 'OutAssetDetails' })
     } catch (error: unknown) {
       if (isAxiosError(error)) {
-        ElMessage.error(`操作失败＀{error.response?.data?.message || error.message}`)
+        ElMessage.error(`操作失败：${error.response?.data?.message || error.message}`)
       } else if (error instanceof Error) {
-        ElMessage.error(`操作失败＀{error.message}`)
+        ElMessage.error(`操作失败：${error.message}`)
       } else {
         ElMessage.error('操作失败，请检查网络连接后重试')
       }
@@ -601,7 +612,7 @@ const submitForm = () => {
   })
 }
 
-// ========== 重置表单（仅新增模式＀==========
+// ========== 重置表单（仅新增模式） ==========
 const resetForm = () => {
   formRef.value?.resetFields()
   Object.assign(outAssetCreateExtendedForm, {
@@ -648,6 +659,7 @@ onMounted(async () => {
 @use '@/assets/styles/common-forms.scss' as *;
 
 .outasset-form {
-  // 继承公共表单容器样式（如不存在则忽略＀  @extend .form-container !optional;
+  // 继承公共表单容器样式（如不存在则忽略）
+  @extend .form-container !optional;
 }
 </style>

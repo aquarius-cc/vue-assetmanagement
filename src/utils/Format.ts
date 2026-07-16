@@ -90,13 +90,13 @@ const contractiInfoFormate = (
 
   // ----- 安全获取枚举状态的辅助函数 -----
   const getSettlementStatus = (value: unknown): ContractSettlementStatus => {
-    if (value == null) return ContractSettlementStatus.PURCHASING
+    if (value == null) return ContractSettlementStatus.PENDING
     const trimmed = String(value).trim()
     // 校验是否为合法的枚举值（利用 Object.values 获取所有枚举值）
-    const validStatuses = Object.values(ContractSettlementStatus) // ['pending', 'settled']
+    const validStatuses = Object.values(ContractSettlementStatus) // ['pending', 'settling_up', 'settled']
     return validStatuses.includes(trimmed as ContractSettlementStatus)
       ? (trimmed as ContractSettlementStatus)
-      : ContractSettlementStatus.PURCHASING // 非法值降级为默认
+      : ContractSettlementStatus.PENDING // 非法值降级为默认
   }
   // 格式化 + 修正字段 + 确保类型正确
   // 第二步：格式化数据（确保 rawData 是对象类型，可安入spread）
@@ -189,6 +189,7 @@ const contractTypeMapping: Record<string, string> = {
 
 const contractSettlementStatusMapping: Record<string, string> = {
   pending: '待结算',
+  settling_up: '结算中',
   settled: '已结算',
 }
 

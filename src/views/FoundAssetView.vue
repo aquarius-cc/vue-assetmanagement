@@ -69,14 +69,12 @@ import { ref, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { CircleCheck } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import type { FormInstance } from 'element-plus'
 import { assetAPI } from '@/api/asset'
 import { lostAssetAPI } from '@/api/lostAsset'
 import type { AssetDetail } from '@/types/asset'
 
 const route = useRoute()
 const router = useRouter()
-const formRef = ref<FormInstance>()
 const loading = ref(true)
 const submitting = ref(false)
 const asset = ref<AssetDetail | null>(null)

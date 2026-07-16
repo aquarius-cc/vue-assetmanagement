@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   UnregisteredAssetBasicDetails.vue
   未登记资产详情页面
   功能：展示未登记资产的完整信息，支持导出 Excel，支持审批操作（通过/拒绝）
@@ -384,7 +384,7 @@ const selectHandleType = async (): Promise<string | null> => {
       showCancelButton: true,
       cancelButtonText: '取消',
       closeOnClickModal: false,
-      beforeClose: (_action, instance, done) => {
+      beforeClose: (_: string, __: unknown, done: () => void) => {
         done()
         resolve(null)
       },

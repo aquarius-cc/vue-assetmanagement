@@ -4,7 +4,7 @@
 
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { readReactive, writeReactive } from '@/utils/reactiveAccess'
+import { readReactive } from '@/utils/reactiveAccess'
 
 export interface SearchConfig<T> {
   performSearch: (
@@ -39,7 +39,6 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
 
   /** 获取当前页码的读写代理 */
   const getPage = () => readReactive<number>(currentPage)
-  const setPage = (v: number) => writeReactive(currentPage, v) // eslint-disable-line @typescript-eslint/no-unused-vars
   const getSize = () => readReactive<number>(pageSize)
 
   /** 单关键词搜索 */

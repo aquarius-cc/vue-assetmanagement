@@ -171,9 +171,6 @@ const selectedDepartment = ref<Department | null>(null)
 /** 排序编辑模式 */
 const isSortMode = ref(false)
 
-/** 树组件引用 */
-const treeRef = ref<InstanceType<typeof DepartmentTree>>()
-
 // ==================== 表单弹窗状态 ====================
 
 /** 表单弹窗显示状态 */

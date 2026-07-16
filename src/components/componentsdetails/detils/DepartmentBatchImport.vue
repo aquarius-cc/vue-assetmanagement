@@ -232,7 +232,6 @@ const handleExportTemplate = async () => {
       部门名称: '信息技术部',
       部门信息员: '张三',
     }
-    const _sheetData = [headers, headers.map((h) => exampleRowData[h] ?? '')]
     // 使用 ExcelJS 创建模板工作簿
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('部门导入模板')

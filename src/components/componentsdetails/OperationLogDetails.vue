@@ -540,46 +540,6 @@ const handleExportExcel = async () => {
 }
 
 /**
- * 批量删除
- * 弹出确认框，确认后调用 store.removeBatch 执行批量删除
- * @param rows 选中的行数据
- */
-const _handleBatchDelete = async (rows: OperationLog[] | undefined) => {
-  if (!rows || rows.length === 0) {
-    ElMessage.warning('请先选择要删除的数据')
-    return
-  }
-
-  // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows.map((row) => String(row.id)).filter((code): code is string => !!code)
-
-  if (codes.length === 0) {
-    ElMessage.error('无法删除：选中的数据缺少唯一标识')
-    return
-  }
-
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除选中的 ${codes.length} 条数据吗？删除后数据不可恢复！`,
-      '批量删除确认',
-      {
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
-
-    await operationLogStore.removeBatch(codes)
-    smartListRef.value?.clearSelection()
-    await smartListRef.value?.refresh()
-  } catch (err) {
-    if (err === 'cancel') return
-    console.error('批量删除失败:', err)
-    ElMessage.error('批量删除失败，请重试')
-  }
-}
-
-/**
  * 遮罩层点击返回
  * 点击遮罩层时返回上一页
  */

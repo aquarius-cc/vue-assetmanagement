@@ -120,7 +120,6 @@ const route = useRoute()
 const { searchFields, storeConfig, exportColumns, assetStore } = useAssetListConfig()
 
 const smartListRef = ref<SmartListContainerExpose | null>(null)
-const searchBarRef = ref<InstanceType<typeof SearchBar> | null>(null)
 const isChildRouteActive = ref(false)
 
 // ===== 辅助函数 =====

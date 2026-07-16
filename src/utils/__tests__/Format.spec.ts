@@ -166,7 +166,7 @@ describe('Format', () => {
       expect(result.contract_paid_count_number).toBe(2)
       expect(result.contract_type).toBe('purchase')
       expect(result.contract_signing_date).toBe('2024-01-15')
-      expect(result.contract_settledment_status).toBe('purchasing')
+      expect(result.contract_settledment_status).toBe('pending')
     })
 
     it('handles null number fields with defaults', () => {
@@ -196,7 +196,7 @@ describe('Format', () => {
       })
       const result = contractiInfoFormate(input as any)
       expect(result.contract_code).toBe('C002')
-      expect(result.contract_settledment_status).toBe('purchasing')
+      expect(result.contract_settledment_status).toBe('pending')
     })
   })
 

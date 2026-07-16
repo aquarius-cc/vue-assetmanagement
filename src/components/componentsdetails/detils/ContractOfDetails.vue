@@ -67,7 +67,9 @@
               <span class="info-label">结算状态：</span>
               <el-tag
                 :type="
-                  contractDetails.contract_settledment_status === 'settled' ? 'success' : 'primary'
+                  contractDetails.contract_settledment_status === ContractSettlementStatus.SETTLED
+                    ? 'success'
+                    : 'primary'
                 "
                 size="default"
               >
@@ -130,6 +132,7 @@ import { Back, Download, Document } from '@element-plus/icons-vue'
 import { useContractStore } from '@/stores/contractStore'
 import { useExcelExport } from '@/composables/useExcelExport'
 import type { Contract } from '@/types/contract'
+import { ContractSettlementStatus } from '@/types/contract'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import {
   formatDate,
@@ -240,8 +243,11 @@ onMounted(async () => {
 
 // ========== 交互方法 ==========
 const handleBack = () => router.go(-1)
-const handleExport = async () => {
-  if (!contractDetails.value) return ElMessage.warning('暂无数据可导出')
+const handleExport = async (): Promise<void> => {
+  if (!contractDetails.value) {
+    ElMessage.warning('暂无数据可导出')
+    return
+  }
   await exportDetail(
     contractDetails.value,
     exportColumns,

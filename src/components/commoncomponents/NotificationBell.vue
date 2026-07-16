@@ -82,7 +82,6 @@ const {
 } = useNotification()
 
 const showPanel = ref(false)
-const bellRef = ref<HTMLElement | null>(null)
 
 function togglePanel() {
   showPanel.value = !showPanel.value

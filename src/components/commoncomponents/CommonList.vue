@@ -74,9 +74,9 @@
           :edit-route-name="editRouteName"
           @update:search="$emit('update:search', $event)"
           @search="$emit('search', $event)"
-          @edit="(row, index) => $emit('edit', row, index)"
-          @delete="(row, index) => $emit('delete', row, index)"
-          @detail="(row, index) => $emit('detail', row, index)"
+          @edit="(row, index) => $emit('edit', row as T, index)"
+          @delete="(row, index) => $emit('delete', row as T, index)"
+          @detail="(row, index) => $emit('detail', row as T, index)"
         >
           <!-- 透传 actions 插槽 -->
           <template #actions="slotProps">
