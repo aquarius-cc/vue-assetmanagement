@@ -157,7 +157,7 @@ import { EditPen } from '@element-plus/icons-vue'
 import { isAxiosError } from 'axios'
 import { useAssetStore } from '@/stores/assetStore'
 import { useHardDiskSnStore } from '@/stores/harddiskSnStore'
-import type { DiskItem, HardDiskSNBatchSaveForm } from '@/utils/HardDiskSN'
+import type { DiskItem, HardDiskSNBatchSaveForm, HardDiskSN } from '@/utils/HardDiskSN'
 import { HardDiskType, HardDiskStatus } from '@/utils/HardDiskSN'
 import { harddiskSnAPI } from '@/api/harddiskSn'
 import type { AssetDetail } from '@/types/asset'
@@ -341,17 +341,17 @@ const loadEditData = async (_assetCode: string, harddiskSnCode: string) => {
       ElMessage.warning('该资产暂无硬盘记录')
       return
     }
-    let disksRecords: Array<Record<string, unknown>> = []
+    let disksRecords: HardDiskSN[] = []
     if (harddiskSnCode) {
       disksRecords = records.filter(
-        (record: Record<string, unknown>) => record.harddisk_sn_code === harddiskSnCode,
+        (record: HardDiskSN) => record.harddisk_sn_code === harddiskSnCode,
       )
     } else {
       disksRecords = records
     }
 
     // 2. 映射一disks 数组
-    formData.disks = disksRecords.map((record: Record<string, unknown>) => ({
+    formData.disks = disksRecords.map((record: HardDiskSN) => ({
       harddisk_no: record.harddisk_no,
       harddisk_sn_code: record.harddisk_sn_code,
       harddisk_type: record.harddisk_type,
