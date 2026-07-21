@@ -1,3 +1,4 @@
+<!-- TECHNICAL_DEBT: >500 lines -->
 <!--
   UserDetails.vue
   员工列表页面（重构版）
@@ -82,6 +83,13 @@
             >
               批量删除 ({{ slotProps.selectedRows?.length || 0 }})
             </el-button>
+            <el-button
+              type="warning"
+              :disabled="slotProps.selectedRows?.length !== 1"
+              @click="openBindDialog(slotProps.selectedRows![0])"
+            >
+              绑定账号
+            </el-button>
           </div>
         </template>
       </SmartListContainer>
@@ -94,6 +102,13 @@
         </div>
       </div>
     </div>
+
+    <BindAuthUserDialog
+      v-model="bindDialogVisible"
+      :employee-jobcode="bindEmployeeJobcode"
+      :employee-name="bindEmployeeName"
+      @success="smartListRef?.refresh()"
+    />
   </div>
 </template>
 
@@ -111,13 +126,14 @@ export default {
 import { ref, watch, computed, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { isAxiosError } from 'axios'
+import { showErrorMessage, getAxiosStatus } from '@/utils/errorHandler'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
 import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import type { SmartListContainerExpose } from '@/types/common'
 import type { EmployeeExtended } from '@/utils/User'
+import BindAuthUserDialog from '@/components/system/BindAuthUserDialog.vue'
 import { useUserStore } from '@/stores/userStore'
 import { useDepartmentStore } from '@/stores/departmentStore'
 import { userAPI } from '@/api/user'
@@ -136,6 +152,17 @@ const departmentStore = useDepartmentStore()
  * 使用 SmartListContainerExpose 类型确保类型安全
  */
 const smartListRef = ref<SmartListContainerExpose | null>(null)
+
+// 绑定弹窗
+const bindDialogVisible = ref(false)
+const bindEmployeeJobcode = ref('')
+const bindEmployeeName = ref('')
+
+const openBindDialog = (row: EmployeeExtended) => {
+  bindEmployeeJobcode.value = row.employee_jobcode || ''
+  bindEmployeeName.value = row.employee_name || ''
+  bindDialogVisible.value = true
+}
 
 /**
  * 子路由激活状态
@@ -286,8 +313,7 @@ watch(
  */
 const handleAddUser = () => {
   router.push({ name: 'UserForm', query: {} }).catch((err) => {
-    console.error('跳转新增页面失败:', err)
-    ElMessage.error('跳转失败，请刷新页面重试')
+    showErrorMessage(err, '跳转失败，请刷新页面重试')
   })
 }
 
@@ -296,8 +322,7 @@ const handleAddUser = () => {
  */
 const handleBatchImport = () => {
   router.push({ name: 'UserBatchImport' }).catch((err) => {
-    console.error('跳转批量导入页面失败:', err)
-    ElMessage.error('跳转失败，请刷新页面重试')
+    showErrorMessage(err, '跳转失败，请刷新页面重试')
   })
 }
 
@@ -316,8 +341,7 @@ const handleEdit = (row: EmployeeExtended) => {
       query: { jobcode: row.employee_jobcode },
     })
     .catch((err) => {
-      console.error('跳转编辑页面失败:', err)
-      ElMessage.error('跳转失败，请刷新页面重试')
+      showErrorMessage(err, '跳转失败，请刷新页面重试')
     })
 }
 
@@ -350,13 +374,13 @@ const handleDelete = async (row: EmployeeExtended) => {
     smartListRef.value?.refresh()
   } catch (err) {
     if (err === 'cancel') return // 用户取消删除
-    if (isAxiosError(err) && err.response?.status === 404) {
+    const status = getAxiosStatus(err)
+    if (status === 404) {
       ElMessage.error('无法删除：员工不存在或已被删除')
-    } else if (isAxiosError(err) && err.response?.status === 400) {
+    } else if (status === 400) {
       ElMessage.error('无法删除：该员工有关联数据，不能删除')
     } else {
-      console.error('删除失败:', err)
-      ElMessage.error('删除失败，请重试')
+      showErrorMessage(err, '删除失败，请重试')
     }
   }
 }
@@ -396,8 +420,7 @@ const handleBatchDelete = async (rows: EmployeeExtended[] | undefined) => {
     await smartListRef.value?.refresh()
   } catch (err) {
     if (err === 'cancel') return
-    console.error('批量删除失败:', err)
-    ElMessage.error('批量删除失败，请重试')
+    showErrorMessage(err, '批量删除失败，请重试')
   }
 }
 
@@ -535,8 +558,7 @@ const handleExportExcel = async () => {
       exportData = response
       exportFileName = `用户列表_全部_${response.length}条.xlsx`
     } catch (error) {
-      console.error('获取全部数据失败:', error)
-      ElMessage.error('获取全部数据失败，请重试')
+      showErrorMessage(error, '获取全部数据失败，请重试')
       return
     }
   } else {

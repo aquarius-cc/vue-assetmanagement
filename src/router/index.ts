@@ -1,3 +1,4 @@
+// TECHNICAL_DEBT: >500 lines
 // index.ts
 
 import { createRouter, createWebHistory } from 'vue-router'
@@ -38,6 +39,15 @@ const router = createRouter({
           component: () => import('@/components/DashboardPage.vue'),
           meta: {
             title: '首页',
+            requiresAuth: true,
+          },
+        },
+        {
+          path: 'notifications',
+          name: 'NotificationList',
+          component: () => import('@/views/NotificationList.vue'),
+          meta: {
+            title: '通知中心',
             requiresAuth: true,
           },
         },
@@ -553,6 +563,24 @@ const router = createRouter({
               },
             },
           ],
+        },
+        {
+          path: 'roledetails',
+          name: 'RoleManage',
+          component: () => import('@/views/system/RoleManage.vue'),
+          meta: {
+            title: '角色管理',
+            requiresAuth: true,
+          },
+        },
+        {
+          path: 'authusermanage',
+          name: 'AuthUserManage',
+          component: () => import('@/views/system/AuthUserManage.vue'),
+          meta: {
+            title: '账号管理',
+            requiresAuth: true,
+          },
         },
         {
           /**

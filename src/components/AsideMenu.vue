@@ -66,6 +66,8 @@
             <el-menu-item index="/main/departmentmanagement">通讯录管理</el-menu-item>
             <el-menu-item index="/main/userdetails">员工管理</el-menu-item>
             <el-menu-item index="/main/departmentdetails">部门管理</el-menu-item>
+            <el-menu-item index="/main/roledetails">角色管理</el-menu-item>
+            <el-menu-item index="/main/authusermanage">账号管理</el-menu-item>
           </el-sub-menu>
 
           <!-- 操作日志：与合同管理、仓库管理、员工信息同级 -->
@@ -78,15 +80,10 @@
             <span>其它操作日志</span>
           </el-menu-item>
 
-          <el-sub-menu index="info">
-            <template #title>
-              <el-icon><Setting /></el-icon>
-              <span>信息管理</span>
-            </template>
-            <!-- 注意：原 permissions 和 other 菜单项已删除，
-                 因为路由配置中不存在对应的路由定义，点击会导航到空白页面。
-                 如需添加新功能，请先在 router/index.ts 中定义路由，再添加菜单项。 -->
-          </el-sub-menu>
+          <el-menu-item index="/main/notifications">
+            <el-icon><Bell /></el-icon>
+            <span>通知中心</span>
+          </el-menu-item>
 
           <!-- 暗色模式切换按钮 -->
           <DarkModeToggle class="dark-mode-toggle" :compact="appStore.sidebarCollapsed" />
@@ -113,14 +110,14 @@ import {
   HomeFilled,
   Location,
   Notebook,
-  Setting,
   UserFilled,
   ArrowLeft,
   ArrowRight,
   Document,
+  Bell,
 } from '@element-plus/icons-vue'
 import { useRouter, useRoute, onBeforeRouteUpdate } from 'vue-router'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { usePermission } from '@/composables/usePermission'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
@@ -129,8 +126,13 @@ import NotificationBell from '@/components/commoncomponents/NotificationBell.vue
 const router = useRouter()
 const route = useRoute()
 const appStore = useAppStore()
-const { canManageSystem, canApproveDamaged, canHandleUnregistered, canViewAuditLog } =
-  usePermission()
+const { hasPermission } = usePermission()
+
+// 基于细粒度权限码的菜单可见性判断
+const canManageSystem = computed(() => hasPermission('system_config:manage'))
+const canApproveDamaged = computed(() => hasPermission('damaged:approve'))
+const canHandleUnregistered = computed(() => hasPermission('unregistered:approve'))
+const canViewAuditLog = computed(() => hasPermission('auditlog:read'))
 
 const currentRoute = ref(route.path)
 
