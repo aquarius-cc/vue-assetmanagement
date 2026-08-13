@@ -1,7 +1,15 @@
 /**
- * 硬盘序列号管理 API
- * 对应后端接口: /api/assets/harddisk-sn/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 硬盘序列号管理 API，提供硬盘序列号的增删改查、批量操作等接口
+ * @module api/harddiskSn
+ * @exports
+ *   - harddiskSnAPI: 硬盘序列号管理 API 对象（包含所有硬盘序列号相关方法）
+ * @callers
+ *   - stores/harddiskSnStore: 硬盘序列号状态管理
+ *   - views/HarddiskSnManage: 硬盘序列号管理视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/harddisksn: 硬盘序列号相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
@@ -9,17 +17,8 @@ import type {
   HardDiskSNCreateForm,
   HardDiskSNUpdateForm,
   HardDiskSNBatchSaveForm,
-} from '@/utils/HardDiskSN'
-
-/**
- * 硬盘序列号列表响应类型
- */
-interface HardDiskSNListResponse {
-  count: number
-  next: string | null
-  previous: string | null
-  results: HardDiskSN[]
-}
+  HardDiskSNListResponse,
+} from '@/types/harddisksn'
 
 /**
  * 硬盘序列号查询参数类型
@@ -49,15 +48,13 @@ export const harddiskSnAPI = {
   },
 
   /**
-   * 获取硬盘序列号详情（通过 lookup_field harddisksn_asset）
-   * GET /api/assets/harddisk-sn/{harddisksn_asset}/
-   * @param harddisksn_asset 资产 recordcode（后端 lookup_field）
+   * 获取硬盘序列号详情
+   * GET /api/assets/harddisk-sn/{recordcode}/
+   * @param recordcode 硬盘记录 recordcode
    * @returns 硬盘序列号详情
    */
-  getHardDiskSN: (harddisksn_asset: string): Promise<HardDiskSN> => {
-    return unwrapResponse(
-      request.get<HardDiskSN>(`/assets/harddisk-sn/${harddisksn_asset}/`, undefined, true, 300000),
-    )
+  getHardDiskSN: (recordcode: string): Promise<HardDiskSN> => {
+    return unwrapResponse(request.get<HardDiskSN>(`/assets/harddisk-sn/${recordcode}/`))
   },
 
   /**
@@ -84,22 +81,22 @@ export const harddiskSnAPI = {
 
   /**
    * 更新硬盘序列号记录
-   * PUT /api/assets/harddisk-sn/{harddisksn_asset}/
-   * @param harddisksn_asset 资产 recordcode（后端 lookup_field）
+   * PUT /api/assets/harddisk-sn/{recordcode}/
+   * @param recordcode 硬盘记录 recordcode
    * @param data 硬盘序列号更新表单数据
    * @returns 更新后的硬盘序列号记录
    */
-  updateHardDiskSN: (harddisksn_asset: string, data: HardDiskSNUpdateForm): Promise<HardDiskSN> => {
-    return unwrapResponse(request.put<HardDiskSN>(`/assets/harddisk-sn/${harddisksn_asset}/`, data))
+  updateHardDiskSN: (recordcode: string, data: HardDiskSNUpdateForm): Promise<HardDiskSN> => {
+    return unwrapResponse(request.put<HardDiskSN>(`/assets/harddisk-sn/${recordcode}/`, data))
   },
 
   /**
    * 删除硬盘序列号记录
-   * DELETE /api/assets/harddisk-sn/{harddisksn_asset}/
-   * @param harddisksn_asset 资产 recordcode（后端 lookup_field）
+   * DELETE /api/assets/harddisk-sn/{recordcode}/
+   * @param recordcode 硬盘记录 recordcode
    */
-  deleteHardDiskSN: (harddisksn_asset: string): Promise<void> => {
-    return unwrapResponse(request.delete<void>(`/assets/harddisk-sn/${harddisksn_asset}/`))
+  deleteHardDiskSN: (recordcode: string): Promise<void> => {
+    return unwrapResponse(request.delete<void>(`/assets/harddisk-sn/${recordcode}/`))
   },
   /**
    * 删除硬盘序列号记录
@@ -111,20 +108,20 @@ export const harddiskSnAPI = {
 
   /**
    * 批量保存硬盘序列号记录（新增和编辑统一）
-   * 提交 { asset_code, disks } 数组
-   * 后端根据每条记录是否有 id 决定新增或更新
+   * 提交 { asset_recordcode, disks } 数组
+   * 后端根据每条记录是否有 recordcode 决定新增或更新
    * @param data 批量保存表单数据
-   * @returns 保存结果（包含 success、created、updated、errors 数组）
+   * @returns 保存结果（包含 created、updated、total、asset_recordcode）
    */
   saveHardDiskSNBatch: (
     data: HardDiskSNBatchSaveForm,
   ): Promise<{
-    success: boolean
     created: number
     updated: number
-    errors: Array<{ index: number; message: string }>
+    total: number
+    asset_recordcode: string
   }> => {
-    return unwrapResponse(request.post('/assets/harddisk-sn/batch/', data))
+    return unwrapResponse(request.post('/assets/harddisk-sn/batch-save/', data))
   },
 
   /**

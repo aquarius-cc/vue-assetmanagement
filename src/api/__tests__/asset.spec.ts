@@ -91,13 +91,6 @@ describe('assetAPI', () => {
     expect(mockRequest.get).toHaveBeenCalledWith('/assets/assets/contract_by_asset/A001/')
   })
 
-  it('changeAssetStatus calls POST /assets/assets/{code}/change_status/', async () => {
-    await assetAPI.changeAssetStatus('A001', { status: 'in_use' })
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/assets/A001/change_status/', {
-      status: 'in_use',
-    })
-  })
-
   it('markAssetAsBroken calls POST /assets/assets/{code}/mark-broken/', async () => {
     await assetAPI.markAssetAsBroken('A001', { broken_reason: 'crack' })
     expect(mockRequest.post).toHaveBeenCalledWith('/assets/assets/A001/mark-broken/', {

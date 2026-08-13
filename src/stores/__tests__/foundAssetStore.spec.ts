@@ -124,4 +124,43 @@ describe('FoundAssetStore', () => {
       expect(foundAssetAPI.deleteFoundAsset).toHaveBeenCalledWith('FA-001')
     })
   })
+
+  describe('详情/更新/批量删除', () => {
+    it('应该调用API获取详情', async () => {
+      const { foundAssetAPI } = await import('@/api/foundAsset')
+      vi.mocked(foundAssetAPI.getFoundAssetByCode).mockResolvedValue({
+        recordcode: 'FA-001',
+      } as never)
+
+      const result = await store.getById('FA-001')
+
+      expect(result).toBeDefined()
+    })
+
+    it('应该调用API更新记录', async () => {
+      const { foundAssetAPI } = await import('@/api/foundAsset')
+      vi.mocked(foundAssetAPI.updateFoundAsset).mockResolvedValue({
+        recordcode: 'FA-001',
+      } as never)
+
+      await store.update({ recordcode: 'FA-001', asset_name: '新名称' } as never)
+
+      expect(foundAssetAPI.updateFoundAsset).toHaveBeenCalled()
+    })
+
+    it('应该调用API批量删除', async () => {
+      const { foundAssetAPI } = await import('@/api/foundAsset')
+      vi.mocked(foundAssetAPI.batchDeleteFoundAssets).mockResolvedValue({
+        total: 1,
+        success_count: 1,
+        fail_count: 0,
+        success_ids: ['FA-001'],
+        fail_items: [],
+      })
+
+      await store.removeBatch(['FA-001'])
+
+      expect(foundAssetAPI.batchDeleteFoundAssets).toHaveBeenCalledWith(['FA-001'])
+    })
+  })
 })

@@ -1,18 +1,26 @@
 /**
- * 仪表盘 Store
- * 负责仪表盘数据管理、缓存和状态更新
+ * @file 仪表盘 Store，管理概览数据、发放/回收记录、统计计算与缓存
+ * @module stores/dashboard
+ * @exports
+ *   - useDashboardStore: 仪表盘数据状态 Store
+ * @callers
+ *   - composables/useDashboardPage.ts
+ *   - components/DashboardPage.vue
+ * @dependsOn
+ *   - api/dashboard: 仪表盘 API 接口
+ *   - types/dashboard: 仪表盘相关类型定义
+ *   - utils/statusMapping: 状态颜色映射工具
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import {
-  dashboardAPI,
-  // [MR-10] DashboardStats 类型已删除 — /dashboard/stats/ 端点废弃
-  type DashboardOverview,
-  type OutAssetRecord,
-  type RecycleAssetRecord,
-} from '@/api/dashboard'
+import { isAxiosError } from 'axios'
+import { dashboardAPI } from '@/api/dashboard'
+import type { DashboardOverview, OutAssetRecord, RecycleAssetRecord } from '@/types/dashboard'
 import { ElMessage } from 'element-plus'
-import { getStatusColor as getStatusColorFromMapping } from '@/utils/statusMapping'
+import {
+  getStatusColor as getStatusColorFromMapping,
+  ASSET_STATUS_CHART_COLORS,
+} from '@/utils/statusMapping'
 
 /**
  * 仪表盘 Store
@@ -94,6 +102,88 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
   })
 
+  /**
+   * [新增] 状态分组定义：正常资产 / 异常资产 / 报废流程
+   * 每项包含：状态码、中文标签、颜色、所属分组
+   */
+  const STATUS_GROUPS = {
+    normal: {
+      label: '正常资产',
+      color: '#52C41A',
+      items: ['in_store', 'in_use', 'recycled_pending'] as string[],
+    },
+    abnormal: {
+      label: '异常资产',
+      color: '#FAAD14',
+      items: ['broken', 'repairing', 'lost'] as string[],
+    },
+    scrap: {
+      label: '报废流程',
+      color: '#909399',
+      items: ['damaged', 'scrapped'] as string[],
+    },
+  } as const
+
+  /**
+   * [新增] 计算属性 - 资产状态全景数据
+   * 返回分组列表 + 环形图数据。
+   * 分组计算和图表数据均基于后端 status_distribution 透传，避免前端硬编码状态枚举。
+   */
+  const statusOverview = computed(() => {
+    const dist = overview.value?.status_distribution || {}
+
+    // 分组聚合
+    const groups = Object.entries(STATUS_GROUPS).map(([groupKey, group]) => {
+      const groupItems = group.items
+        .map((statusCode) => {
+          const item = dist[statusCode]
+          return {
+            code: statusCode,
+            name: item?.name || statusCode,
+            count: item?.count || 0,
+            color: ASSET_STATUS_CHART_COLORS[statusCode] || '#909399',
+          }
+        })
+        .filter((item) => item.count > 0) // 仅展示有数据的项
+
+      const total = groupItems.reduce((sum, item) => sum + item.count, 0)
+      return {
+        key: groupKey,
+        label: group.label,
+        color: group.color,
+        total,
+        items: groupItems,
+      }
+    })
+
+    // 环形图数据（所有8种状态，按自定义顺序排列）
+    const chartOrder = [
+      'in_use',
+      'in_store',
+      'recycled_pending',
+      'broken',
+      'repairing',
+      'lost',
+      'damaged',
+      'scrapped',
+    ]
+    const chartData = chartOrder
+      .filter((code) => (dist[code]?.count || 0) > 0)
+      .map((code) => ({
+        name: dist[code]?.name || code,
+        value: dist[code]?.count || 0,
+        itemStyle: { color: ASSET_STATUS_CHART_COLORS[code] || '#909399' },
+      }))
+
+    const totalAssets = overview.value?.total_assets || 0
+
+    return {
+      groups,
+      chartData,
+      totalAssets,
+    }
+  })
+
   // [MR-10] assetSummary / monthlyActivity / departmentDistribution / statusDistribution / valueStats
   // 计算属性已删除 — 均依赖旧 DashboardStats 类型，无组件使用
 
@@ -117,9 +207,14 @@ export const useDashboardStore = defineStore('dashboard', () => {
       overviewLastUpdateTime.value = new Date()
       return data
     } catch (error) {
+      // fetchDashboardOverview catch 块重构
       console.error('获取仪表盘概览数据失败:', error)
-      ElMessage.error('获取仪表盘概览数据失败')
-      throw error
+      // [修复] 分类处理：业务错误拦截器未处理，需手动提示实际原因
+      if (!isAxiosError(error)) {
+        ElMessage.error((error as Error).message || '获取仪表盘概览数据失败')
+      }
+      // AxiosError 由拦截器已弹窗，不重复
+      throw error // [修复] 保持 re-throw，让上层感知
     } finally {
       overviewLoading.value = false
     }
@@ -137,8 +232,11 @@ export const useDashboardStore = defineStore('dashboard', () => {
       recentOutAssets.value = data
       return data
     } catch (error) {
+      // fetchRecentOutAssets catch 块重构（同上模式）
       console.error('获取最近发放记录失败:', error)
-      ElMessage.error('获取最近发放记录失败')
+      if (!isAxiosError(error)) {
+        ElMessage.error((error as Error).message || '获取最近发放记录失败')
+      }
       throw error
     } finally {
       outAssetsLoading.value = false
@@ -157,8 +255,11 @@ export const useDashboardStore = defineStore('dashboard', () => {
       recentRecycleAssets.value = data
       return data
     } catch (error) {
+      // fetchRecentRecycleAssets catch 块重构（同上模式）
       console.error('获取最近回收记录失败:', error)
-      ElMessage.error('获取最近回收记录失败')
+      if (!isAxiosError(error)) {
+        ElMessage.error((error as Error).message || '获取最近回收记录失败')
+      }
       throw error
     } finally {
       recycleAssetsLoading.value = false
@@ -180,16 +281,14 @@ export const useDashboardStore = defineStore('dashboard', () => {
   /**
    * 初始化所有数据
    */
+  // initDashboardData catch 块重构
   const initDashboardData = async () => {
-    try {
-      await Promise.all([
-        fetchDashboardOverview(),
-        fetchRecentOutAssets(5),
-        fetchRecentRecycleAssets(5),
-      ])
-    } catch (error) {
-      console.error('初始化仪表盘数据失败:', error)
-    }
+    // [修复] 移除 catch 吞错，让错误冒泡到 composable 层
+    await Promise.all([
+      fetchDashboardOverview(),
+      fetchRecentOutAssets(5),
+      fetchRecentRecycleAssets(5),
+    ])
   }
 
   /**
@@ -239,6 +338,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
     overview,
     recentOutAssets,
     recentRecycleAssets,
+    // [新增] 状态全景
+    statusOverview,
     // [MR-10] loading 已删除 — 仅与旧 stats 关联
     overviewLoading,
     outAssetsLoading,

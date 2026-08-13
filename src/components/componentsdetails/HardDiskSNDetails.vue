@@ -1,14 +1,13 @@
 <!--
-  HardDiskSNDetails.vue
-  硬盘序列号列表页面（重构版）
-
-  架构调整：
-  1. 使用 SmartListContainer 封装数据管理逻辑（分页、搜索、加载）
-  2. CommonList 只负责 UI 展示，不管理数据
-  3. 解决原架构中父组件和 CommonList 重复请求的问题
-
-  数据流：
-  SmartListContainer (数据管理) → slot props → CommonList (纯展示)
+@file 硬盘序列号列表页面，展示所有硬盘序列号信息并支持增删改查操作
+@component HardDiskSNDetails
+@usedBy
+  - views/HardDiskSNDetails.vue: 通过 router-view 渲染硬盘序列号列表
+@dependsOn
+  - composables/useSmartListConfig: 列表配置
+  - stores/harddiskSnStore: 硬盘序列号数据管理
+  - components/commoncomponents/SmartListContainer: 数据管理容器
+  - components/commoncomponents/CommonList: 列表展示组件
 -->
 <template>
   <div class="harddisk-sn-details-root">
@@ -115,8 +114,8 @@ import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
-import type { HardDiskSN } from '@/utils/HardDiskSN'
-import { HardDiskType, HardDiskStatus } from '@/utils/HardDiskSN'
+import type { HardDiskSN } from '@/types/harddisksn'
+import { HardDiskType, HardDiskStatus } from '@/types/harddisksn'
 import { useHardDiskSnStore } from '@/stores/harddiskSnStore'
 import type { SmartListContainerExpose } from '@/types/common'
 
@@ -254,7 +253,7 @@ const columns: TableColumn[] = [
     align: 'center',
     slotName: 'harddisk_status',
   },
-  { prop: 'harddisk_sn_description', label: '描述', width: 150, align: 'left' },
+  { prop: 'harddisk_description', label: '描述', width: 150, align: 'left' },
 ]
 
 // ===== SmartListContainer 配置 =====
@@ -319,8 +318,8 @@ const handleEdit = (row: HardDiskSN) => {
  * @param row 硬盘序列号记录
  */
 const handleDelete = (row: HardDiskSN) => {
-  if (!row.harddisk_sn_code) {
-    ElMessage.error('硬盘序列号不存在，无法删除')
+  if (!row.recordcode) {
+    ElMessage.error('硬盘记录编码不存在，无法删除')
     return
   }
   ElMessageBox.confirm('确定要删除该硬盘序列号记录吗？', '删除确认', {
@@ -329,7 +328,7 @@ const handleDelete = (row: HardDiskSN) => {
     type: 'warning',
   })
     .then(() => {
-      return harddiskSnStore.remove(String(row.harddisk_sn_code))
+      return harddiskSnStore.remove(String(row.recordcode))
     })
     .then(() => {
       ElMessage.success('删除成功')
@@ -356,8 +355,8 @@ const handleBatchDelete = async (rows: HardDiskSN[] | undefined) => {
     return
   }
 
-  // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows.map((row) => row.harddisk_sn_code).filter((code): code is string => !!code)
+  // 提取选中的 recordcode 作为删除标识
+  const codes = rows.map((row) => row.recordcode).filter((code): code is string => !!code)
 
   if (codes.length === 0) {
     ElMessage.error('无法删除：选中的数据缺少唯一标识')
@@ -421,7 +420,7 @@ const handleExportExcel = async () => {
       formatter: (val) => getHardDiskStatusText(val as string),
     },
     { title: '用户工号', key: 'harddisk_user_jobcode', default: '' },
-    { title: '描述', key: 'harddisk_sn_description', default: '' },
+    { title: '描述', key: 'harddisk_description', default: '' },
   ]
 
   let range: 'current' | 'all' | null = null

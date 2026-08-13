@@ -1,7 +1,15 @@
 /**
- * 遗失资产管理 API
- * 对应后端接口: /api/assets/lost-assets/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 遗失资产管理 API，提供遗失资产的增删改查、批量操作等接口
+ * @module api/lostAsset
+ * @exports
+ *   - lostAssetAPI: 遗失资产管理 API 对象（包含所有遗失资产相关方法）
+ * @callers
+ *   - stores/lostAssetStore: 遗失资产状态管理
+ *   - views/LostAssetManage: 遗失资产管理视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/lostasset: 遗失资产相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
@@ -12,7 +20,7 @@ import type {
   LostAssetQueryParams,
   LostAssetBatchCreateForm,
   LostAssetBatchCreateResult,
-} from '@/utils/LostAsset'
+} from '@/types/lostasset'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
 /**
@@ -109,33 +117,45 @@ export const lostAssetAPI = {
 
   /**
    * 标记资产为遗失
-   * POST /api/assets/assets/{asset_code}/mark-lost/
-   * @param asset_code 资产编码
+   * POST /api/assets/assets/{recordcode}/mark-lost/
+   * 对应后端 AssetViewSet.mark_lost action
+   * 注意：asset 由 URL 中的 recordcode 标识，请求体无需 asset_recordcode
+   * @param recordcode 资产记录编码（用作 URL 查找参数）
    * @param data 遗失信息
    * @returns 资产详情
    */
-  markAssetAsLost: (asset_code: string, data: LostAssetCreateForm): Promise<LostAssetExtended> => {
+  markAssetAsLost: (
+    recordcode: string,
+    data: {
+      lost_reason: string
+      last_known_location?: string | null
+      lost_description?: string | null
+      lost_date?: string | null
+    },
+  ): Promise<LostAssetExtended> => {
     return unwrapResponse(
-      request.post<LostAssetExtended>(`/assets/assets/${asset_code}/mark-lost/`, data),
+      request.post<LostAssetExtended>(`/assets/assets/${recordcode}/mark-lost/`, data),
     )
   },
 
   /**
-   * 找回遗失资产并入库
-   * POST /api/assets/assets/{asset_code}/found/
-   * @param asset_code 资产编码
+   * 找回遗失资产并转入待发放状态（Action 端点）
+   * POST /api/assets/assets/{recordcode}/found/
+   * 对应后端 AssetViewSet.found_and_return action
+   * 注意：asset 由 URL 中的 recordcode 标识（lookup_field="recordcode"）
+   * @param recordcode 资产记录编码（用作 URL 查找参数）
    * @param data 找回信息
    * @returns 资产详情
    */
   foundAsset: (
-    asset_code: string,
+    recordcode: string,
     data: {
       found_location?: string
       found_description?: string
     },
   ): Promise<LostAssetExtended> => {
     return unwrapResponse(
-      request.post<LostAssetExtended>(`/assets/assets/${asset_code}/found/`, data),
+      request.post<LostAssetExtended>(`/assets/assets/${recordcode}/found/`, data),
     )
   },
 }

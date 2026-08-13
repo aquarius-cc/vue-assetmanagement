@@ -1,7 +1,17 @@
 /**
- * 出库资产管理 API
- * 对应后端接口: /api/assets/out-assets/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 出库资产管理 API，提供出库资产的增删改查、批量操作等接口
+ * @module api/outAsset
+ * @exports
+ *   - outAssetAPI: 出库资产管理 API 对象（包含所有出库资产相关方法）
+ *   - OutAssetBatchCreateResult: 批量创建出库资产响应类型
+ * @callers
+ *   - stores/outAssetStore: 出库资产状态管理
+ *   - composables/useOutAssetForm: 出库资产表单组合式函数
+ *   - composables/useRecyclableOutAssets: 可回收出库资产列表
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/outasset: 出库资产相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
@@ -11,7 +21,7 @@ import type {
   OutAssetResponse,
   OutAssetQueryParams,
   RecyclableOutAssetResponse,
-} from '@/utils/OutAsset'
+} from '@/types/outasset'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
 /**

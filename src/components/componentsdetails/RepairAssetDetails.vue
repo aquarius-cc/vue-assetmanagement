@@ -1,6 +1,13 @@
 <!--
-  RepairAssetDetails.vue
-  Repair asset list page
+@file 维修资产列表页面，展示维修资产记录并支持删除和导出操作
+@component RepairAssetDetails
+@usedBy
+  - views/RepairAssetDetails.vue: 通过 router-view 渲染维修资产列表
+@dependsOn
+  - composables/useSmartListConfig: 列表配置
+  - stores/repairAssetStore: 维修资产数据管理
+  - components/commoncomponents/SmartListContainer: 数据管理容器
+  - components/commoncomponents/CommonList: 列表展示组件
 -->
 <template>
   <div class="repair-asset-details-root">
@@ -75,7 +82,7 @@ import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
-import type { RepairAssetExtended } from '@/utils/RepairAsset'
+import type { RepairAssetExtended } from '@/types/repairasset'
 import { useRepairAssetStore } from '@/stores/repairAssetStore'
 import { formatDate } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'
@@ -112,15 +119,15 @@ const getRepairStatusText = (status: string | null | undefined): string => {
 }
 
 const columns: TableColumn[] = [
-  { type: 'index', label: 'No.', width: 60, align: 'center' },
-  { prop: 'recordcode', label: 'Record Code', width: 160, align: 'center' },
-  { prop: 'asset_code', label: 'Asset Code', width: 160, align: 'center' },
-  { prop: 'asset_name', label: 'Asset Name', width: 150, align: 'left' },
-  { prop: 'repair_reason', label: 'Reason', width: 150, align: 'left' },
+  { type: 'index', label: '序号', width: 60, align: 'center' },
+  { prop: 'recordcode', label: '唯一记录码', width: 160, align: 'center' },
+  { prop: 'asset_code', label: '资产编号', width: 160, align: 'center' },
+  { prop: 'asset_name', label: '资产名称', width: 150, align: 'left' },
+  { prop: 'repair_reason', label: '维修原因', width: 150, align: 'left' },
   {
     type: 'custom',
     prop: 'repair_date',
-    label: 'Repair Date',
+    label: '维修日期',
     width: 120,
     align: 'center',
     slotName: 'repair_date',
@@ -128,12 +135,12 @@ const columns: TableColumn[] = [
   {
     type: 'custom',
     prop: 'repair_status',
-    label: 'Status',
+    label: '维修状态',
     width: 100,
     align: 'center',
     slotName: 'repair_status',
   },
-  { prop: 'operator_name', label: 'Operator', width: 100, align: 'center' },
+  { prop: 'operator_name', label: '操作人', width: 100, align: 'center' },
 ]
 
 const storeConfig = useSmartListConfig<RepairAssetExtended>({
@@ -158,8 +165,10 @@ const handleDelete = (row: RepairAssetExtended) => {
     })
     .catch((error) => {
       if (error !== 'cancel') {
+        const msg = (error as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message
         console.error('Delete failed:', error)
-        ElMessage.error('Delete failed')
+        ElMessage.error(msg || 'Delete failed')
       }
     })
 }
@@ -185,8 +194,9 @@ const handleBatchDelete = async (rows: RepairAssetExtended[] | undefined) => {
     await smartListRef.value?.refresh()
   } catch (err) {
     if (err === 'cancel') return
+    const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
     console.error('Batch delete failed:', err)
-    ElMessage.error('Batch delete failed')
+    ElMessage.error(msg || 'Batch delete failed')
   }
 }
 

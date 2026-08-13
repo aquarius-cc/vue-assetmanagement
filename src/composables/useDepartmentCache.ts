@@ -1,9 +1,16 @@
-/**
- * useDepartmentCache
- * 部门信息缓存，按工号预取部门名称
+﻿/**
+ * @file 部门信息缓存，按工号批量预取部门名称
+ * @module composables/useDepartmentCache
+ * @exports
+ *   - useDepartmentCache: 部门缓存 composable（cache / prefetch / getDeptName）
+ * @callers
+ *   - components/componentsdetails/detils/RecycleAssetForm.vue
+ * @dependsOn
+ *   - types/department: DepartmentBrief 类型
+ *   - api/user: getEmployeeDepartment 接口
  */
 import { reactive } from 'vue'
-import type { DepartmentBrief } from '@/utils/Department'
+import type { DepartmentBrief } from '@/types/department'
 import { userAPI } from '@/api/user'
 
 export function useDepartmentCache() {

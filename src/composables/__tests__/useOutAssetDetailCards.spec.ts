@@ -20,9 +20,9 @@ vi.mock('@/utils/Format', () => ({
 
 import { useOutAssetDetailCards } from '../useOutAssetDetailCards'
 import type { OutAssetDetailCardData } from '../useOutAssetDetailCards'
-import type { OutAssetDetail } from '@/utils/OutAsset'
+import type { OutAssetDetail } from '@/types/outasset'
 import type { Contract } from '@/types/contract'
-import type { EmployeeExtended } from '@/utils/User'
+import type { EmployeeExtended } from '@/types/user'
 
 const createMockDetail = (overrides?: Partial<OutAssetDetail>): OutAssetDetail =>
   ({
@@ -51,8 +51,8 @@ const createMockDetail = (overrides?: Partial<OutAssetDetail>): OutAssetDetail =
     contract: {
       contract_code: 'C001',
       contract_name: '采购合同',
-      contract_price: 5000,
-      contract_supplier: '供应商A',
+      contract_amount: 5000,
+      supplier_name: '供应商A',
     } as Contract,
     ...overrides,
   }) as unknown as OutAssetDetail

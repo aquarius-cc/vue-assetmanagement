@@ -1,10 +1,19 @@
 <!--
   DamagedAssetForm.vue
-  待报废资产表单页面（新增/编辑＀  模式判断：route.query.id 存在为编辑模式，否则为新增模式  功能＀    - 新增待报废资产记录    - 编辑已有待报废资产记录    - 资产搜索选择（ScrapableAssetsSearch＀    - 资产名称→资产编码联动（el-autocomplete＀    - 合同名称→合同编码联动（el-autocomplete＀    - 仓库名称→仓库编码联动（el-autocomplete＀    - 表单验证
+  待报废资产表单页面（新增/编辑）
+  模式判断：route.query.id 存在为编辑模式，否则为新增模式
+  功能：
+  - 新增待报废资产记录
+  - 编辑已有待报废资产记录
+  - 资产搜索选择（ScrapableAssetsSearch）
+  - 资产名称→资产编码联动（el-autocomplete）
+  - 合同名称→合同编码联动（el-autocomplete）
+  - 仓库名称→仓库编码联动（el-autocomplete）
+  - 表单验证
 -->
 <template>
   <div class="damaged-asset-form" v-loading="isLoading" element-loading-text="加载中...">
-    <!-- 可报废资产搜索组件（新增模式显示＀-->
+    <!-- 可报废资产搜索组件（新增模式显示）-->
     <ScrapableAssetsSearch
       v-if="!isEditMode"
       @select="handleAssetSearchSelect"
@@ -199,10 +208,10 @@ import { useAssetStore } from '@/stores/assetStore'
 import { useContractStore } from '@/stores/contractStore'
 import { useStorageStore } from '@/stores/storageStore'
 import { useDamagedAssetStore } from '@/stores/damagedAssetStore'
-import type { DamagedAssetCreateForm } from '@/utils/DamagedAsset'
+import type { DamagedAssetCreateForm } from '@/types/damagedasset'
 import type { AssetDetail } from '@/types/asset'
 import type { Contract } from '@/types/contract'
-import type { Storage } from '@/utils/Storage'
+import type { Storage } from '@/types/storage'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
 import ScrapableAssetsSearch from '@/components/componentsdetails/detils/detilschildcomponents/ScrapableAssetsSearch.vue'
 
@@ -245,10 +254,11 @@ const formData = reactive<FormDataType>({
 
 const originalFormData = ref<FormDataType | null>(null)
 
-// ===== 提交数据（仅包含 API 需要的字段＀=====
-// 【AGENTS规范】固宀approval_status='pending'，不提交 approver
+// ===== 提交数据（仅包含 API 需要的字段）=====
+// 【AGENTS规范】固定approval_status='pending'，不提交 approver
+// [HALT] FE-C2修复：字段名从 damaged_asset_code 改为 asset_recordcode，与后端Serializer对齐
 const submitData = computed<DamagedAssetCreateForm>(() => ({
-  damaged_asset_code: formData.damaged_asset_code || null,
+  asset_recordcode: formData.damaged_asset_code || null,
   damaged_asset_number: formData.damaged_asset_number,
   damaged_date: formData.damaged_date || null,
   approval_status: 'pending',
@@ -307,7 +317,7 @@ const handleAssetSearchSelect = (asset: AssetDetail) => {
     formData.contract_name_display = asset.asset_contract.contract_name || ''
     formData.damaged_asset_contract_code = asset.asset_contract.contract_code || ''
   }
-  ElMessage.success(`已选择资产＀{asset.asset_name}`)
+  ElMessage.success(`已选择资产${asset.asset_name}`)
 }
 
 const handleAssetNameChange = (value: string) => {
@@ -454,7 +464,7 @@ const loadEditData = async (code: string) => {
       return
     }
     // 回填表单数据
-    formData.damaged_asset_code = detail.damaged_asset_code || ''
+    formData.damaged_asset_code = detail.damaged_asset || ''
     formData.asset_name_display = detail.damaged_asset_name || ''
     formData.damaged_asset_contract_code = detail.damaged_asset_contract_code || ''
     formData.contract_name_display = detail.damaged_asset_contract_name || ''
@@ -465,9 +475,9 @@ const loadEditData = async (code: string) => {
     formData.damaged_asset_description = detail.damaged_asset_description || ''
 
     // 如果后端未返回名称，尝试通过 Store 联动查询
-    if (!detail.damaged_asset_name && detail.damaged_asset_code) {
+    if (!detail.damaged_asset_name && detail.damaged_asset) {
       try {
-        const asset = await assetStore.getById(detail.damaged_asset_code)
+        const asset = await assetStore.getById(detail.damaged_asset)
         if (asset) formData.asset_name_display = asset.asset_name
       } catch {
         // 查询失败不阻塞
@@ -521,7 +531,7 @@ const submitForm = () => {
     }
     try {
       if (isEditMode.value) {
-        // 编辑模式：submitData 已包吀damaged_asset_code（主键）
+        // 编辑模式：submitData 已包含damaged_asset_code（主键）
         await damagedAssetStore.update(submitData.value)
         ElMessage.success('待报废资产修改成功！')
       } else {
@@ -532,13 +542,13 @@ const submitForm = () => {
       router.push({ name: 'DamagedAssetDetails' })
     } catch (error: unknown) {
       if (isAxiosError(error)) {
-        ElMessage.error(`操作失败＀{error.response?.data?.message || error.message}`)
+        ElMessage.error(`操作失败${error.response?.data?.message || error.message}`)
       } else if (error instanceof Error) {
-        ElMessage.error(`操作失败＀{error.message}`)
+        ElMessage.error(`操作失败${error.message}`)
       } else {
         ElMessage.error('操作失败，请重试')
       }
-      console.error('待报废资产提交失贀', error)
+      console.error('待报废资产提交失败', error)
     }
   })
 }

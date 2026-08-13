@@ -1,6 +1,13 @@
 <!--
-  LostAssetDetails.vue
-  Lost asset list page
+@file 遗失资产列表页面，展示遗失资产记录并支持删除和导出操作
+@component LostAssetDetails
+@usedBy
+  - views/LostAssetDetails.vue: 通过 router-view 渲染遗失资产列表
+@dependsOn
+  - composables/useSmartListConfig: 列表配置
+  - stores/lostAssetStore: 遗失资产数据管理
+  - components/commoncomponents/SmartListContainer: 数据管理容器
+  - components/commoncomponents/CommonList: 列表展示组件
 -->
 <template>
   <div class="lost-asset-details-root">
@@ -69,7 +76,7 @@ import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
-import type { LostAssetExtended } from '@/utils/LostAsset'
+import type { LostAssetExtended } from '@/types/lostasset'
 import { useLostAssetStore } from '@/stores/lostAssetStore'
 import { formatDate } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'
@@ -78,21 +85,21 @@ const lostAssetStore = useLostAssetStore()
 const smartListRef = ref<SmartListContainerExpose | null>(null)
 
 const columns: TableColumn[] = [
-  { type: 'index', label: 'No.', width: 60, align: 'center' },
-  { prop: 'recordcode', label: 'Record Code', width: 160, align: 'center' },
-  { prop: 'asset_code', label: 'Asset Code', width: 160, align: 'center' },
-  { prop: 'asset_name', label: 'Asset Name', width: 150, align: 'left' },
-  { prop: 'lost_reason', label: 'Reason', width: 150, align: 'left' },
-  { prop: 'last_known_location', label: 'Last Location', width: 120, align: 'left' },
+  { type: 'index', label: '序号', width: 60, align: 'center' },
+  { prop: 'recordcode', label: '唯一记录码', width: 160, align: 'center' },
+  { prop: 'asset_code', label: '资产编号', width: 160, align: 'center' },
+  { prop: 'asset_name', label: '资产名称', width: 150, align: 'left' },
+  { prop: 'lost_reason', label: '原因', width: 150, align: 'left' },
+  { prop: 'last_known_location', label: '最后已知位置', width: 120, align: 'left' },
   {
     type: 'custom',
     prop: 'lost_date',
-    label: 'Lost Date',
+    label: '丢失日期',
     width: 120,
     align: 'center',
     slotName: 'lost_date',
   },
-  { prop: 'operator_name', label: 'Operator', width: 100, align: 'center' },
+  { prop: 'operator_name', label: '操作人', width: 100, align: 'center' },
 ]
 
 const storeConfig = useSmartListConfig<LostAssetExtended>({

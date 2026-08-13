@@ -100,7 +100,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 
 // Stores
 import { useStorageStore } from '@/stores/storageStore'
-import type { StorageCreateForm } from '@/utils/Storage'
+import type { StorageCreateForm } from '@/types/storage'
 
 // ==================== 路由与状态 ====================
 const router = useRouter()

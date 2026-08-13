@@ -1,3 +1,11 @@
+<!--
+@file 登录弹窗组件，引导未登录用户跳转至登录页
+@component LoginDialog
+@usedBy
+  - (当前未被引用，预留登录入口组件)
+@dependsOn
+  - vue-router: 登录页路由跳转
+-->
 <script lang="ts" setup>
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'

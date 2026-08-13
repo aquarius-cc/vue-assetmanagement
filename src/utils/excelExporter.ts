@@ -1,5 +1,18 @@
-// 导出 excel 的工具函数，所有导出功能通用
-// 使用 ExcelJS 替代 xlsx 库，支持更丰富的 Excel 格式控制
+/**
+ * @file 通用 Excel 导出工具函数，基于 ExcelJS 创建工作簿并触发浏览器下载
+ * @module src/utils/excelExporter
+ * @exports
+ *   - ColumnConfig: 通用列配置接口
+ *   - ExcelExportConfig: 导出配置接口
+ *   - exportToExcel: 通用 Excel 导出函数（含确认弹窗与错误处理）
+ * @callers
+ *   - composables/useExcelExport
+ *   - composables/useAssetListConfig
+ * @dependsOn
+ *   - element-plus (ElMessage, ElMessageBox)
+ *   - @/utils/Format (formatDate)
+ *   - exceljs
+ */
 
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatDate } from '@/utils/Format'

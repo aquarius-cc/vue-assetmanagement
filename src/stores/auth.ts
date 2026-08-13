@@ -1,35 +1,43 @@
 /**
- * 认证模块 Store
- * 负责用户登录、登出、Token 管理等认证相关状态
+ * @file 用户认证 Store，负责登录、登出、Token 管理与 RBAC 角色解析
+ * @module stores/auth
+ * @exports
+ *   - useAuthStore: 用户认证状态 Store
+ * @callers
+ *   - views/LogIn.vue
+ *   - router/guards.ts
+ *   - composables/usePermission.ts
+ *   - composables/useDashboardPage.ts
+ * @dependsOn
+ *   - api/auth: 登录、登出、获取用户信息 API
+ *   - utils/tokenCrypto: Token 加密存储工具
+ *   - types/authuser: 认证相关类型定义
  */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { authAPI } from '@/api/auth'
 import { ElMessage } from 'element-plus'
-import type { LoginForm, AuthInfo } from '@/utils/AuthUser'
+import type { LoginForm, AuthInfo } from '@/types/authuser'
 import { setEncryptedToken, getDecryptedToken, clearAllAuthTokens } from '@/utils/tokenCrypto'
-
-/**
- * 从 JWT Token 中解析 payload（不验证签名，仅解码 Base64）
- */
-function decodeJWTPayload(token: string): Record<string, unknown> | null {
-  try {
-    const parts = token.split('.')
-    if (parts.length !== 3) return null
-    const payload = JSON.parse(atob(parts[1]))
-    return payload
-  } catch {
-    return null
-  }
-}
+import { permissionsAPI } from '@/api/permissions'
+import type { DataScope } from '@/types/permission'
+import { DEFAULT_ROLE } from '@/constants/roles'
+import { decodeJWTPayload } from '@/utils/decodeJwt'
 
 export const useAuthStore = defineStore('AuthUser', () => {
   const authInfo = ref<AuthInfo | null>(null) // 认证用户信息
   const isLoggedIn = ref(false) // 登录状态
   const access_token = ref<string | null>(null) // 访问令牌
   const refresh_token = ref<string | null>(null) // 刷新令牌
-  const userRole = ref<string>('regular_user') // RBAC 角色
+  const userRole = ref<string>(DEFAULT_ROLE) // RBAC 角色
   const userDepartmentCode = ref<string | null>(null) // RBAC 部门编码
+
+  // ===== 新增：RBAC 权限码与数据范围 =====
+  const permissions = ref<string[]>([]) // 权限码列表，如 ['asset:read', 'asset:create']
+  const dataScope = ref<DataScope | null>(null) // 数据范围
+
+  // 防重入：避免并发请求重复加载权限（修复竞态漏洞 2）
+  let _permPromise: Promise<void> | null = null
 
   /**
    * 用户登录
@@ -66,7 +74,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
         // RBAC: 从 JWT 中解析 role + department_code
         const payload = decodeJWTPayload(response.data.access)
         if (payload) {
-          userRole.value = (payload.role as string) || 'regular_user'
+          userRole.value = (payload.role as string) || DEFAULT_ROLE
           userDepartmentCode.value = (payload.department_code as string) || null
         }
 
@@ -75,6 +83,9 @@ export const useAuthStore = defineStore('AuthUser', () => {
         setEncryptedToken('access_token', response.data.access)
         setEncryptedToken('refresh_token', response.data.refresh)
 
+        // [新增] 登录成功后加载权限（不 await，避免阻塞登录返回）
+        // 权限加载失败不影响登录，由 loadMyPermissions 内部降级处理
+        void loadMyPermissions()
         // 注意：不再调用 ElMessage.success()，由调用方（LogIn.vue）统一处理成功提示
         return { success: true, message: '登录成功' }
       } else {
@@ -136,10 +147,15 @@ export const useAuthStore = defineStore('AuthUser', () => {
       isLoggedIn.value = false
       access_token.value = null
       refresh_token.value = null
-      userRole.value = 'regular_user'
+      userRole.value = DEFAULT_ROLE
       userDepartmentCode.value = null
-      clearAllAuthTokens()
+      // [新增] 清空权限状态
+      permissions.value = []
+      dataScope.value = null
+      _permPromise = null
+      clearAllAuthTokens() // 清除本地存储的认证信息
       localStorage.removeItem('authInfo')
+      localStorage.removeItem('myPermissions') // [新增]清除本地缓存权限
     }
   }
 
@@ -157,12 +173,15 @@ export const useAuthStore = defineStore('AuthUser', () => {
     isLoggedIn.value = false
     access_token.value = null
     refresh_token.value = null
-    userRole.value = 'regular_user'
+    userRole.value = DEFAULT_ROLE
     userDepartmentCode.value = null
-
-    // 清除本地存储的认证信息
-    clearAllAuthTokens()
+    // [新增] 清空权限状态
+    permissions.value = []
+    dataScope.value = null
+    _permPromise = null
+    clearAllAuthTokens() // 清除本地存储的认证信息
     localStorage.removeItem('authInfo')
+    localStorage.removeItem('myPermissions') // [新增] 清除本地缓存权限
   }
 
   /**
@@ -183,10 +202,26 @@ export const useAuthStore = defineStore('AuthUser', () => {
         refresh_token.value = savedRefreshToken
         isLoggedIn.value = true
 
+        // [新增] 从本地缓存恢复权限（降级用，守卫会联网刷新）
+        const savedPermsStr = getDecryptedToken('myPermissions')
+        if (savedPermsStr) {
+          try {
+            const savedPerms = JSON.parse(savedPermsStr) as {
+              permissions: string[]
+              data_scope: DataScope
+            }
+            permissions.value = savedPerms.permissions
+            dataScope.value = savedPerms.data_scope
+          } catch {
+            permissions.value = []
+            dataScope.value = null
+          }
+        }
+
         // RBAC: 从存储的 access_token 中解析 role + department_code
         const payload = decodeJWTPayload(savedAccessToken)
         if (payload) {
-          userRole.value = (payload.role as string) || 'regular_user'
+          userRole.value = (payload.role as string) || DEFAULT_ROLE
           userDepartmentCode.value = (payload.department_code as string) || null
         }
 
@@ -235,6 +270,9 @@ export const useAuthStore = defineStore('AuthUser', () => {
         authInfo.value = userData
         // 使用加密存储（与登录时一致）
         setEncryptedToken('authInfo', JSON.stringify(userData))
+        // [新增] 登录成功后加载权限（不 await，避免阻塞登录返回）
+        // 权限加载失败不影响登录，由 loadMyPermissions 内部降级处理
+        void loadMyPermissions()
       }
     } catch {
       // 使用 silentLogout 而非 logout：
@@ -245,6 +283,38 @@ export const useAuthStore = defineStore('AuthUser', () => {
     }
   }
 
+  /**
+   * 加载当前用户的权限码列表与数据范围
+   * @description 调用 GET /api/v1/auth/my-permissions/
+   *
+   * 防重入：并发调用时复用同一个 Promise（修复竞态）
+   * 降级策略：加载失败时 permissions 置空，不阻塞登录流程
+   *
+   * AR-3 合规说明：超时复用全局 TIMEOUT（request.ts:88），
+   * 不单独重试——权限加载失败降级为空数组，避免登录卡死。
+   */
+  const loadMyPermissions = async (): Promise<void> => {
+    if (_permPromise) return _permPromise
+    _permPromise = (async () => {
+      try {
+        const res = await permissionsAPI.getMyPermissions()
+        permissions.value = res.permissions
+        dataScope.value = res.data_scope
+        // 持久化到加密存储（仅作联网失败时的降级缓存）
+        setEncryptedToken('myPermissions', JSON.stringify(res))
+      } catch (error) {
+        // 降级：权限置空，hasPermission 对非 superuser 全返回 false
+        console.error('加载权限失败:', error)
+        permissions.value = []
+        dataScope.value = null
+        ElMessage.warning('权限加载失败，部分功能可能不可用')
+      } finally {
+        _permPromise = null
+      }
+    })()
+    return _permPromise
+  }
+
   return {
     // 状态
     authInfo,
@@ -253,6 +323,8 @@ export const useAuthStore = defineStore('AuthUser', () => {
     refresh_token,
     userRole, // RBAC 角色
     userDepartmentCode, // RBAC 部门编码
+    permissions, // RBAC 权限码列表
+    dataScope, // RBAC 数据范围
 
     // 操作方法
     login,
@@ -262,5 +334,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
     updateAuthInfo,
     // [HR-04] 已移除 changePassword 导出，原因：后端端点已无效
     getAuthInfo,
+    // [新增] 权限加载
+    loadMyPermissions,
   }
 })

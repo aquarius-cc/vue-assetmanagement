@@ -1,14 +1,16 @@
 /**
- * useScrapableAssets
- * 可报废资产列表管琀Composable
- *
- * 职责＀ * - 搜索资产状态为 in_store 戀recycled_pending 的资人 * - 管理列表数据、分页状态、加载状态 * - 提供搜索、翻页、重置等操作方法
- *
- * 遵守 AGENTS 规范＀ * - 类型严格，无 any
- * - 单向依赖：Composable ↀStore ↀAPI 局 * - 单一职责：仅处理可报废资产列表相关逻辑
- * - 可被多个组件复用
+ * @file 可报废资产列表管理（状态为 in_store 或 recycled_pending）
+ * @module composables/useScrapableAssets
+ * @exports
+ *   - useScrapableAssets: 可报废资产列表 composable
+ *   - UseScrapableAssetsReturn: 返回值类型
+ * @callers
+ *   - components/componentsdetails/detils/detilschildcomponents/ScrapableAssetsSearch.vue
+ * @dependsOn
+ *   - stores/assetStore: 资产搜索 API（combineSearch）
+ *   - types/asset: 资产详情类型
+ *   - stores/createEntityStore: 分页查询参数类型
  */
-
 import { ref } from 'vue'
 import { useAssetStore } from '@/stores/assetStore'
 import type { AssetDetail } from '@/types/asset'
@@ -18,7 +20,7 @@ import type { PaginationQuery } from '@/stores/createEntityStore'
 /**
  * 可报废资产列血Composable 返回值接号 */
 export interface UseScrapableAssetsReturn {
-  /** 列表数据（响应式＀*/
+  /** 列表数据（响应式）*/
   list: import('vue').Ref<AssetDetail[]>
   /** 加载中状态*/
   loading: import('vue').Ref<boolean>
@@ -35,11 +37,13 @@ export interface UseScrapableAssetsReturn {
    */
   search: (extraParams?: Omit<PaginationQuery, 'page' | 'page_size'>) => Promise<void>
   /**
-   * 切换页码（自动使用上次的搜索条件重新请求＀   * @param page - 目标页码
+   * 切换页码（自动使用上次的搜索条件重新请求）
+   * @param page - 目标页码
    */
   changePage: (page: number) => Promise<void>
   /**
-   * 重置所有状态（清空列表、重置分页、清空缓存的搜索条件＀   */
+   * 重置所有状态（清空列表、重置分页、清空缓存的搜索条件）
+   */
   reset: () => void
 }
 
@@ -62,18 +66,20 @@ export function useScrapableAssets(): UseScrapableAssetsReturn {
 
   /**
    * 内部请求方法
-   * @param params - 完整查询参数（包含分页和搜索条件＀   */
+   * @param params - 完整查询参数（包含分页和搜索条件）
+   */
   const fetchList = async (params: PaginationQuery) => {
     loading.value = true
     try {
       // 构建查询参数，固定包吀asset_current_status__in 条件
       const searchParams: PaginationQuery & Record<string, string | number> = {
         ...params,
-        asset_current_status__in: 'in_store,recycled_pending',
+        // 与后端 FSM 对齐：in_store 不可直接报废，移除；补充 in_use/broken/lost
+        asset_current_status__in: 'in_use,recycled_pending,broken,lost',
       }
 
       const response = await assetStore.combineSearch(searchParams)
-      console.log('[useScrapableAssets] 获取可报废资产成劀', response)
+      console.log('[useScrapableAssets] 获取可报废资产成功', response)
       // 后端 search_assets 返回 AssetSimpleReturn[]，与 AssetDetail[] 结构兼容
       list.value = response.results as unknown as typeof list.value
       total.value = response.count
@@ -107,7 +113,8 @@ export function useScrapableAssets(): UseScrapableAssetsReturn {
   }
 
   /**
-   * 切换页码（自动使用缓存的搜索条件重新请求＀   * @param page - 目标页码
+   * 切换页码（自动使用缓存的搜索条件重新请求）
+   * @param page - 目标页码
    */
   const changePage = async (page: number) => {
     if (page === currentPage.value) return
@@ -121,7 +128,8 @@ export function useScrapableAssets(): UseScrapableAssetsReturn {
   }
 
   /**
-   * 重置所有状态   */
+   * 重置所有状态
+   */
   const reset = () => {
     currentPage.value = 1
     total.value = 0

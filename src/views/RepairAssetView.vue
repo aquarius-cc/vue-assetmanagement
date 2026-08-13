@@ -1,100 +1,121 @@
+<!--
+@file 资产维修申请页面，填写维修信息并提交申请
+@component RepairAssetView.vue
+@description 维修资产申请页面，填写维修信息并提交申请
+@usedBy
+  - router/index.ts: 路由懒加载
+  - views/AssetManagementView.vue: 资产管理页面
+  - views/ScrapAssetView.vue: 报废资产申请页面
+  - views/AssetView.vue: 资产详情页面
+  - views/RepairAssetView.vue: 维修资产申请页面
+@dependsOn
+  - components/AssetOperationLayout: 资产操作通用布局
+  - composables/useAssetOperationForm: 资产操作表单逻辑
+  - api/repairAsset: 维修资产数据接口
+  - api/asset: 资产数据接口
+  - api/repairAsset: 维修资产数据接口
+-->
 <template>
-  <div class="asset-operation-view">
-    <el-card class="operation-card">
-      <template #header>
-        <div class="card-header">
-          <el-icon><SetUp /></el-icon>
-          <span>资产维修</span>
-        </div>
-      </template>
+  <AssetOperationLayout
+    title="资产维修"
+    :icon="SetUp"
+    :asset-code="assetCode"
+    :loading="loading"
+    :asset="asset"
+  >
+    <template #form>
+      <el-alert
+        v-if="asset && !canRepair"
+        type="warning"
+        :closable="false"
+        title="当前资产状态不允许送修，仅「已损坏」状态的资产可发起维修"
+        style="margin-bottom: 16px"
+      />
+      <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
+        <el-form-item label="维修数量" prop="repair_asset_number">
+          <el-input-number v-model="formData.repair_asset_number" :min="1" :max="1000" />
+        </el-form-item>
+        <el-form-item label="维修日期" prop="repair_date">
+          <el-date-picker
+            v-model="formData.repair_date"
+            type="date"
+            placeholder="请选择维修日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+          />
+        </el-form-item>
+        <el-form-item label="维修原因" prop="repair_reason">
+          <el-input v-model="formData.repair_reason" placeholder="请输入维修原因" />
+        </el-form-item>
+        <el-form-item label="维修描述" prop="repair_description">
+          <el-input
+            v-model="formData.repair_description"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入维修描述（可选）"
+          />
+        </el-form-item>
+      </el-form>
+    </template>
 
-      <el-result
-        v-if="!assetCode"
-        icon="warning"
-        title="缺少资产编码"
-        sub-title="请通过正确的方式访问此页面"
-      >
-        <template #extra>
-          <el-button type="primary" @click="router.push('/main')">返回首页</el-button>
-        </template>
-      </el-result>
-
-      <div v-else-if="loading" v-loading="true" class="loading-container" />
-
-      <template v-else-if="asset">
-        <el-descriptions :column="2" border class="asset-info">
-          <el-descriptions-item label="资产编码">{{ asset.asset_code }}</el-descriptions-item>
-          <el-descriptions-item label="资产名称">{{ asset.asset_name }}</el-descriptions-item>
-          <el-descriptions-item label="资产规格">{{
-            asset.asset_specification || '-'
-          }}</el-descriptions-item>
-          <el-descriptions-item label="当前状态">{{
-            asset.asset_current_status
-          }}</el-descriptions-item>
-        </el-descriptions>
-
-        <el-divider />
-
-        <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
-          <el-form-item label="维修数量" prop="repair_asset_number">
-            <el-input-number v-model="formData.repair_asset_number" :min="1" :max="1000" />
-          </el-form-item>
-          <el-form-item label="维修日期" prop="repair_date">
-            <el-date-picker
-              v-model="formData.repair_date"
-              type="date"
-              placeholder="请选择维修日期"
-              format="YYYY-MM-DD"
-              value-format="YYYY-MM-DD"
-            />
-          </el-form-item>
-          <el-form-item label="维修原因" prop="repair_reason">
-            <el-input v-model="formData.repair_reason" placeholder="请输入维修原因" />
-          </el-form-item>
-          <el-form-item label="维修描述" prop="repair_description">
-            <el-input
-              v-model="formData.repair_description"
-              type="textarea"
-              :rows="3"
-              placeholder="请输入维修描述（可选）"
-            />
-          </el-form-item>
-        </el-form>
-
-        <div class="action-buttons">
-          <el-button type="warning" :loading="submitting" @click="handleSubmit"
-            >提交维修申请</el-button
-          >
-          <el-button @click="router.back()">取消</el-button>
-        </div>
-      </template>
-
-      <el-result v-else icon="error" title="资产不存在" sub-title="未找到该资产信息">
-        <template #extra>
-          <el-button type="primary" @click="router.push('/main')">返回首页</el-button>
-        </template>
-      </el-result>
-    </el-card>
-  </div>
+    <template #actions>
+      <div class="action-buttons">
+        <el-button
+          type="warning"
+          :loading="submitting"
+          :disabled="!canRepair"
+          @click="handleSubmit"
+        >
+          提交维修申请
+        </el-button>
+        <el-button @click="router.back()">取消</el-button>
+      </div>
+    </template>
+  </AssetOperationLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { reactive, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { SetUp } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import type { FormInstance, FormRules } from 'element-plus'
-import { assetAPI } from '@/api/asset'
+import type { FormRules } from 'element-plus'
+import AssetOperationLayout from '@/components/AssetOperationLayout.vue'
+import { useAssetOperationForm } from '@/composables/useAssetOperationForm'
 import { repairAssetAPI } from '@/api/repairAsset'
-import type { AssetDetail } from '@/types/asset'
+import { AssetCurrentStatus } from '@/types/asset'
 
-const route = useRoute()
 const router = useRouter()
-const formRef = ref<FormInstance>()
-const loading = ref(true)
-const submitting = ref(false)
-const asset = ref<AssetDetail | null>(null)
-const assetCode = ref(route.params.code as string)
+
+const {
+  loading,
+  submitting,
+  asset,
+  assetCode,
+  formRef,
+  handleSubmit: baseHandleSubmit,
+} = useAssetOperationForm<{
+  repair_asset_number: number
+  repair_date: string
+  repair_reason: string
+  repair_description?: string | null
+}>({
+  submitFn: async (data) => {
+    await repairAssetAPI.repairAsset(assetCode.value, {
+      repair_asset_number: data.repair_asset_number,
+      repair_date: data.repair_date,
+      repair_reason: data.repair_reason,
+      repair_description: data.repair_description || null,
+    })
+  },
+  successMessage: '维修申请已提交',
+  errorMessage: '提交维修申请失败，请重试',
+})
+
+// formRef 由模板 ref="formRef" 绑定到 el-form，供 composable 内部校验；
+// vue-tsc 不将模板 ref 绑定计为变量使用，此处显式消费以消除 TS6133
+void formRef
+// 维修资产状态只能是故障资产
+const canRepair = computed(() => asset.value?.asset_current_status === AssetCurrentStatus.BROKEN)
 
 const formData = reactive({
   repair_asset_number: 1,
@@ -109,77 +130,9 @@ const rules: FormRules = {
   repair_reason: [{ required: true, message: '请输入维修原因', trigger: 'blur' }],
 }
 
-onMounted(async () => {
-  if (!assetCode.value) return
-  try {
-    asset.value = await assetAPI.getAssetByCode(assetCode.value)
-  } catch (err) {
-    console.error('获取资产信息失败:', err)
-  } finally {
-    loading.value = false
-  }
-})
-
-const handleSubmit = async () => {
-  if (!formRef.value) return
-  const valid = await formRef.value.validate().catch(() => false)
-  if (!valid) return
-
-  submitting.value = true
-  try {
-    await repairAssetAPI.repairAsset(assetCode.value, {
-      asset_code: assetCode.value,
-      repair_asset_number: formData.repair_asset_number,
-      repair_date: formData.repair_date,
-      repair_reason: formData.repair_reason,
-      repair_description: formData.repair_description || null,
-    })
-    ElMessage.success('维修申请已提交')
-    router.push('/main')
-  } catch (err) {
-    console.error('提交维修申请失败:', err)
-    ElMessage.error('提交维修申请失败，请重试')
-  } finally {
-    submitting.value = false
-  }
-}
+const handleSubmit = () => baseHandleSubmit(formData)
 </script>
 
-<style scoped>
-.asset-operation-view {
-  display: flex;
-  justify-content: center;
-  padding: 24px;
-  min-height: 100vh;
-  background: var(--background-color);
-}
-
-.operation-card {
-  width: 100%;
-  max-width: 720px;
-  border-radius: 8px;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.loading-container {
-  min-height: 200px;
-}
-
-.asset-info {
-  margin-bottom: 16px;
-}
-
-.action-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 24px;
-}
+<style lang="scss" scoped>
+@use '@/assets/styles/asset-operation.scss' as *;
 </style>

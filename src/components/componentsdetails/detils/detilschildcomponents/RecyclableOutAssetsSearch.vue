@@ -155,7 +155,7 @@ export default { name: 'RecyclableOutAssetsSearch' }
 <script lang="ts" setup>
 import { ref, reactive } from 'vue'
 import { Search } from '@element-plus/icons-vue'
-import type { OutAssetDetail } from '@/utils/OutAsset'
+import type { OutAssetDetail } from '@/types/outasset'
 import { useRecyclableOutAssets } from '@/composables/useRecyclableOutAssets'
 
 // ---------- Emits 定义 ----------

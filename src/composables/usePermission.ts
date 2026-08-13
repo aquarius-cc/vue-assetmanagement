@@ -1,24 +1,30 @@
 /**
- * RBAC 权限 composable
- *
- * 基于 authStore 中的 userRole 提供角色判断能力。
- * 用于路由守卫、按钮级权限控制、菜单可见性。
- *
- * 角色层级：
- *   system_admin > dept_manager > asset_admin > regular_user
- *   auditor（独立，只读全量数据）
+ * @file RBAC 权限判断（角色层级、模块级权限、通用方法）
+ * @module composables/usePermission
+ * @exports
+ *   - usePermission: 权限 composable
+ * @callers
+ *   - views/system/AuthUserManage.vue
+ *   - views/system/RoleManage.vue
+ * @dependsOn
+ *   - stores/auth: 认证状态与角色信息
  */
-
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { ROLE_HIERARCHY, ROLE_CODES } from '@/constants/roles'
+import { decodeJWTPayload } from '@/utils/decodeJwt'
 
-const ROLE_HIERARCHY: Record<string, number> = {
-  system_admin: 5,
-  dept_manager: 4,
-  asset_admin: 3,
-  regular_user: 1,
-  auditor: 2,
-}
+// 角色层级定义已统一提取到 constants/roles.ts中
+// 从高到低，系统管理员 > 部门经理 > 资产管理员 > 审计员 > 普通用户
+// 例如：system_admin 有所有权限，regular_user 无任何权限
+// 例如：dept_manager 有部门相关权限，无资产相关权限
+// const ROLE_HIERARCHY: Record<string, number> = {
+//   system_admin: 5,
+//   dept_manager: 4,
+//   asset_admin: 3,
+//   regular_user: 1,
+//   auditor: 2,
+// }
 
 export function usePermission() {
   const authStore = useAuthStore()
@@ -30,12 +36,8 @@ export function usePermission() {
   const isSuperuser = computed(() => {
     // 方式1：从 JWT payload 检查
     if (authStore.access_token) {
-      try {
-        const payload = JSON.parse(atob(authStore.access_token.split('.')[1]))
-        if (payload.is_superuser) return true
-      } catch {
-        /* ignore */
-      }
+      const payload = decodeJWTPayload(authStore.access_token)
+      if (payload?.is_superuser) return true
     }
     // 方式2：authInfo 中 auth_is_staff 且 is_superuser（兼容旧 token）
     // 旧 token 没有 role 但用户是 superuser，需要 re-login 获取新 token
@@ -49,7 +51,7 @@ export function usePermission() {
   })
 
   /** 是否系统管理员 */
-  const isAdmin = computed(() => isSuperuser.value || role.value === 'system_admin')
+  const isAdmin = computed(() => isSuperuser.value || role.value === ROLE_CODES.SYSTEM_ADMIN)
 
   /** 是否部门经理及以上 */
   const isDeptManagerOrAbove = computed(() => roleLevel.value >= ROLE_HIERARCHY.dept_manager)
@@ -79,12 +81,30 @@ export function usePermission() {
     return roleLevel.value >= (ROLE_HIERARCHY[minRole] ?? 0)
   }
 
+  /**
+   * 判断当前用户是否拥有指定权限码
+   * @param permissionCode 权限码，格式 module:action，如 'asset:create'
+   *
+   * superuser / system_admin 短路返回 true（修复漏洞 5）
+   * 避免后端权限点表未初始化时管理员被锁死
+   */
+  function hasPermission(permissionCode: string): boolean {
+    // 管理员短路：避免权限点表未种子化时管理员被锁死
+    if (isSuperuser.value || isAdmin.value) return true
+    return authStore.permissions.includes(permissionCode)
+  }
+
   // ========== 按模块的权限判断 ==========
 
   /** 资产管理：增删改 */
   const canOperateAsset = computed(() => isAssetAdminOrAbove.value)
 
-  /** 资产管理：只读（列表/详情） */
+  /**
+   * 资产管理：只读（列表/详情）
+   * 所有已认证角色均可访问资产列表入口。
+   * 部门级数据隔离由后端 AssetSelector.get_queryset_for_user() 实现，
+   * 前端不需要做部门过滤判断。
+   */
   const canViewAsset = computed(() => true) // 所有已认证角色可查看本部门
 
   /** 报废审批 */
@@ -118,6 +138,7 @@ export function usePermission() {
     // 通用方法
     hasRole,
     hasMinRole,
+    hasPermission, // [新增] 权限判断方法
 
     // 模块级权限
     canOperateAsset,

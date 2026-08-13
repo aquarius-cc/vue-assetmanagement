@@ -1,9 +1,21 @@
 /**
- * 资产类型 Store
+ * @file 资产类型 Store，基于 createEntityStore 工厂创建
+ * @module stores/assetTypeStore
+ * @exports
+ *   - useAssetTypeStore: 资产类型管理状态 Store
+ * @callers
+ *   - composables/useRecycleFormAssociations.ts
+ *   - components/componentsdetails/detils/AssetForm.vue
+ *   - components/componentsdetails/detils/AssetTypeForm.vue
+ *   - components/componentsdetails/detils/AssetTypeBatchImport.vue
+ *   - components/componentsdetails/detils/UnregisteredAssetForm.vue
+ * @dependsOn
+ *   - api/assetType: 资产类型 API 接口
+ *   - stores/createEntityStore: 实体 Store 工厂
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { assetTypeAPI } from '@/api/assetType'
-import type { AssetType, AssetTypeCreateForm, AssetTypeUpdateForm } from '@/utils/AssetType'
+import type { AssetType, AssetTypeCreateForm, AssetTypeUpdateForm } from '@/types/assettype'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 

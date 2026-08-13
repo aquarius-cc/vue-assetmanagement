@@ -11,6 +11,9 @@ export default defineConfig({
   },
   test: {
     environment: 'happy-dom',
+    env: {
+      VITE_TOKEN_CRYPTO_KEY: 'test_asset_mgmt_key',
+    },
     globals: true,
     include: ['src/**/*.{test,spec}.{js,ts}'],
     coverage: {

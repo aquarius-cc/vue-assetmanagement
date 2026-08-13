@@ -1,7 +1,15 @@
 /**
- * 未登记资产管理 API
- * 对应后端接口: /unregisteredassets/unregistered-assets/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 未登记资产管理 API，提供未登记资产的增删改查、批量操作等接口
+ * @module api/unregisteredAsset
+ * @exports
+ *   - unregisteredAssetAPI: 未登记资产管理 API 对象（包含所有未登记资产相关方法）
+ * @callers
+ *   - stores/unregisteredAssetStore: 未登记资产状态管理
+ *   - views/UnregisteredAssetManage: 未登记资产管理视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/unregisteredasset: 未登记资产相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
@@ -11,7 +19,7 @@ import type {
   UnregisteredAssetListResponse,
   UnregisteredAssetQueryParams,
   UnregisteredAssetApproveForm,
-} from '@/utils/UnregisteredAsset'
+} from '@/types/unregisteredasset'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
 /**

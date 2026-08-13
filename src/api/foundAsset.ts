@@ -1,6 +1,15 @@
 /**
- * FoundAsset API
- * Backend: /api/assets/found-assets/
+ * @file 找到资产管理 API，提供找到资产的增删改查、批量操作等接口
+ * @module api/foundAsset
+ * @exports
+ *   - foundAssetAPI: 找到资产管理 API 对象（包含所有找到资产相关方法）
+ * @callers
+ *   - stores/foundAssetStore: 找到资产状态管理
+ *   - views/FoundAssetManage: 找到资产管理视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/foundasset: 找到资产相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
@@ -9,7 +18,7 @@ import type {
   FoundAssetUpdateForm,
   FoundAssetListResponse,
   FoundAssetQueryParams,
-} from '@/utils/FoundAsset'
+} from '@/types/foundasset'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
 export const foundAssetAPI = {

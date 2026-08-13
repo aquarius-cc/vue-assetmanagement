@@ -1,30 +1,14 @@
-// utils/batchImport/types.ts 定义通用类型 批量导入配置
-// export interface BatchImportConfig<TExcel, TApi> {
-//   // Excel 列名到字段的映射（用于解析）
-//   excelHeaderMap: Record<string, keyof TExcel>
+/**
+ * @file 批量导入通用配置类型定义，确保类型安全
+ * @module src/utils/batchImport/types
+ * @exports
+ *   - BatchImportConfig: 批量导入配置泛型接口（含 Excel 映射、验证、转换、提交等配置）
+ * @callers
+ *   - composables/useBatchImport
+ * @dependsOn
+ *   - 无外部依赖
+ */
 
-//   // 必填字段（用于验证）
-//   requiredFields: (keyof TExcel)[]
-
-//   // 数据验证函数
-//   validateItem: (item: TExcel) => { valid: boolean; errors: Record<string, string> }
-
-//   // 转换：Excel 数据 → API 提交数据
-//   transformToApiData: (item: TExcel) => TApi
-
-//   // 创建函数
-//   createFn: (data: TApi) => Promise<unknown>
-
-//   // 实体名称（用于提示）
-//   entityName: string
-
-//   // ID 字段（用于错误日志）
-//   idField?: keyof TExcel
-
-//   // 并发数
-//   concurrency?: number
-// }
-// 批量导入通用配置类型，确保类型安全
 export interface BatchImportConfig<TExcel extends object, TApi extends object> {
   /** 实体名称，用于日志提示 */
   entityName: string // 实体名称（用于提示）

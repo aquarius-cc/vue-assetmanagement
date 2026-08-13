@@ -1,12 +1,19 @@
 /**
- * 硬盘序列号 Store
- * 使用 createEntityStore 工厂函数创建
- * 主键字段: id（数字类型）
- * 名称字段: harddisk_sn_code（硬盘序列号）
+ * @file 硬盘序列号 Store，基于 createEntityStore 工厂创建
+ * @module stores/harddiskSnStore
+ * @exports
+ *   - useHardDiskSnStore: 硬盘序列号管理状态 Store
+ * @callers
+ *   - components/componentsdetails/HardDiskSNDetails.vue
+ *   - components/componentsdetails/detils/HardDiskSNForm.vue
+ *   - components/componentsdetails/detils/HardDiskSNBasicDetails.vue
+ * @dependsOn
+ *   - api/harddiskSn: 硬盘序列号 API 接口
+ *   - stores/createEntityStore: 实体 Store 工厂
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { harddiskSnAPI } from '@/api/harddiskSn'
-import type { HardDiskSN, HardDiskSNCreateForm, HardDiskSNUpdateForm } from '@/utils/HardDiskSN'
+import type { HardDiskSN, HardDiskSNCreateForm, HardDiskSNUpdateForm } from '@/types/harddisksn'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 
@@ -14,7 +21,7 @@ import type { PaginationQuery } from '@/stores/createEntityStore'
  * 硬盘序列号 Store
  */
 export const useHardDiskSnStore = createEntityStore<HardDiskSN, PaginationQuery>('harddiskSn', {
-  idKey: 'harddisksn_asset',
+  idKey: 'recordcode',
   nameField: 'harddisk_sn_code',
   displayName: '硬盘序列号',
   api: {
@@ -32,7 +39,7 @@ export const useHardDiskSnStore = createEntityStore<HardDiskSN, PaginationQuery>
         results: response.results as HardDiskSN[],
       }
     },
-    /** 根据 harddisksn_asset（资产 recordcode）获取硬盘序列号详情 */
+    /** 根据 recordcode 获取硬盘序列号详情 */
     getById: async (code) => {
       return await harddiskSnAPI.getHardDiskSN(code)
     },
@@ -40,7 +47,7 @@ export const useHardDiskSnStore = createEntityStore<HardDiskSN, PaginationQuery>
     create: (data) => harddiskSnAPI.createHardDiskSN(data as HardDiskSNCreateForm),
     /** 更新硬盘序列号记录 */
     update: (data) =>
-      harddiskSnAPI.updateHardDiskSN(data.harddisksn_asset!, data as HardDiskSNUpdateForm),
+      harddiskSnAPI.updateHardDiskSN(data.recordcode!, data as HardDiskSNUpdateForm),
     /** 删除硬盘序列号记录 */
     delete: (code) => harddiskSnAPI.deleteHardDiskSN(code),
   },

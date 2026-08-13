@@ -1,5 +1,15 @@
-// composables/useAssetExtendedInfoCards.ts
-// 资产详情扩展卡片（申请人/保管人/仓库/描述）— 从 useAssetInfoCards 拆分
+/**
+ * @file 资产详情扩展卡片配置（申请人/保管人/仓库/描述）
+ * @module composables/useAssetExtendedInfoCards
+ * @exports
+ *   - useAssetExtendedInfoCards: 生成资产详情扩展卡片配置
+ * @callers
+ *   - composables/useAssetInfoCards: 作为基础卡片的扩展组合
+ * @dependsOn
+ *   - types/asset: 资产详情类型
+ *   - types/info-card: 卡片配置类型
+ *   - utils/Format: 状态显示、仓库类型映射
+ */
 import { computed } from 'vue'
 import type { Ref } from 'vue'
 import type { AssetDetail } from '@/types/asset'

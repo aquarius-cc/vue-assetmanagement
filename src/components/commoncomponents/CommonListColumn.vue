@@ -1,3 +1,11 @@
+<!--
+@file 列表列定义组件，支持序号列/自定义列/普通数据列
+@component CommonListColumn
+@usedBy
+  - components/CommonList.vue: 通用列表列渲染
+@dependsOn
+  - components/CommonList.vue: TableColumn 类型定义
+-->
 <template>
   <!-- 序号列：自动生成行号，支持分页偏移计算 -->
   <el-table-column

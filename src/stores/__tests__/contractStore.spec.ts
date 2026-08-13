@@ -5,7 +5,7 @@ import { useContractStore } from '../contractStore'
 vi.mock('@/api/contract', () => ({
   contractAPI: {
     getContracts: vi.fn(),
-    getContractByCodeOrId: vi.fn(),
+    getContractByRecordcode: vi.fn(),
     getContractByName: vi.fn(),
     createContract: vi.fn(),
     updateContract: vi.fn(),
@@ -147,6 +147,45 @@ describe('ContractStore', () => {
 
       expect(result).toHaveLength(1)
       expect(result[0].contract_name).toBe('采购合同A')
+    })
+  })
+
+  describe('详情/更新/批量删除', () => {
+    it('应该调用API获取详情', async () => {
+      const { contractAPI } = await import('@/api/contract')
+      vi.mocked(contractAPI.getContractByRecordcode).mockResolvedValue({
+        recordcode: 'CT-001',
+      } as never)
+
+      const result = await store.getById('CT-001')
+
+      expect(result).toBeDefined()
+    })
+
+    it('应该调用API更新合同', async () => {
+      const { contractAPI } = await import('@/api/contract')
+      vi.mocked(contractAPI.updateContract).mockResolvedValue({
+        recordcode: 'CT-001',
+      } as never)
+
+      await store.update({ recordcode: 'CT-001', contract_name: '新合同名' } as never)
+
+      expect(contractAPI.updateContract).toHaveBeenCalled()
+    })
+
+    it('应该调用API批量删除', async () => {
+      const { contractAPI } = await import('@/api/contract')
+      vi.mocked(contractAPI.batchDeleteContracts).mockResolvedValue({
+        total: 1,
+        success_count: 1,
+        fail_count: 0,
+        success_ids: ['CT-001'],
+        fail_items: [],
+      })
+
+      await store.removeBatch(['CT-001'])
+
+      expect(contractAPI.batchDeleteContracts).toHaveBeenCalledWith(['CT-001'])
     })
   })
 })

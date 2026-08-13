@@ -39,11 +39,6 @@ describe('contractAPI', () => {
     expect(mockRequest.get).toHaveBeenCalledWith('/assets/contracts/C001/', undefined, true, 300000)
   })
 
-  it('getContractByCodeOrId calls GET /assets/contracts/{code}/', async () => {
-    await contractAPI.getContractByCodeOrId('C001')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/contracts/C001/', undefined, true, 300000)
-  })
-
   it('getContractByName calls GET /assets/contracts/getcontractByname/{name}/', async () => {
     await contractAPI.getContractByName('Test Contract')
     expect(mockRequest.get).toHaveBeenCalledWith(

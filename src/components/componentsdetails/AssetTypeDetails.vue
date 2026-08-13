@@ -1,3 +1,14 @@
+<!--
+@file 资产分类管理页面，支持树形目录展示、分类的新增编辑删除及批量操作
+@component AssetTypeDetails
+@usedBy
+  - views/AssetTypeDetails.vue: 通过 router-view 渲染资产分类管理
+@dependsOn
+  - api/assetType: 资产分类CRUD接口
+  - components/componentsdetails/components/AssetTypeTree: 分类树形目录组件
+  - components/componentsdetails/components/AssetTypeInfoCard: 分类信息卡片组件
+  - components/componentsdetails/components/AssetTypeChildList: 子分类列表组件
+-->
 <template>
   <div class="asset-type-management" v-loading="isLoading" element-loading-text="加载中...">
     <!-- 左侧：资产分类树形目录 -->
@@ -141,7 +152,7 @@ import { isAxiosError } from 'axios'
 import { Plus, Delete } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { assetTypeAPI } from '@/api/assetType'
-import type { AssetType, AssetTypeCreateForm } from '@/utils/AssetType'
+import type { AssetType, AssetTypeCreateForm } from '@/types/assettype'
 
 import AssetTypeTree from '@/components/componentsdetails/components/AssetTypeTree.vue'
 import AssetTypeInfoCard from '@/components/componentsdetails/components/AssetTypeInfoCard.vue'

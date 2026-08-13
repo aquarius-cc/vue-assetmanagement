@@ -1,21 +1,25 @@
 <!--
   BasicAssetDetails.vue
-  资产详情页面（重构版?
+  资产详情页面（重构版）
   @description
-  展示资产的完整详细信息，包括基本信息、分类信息、合同信息?  人员信息、存储位置、硬盘序列号等?
+  展示资产的完整详细信息，包括基本信息、分类信息、合同信息、人员信息、存储位置、硬盘序列号等
   @architecture
-  - 使用 InfoCard 组件展示键值对形式的信息卡?  - 使用 HardDiskSNCard 组件展示硬盘序列号列?  - 使用 useAssetInfoCards composable 生成卡片配置
+  - 使用 InfoCard 组件展示键值对形式的信息卡
+  - 使用 HardDiskSNCard 组件展示硬盘序列号列
+  - 使用 useAssetInfoCards composable 生成卡片配置
 
   @features
-  - 数据驱动的卡片渲?  - 支持条件渲染（可选数据块?  - 支持导出 Excel
-  - 支持编辑和返回操?
+  - 数据驱动的卡片渲染
+  - 支持条件渲染（可选数据块）
+  - 支持导出 Excel
+  - 支持编辑和返回操作
   @author System
   @date 2025-06-02
 -->
 
 <template>
   <div class="asset-detail-container" v-if="assetDetail">
-    <!-- 页面标题和操作按?-->
+    <!-- 页面标题和操作按钮 -->
     <div class="header-section">
       <div class="title-area">
         <h1 class="page-title">{{ assetDetail.asset_name }}</h1>
@@ -33,17 +37,30 @@
         </el-button>
 
         <!-- 状态流转操作按钮 -->
-        <el-button v-if="canMarkBroken" type="danger" @click="handleMarkBroken">标记损坏</el-button>
-        <el-button v-if="canMarkLost" type="danger" @click="handleMarkLost">标记遗失</el-button>
-        <el-button v-if="canFound" type="success" @click="handleFound">找回</el-button>
-        <el-button v-if="canRepair" type="warning" @click="handleRepair">送修</el-button>
-        <el-button v-if="canRepairDone" type="success" @click="handleRepairDone"
+        <el-button v-if="canMarkBroken && canOperateAsset" type="danger" @click="handleMarkBroken"
+          >标记损坏</el-button
+        >
+        <el-button v-if="canMarkLost && canOperateAsset" type="danger" @click="handleMarkLost"
+          >标记遗失</el-button
+        >
+        <el-button v-if="canFound && canOperateAsset" type="success" @click="handleFound"
+          >找回</el-button
+        >
+        <el-button v-if="canRepair && canOperateAsset" type="warning" @click="handleRepair"
+          >送修</el-button
+        >
+        <el-button v-if="canRepairDone && canOperateAsset" type="success" @click="handleRepairDone"
           >维修完成</el-button
         >
-        <el-button v-if="canRepairFailed" type="danger" @click="handleRepairFailed"
+        <el-button
+          v-if="canRepairFailed && canOperateAsset"
+          type="danger"
+          @click="handleRepairFailed"
           >维修失败</el-button
         >
-        <el-button v-if="canScrap" type="danger" @click="handleScrap">报废申请</el-button>
+        <el-button v-if="canScrap && canOperateAsset" type="danger" @click="handleScrap"
+          >报废申请</el-button
+        >
 
         <!-- 查看日志（始终显示） -->
         <el-button :icon="Timer" @click="handleViewLogs">状态日志</el-button>
@@ -52,7 +69,7 @@
       </div>
     </div>
 
-    <!-- 资产状态标签-->
+    <!-- 资产状态标签    -->
     <div class="status-badges">
       <StatusTag :status="assetDetail.asset_current_status" size="large" class="status-tag">
         {{ '资产状态：' + getCurrentStatusText(assetDetail.asset_current_status) }}
@@ -90,12 +107,12 @@
     <InfoCard :config="storageCard" />
     <InfoCard :config="descriptionCard" />
 
-    <!-- 硬盘序列号卡片（表格形式?-->
+    <!-- 硬盘序列号卡片（表格形式） -->
     <!-- v-if="assetDetail.harddisk_sns?.length" -->
     <HardDiskSNCard :harddisk-sns="assetDetail.harddisk_sns" :asset-code="assetDetail.asset_code" />
   </div>
 
-  <!-- 加载状?-->
+  <!-- 加载状态 -->
   <div v-else-if="isLoading" class="loading-container">
     <div class="loading-content">
       <el-skeleton :rows="12" animated />
@@ -106,7 +123,7 @@
     </div>
   </div>
 
-  <!-- 空状?-->
+  <!-- 空状态 -->
   <div v-else class="empty-container">
     <el-empty description="暂无资产数据" />
   </div>
@@ -115,7 +132,8 @@
 <script lang="ts">
 /**
  * 组件名称定义
- * 用于?Vue DevTools 中识别组? */
+ * 用于在 Vue DevTools 中识别组
+ */
 export default {
   name: 'BasicAssetDetails',
 }
@@ -125,20 +143,22 @@ export default {
 // ===== 导入 =====
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { Edit, Download, Back, Loading, Timer } from '@element-plus/icons-vue'
 import { useAssetStore } from '@/stores/assetStore'
 import { useExcelExport } from '@/composables/useExcelExport'
 import { useAssetInfoCards } from '@/composables/useAssetInfoCards'
-import { assetAPI } from '@/api/asset'
 import InfoCard from '@/components/commoncomponents/InfoCard.vue'
 import HardDiskSNCard from '@/components/commoncomponents/HardDiskSNCard.vue'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import type { AssetDetail } from '@/types/asset'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { formatDate, assetCurrentStatusMapping } from '@/utils/Format'
+import { usePermission } from '@/composables/usePermission'
+import { useAssetStatusChecks } from '@/composables/useAssetStatus'
+// import { useOperationGuard } from '@/composables/useOperationGuard'
 
-// ===== 路由与状?=====
+// ===== 路由与状态管理 =====
 const router = useRouter()
 const route = useRoute()
 const assetStore = useAssetStore()
@@ -162,78 +182,77 @@ const {
 
 /**
  * 获取资产当前状态的中文文本
- * @param value - 状态枚举? * @returns 中文状态文? */
+ * @param value - 状态枚举值
+ * @returns 中文状态名称
+ */
 const getCurrentStatusText = (value: string | null | undefined): string => {
   if (!value) return '未知状态'
   return assetCurrentStatusMapping[value] || '未知状态'
 }
 
 // ===== 状态流转按钮可见性 =====
-const currentStatus = computed(() => assetDetail.value?.asset_current_status ?? '')
+const currentStatus = computed(() => assetDetail.value?.asset_current_status)
 
-const canMarkBroken = computed(() => ['in_store', 'in_use'].includes(currentStatus.value))
-
-const canMarkLost = computed(() => currentStatus.value === 'in_use')
-
-const canFound = computed(() => currentStatus.value === 'lost')
-
-const canRepair = computed(() => currentStatus.value === 'broken')
-
-const canRepairDone = computed(() => currentStatus.value === 'repairing')
-
-const canRepairFailed = computed(() => currentStatus.value === 'repairing')
-
-const canScrap = computed(() => currentStatus.value === 'broken')
+// 解构出所有需要的判断
+const {
+  canMarkBroken,
+  canMarkLost,
+  canFound,
+  canRepair,
+  canRepairDone,
+  canRepairFailed,
+  canScrap,
+} = useAssetStatusChecks(currentStatus)
 
 // ===== 刷新详情 =====
-const refreshDetail = async () => {
-  const assetCode = assetDetail.value?.asset_code
-  if (!assetCode) return
-  try {
-    const data = await assetStore.getById(assetCode)
-    if (data) assetDetail.value = data
-  } catch (error) {
-    console.error('刷新资产详情失败', error)
-  }
-}
+// const refreshDetail = async () => {
+//   const assetCode = assetDetail.value?.recordcode
+//   if (!assetCode) return
+//   try {
+//     const data = await assetStore.getById(assetCode)
+//     if (data) assetDetail.value = data
+//   } catch (error) {
+//     console.error('刷新资产详情失败', error)
+//   }
+// }
+
+// 新增
+const { canOperateAsset } = usePermission()
 
 // ===== 状态流转操作 =====
+// 注意：后端 AssetViewSet 使用 lookup_field="recordcode"，
+// 操作视图通过 useAssetOperationForm 调用 getAssetByCode 和操作 API，
+// 因此路由参数必须传递 recordcode（而非 asset_code），否则 get_object() 会 404。
 const handleMarkBroken = () => {
-  ElMessageBox.confirm('确定将该资产标记为已损坏？', '确认操作', { type: 'warning' })
-    .then(async () => {
-      await assetAPI.markAssetAsBroken(assetDetail.value!.asset_code, {})
-      ElMessage.success('资产已标记为损坏')
-      await refreshDetail()
-    })
-    .catch(() => {})
+  router.push({ name: 'MarkBroken', params: { code: assetDetail.value!.recordcode } })
 }
 
 const handleMarkLost = () => {
-  router.push({ name: 'LostAsset', params: { code: assetDetail.value!.asset_code } })
+  router.push({ name: 'LostAsset', params: { code: assetDetail.value!.recordcode } })
 }
 
 const handleFound = () => {
-  router.push({ name: 'FoundAsset', params: { code: assetDetail.value!.asset_code } })
+  router.push({ name: 'FoundAsset', params: { code: assetDetail.value!.recordcode } })
 }
 
 const handleRepair = () => {
-  router.push({ name: 'RepairAsset', params: { code: assetDetail.value!.asset_code } })
+  router.push({ name: 'RepairAsset', params: { code: assetDetail.value!.recordcode } })
 }
 
 const handleRepairDone = () => {
-  router.push({ name: 'RepairDone', params: { code: assetDetail.value!.asset_code } })
+  router.push({ name: 'RepairDone', params: { code: assetDetail.value!.recordcode } })
 }
 
 const handleRepairFailed = () => {
-  router.push({ name: 'RepairFailed', params: { code: assetDetail.value!.asset_code } })
+  router.push({ name: 'RepairFailed', params: { code: assetDetail.value!.recordcode } })
 }
 
 const handleScrap = () => {
-  router.push({ name: 'ScrapAsset', params: { code: assetDetail.value!.asset_code } })
+  router.push({ name: 'ScrapAsset', params: { code: assetDetail.value!.recordcode } })
 }
 
 const handleViewLogs = () => {
-  router.push({ name: 'AssetLogs', params: { code: assetDetail.value!.asset_code } })
+  router.push({ name: 'AssetLogs', params: { code: assetDetail.value!.recordcode } })
 }
 
 // CRIT-6: 下载二维码
@@ -283,7 +302,9 @@ onMounted(async () => {
 const { exportDetail } = useExcelExport()
 
 /**
- * 导出列配? * 定义导出 Excel 时的列映? */
+ * 导出列配置
+ * @description 定义导出 Excel 时的列映射
+ */
 const detailExportColumns: ColumnConfig<AssetDetail>[] = [
   { title: '资产编码', key: 'asset_code', default: '' },
   { title: '资产名称', key: 'asset_name', default: '' },
@@ -310,7 +331,7 @@ const detailExportColumns: ColumnConfig<AssetDetail>[] = [
     formatter: (v) => formatDate(v as string) || '',
   },
   {
-    title: '质保??',
+    title: '质保期',
     key: 'asset_warranty_period',
     default: '0',
     formatter: (v) => String(v ?? '0'),
@@ -355,13 +376,17 @@ const handleExportExcel = async () => {
 // ===== 交互方法 =====
 
 /**
- * 返回上一? */
+ * 返回上一页
+ * @description 点击返回按钮，返回上一页
+ */
 const handleBack = () => {
   router.go(-1)
 }
 
 /**
- * 跳转到编辑页? */
+ * 跳转到编辑页
+ * @description 点击编辑按钮，跳转到编辑页
+ */
 const handleEdit = () => {
   if (!assetDetail.value?.asset_code) {
     ElMessage.error('资产编码不存在，无法编辑')
@@ -373,7 +398,7 @@ const handleEdit = () => {
       query: { code: assetDetail.value.asset_code },
     })
     .catch((err) => {
-      ElMessage.error(`跳转到编辑页面失? ${err.message || '未知错误'}`)
+      ElMessage.error(`跳转到编辑页面失败: ${err.message || '未知错误'}`)
     })
 }
 </script>

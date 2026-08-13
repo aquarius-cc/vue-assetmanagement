@@ -1,4 +1,21 @@
 /**
+ * @file 维修资产数据模型定义，包括维修状态、表单、详情等类型
+ * @module types/repairasset
+ * @exports
+ *   - RepairStatus: 维修状态枚举
+ *   - RepairAssetCreateForm/RepairAssetUpdateForm: 维修资产表单接口
+ *   - RepairAsset/RepairAssetExtended: 维修资产基础与扩展接口
+ *   - RepairAssetQueryParams: 维修资产查询参数
+ *   - RepairAssetListResponse: 维修资产列表响应接口
+ * @callers
+ *   - stores/repairassetStore（维修资产状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
+ */
+
+import type { PaginatedResponse } from '@/types/common'
+
+/**
  * 维修资产数据模型
  * 对应后端数据库表: am_repair_asset
  */
@@ -7,8 +24,8 @@
 
 /**
  * 维修状态枚举
- * pending: 维修中
- * completed: 维修完成
+ * in_progress: 维修中
+ * completed: 已完成
  * failed: 维修失败
  */
 export enum RepairStatus {
@@ -126,57 +143,5 @@ export interface RepairAssetQueryParams {
 
 // ==================== 响应接口 ====================
 
-/**
- * 维修资产列表响应接口
- */
-export interface RepairAssetListResponse {
-  /** 总记录数 */
-  count: number
-  /** 下一页链接 */
-  next: string | null
-  /** 上一页链接 */
-  previous: string | null
-  /** 维修资产列表数据 */
-  results: RepairAssetExtended[]
-}
-
-// ==================== 批量创建接口 ====================
-
-/**
- * 批量创建维修记录 - 单条数据
- */
-export interface RepairAssetBatchItem {
-  /** 资产编码 */
-  asset_code: string
-  /** 维修日期 */
-  repair_date: string
-  /** 维修原因 */
-  repair_reason: string
-  /** 维修描述 */
-  repair_description?: string
-}
-
-/**
- * 批量创建维修记录请求
- */
-export interface RepairAssetBatchCreateForm {
-  /** 维修记录列表 */
-  items: RepairAssetBatchItem[]
-}
-
-/**
- * 批量创建维修记录响应
- */
-export interface RepairAssetBatchCreateResult {
-  total: number
-  success_count: number
-  fail_count: number
-  success_items: RepairAssetExtended[]
-  fail_items: Array<{
-    index: number
-    error_code: string
-    error_message: string
-    input_data: RepairAssetBatchItem
-    row_number?: number
-  }>
-}
+/** 维修资产列表响应 */
+export type RepairAssetListResponse = PaginatedResponse<RepairAssetExtended>

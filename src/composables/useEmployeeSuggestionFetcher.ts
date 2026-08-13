@@ -1,16 +1,21 @@
-// src/composables/useEmployeeSuggestionFetcher.ts
-/**
- * [HR-02] 员工建议获取器 Composable
- * @description 基于 createSuggestionFetcher 封装员工搜索建议，
- *   用于 el-autocomplete 下拉展示 部门/姓名/工号。
- * @usage
- *   const fetchEmployeeSuggestions = useEmployeeSuggestionFetcher()
- *   // 在 el-autocomplete 的 :fetch-suggestions 中使用
+﻿/**
+ * @file 员工搜索建议获取器，封装 fuzzy search 为 el-autocomplete 的 fetch-suggestions
+ * @module composables/useEmployeeSuggestionFetcher
+ * @exports
+ *   - useEmployeeSuggestionFetcher: 创建员工建议获取函数
+ * @callers
+ *   - composables/useOutAssetForm: 出库表单员工字段
+ *   - composables/useRecyclePersonLinkage: 回收人建议获取
+ * @dependsOn
+ *   - composables/useSuggestionFetcher: 通用建议获取器工厂
+ *   - api/user: 员工模糊搜索 API
+ *   - types/user: EmployeeExtended 类型
+ *   - types/outasset: EmployeeAutocompleteItem 类型
  */
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
 import { userAPI } from '@/api/user'
-import type { EmployeeExtended } from '@/utils/User'
-import type { EmployeeAutocompleteItem } from '@/utils/OutAsset'
+import type { EmployeeExtended } from '@/types/user'
+import type { EmployeeAutocompleteItem } from '@/types/outasset'
 
 /**
  * 创建员工建议获取函数

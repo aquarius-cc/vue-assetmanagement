@@ -1,11 +1,16 @@
 /**
- * 资产类型数据模型
- * 对应后端数据库表: am_asset_type
- *
- * 树形关联设计（方案 D）：
- * - parent: FK 指向父级 recordcode
- * - parent_type_code: 父级业务编码（方便用户操作）
- * - path: 物化路径，如 /Hardware/Terminal
+ * @file 资产类型数据模型定义，支持树形结构的资产分类
+ * @module types/assettype
+ * @exports
+ *   - AssetTypeCreateForm: 资产类型创建表单接口
+ *   - AssetTypeUpdateForm: 资产类型更新表单接口
+ *   - AssetType: 资产类型基础接口
+ *   - AssetTypeQueryParams: 资产类型查询参数
+ *   - AssetTypeListResponse: 资产类型列表响应接口
+ * @callers
+ *   - stores/assettypeStore（资产类型状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
  */
 
 // ==================== 基础接口定义 ====================
@@ -98,9 +103,3 @@ export interface AssetTypeListResponse {
 /**
  * 资产类型简化接口
  */
-export interface AssetTypeItem {
-  value: string
-  type_name: string
-  type_code: string
-  recordcode: string
-}

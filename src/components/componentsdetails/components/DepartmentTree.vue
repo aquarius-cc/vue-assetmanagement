@@ -80,7 +80,7 @@
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ArrowDown, ArrowUp, Folder, FolderOpened, Document } from '@element-plus/icons-vue'
-import type { DepartmentTreeNode } from '@/utils/Department'
+import type { DepartmentTreeNode } from '@/types/department'
 
 // ==================== el-tree 拖拽节点类型 ====================
 

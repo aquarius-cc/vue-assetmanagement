@@ -1,6 +1,14 @@
 /**
- * useRecycleFormSubmit
- * 回收表单提交逻辑（单条/批量/确认弹窗）
+ * @file 回收表单提交逻辑（单条/批量/编辑，含确认弹窗）
+ * @module composables/useRecycleFormSubmit
+ * @exports
+ *   - useRecycleFormSubmit: 回收表单提交 composable
+ * @callers
+ *   - components/componentsdetails/detils/RecycleAssetForm.vue
+ * @dependsOn
+ *   - api/recycleAsset: 回收资产 API
+ *   - types/recycleasset: 回收资产表单类型
+ *   - utils/errorHandler: 错误处理
  */
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -12,7 +20,7 @@ import type {
   RecycleAssetBatchItem,
   RecycleAssetExtended,
   RecycleAssetUpdateForm,
-} from '@/utils/RecycleAsset'
+} from '@/types/recycleasset'
 import type { SelectedRecord } from '@/components/componentsdetails/detils/detilschildcomponents/SelectedRecordsTable.vue'
 
 export function useRecycleFormSubmit(options: {
@@ -64,11 +72,12 @@ export function useRecycleFormSubmit(options: {
       const form = options.formData()
 
       if (options.isEditMode() && options.currentRecordcode()) {
+        // [HALT] FE-C1修复：字段名从 recycle_asset_storage_code 改为 recycle_asset_storage，与后端Serializer和批量路径对齐
         const submitData: RecycleAssetCreateForm = {
           outasset_recordcode: form.outasset_recordcode,
           recycle_asset: form.recycle_asset,
           recycle_asset_number: form.recycle_asset_number,
-          recycle_asset_storage_code: form.recycle_asset_storage_code,
+          recycle_asset_storage: form.recycle_asset_storage_code,
           recycle_asset_recycle_person_jobcode: form.recycle_asset_recycle_person_jobcode,
           recycle_asset_date: form.recycle_asset_date,
           recycle_type: form.recycle_type,
@@ -82,11 +91,12 @@ export function useRecycleFormSubmit(options: {
         ElMessage.success('更新成功')
       } else if (options.selectedRecords().length === 1) {
         const record = options.selectedRecords()[0]
+        // [HALT] FE-C1修复：字段名从 recycle_asset_storage_code 改为 recycle_asset_storage，与后端Serializer和批量路径对齐
         await recycleAssetAPI.createRecycleAsset({
           outasset_recordcode: record.recordcode,
           recycle_asset: record.recycle_asset,
           recycle_asset_number: 1,
-          recycle_asset_storage_code: form.recycle_asset_storage_code,
+          recycle_asset_storage: form.recycle_asset_storage_code,
           recycle_asset_recycle_person_jobcode: form.recycle_asset_recycle_person_jobcode,
           recycle_asset_date: form.recycle_asset_date,
           recycle_type: form.recycle_type,

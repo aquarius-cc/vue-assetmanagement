@@ -1,21 +1,12 @@
 <!--
-  OperationLogDetails.vue
-  操作日志列表页面（重构版）
-
-  架构调整：
-  1. 使用 SmartListContainer 封装数据管理逻辑（分页、搜索、加载）
-  2. CommonList 只负责 UI 展示，不管理数据
-  3. 解决原架构中父组件和 CommonList 重复请求的问题
-  4. 保留筛选区，筛选条件通过 storeConfig 传递给 SmartListContainer
-
-  数据流：
-  筛选区 → storeConfig 合并筛选参数 → SmartListContainer (数据管理) → slot props → CommonList (纯展示)
-
-  功能：
-  - 展示操作日志列表（只读模块）
-  - 筛选查询（资产编码、操作类型、操作人、日期范围）
-  - 导出 Excel
-  - 子路由：详情页（浮层遮罩）
+@file 操作日志列表页面，展示资产操作日志记录并支持筛选查询与导出
+@component OperationLogDetails
+@usedBy
+  - views/OperationLogDetails.vue: 通过 router-view 渲染操作日志列表
+@dependsOn
+  - api/operationLog: 操作日志查询接口
+  - composables/useExcelExport: Excel导出功能
+  - stores/operationLogStore: 操作日志数据管理
 -->
 <template>
   <div class="operation-log-details-root">
@@ -178,8 +169,8 @@ import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
-import type { OperationLog } from '@/utils/OperationLog'
-import { operationTypeMapping, operationTypeTagMapping } from '@/utils/OperationLog'
+import type { OperationLog } from '@/types/operationlog'
+import { operationTypeMapping, operationTypeTagMapping } from '@/types/operationlog'
 import { useOperationLogStore } from '@/stores/operationLogStore'
 import { formatDate } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'

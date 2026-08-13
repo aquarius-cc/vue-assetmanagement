@@ -1,6 +1,25 @@
 /**
- * 部门管理 Store
- * 基于 createEntityStore 工厂创建
+ * @file 部门管理 Store，基于 createEntityStore 工厂创建，含树形结构扩展方法
+ * @module stores/departmentStore
+ * @exports
+ *   - useDepartmentStore: 部门管理状态 Store
+ *   - getDepartmentTree: 获取部门树
+ *   - getDepartmentChildren: 获取子部门
+ *   - moveDepartment: 移动部门
+ *   - sortDepartments: 批量排序部门
+ *   - getDepartmentEmployees: 获取部门下人员列表
+ * @callers
+ *   - components/componentsdetails/DepartmentDetails.vue
+ *   - components/componentsdetails/UserDetails.vue
+ *   - components/componentsdetails/detils/DepartmentForm.vue
+ *   - components/componentsdetails/detils/DepartmentBatchImport.vue
+ *   - components/componentsdetails/detils/UserForm.vue
+ *   - components/componentsdetails/detils/UserBatchImport.vue
+ * @dependsOn
+ *   - api/department: 部门 API 接口
+ *   - stores/createEntityStore: 实体 Store 工厂
+ *   - types/department: 部门相关类型定义
+ *   - types/user: 员工类型定义
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { departmentAPI } from '@/api/department'
@@ -10,11 +29,11 @@ import type {
   DepartmentUpdateForm,
   DepartmentEmployeeListResponse,
   DepartmentEmployeeListQueryParams,
-} from '@/utils/Department'
-import type { EmployeeExtended } from '@/utils/User'
+} from '@/types/department'
+import type { EmployeeExtended } from '@/types/user'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
-import type { MoveDepartmentParams } from '@/utils/Department'
+import type { MoveDepartmentParams } from '@/types/department'
 
 /**
  * 辅助函数：确保创建数据符合 DepartmentCreateForm

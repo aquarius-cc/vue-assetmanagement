@@ -1,148 +1,119 @@
+<!-- TECHNICAL_DEBT: >500 lines -->
+<!--
+@file 仪表盘主页，展示资产统计、最近操作记录和用户信息
+@component DashboardPage
+@usedBy
+  - router/index.ts: 首页路由组件
+@dependsOn
+  - composables/useDashboardPage: 仪表盘数据管理
+  - components/DashboardStatCard: 统计卡片
+  - components/DashboardUserInfo: 用户信息卡片
+  - components/DashboardRecentList: 最近操作列表
+  - utils/Format: 日期格式化
+-->
 <template>
   <div class="dashboard-page-content">
-    <!-- 
-      �Ǳ��̲������
-      
-      ��Ӧʽ���ԣ�
-      - xs (<768px): ���в��֣�ÿ����Ƭռ������
-      - sm (��768px): ���в��֣����ֿɶ���
-      - md (��992px): ˫�в��֣�������Ƭ����
-      - lg/xl (��1200px): ˫�в��֣�������ʾ
-      
-      ʹ�� Element Plus ����Ӧʽդ��ϵͳʵ��
+    <!--
+      仪表盘布局设计
+
+      响应式策略：
+      - xs (<768px): 单列布局，每个卡片占满整行
+      - sm (≥768px): 单列布局，保持可读性
+      - md (≥992px): 双列布局，两个卡片并排
+      - lg/xl (≥1200px): 双列布局，最优显示
+
+      使用 Element Plus 的响应式栅格系统实现
     -->
-    <!-- ��һ�У��ʲ�������Ϣ + �û���Ϣ -->
+    <!-- [修复] 加载失败提示 -->
+    <el-alert
+      v-if="loadError"
+      type="error"
+      :closable="false"
+      title="仪表盘数据加载失败"
+      description="部分数据可能显示不完整，请重试"
+      style="margin-bottom: 16px"
+    >
+      <template #action>
+        <el-button type="primary" size="small" @click="retryFetchDashboard">重试</el-button>
+      </template>
+    </el-alert>
+    <!-- 第一行：资产发放信息 + 用户信息 -->
     <el-row class="top-row" :gutter="16">
-      <!-- �ʲ�������Ϣ��Ƭ -->
+      <!-- 资产发放信息卡片 -->
       <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
         <DashboardStatCard
-          title="�ʲ�������Ϣ"
+          title="资产发放信息"
           icon="Download"
           :stats="[
-            { value: distributeStats.monthlyDistributed, label: '���·���' },
-            { value: distributeStats.totalDistributed, label: '�ܷ�����' },
-            { value: distributeStats.totalAssets, label: '���ʲ���' },
+            { value: distributeStats.monthlyDistributed, label: '本月发放' },
+            { value: distributeStats.totalDistributed, label: '总发放数' },
+            { value: distributeStats.totalAssets, label: '总资产数' },
           ]"
           refreshable
           :loading="dashboardStore.outAssetsLoading"
           card-class="distribute-card"
           @refresh="refreshData"
         >
-          <div class="recent-list">
-            <h4>������ż�¼</h4>
-            <div class="list-item" v-for="item in recentOutAssets" :key="item.id">
-              <div class="item-info">
-                <span class="item-name">{{ item.asset_name }}</span>
-                <span class="item-recipient">{{ item.recipient_name }}</span>
-              </div>
-              <span class="item-date">{{ formatDateTime(item.distribute_time) }}</span>
-            </div>
-            <div v-if="recentOutAssets.length === 0" class="empty-state">���޷��ż�¼</div>
-          </div>
+          <DashboardRecentList
+            title="最近发放记录"
+            :items="recentOutAssets"
+            name-key="asset_name"
+            operator-key="recipient_name"
+            date-key="distribute_time"
+            empty-text="暂无发放记录"
+          />
         </DashboardStatCard>
       </el-col>
 
-      <!-- �û���Ϣ��Ƭ -->
+      <!-- 用户信息卡片 -->
       <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
-        <el-card class="info-card user-info-card">
-          <template #header>
-            <div class="card-header">
-              <div class="user-info-header">
-                <el-icon><User /></el-icon>
-                <span>�û���Ϣ</span>
-              </div>
-              <el-button type="primary" size="small" class="logout-btn" @click="logout"
-                >�˳�</el-button
-              >
-            </div>
-          </template>
-          <div class="user-profile">
-            <div class="user-avatar">
-              <el-avatar :size="60">
-                {{ authInfo.real_name ? authInfo.real_name.charAt(0) : 'U' }}
-              </el-avatar>
-            </div>
-            <div class="user-details">
-              <h3>{{ authInfo.real_name || '�û�' }}</h3>
-              <p>�˺�: {{ authInfo.auth_name || '--' }}</p>
-            </div>
-          </div>
-          <div class="session-info">
-            <div class="session-item">
-              <span class="session-label">���ε�¼ʱ��</span>
-              <span class="session-value">{{ loginDuration }}</span>
-            </div>
-          </div>
-          <div class="time-info">
-            <p class="current-time">{{ currentTime }}</p>
-            <p class="current-date">{{ currentDate }}</p>
-          </div>
-        </el-card>
+        <DashboardUserInfo
+          :auth-info="authInfo"
+          :login-duration="loginDuration"
+          :current-time="currentTime"
+          :current-date="currentDate"
+          @logout="logout"
+        />
       </el-col>
     </el-row>
 
-    <!-- �ڶ��У��ʲ�������Ϣ + �����ʲ���Ϣ -->
+    <!-- 第二行：资产回收信息 + 其他资产信息 -->
     <el-row class="bottom-row" :gutter="16">
-      <!-- �ʲ�������Ϣ��Ƭ -->
+      <!-- 资产回收信息卡片 -->
       <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
         <DashboardStatCard
-          title="�ʲ�������Ϣ"
+          title="资产回收信息"
           icon="Upload"
           :stats="[
-            { value: recycleStats.monthlyRecycled, label: '���»���' },
-            { value: recycleStats.totalRecycled, label: '�ܻ�����' },
-            { value: recycleStats.inStockAssets, label: '�ڿ��ʲ�' },
+            { value: recycleStats.monthlyRecycled, label: '本月回收' },
+            { value: recycleStats.totalRecycled, label: '总回收数' },
+            { value: recycleStats.inStockAssets, label: '在库资产' },
           ]"
           refreshable
           :loading="dashboardStore.recycleAssetsLoading"
           card-class="recycle-card"
           @refresh="refreshRecycleData"
         >
-          <div class="recent-list">
-            <h4>������ռ�¼</h4>
-            <div class="list-item" v-for="item in recentRecycleAssets" :key="item.id">
-              <div class="item-info">
-                <span class="item-name">{{ item.asset_name }}</span>
-                <span class="item-returner">{{ item.returner_name }}</span>
-              </div>
-              <span class="item-date">{{ formatDateTime(item.recycle_time) }}</span>
-            </div>
-            <div v-if="recentRecycleAssets.length === 0" class="empty-state">���޻��ռ�¼</div>
-          </div>
+          <DashboardRecentList
+            title="最近回收记录"
+            :items="recentRecycleAssets"
+            name-key="asset_name"
+            operator-key="returner_name"
+            date-key="recycle_time"
+            empty-text="暂无回收记录"
+          />
         </DashboardStatCard>
       </el-col>
 
-      <!-- �����ʲ���Ϣ��Ƭ -->
+      <!-- 资产状态全景卡片 -->
       <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
         <DashboardStatCard
-          title="�����ʲ���Ϣ"
+          title="资产状态全景"
           icon="DataAnalysis"
-          :stats="[
-            { value: wasteStats.pendingWaste, label: '������', class: 'pending-waste' },
-            { value: wasteStats.wastedAssets, label: '�ѱ���', class: 'wasted' },
-          ]"
-          card-class="other-info-card"
+          :stats="[]"
+          card-class="status-overview-card"
         >
-          <div class="waste-overview">
-            <h4>����״̬����</h4>
-            <div class="waste-chart">
-              <div class="waste-item">
-                <div class="waste-bar pending">
-                  <span>{{ wasteStats.pendingWaste }}</span>
-                </div>
-                <span class="waste-label">������</span>
-              </div>
-              <div class="waste-item">
-                <div class="waste-bar wasted">
-                  <span>{{ wasteStats.wastedAssets }}</span>
-                </div>
-                <span class="waste-label">�ѱ���</span>
-              </div>
-            </div>
-            <div class="waste-summary">
-              <span>���Ϻϼ�: {{ wasteStats.pendingWaste + wasteStats.wastedAssets }}</span>
-            </div>
-          </div>
+          <DashboardStatusOverview :status-overview="statusOverview" :chart-option="chartOption" />
         </DashboardStatCard>
       </el-col>
     </el-row>
@@ -150,173 +121,31 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { User } from '@element-plus/icons-vue'
-import { useDashboardStore } from '@/stores/dashboard'
-import { useAuthStore } from '@/stores/auth'
 import DashboardStatCard from '@/components/commoncomponents/DashboardStatCard.vue'
-import { ElMessage } from 'element-plus'
-import type { AuthInfo } from '@/utils/AuthUser'
+import DashboardUserInfo from '@/components/commoncomponents/DashboardUserInfo.vue'
+import DashboardRecentList from '@/components/commoncomponents/DashboardRecentList.vue'
+import { useDashboardPage } from '@/composables/useDashboardPage'
+import DashboardStatusOverview from '@/components/commoncomponents/DashboardStatusOverview.vue'
 
-// ��ʼ�� Store
-const dashboardStore = useDashboardStore()
-const authStore = useAuthStore()
-
-// �û���Ϣ��������
-const authInfo = computed(() => {
-  const info = authStore.authInfo as AuthInfo | undefined
-  if (!info) {
-    return {
-      real_name: '�����û�',
-      auth_name: '���޹���Ա�û���',
-    }
-  }
-  return {
-    real_name: info.auth_username || '�����û�',
-    auth_name: info.auth_username || '���޹���Ա�û���',
-    isactive: info.isactive || false,
-  }
-})
-
-// ��ǰʱ����Ϣ
-const currentTime = ref('')
-const currentDate = ref('')
-
-// ��¼ʱ��
-// ʹ�� sessionStorage �־û���¼��ʼʱ�䣬�������ж��/���¹���ʱ����
-// ע�⣺sessionStorage ��ͬһ������Ự�ڹ������ر��������ǩҳ�����
-const LOGIN_START_TIME_KEY = 'loginStartTime'
-const loginDuration = ref('00:00:00')
-const getLoginStartTime = (): number => {
-  const stored = sessionStorage.getItem(LOGIN_START_TIME_KEY)
-  if (stored) {
-    const parsed = parseInt(stored, 10)
-    if (!isNaN(parsed)) return parsed
-  }
-  // �״η���ʱ��¼ʱ�䲢�־û�
-  const now = Date.now()
-  sessionStorage.setItem(LOGIN_START_TIME_KEY, String(now))
-  return now
-}
-const loginStartTime = getLoginStartTime()
-
-// �Ǳ�������
-const distributeStats = computed(() => dashboardStore.distributeStats)
-const recycleStats = computed(() => dashboardStore.recycleStats)
-const wasteStats = computed(() => dashboardStore.wasteStats)
-const recentOutAssets = computed(() => dashboardStore.recentOutAssets)
-const recentRecycleAssets = computed(() => dashboardStore.recentRecycleAssets)
-
-// ��ȡ�Ǳ�������
-const fetchDashboardData = async () => {
-  try {
-    await dashboardStore.initDashboardData()
-  } catch (error) {
-    console.error('��ȡ�Ǳ�������ʧ��:', error)
-  }
-}
-
-// ˢ�·�������
-const refreshData = async () => {
-  ElMessage.info('����ˢ�·�������...')
-  try {
-    await dashboardStore.fetchRecentOutAssets(5)
-    await dashboardStore.fetchDashboardOverview()
-    ElMessage.success('��������ˢ�³ɹ�')
-  } catch {
-    ElMessage.error('ˢ��ʧ��')
-  }
-}
-
-// ˢ�»�������
-const refreshRecycleData = async () => {
-  ElMessage.info('����ˢ�»�������...')
-  try {
-    await dashboardStore.fetchRecentRecycleAssets(5)
-    await dashboardStore.fetchDashboardOverview()
-    ElMessage.success('��������ˢ�³ɹ�')
-  } catch {
-    ElMessage.error('ˢ��ʧ��')
-  }
-}
-
-// �˳���¼״̬����ֹ�ظ������
-const isLoggingOut = ref(false)
-
-// �˳���¼
-const logout = async () => {
-  if (isLoggingOut.value) return // ��ֹ�ظ����
-  isLoggingOut.value = true
-  try {
-    // ��� sessionStorage �еĵ�¼��ʼʱ�䣬�´ε�¼ʱ���¼�¼
-    sessionStorage.removeItem(LOGIN_START_TIME_KEY)
-    await authStore.logout() // ���ú�� API ���� Token�����������״̬
-    location.reload() // �˳��ɹ���ˢ��ҳ�棬��ת����¼ҳ
-  } catch (error) {
-    console.error('�˳���¼ʧ��:', error)
-    // ��ʹ�쳣Ҳˢ��ҳ�棬��Ϊ silentLogout �� finally ���������״̬
-    location.reload()
-  } finally {
-    isLoggingOut.value = false
-  }
-}
-
-// ��ʽ������ʱ��
-const formatDateTime = (dateStr: string): string => {
-  const date = new Date(dateStr)
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${month}-${day} ${hours}:${minutes}`
-}
-
-// ����ʱ��
-const updateTime = () => {
-  const now = new Date()
-  currentTime.value = now.toLocaleTimeString('zh-CN', {
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
-  currentDate.value = now.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-  })
-
-  // ���µ�¼ʱ��
-  const diff = Math.floor((now.getTime() - loginStartTime) / 1000)
-  const hours = String(Math.floor(diff / 3600)).padStart(2, '0')
-  const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0')
-  const seconds = String(diff % 60).padStart(2, '0')
-  loginDuration.value = `${hours}:${minutes}:${seconds}`
-}
-
-// ��ʱ��
-let timer: number | null = null
-
-// �������ʱ������ʱ������ȡ����
-onMounted(async () => {
-  // ��¼��ʼʱ�������Ϸ�ͨ�� getLoginStartTime() ��ʼ������ sessionStorage �ָ����״μ�¼��
-  // ��������Ϊ Date.now()��ȷ��ҳ���л����¼ʱ����������
-
-  // ����ʱ��
-  updateTime()
-  timer = window.setInterval(updateTime, 1000)
-
-  // ��ȡ�Ǳ�������
-  await fetchDashboardData()
-})
-
-// ���ж��ʱ�����ʱ��
-onUnmounted(() => {
-  if (timer) {
-    window.clearInterval(timer)
-  }
-})
+const {
+  authInfo,
+  currentTime,
+  currentDate,
+  loginDuration,
+  distributeStats,
+  recycleStats,
+  // wasteStats,
+  recentOutAssets,
+  recentRecycleAssets,
+  refreshData,
+  refreshRecycleData,
+  logout,
+  dashboardStore,
+  statusOverview, // [修复] 补充解构
+  chartOption, // [修复] 补充解构
+  loadError, // [修复] 新增
+  retryFetchDashboard, // [修复] 新增
+} = useDashboardPage()
 </script>
 
 <style lang="scss" scoped>
@@ -373,7 +202,7 @@ onUnmounted(() => {
     }
   }
 
-  // �ʲ����ſ�Ƭ��ʽ
+  // 资产发放卡片样式
   .distribute-card {
     background: var(--gradient-purple);
 
@@ -383,105 +212,7 @@ onUnmounted(() => {
     }
   }
 
-  // �û���Ϣ��Ƭ��ʽ
-  .user-info-card {
-    background: var(--gradient-pink);
-
-    :deep(.el-card__header) {
-      background: var(--overlay-white-light);
-      border-bottom: 1px solid var(--overlay-white-medium);
-    }
-
-    :deep(.el-card__body) {
-      background: var(--gradient-pink);
-      color: $white;
-    }
-
-    .user-profile {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 20px;
-
-      .user-avatar {
-        flex-shrink: 0;
-      }
-
-      .user-details {
-        h3 {
-          margin: 0 0 4px 0;
-          color: $white;
-          font-size: 18px;
-        }
-
-        p {
-          margin: 0;
-          color: var(--overlay-white-text);
-          font-size: 14px;
-        }
-      }
-
-      .logout-btn {
-        background: var(--overlay-white-medium);
-        border: 1px solid var(--overlay-white-strong);
-        color: $white;
-        margin-left: auto;
-
-        &:hover {
-          background: var(--overlay-white-strong);
-        }
-      }
-    }
-
-    .session-info {
-      background: var(--overlay-white-light);
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 16px;
-      backdrop-filter: blur(10px);
-
-      .session-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        .session-label {
-          font-size: 13px;
-          opacity: 0.9;
-        }
-
-        .session-value {
-          font-size: 16px;
-          font-weight: 600;
-          font-family: 'Courier New', monospace;
-        }
-      }
-    }
-
-    .time-info {
-      text-align: center;
-      padding: 16px;
-      background: var(--overlay-white-light);
-      border-radius: 8px;
-      backdrop-filter: blur(10px);
-
-      .current-time {
-        font-size: 28px;
-        font-weight: 700;
-        margin: 0 0 8px 0;
-        letter-spacing: 2px;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      }
-
-      .current-date {
-        font-size: 14px;
-        margin: 0;
-        opacity: 0.9;
-      }
-    }
-  }
-
-  // �ʲ����տ�Ƭ��ʽ
+  // 资产回收卡片样式
   .recycle-card {
     background: var(--gradient-cyan);
 
@@ -491,73 +222,13 @@ onUnmounted(() => {
     }
   }
 
-  // �����ʲ���Ϣ��Ƭ��ʽ
+  // 其他资产信息卡片样式
   .other-info-card {
     background: var(--gradient-green);
 
     :deep(.el-card__header) {
       background: var(--overlay-white-light);
       border-bottom: 1px solid var(--overlay-white-medium);
-    }
-  }
-
-  .recent-list {
-    h4 {
-      margin: 0 0 12px 0;
-      font-size: 14px;
-      opacity: 0.9;
-      font-weight: 500;
-    }
-
-    .list-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 12px;
-      border-radius: 4px;
-      border-bottom: 1px solid var(--overlay-white-medium);
-      font-size: 13px;
-      transition: background 0.2s ease;
-
-      &:hover {
-        background: var(--overlay-white-subtle);
-      }
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      .item-info {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-
-        .item-name {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .item-recipient,
-        .item-returner {
-          font-size: 12px;
-          opacity: 0.8;
-        }
-      }
-
-      .item-date {
-        opacity: 0.8;
-        margin-left: 12px;
-        font-size: 12px;
-      }
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 20px;
-      opacity: 0.6;
-      font-size: 13px;
     }
   }
 
@@ -618,7 +289,7 @@ onUnmounted(() => {
     }
   }
 
-  // ��ԭ��й©�� .dashboard-page-content ��� ::deep() ��������
+  // 将原本泄漏到 .dashboard-page-content 外的 ::deep() 规则移入
   :deep(.el-card__header) {
     padding: 16px 20px;
     border-bottom: 1px solid var(--overlay-white-medium);
@@ -631,28 +302,28 @@ onUnmounted(() => {
   }
 
   /**
-   * ��Ӧʽ�����Ż�
-   * 
-   * �ϵ�˵����
-   * - < 768px (xs/sm): �ƶ��ˣ����в��֣���������ͼ��
-   * - 768px - 991px (md): ƽ��ˣ����ֵ��е����Ӽ��
-   * - �� 992px (lg/xl): ����ˣ�˫�в���
+   * 响应式布局优化
+   *
+   * 断点说明：
+   * - < 768px (xs/sm): 移动端，单列布局，调整字体和间距
+   * - 768px - 991px (md): 平板端，保持单列但增加间距
+   * - ≥ 992px (lg/xl): 桌面端，双列布局
    */
 
-  /* ƽ������� (768px - 991px) */
+  /* 平板端适配 (768px - 991px) */
   @media (max-width: 991px) {
     .top-row,
     .bottom-row {
-      height: auto; // ȡ���̶��߶ȣ�������������Ӧ
+      height: auto; // 取消固定高度，允许内容自适应
       min-height: calc(50% - 8px);
     }
 
     .info-card {
-      margin-bottom: 16px; // ���ӿ�Ƭ���
+      margin-bottom: 16px; // 增加卡片间距
     }
   }
 
-  /* �ƶ������� (< 768px) */
+  /* 移动端适配 (< 768px) */
   @media (max-width: 767px) {
     padding: 12px;
 
@@ -676,7 +347,7 @@ onUnmounted(() => {
       }
     }
 
-    // ͳ��������Ӧʽ����
+    // 统计区域响应式调整
     .statistics {
       flex-wrap: wrap;
       gap: 16px;
@@ -687,7 +358,7 @@ onUnmounted(() => {
         min-width: 80px;
 
         .stat-number {
-          font-size: 24px; // ��С����
+          font-size: 24px; // 缩小字体
         }
 
         .stat-label {
@@ -696,65 +367,7 @@ onUnmounted(() => {
       }
     }
 
-    // �б�����Ӧʽ����
-    .recent-list {
-      .list-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-        padding: 12px;
-
-        .item-info {
-          width: 100%;
-        }
-
-        .item-date {
-          margin-left: 0;
-          font-size: 11px;
-        }
-      }
-    }
-
-    // �û���Ϣ��Ƭ��Ӧʽ����
-    .user-info-card {
-      .user-profile {
-        flex-direction: column;
-        text-align: center;
-        gap: 12px;
-
-        .user-details {
-          h3 {
-            font-size: 16px;
-          }
-
-          p {
-            font-size: 13px;
-          }
-        }
-      }
-
-      .session-info {
-        padding: 8px 12px;
-
-        .session-value {
-          font-size: 14px;
-        }
-      }
-
-      .time-info {
-        padding: 12px;
-
-        .current-time {
-          font-size: 24px; // ��Сʱ������
-        }
-
-        .current-date {
-          font-size: 12px;
-        }
-      }
-    }
-
-    // ���ϸ�����Ӧʽ����
+    // 报废概览响应式调整
     .waste-overview {
       .waste-chart {
         .waste-item {
@@ -767,7 +380,7 @@ onUnmounted(() => {
     }
   }
 
-  /* С���ƶ������� (< 480px) */
+  /* 小屏移动端适配 (< 480px) */
   @media (max-width: 479px) {
     padding: 8px;
 
@@ -778,14 +391,15 @@ onUnmounted(() => {
         }
       }
     }
+  }
+}
+// 资产状态全景卡片样式
+.status-overview-card {
+  background: var(--gradient-green);
 
-    .user-info-card {
-      .time-info {
-        .current-time {
-          font-size: 20px;
-        }
-      }
-    }
+  :deep(.el-card__header) {
+    background: var(--overlay-white-light);
+    border-bottom: 1px solid var(--overlay-white-medium);
   }
 }
 </style>

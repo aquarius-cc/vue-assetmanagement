@@ -1,7 +1,15 @@
 /**
- * 回收资产管理 API
- * 对应后端接口: /api/assets/recycle-assets/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 回收资产管理 API，提供回收资产的增删改查、批量操作等接口
+ * @module api/recycleAsset
+ * @exports
+ *   - recycleAssetAPI: 回收资产管理 API 对象（包含所有回收资产相关方法）
+ * @callers
+ *   - stores/recycleAssetStore: 回收资产状态管理
+ *   - composables/useRecycleFormSubmit: 回收表单提交组合式函数
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/recycleasset: 回收资产相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
@@ -12,7 +20,7 @@ import type {
   RecycleAssetListResponse,
   RecycleAssetBatchCreateForm,
   RecycleAssetBatchCreateResult,
-} from '@/utils/RecycleAsset'
+} from '@/types/recycleasset'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
 /**

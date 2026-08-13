@@ -1,3 +1,11 @@
+<!--
+@file 资产详情路由容器，作为子路由视图的包装组件
+@component AssetDetails
+@usedBy
+  - router/index.ts: 资产详情路由组件
+@dependsOn
+  - (无外部依赖，纯容器组件)
+-->
 <template>
   <div class="asset-details">
     <div class="details-content">

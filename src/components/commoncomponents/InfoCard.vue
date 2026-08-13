@@ -1,39 +1,13 @@
-﻿<!--
-  InfoCard.vue
-  通用信息卡片组件
-
-  @description
-  数据驱动的信息卡片组件，用于展示键值对形式的信息。
-  支持双列网格布局和单列文本布局两种模式。
-
-  @features
-  - 数据驱动：只需传递配置对象，无需编写模板
-  - 自动格式化：支持自定义格式化函数和默认值处理
-  - 条件渲染：通过 visible 属性控制显示/隐藏
-  - 价格样式：支持价格字段的特殊样式
-  - 两种布局：grid（双列）和 description（单列文本）
-
-  @usage
-  ```vue
-  <InfoCard :config="cardConfig" />
-  ```
-
-  @example
-  ```ts
-  const cardConfig: InfoCardConfig = {
-    title: '基本信息',
-    icon: 'Document',
-    fields: [
-      [{ label: '编码', value: 'ABC123' }],
-      [{ label: '名称', value: '测试资产' }]
-    ]
-  }
-  ```
-
-  @author System
-  @date 2025-06-02
+<!--
+@file 通用信息卡片，数据驱动的键值对信息展示组件
+@component InfoCard
+@usedBy
+  - detils/BasicAssetDetails.vue: 资产基本信息卡片
+  - detils/OutAssetBasicDetails.vue: 出库基本信息卡片
+  - detils/RecycleAssetBasicDetails.vue: 回收基本信息卡片
+@dependsOn
+  - types/info-card: InfoCardConfig/InfoField 类型定义
 -->
-
 <template>
   <el-card v-if="config.visible !== false" class="info-card" shadow="hover">
     <!-- 卡片头部：图标 + 标题 -->

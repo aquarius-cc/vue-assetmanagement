@@ -41,10 +41,11 @@ describe('useDarkMode', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
+    vi.resetModules()
     localStorageMock.clear()
     mockMatchMedia.mockImplementation((_query: string) => createMockMediaQueryList(false))
 
-    // Dynamic import to get fresh module
+    // Dynamic import to get fresh module (vi.resetModules clears cache)
     const module = await import('../useDarkMode')
     useDarkMode = module.useDarkMode
   })
@@ -62,22 +63,24 @@ describe('useDarkMode', () => {
       expect(isDark.value).toBe(false)
     })
 
-    it('initializes with dark mode from localStorage', () => {
+    it('initializes with dark mode from localStorage', async () => {
       localStorageMock.getItem.mockImplementation((key: string) => {
         if (key === 'theme') return 'dark'
         return null
       })
-
-      const { isDark } = useDarkMode()
+      vi.resetModules()
+      const module = await import('../useDarkMode')
+      const { isDark } = module.useDarkMode()
 
       expect(isDark.value).toBe(true)
     })
 
-    it('initializes with dark mode from system preference', () => {
+    it('initializes with dark mode from system preference', async () => {
       localStorageMock.getItem.mockReturnValue(null)
       mockMatchMedia.mockImplementation((_query: string) => createMockMediaQueryList(true))
-
-      const { isDark } = useDarkMode()
+      vi.resetModules()
+      const module = await import('../useDarkMode')
+      const { isDark } = module.useDarkMode()
 
       expect(isDark.value).toBe(true)
     })
@@ -97,13 +100,14 @@ describe('useDarkMode', () => {
       expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'dark')
     })
 
-    it('toggles dark mode from dark to light', () => {
+    it('toggles dark mode from dark to light', async () => {
       localStorageMock.getItem.mockImplementation((key: string) => {
         if (key === 'theme') return 'dark'
         return null
       })
-
-      const { isDark, toggleDark } = useDarkMode()
+      vi.resetModules()
+      const module = await import('../useDarkMode')
+      const { isDark, toggleDark } = module.useDarkMode()
 
       expect(isDark.value).toBe(true)
 
@@ -113,10 +117,11 @@ describe('useDarkMode', () => {
       expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'light')
     })
 
-    it('persists theme to localStorage', () => {
+    it('persists theme to localStorage', async () => {
       localStorageMock.getItem.mockReturnValue(null)
-
-      const { toggleDark } = useDarkMode()
+      vi.resetModules()
+      const module = await import('../useDarkMode')
+      const { toggleDark } = module.useDarkMode()
 
       toggleDark()
 
@@ -203,6 +208,14 @@ describe('useDarkMode', () => {
   })
 
   describe('edge cases', () => {
+    it('returns the same ref across multiple calls (singleton)', () => {
+      const a = useDarkMode()
+      const b = useDarkMode()
+      expect(a.isDark).toBe(b.isDark)
+      expect(a.toggleDark).toBe(b.toggleDark)
+      expect(a.setDark).toBe(b.setDark)
+    })
+
     it('handles localStorage not available', () => {
       localStorageMock.getItem.mockReturnValue(null)
 

@@ -1,17 +1,26 @@
 /**
- * 资产数据模型
- * 对应后端数据库表: am_asset
- * 与后端 Django Model 字段完全一致
- *
- * 后端模型: apps/assetmanagement/models.py -> Asset(BaseModel)
- * API 前缀: /api/assets/assets/
+ * @file 资产数据模型定义，包括资产状态枚举、表单、详情等类型
+ * @module types/asset
+ * @exports
+ *   - AssetCurrentStatus: 资产状态枚举
+ *   - ASSET_STATUS_DISPLAY_MAPPING: 资产状态中文映射
+ *   - AssetCreateForm/AssetCreateFormExtended/AssetUpdateForm: 资产表单接口
+ *   - AssetSimpleReturn/Asset/AssetDetail/AssetListItem: 资产数据接口
+ *   - AssetQueryParams: 资产查询参数
+ *   - AssetListResponse/AssetListSimpleResponse: 资产列表响应
+ *   - AssetStatistics: 资产统计接口
+ *   - AssetImportForm/ValidatedAssetImportData: 业务表单接口
+ * @callers
+ *   - stores/assetStore（资产状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
  */
 
 import type { AssetType } from '@/types/assettype'
 import type { EmployeeExtended } from '@/types/user'
 import type { Contract } from '@/types/contract'
 import type { Storage } from '@/types/storage'
-import type { HardDiskSNListResponse } from '@/types/harddisksn'
+import type { HardDiskSN } from '@/types/harddisksn'
 
 // ==================== 枚举类型定义 ====================
 
@@ -26,6 +35,8 @@ import type { HardDiskSNListResponse } from '@/types/harddisksn'
  * - in_use → damaged: 提交报废申请
  * - damaged → scrapped: 审批通过，完成报废
  * - damaged → recycled_pending: 审批拒绝，退回待发放
+ * - repairing → recycled_pending: 维修完成，转入待发放
+ * - lost → recycled_pending: 遗失资产找回，转入待发放
  */
 export enum AssetCurrentStatus {
   IN_STORE = 'in_store',
@@ -210,7 +221,7 @@ export interface Asset {
   /** 管理人工号（外键） */
   asset_manager_jobcode: string | null
   /** 资产当前状态 */
-  asset_current_status: string
+  asset_current_status: AssetCurrentStatus
   /** 资产描述 */
   asset_description: string | null
 }
@@ -233,7 +244,7 @@ export interface AssetDetail extends Asset {
   /** 管理人完整信息（外键关联对象） */
   asset_manager?: EmployeeExtended
   /** 关联硬盘序列号列表 */
-  harddisk_sns: HardDiskSNListResponse[]
+  harddisk_sns: HardDiskSN[]
 }
 
 /**
@@ -324,25 +335,8 @@ export interface AssetStatistics {
  * 资产简化接口
  * 用于在组件间引用
  */
-export interface AssetItem {
-  value: string
-  asset_name: string
-  asset_code: string
-  asset_current_status?: string
-}
 
 // ==================== 业务操作表单接口 ====================
-
-/**
- * 变更资产状态表单接口
- * POST /api/assets/assets/{asset_code}/change_status/
- */
-export interface AssetChangeStatusForm {
-  /** 新状态 (in_store/in_use/damaged/scrapped) */
-  status: string
-  /** 变更说明（可选） */
-  description?: string
-}
 
 // ==================== Excel 导入导出接口 ====================
 
@@ -418,11 +412,3 @@ export interface ValidatedAssetImportData extends AssetImportForm {
 /**
  * 验证后的资产数据接口
  */
-export interface ValidatedAssetData extends AssetCreateForm {
-  /** 验证状态 */
-  validationStatus: 'success' | 'error' | 'pending'
-  /** 验证错误信息 */
-  validationError: string
-  /** 验证错误详情 */
-  validationErrors: Record<string, string>
-}

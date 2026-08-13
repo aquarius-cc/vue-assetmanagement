@@ -10,10 +10,10 @@ vi.mock('@/utils/Format', () => ({
 
 import { useRecycleAssetDetailCards } from '../useRecycleAssetDetailCards'
 import type { RecycleAssetDetailCardData } from '../useRecycleAssetDetailCards'
-import type { RecycleAssetExtended } from '@/utils/RecycleAsset'
+import type { RecycleAssetExtended } from '@/types/recycleasset'
 import type { Contract } from '@/types/contract'
-import type { EmployeeExtended } from '@/utils/User'
-import type { Storage } from '@/utils/Storage'
+import type { EmployeeExtended } from '@/types/user'
+import type { Storage } from '@/types/storage'
 
 const createMockDetail = (overrides?: Partial<RecycleAssetExtended>): RecycleAssetExtended =>
   ({
@@ -37,12 +37,12 @@ const createMockDetail = (overrides?: Partial<RecycleAssetExtended>): RecycleAss
       asset_contract: {
         contract_code: 'C001',
         contract_name: '采购合同',
-        contract_price: 5000,
-        contract_supplier: '供应商A',
-        contract_signing_date: '2024-01-10',
+        contract_amount: 5000,
+        supplier_name: '供应商A',
+        contract_start_date: '2024-01-10',
         contract_warranty_period: 3,
-        contract_preliminary_acceptance_date: '2024-02-01',
-        contract_final_acceptance_date: '2024-03-01',
+        initial_check_date: '2024-02-01',
+        final_check_date: '2024-03-01',
       } as Contract,
       asset_manager: {
         employee_name: '王五',

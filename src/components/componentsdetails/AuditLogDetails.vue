@@ -1,12 +1,12 @@
-﻿<!--
-  AuditLogDetails.vue
-  通用审计日志列表页面
-
-  功能：
-    - 展示非资产操作的审计日志（部门、员工、用户等）
-    - 筛选查询（应用标识、操作类型、操作人、日期范围）
-    - 导出 Excel
-    - 子路由：详情页
+<!--
+@file 通用审计日志列表页面，展示非资产操作的日志记录并支持筛选查询与导出
+@component AuditLogDetails
+@usedBy
+  - views/AuditLogDetails.vue: 通过 router-view 渲染审计日志列表
+@dependsOn
+  - api/auditLog: 审计日志查询接口
+  - composables/useExcelExport: Excel导出功能
+  - stores/auditLogStore: 审计日志数据管理
 -->
 <template>
   <div class="audit-log-details-root">
@@ -120,7 +120,11 @@
         />
         <el-table-column prop="operator_jobcode" label="操作人工号" width="120" align="center" />
         <el-table-column prop="operator_name" label="操作人" width="100" align="center" />
-        <el-table-column prop="operation_time" label="操作时间" width="180" align="center" />
+        <el-table-column prop="operation_time" label="操作时间" width="180" align="center">
+          <template #default="{ row }">
+            {{ row.operation_time ? exactFormatDate(row.operation_time) : '-' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="ip_address" label="IP地址" width="140" align="center" />
       </el-table>
 
@@ -157,14 +161,15 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { auditLogAPI } from '@/api/auditLog'
-import type { AuditLog, AuditLogQueryParams } from '@/utils/AuditLog'
+import type { AuditLog, AuditLogQueryParams } from '@/types/auditlog'
 import {
   auditOperationTypeMapping,
   appLabelMapping,
   auditOperationTypeTagMapping,
-} from '@/utils/AuditLog'
+} from '@/types/auditlog'
 import { useExcelExport } from '@/composables/useExcelExport'
 import type { ColumnConfig } from '@/utils/excelExporter'
+import { exactFormatDate } from '@/utils/Format'
 
 const route = useRoute()
 const router = useRouter()

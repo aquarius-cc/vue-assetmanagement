@@ -55,7 +55,7 @@ describe('useScrapableAssets', () => {
       expect(mockCombineSearch).toHaveBeenCalledWith({
         page: 1,
         page_size: 10,
-        asset_current_status__in: 'in_store,recycled_pending',
+        asset_current_status__in: 'in_use,recycled_pending,broken,lost',
       })
       expect(list.value).toEqual(items)
       expect(total.value).toBe(1)
@@ -69,7 +69,7 @@ describe('useScrapableAssets', () => {
         page: 1,
         page_size: 10,
         keyword: 'test',
-        asset_current_status__in: 'in_store,recycled_pending',
+        asset_current_status__in: 'in_use,recycled_pending,broken,lost',
       })
     })
 

@@ -1,11 +1,29 @@
-// network.ts
-// 网络连通性测试模块
-// 注意：此模块仅用于开发调试，生产环境应隐藏相关按钮
+/**
+ * @file 网络连通性测试模块，提供后端连通性检测功能（仅用于开发调试）
+ * @module api/network
+ * @exports
+ *   - networkAPI: 网络连通性测试 API 对象（包含连通性检测方法）
+ * @callers
+ *   - views/NetworkTest: 网络测试视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - axios: 错误处理
+ */
 import { request } from '@/api/index'
 import { isAxiosError } from 'axios'
 
 // 从环境变量获取后端地址（与request.ts保持一致）
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://127.0.0.1:8000'
+
+/** HTML 实体转义，防止 XSS 注入 */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
 
 // 网络连通性测试
 export const networkAPI = {
@@ -34,48 +52,13 @@ export const networkAPI = {
         if (error.response) {
           return {
             status: 'success',
-            message: `服务器可达（状态码: ${error.response.status}）`,
+            message: `服务器可达（状态码: ${escapeHtml(String(error.response.status))}）`,
           }
         }
       }
       return {
         status: 'error',
-        message: `连接测试失败: ${String(error)}`,
-      }
-    }
-  },
-
-  /**
-   * 测试API接口
-   * 测试后端API基础路径是否可访问
-   */
-  testAPI: async (): Promise<{ status: string; message: string; details?: unknown }> => {
-    try {
-      const response = await request.get('/test/')
-      return {
-        status: 'success',
-        message: 'API接口连接正常',
-        details: response,
-      }
-    } catch (error: unknown) {
-      let errorMessage = '未知错误'
-      let errorDetails: unknown = undefined
-
-      if (isAxiosError(error)) {
-        errorMessage = String(error.message || errorMessage)
-        errorDetails = {
-          status: error.response?.status,
-          data: error.response?.data,
-          url: error.config?.url,
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message
-      }
-
-      return {
-        status: 'error',
-        message: `API接口测试失败: ${errorMessage}`,
-        details: errorDetails,
+        message: `连接测试失败: ${escapeHtml(String(error))}`,
       }
     }
   },
@@ -87,7 +70,7 @@ export const networkAPI = {
   testLoginAPI: async (): Promise<{ status: string; message: string; details?: unknown }> => {
     try {
       // 使用环境变量中的服务器地址，而非硬编码
-      const response = await fetch(`${SERVER_URL}/api/auth/login/`, {
+      const response = await fetch(`${SERVER_URL}/api/v1/auth/login/`, {
         method: 'OPTIONS',
         headers: {
           'Content-Type': 'application/json',
@@ -106,7 +89,7 @@ export const networkAPI = {
       } else {
         return {
           status: 'error',
-          message: `登录接口不可用: ${response.status} ${response.statusText}`,
+          message: `登录接口不可用: ${escapeHtml(String(response.status))} ${escapeHtml(response.statusText)}`,
           details: {
             status: response.status,
             statusText: response.statusText,
@@ -116,7 +99,7 @@ export const networkAPI = {
     } catch (error: unknown) {
       return {
         status: 'error',
-        message: `登录接口连接失败: ${String(error)}`,
+        message: `登录接口连接失败: ${escapeHtml(String(error))}`,
         details: error,
       }
     }

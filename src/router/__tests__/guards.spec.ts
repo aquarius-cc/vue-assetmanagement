@@ -18,6 +18,7 @@ vi.mock('element-plus', () => ({
 const mockInitAuthState = vi.fn()
 const mockSilentLogout = vi.fn()
 const mockGetAuthInfo = vi.fn().mockResolvedValue(undefined)
+const mockLoadMyPermissions = vi.fn().mockResolvedValue(undefined)
 const mockInitAppState = vi.fn()
 const mockSetLoading = vi.fn()
 const mockSetPageTitle = vi.fn()
@@ -28,9 +29,11 @@ const mockAuthStore = {
   isLoggedIn: false,
   access_token: null as string | null,
   userRole: 'regular_user',
+  permissions: [] as string[],
   initAuthState: mockInitAuthState,
   silentLogout: mockSilentLogout,
   getAuthInfo: mockGetAuthInfo,
+  loadMyPermissions: mockLoadMyPermissions,
 }
 
 const mockAppStore = {
@@ -52,6 +55,13 @@ describe('Router Guards', () => {
   let mockRouter: any
   let beforeEachCallback: any
   let afterEachCallback: any
+
+  // 构造模拟 JWT token（header.payload.signature 格式）
+  function makeMockToken(payload: Record<string, unknown>): string {
+    const header = btoa(JSON.stringify({ typ: 'JWT', alg: 'HS256' }))
+    const body = btoa(JSON.stringify(payload))
+    return `${header}.${body}.signature`
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -479,6 +489,57 @@ describe('Router Guards', () => {
       await beforeEachCallback({ path: '/login', meta: {} }, { path: '/' })
 
       expect(mockSetLoading).toHaveBeenCalledWith(true)
+    })
+  })
+
+  describe('superuser bypass — is_superuser in JWT', () => {
+    it('should allow superuser access to system_admin-only routes even with role=regular_user', async () => {
+      const superuserToken = makeMockToken({ user_id: 1, is_superuser: true })
+      ;(getDecryptedToken as any).mockReturnValue(superuserToken)
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = superuserToken
+      mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.authInfo = { auth_id: 1, auth_username: 'whdtadmin' }
+
+      setupAndCapture()
+
+      const result = await beforeEachCallback(
+        { path: '/main/userdetails', meta: {} },
+        { path: '/' },
+      )
+      expect(result).toBe(true)
+    })
+
+    it('should allow superuser access to /main/system', async () => {
+      const superuserToken = makeMockToken({ user_id: 1, is_superuser: true })
+      ;(getDecryptedToken as any).mockReturnValue(superuserToken)
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = superuserToken
+      mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.authInfo = { auth_id: 1, auth_username: 'whdtadmin' }
+
+      setupAndCapture()
+
+      const result = await beforeEachCallback({ path: '/main/system', meta: {} }, { path: '/' })
+      expect(result).toBe(true)
+    })
+
+    it('should deny non-superuser with role=regular_user on admin routes', async () => {
+      const normalToken = makeMockToken({ user_id: 2, is_superuser: false })
+      ;(getDecryptedToken as any).mockReturnValue(normalToken)
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = normalToken
+      mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.authInfo = { auth_id: 2, auth_username: 'normal' }
+
+      setupAndCapture()
+
+      const result = await beforeEachCallback(
+        { path: '/main/userdetails', meta: {} },
+        { path: '/' },
+      )
+      expect(result).toBe('/main')
+      expect(ElMessage.error).toHaveBeenCalledWith('您没有权限访问该页面')
     })
   })
 })

@@ -1,3 +1,11 @@
+<!--
+@file 列表操作栏组件，提供详情/编辑/删除按钮和搜索输入框
+@component CommonListActions
+@usedBy
+  - components/CommonList.vue: 通用列表操作列
+@dependsOn
+  - vue-router: 详情页路由跳转
+-->
 <template>
   <el-table-column
     v-if="showActions"

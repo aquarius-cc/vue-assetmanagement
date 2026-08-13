@@ -1,4 +1,22 @@
 /**
+ * @file 通用审计日志数据模型定义，包括操作类型、应用标识、日志详情等类型
+ * @module types/auditlog
+ * @exports
+ *   - AuditOperationType: 操作类型枚举
+ *   - AppLabel: 应用标识枚举
+ *   - AuditLog: 通用审计日志接口
+ *   - AuditLogQueryParams: 审计日志查询参数
+ *   - AuditLogListResponse: 审计日志列表响应接口
+ *   - auditOperationTypeMapping/appLabelMapping/auditOperationTypeTagMapping: 映射常量
+ * @callers
+ *   - stores/auditlogStore（审计日志状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
+ */
+
+import type { PaginatedResponse } from '@/types/common'
+
+/**
  * 通用审计日志数据模型
  * 对应后端 core AuditLog 模型（core_audit_log 表）
  * 记录非资产操作的审计日志（部门、员工、用户等）
@@ -68,15 +86,8 @@ export interface AuditLogQueryParams {
   [key: string]: string | number | boolean | null | undefined
 }
 
-/**
- * 审计日志列表响应
- */
-export interface AuditLogListResponse {
-  count: number
-  next: string | null
-  previous: string | null
-  results: AuditLog[]
-}
+/** 审计日志列表响应 */
+export type AuditLogListResponse = PaginatedResponse<AuditLog>
 
 // ==================== 映射常量 ====================
 

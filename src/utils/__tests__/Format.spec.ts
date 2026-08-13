@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
   formatDate,
+  formatDateTime,
+  formatDateTimeFull,
   formatPrice,
   formatNumber,
   contractiInfoFormate,
@@ -23,7 +25,7 @@ import {
   USER_STATUS_DISPLAY_MAPPING,
 } from '../Format'
 
-vi.mock('@/utils/User', () => ({
+vi.mock('@/types/user', () => ({
   EmployeeStatus: {
     ACTIVE: 'active',
     LEFT: 'left',
@@ -148,43 +150,39 @@ describe('Format', () => {
       const input = {
         contract_code: 'C001',
         contract_name: 'Test',
-        contract_price: '5000',
+        contract_amount: '5000',
         contract_warranty_period: '3',
-        contract_settledment_price: '1000',
-        contract_paid_price: '2000',
-        contract_paid_count_number: '2',
+        settlemented_price: '1000',
+        amount_paid: '2000',
         contract_type: ' purchase ',
-        contract_signing_date: '2024-01-15',
-        contract_settledment_status: 'pending',
+        contract_start_date: '2024-01-15',
+        contract_status: 'pending',
       }
       const result = contractiInfoFormate(input)
       expect(result.contract_code).toBe('C001')
-      expect(result.contract_price).toBe(5000)
+      expect(result.contract_amount).toBe(5000)
       expect(result.contract_warranty_period).toBe(3)
-      expect(result.contract_settledment_price).toBe(1000)
-      expect(result.contract_paid_price).toBe(2000)
-      expect(result.contract_paid_count_number).toBe(2)
+      expect(result.settlemented_price).toBe(1000)
+      expect(result.amount_paid).toBe(2000)
       expect(result.contract_type).toBe('purchase')
-      expect(result.contract_signing_date).toBe('2024-01-15')
-      expect(result.contract_settledment_status).toBe('pending')
+      expect(result.contract_start_date).toBe('2024-01-15')
+      expect(result.contract_status).toBe('pending')
     })
 
     it('handles null number fields with defaults', () => {
       const input = {
-        contract_price: null,
+        contract_amount: null,
         contract_warranty_period: null,
-        contract_settledment_price: null,
-        contract_paid_price: null,
-        contract_paid_count_number: null,
+        settlemented_price: null,
+        amount_paid: null,
         contract_type: null,
-        contract_settledment_status: null,
+        contract_status: null,
       }
       const result = contractiInfoFormate(input)
-      expect(result.contract_price).toBeUndefined()
+      expect(result.contract_amount).toBeUndefined()
       expect(result.contract_warranty_period).toBeUndefined()
-      expect(result.contract_settledment_price).toBeNull()
-      expect(result.contract_paid_price).toBe(0)
-      expect(result.contract_paid_count_number).toBe(0)
+      expect(result.settlemented_price).toBeNull()
+      expect(result.amount_paid).toBe(0)
       expect(result.contract_type).toBeUndefined()
     })
 
@@ -192,11 +190,11 @@ describe('Format', () => {
       const { ref } = await import('vue')
       const input = ref({
         contract_code: 'C002',
-        contract_settledment_status: 'invalid',
+        contract_status: 'purchasing',
       })
       const result = contractiInfoFormate(input as any)
       expect(result.contract_code).toBe('C002')
-      expect(result.contract_settledment_status).toBe('pending')
+      expect(result.contract_status).toBe('purchasing')
     })
   })
 
@@ -224,7 +222,7 @@ describe('Format', () => {
 
   describe('contractTypeMapping', () => {
     it('maps all contract types', () => {
-      expect(contractTypeMapping.purchase).toBe('采购合同')
+      expect(contractTypeMapping.tender_procurement).toBe('招标采购合同')
       expect(contractTypeMapping.service).toBe('服务合同')
       expect(contractTypeMapping.information_construction).toBe('信息化建设合同')
       expect(contractTypeMapping.direct_procurement).toBe('直接采购合同')
@@ -242,6 +240,7 @@ describe('Format', () => {
     it('maps storage types', () => {
       expect(storageMapping.newasset).toBe('新货仓库')
       expect(storageMapping.recycle).toBe('回收仓库')
+      expect(storageMapping.broken).toBe('损坏存放仓库')
       expect(storageMapping.damaged).toBe('待报废仓库')
     })
   })
@@ -542,6 +541,52 @@ describe('Format', () => {
       // When day > 12, JS Date interprets as invalid month, returning '未知'.
       const result = parseExcelDate('25/12/2024')
       expect(result).toBe('未知')
+    })
+  })
+
+  describe('formatDateTime', () => {
+    it('returns empty string for null or undefined', () => {
+      expect(formatDateTime(null)).toBe('')
+      expect(formatDateTime(undefined)).toBe('')
+    })
+
+    it('returns empty string for empty string', () => {
+      expect(formatDateTime('')).toBe('')
+    })
+
+    it('formats valid date string to MM-DD HH:mm', () => {
+      expect(formatDateTime('2024-03-15T14:30:00')).toBe('03-15 14:30')
+    })
+
+    it('returns empty string for invalid date', () => {
+      expect(formatDateTime('not-a-date')).toBe('')
+    })
+
+    it('handles midnight correctly', () => {
+      expect(formatDateTime('2024-01-01T00:00:00')).toBe('01-01 00:00')
+    })
+  })
+
+  describe('formatDateTimeFull', () => {
+    it('returns empty string for null or undefined', () => {
+      expect(formatDateTimeFull(null)).toBe('')
+      expect(formatDateTimeFull(undefined)).toBe('')
+    })
+
+    it('returns empty string for empty string', () => {
+      expect(formatDateTimeFull('')).toBe('')
+    })
+
+    it('formats valid date string to YYYY-MM-DD HH:mm:ss', () => {
+      expect(formatDateTimeFull('2024-03-15T14:30:45')).toBe('2024-03-15 14:30:45')
+    })
+
+    it('returns empty string for invalid date', () => {
+      expect(formatDateTimeFull('not-a-date')).toBe('')
+    })
+
+    it('handles midnight correctly', () => {
+      expect(formatDateTimeFull('2024-01-01T00:00:00')).toBe('2024-01-01 00:00:00')
     })
   })
 })

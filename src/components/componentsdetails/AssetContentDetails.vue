@@ -1,17 +1,15 @@
 <!--
-  AssetContentDetails.vue
-  资产列表页面（重构版）
-  架构调整：
-  1. 使用 SmartListContainer 封装数据管理逻辑（分页、搜索、加载）
-  2. CommonList 只负责 UI 展示，不管理数据
-  3. 配置提取到 useAssetListConfig composable（DR-5 拆分）
-  数据流：
-  SmartListContainer (数据管理) → slot props → CommonList (纯展示)
-
-  功能：
-  - 展示资产列表（支持增删改查）
-  - 批量导入、导出Excel
-  - 子路由：新增/编辑表单、详情页（浮层遮罩）
+@file 资产列表管理页面，展示所有资产信息并支持增删改查操作
+@component AssetContentDetails
+@usedBy
+  - views/AssetDetails.vue: 通过 router-view 渲染资产列表
+@dependsOn
+  - composables/useAssetListConfig: 资产列表配置（分页、搜索、导出列）
+  - composables/useExcelExport: Excel导出功能
+  - stores/assetStore: 资产数据管理
+  - components/commoncomponents/SmartListContainer: 数据管理容器
+  - components/commoncomponents/CommonList: 列表展示组件
+  - components/commoncomponents/StatusTag: 状态标签组件
 -->
 <template>
   <div class="asset-details-root">

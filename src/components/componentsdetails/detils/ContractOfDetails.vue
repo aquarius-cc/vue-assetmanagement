@@ -43,65 +43,53 @@
             </div>
             <div class="info-item">
               <span class="info-label">供应商：</span
-              ><span class="info-value">{{ contractDetails.contract_supplier }}</span>
+              ><span class="info-value">{{ contractDetails.supplier_name }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">质保年限：</span>
               ><span class="info-value">{{ contractDetails.contract_warranty_period ?? 0 }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">合同价格：</span>
+              <span class="info-label">合同金额：</span>
               ><span class="info-value price"
-                >¥{{ formatNumber(contractDetails.contract_price) }}</span
+                >¥{{ formatNumber(contractDetails.contract_amount) }}</span
               >
             </div>
           </div>
           <div class="info-column">
             <div class="info-item">
               <span class="info-label">签订日期：</span>
-              ><span class="info-value">{{
-                formatDate(contractDetails.contract_signing_date)
-              }}</span>
+              ><span class="info-value">{{ formatDate(contractDetails.contract_start_date) }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">结算状态：</span>
+              <span class="info-label">合同状态：</span>
               <el-tag
                 :type="
-                  contractDetails.contract_settledment_status === ContractSettlementStatus.SETTLED
-                    ? 'success'
-                    : 'primary'
+                  contractDetails.contract_status === 'settlement_done' ? 'success' : 'primary'
                 "
                 size="default"
               >
-                {{ getSettlementStatusText(contractDetails.contract_settledment_status) }}
+                {{ contractDetails.contract_status || '-' }}
               </el-tag>
             </div>
             <div class="info-item">
               <span class="info-label">结算价格：</span>
               ><span class="info-value price"
-                >¥{{ formatNumber(contractDetails.contract_settledment_price) }}</span
+                >¥{{ formatNumber(contractDetails.settlemented_price) }}</span
               >
             </div>
             <div class="info-item">
               <span class="info-label">初验日期：</span>
-              ><span class="info-value">{{
-                formatDate(contractDetails.contract_preliminary_acceptance_date)
-              }}</span>
+              ><span class="info-value">{{ formatDate(contractDetails.initial_check_date) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">终验日期：</span>
-              ><span class="info-value">{{
-                formatDate(contractDetails.contract_final_acceptance_date)
-              }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">付款次数：</span>
-              ><span class="info-value">{{ contractDetails.contract_paid_count_number ?? 0 }}</span>
+              ><span class="info-value">{{ formatDate(contractDetails.final_check_date) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">已支付金额：</span
               ><span class="info-value price"
-                >¥{{ formatNumber(contractDetails.contract_paid_price) }}</span
+                >¥{{ formatNumber(contractDetails.amount_paid) }}</span
               >
             </div>
           </div>
@@ -111,8 +99,17 @@
           <span class="info-value">{{ formatDate(contractDetails.updated_at) || '' }}</span>
         </div>
         <div class="info-item full-width">
-          <span class="info-label">支付记录：</span>>
-          <span class="info-value">{{ contractDetails.contract_paid_record || '' }}</span>
+          <span class="info-label">支付记录：</span>
+          <span class="info-value">
+            <template
+              v-if="contractDetails.paid_record && typeof contractDetails.paid_record !== 'string'"
+            >
+              共 {{ contractDetails.paid_record.payments?.length || 0 }} 笔，已支付 ¥{{
+                formatNumber(contractDetails.paid_record.total_paid || 0)
+              }}
+            </template>
+            <template v-else>-</template>
+          </span>
         </div>
       </el-card>
       <div v-else-if="!isLoading"><el-empty description="未找到合同详情数据" /></div>
@@ -132,26 +129,16 @@ import { Back, Download, Document } from '@element-plus/icons-vue'
 import { useContractStore } from '@/stores/contractStore'
 import { useExcelExport } from '@/composables/useExcelExport'
 import type { Contract } from '@/types/contract'
-import { ContractSettlementStatus } from '@/types/contract'
 import type { ColumnConfig } from '@/utils/excelExporter'
-import {
-  formatDate,
-  formatNumber,
-  contractSettlementStatusMapping,
-  contractTypeMapping,
-} from '@/utils/Format'
+import { formatDate, formatNumber, contractTypeMapping } from '@/utils/Format'
 
 // ========== 辅助函数：枚举值转中文 ==========
 const getContractTypeText = (value: string | null | undefined): string => {
   if (!value) return '未知'
   return contractTypeMapping[value] || value
 }
-const getSettlementStatusText = (value: string | null | undefined): string => {
-  if (!value) return '未知'
-  return contractSettlementStatusMapping[value] || value
-}
 
-// ========== 路由与状?==========
+// ========== 路由与状态 ==========
 const route = useRoute()
 const router = useRouter()
 const contractStore = useContractStore()
@@ -169,52 +156,50 @@ const exportColumns: ColumnConfig<Contract>[] = [
     default: '',
     formatter: (v) => getContractTypeText(v as string) ?? '',
   },
-  { title: '供应商', key: 'contract_supplier', default: '' },
+  { title: '供应商', key: 'supplier_name', default: '' },
   {
-    title: '合同价格',
-    key: 'contract_price',
+    title: '合同金额',
+    key: 'contract_amount',
     default: '0',
     formatter: (v) => formatNumber(v as number) || '0',
   },
   {
     title: '签订日期',
-    key: 'contract_signing_date',
+    key: 'contract_start_date',
     default: '',
     formatter: (v) => formatDate(v as string) || '',
   },
-  { title: '质保??', key: 'contract_warranty_period', default: '0' },
+  { title: '保修期(年)', key: 'contract_warranty_period', default: '0' },
   {
     title: '初验日期',
-    key: 'contract_preliminary_acceptance_date',
+    key: 'initial_check_date',
     default: '',
     formatter: (v) => formatDate(v as string) || '',
   },
   {
     title: '终验日期',
-    key: 'contract_final_acceptance_date',
+    key: 'final_check_date',
     default: '',
     formatter: (v) => formatDate(v as string) || '',
   },
   {
-    title: '结算状态',
-    key: 'contract_settledment_status',
+    title: '合同状态',
+    key: 'contract_status',
     default: '',
-    formatter: (v) => getSettlementStatusText(v as string) ?? '',
   },
   {
     title: '结算价格',
-    key: 'contract_settledment_price',
+    key: 'settlemented_price',
     default: '0',
     formatter: (v) => formatNumber(v as number) || '0',
   },
-  { title: '已付款次数', key: 'contract_paid_count_number', default: '0' },
   {
     title: '已支付金额',
-    key: 'contract_paid_price',
+    key: 'amount_paid',
     default: '0',
     formatter: (v) => formatNumber(v as number) || '0',
   },
-  { title: '支付记录', key: 'contract_paid_record', default: '' },
+  { title: '未支付金额', key: 'amount_unpaid', default: '0' },
 ]
 
 // ========== 加载详情 ==========

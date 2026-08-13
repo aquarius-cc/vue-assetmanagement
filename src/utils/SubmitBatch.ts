@@ -1,11 +1,19 @@
-// utils/SubmitBatch.ts 通用提交函数
-// @/utils/SubmitBatch.ts
-//
-// ✅ 关键点：submitBatch 是泛型函数，接受任意 T extends object，
-// 不再强制要求 Record<string, unknown>。
-//
-// 变更说明：failedItems 从 T[] 改为 { item: T; error: string }[]
-// 目的：将后端返回的具体错误信息传递给调用方，便于在 UI 中展示
+/**
+ * @file 通用批量提交函数，支持并发提交与错误信息收集
+ * @module src/utils/SubmitBatch
+ * @exports
+ *   - FailedItem: 失败项接口（含原始数据与错误信息）
+ *   - SubmitBatchResult: 批量提交结果接口
+ *   - SubmitBatchOptions: 批量提交配置接口
+ *   - extractErrorMessage: 从错误对象提取可读错误信息
+ *   - submitBatch: 通用批量提交函数（支持并发控制）
+ * @callers
+ *   - composables/useBatchImport
+ *   - composables/useAssetBatchImport
+ *   - composables/useContractBatchImport
+ * @dependsOn
+ *   - axios (isAxiosError)
+ */
 
 import { isAxiosError } from 'axios'
 

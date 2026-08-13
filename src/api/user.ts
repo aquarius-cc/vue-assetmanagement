@@ -1,7 +1,20 @@
 /**
- * 员工管理 API
- * 对应后端接口: /api/users/employees/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 员工管理 API，提供员工的增删改查、批量操作等接口
+ * @module api/user
+ * @exports
+ *   - userAPI: 员工管理 API 对象（包含所有员工相关方法）
+ *   - EmployeeBatchCreateResult: 批量创建员工响应类型
+ * @callers
+ *   - stores/userStore: 员工状态管理
+ *   - composables/useDepartmentCache: 部门缓存组合式函数
+ *   - composables/useDepartmentEmployeeList: 部门员工列表组合式函数
+ *   - composables/useEmployeeSuggestionFetcher: 员工建议获取组合式函数
+ *   - views/ContactsView: 通讯录视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/user: 员工相关类型定义
+ *   - types/department: 部门相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
@@ -9,8 +22,8 @@ import type {
   EmployeeExtended,
   EmployeeCreateForm,
   EmployeeUpdateForm,
-} from '@/utils/User'
-import type { DepartmentBrief } from '@/utils/Department'
+} from '@/types/user'
+import type { DepartmentBrief } from '@/types/department'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
 /**

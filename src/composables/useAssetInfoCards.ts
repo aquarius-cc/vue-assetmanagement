@@ -1,22 +1,22 @@
 /**
- * useAssetInfoCards.ts
- * 资产详情页面卡片配置 composable
- *
- * 基础卡片（基本信息/类型/合同/录入人）在此文件定义。
- * 扩展卡片（申请人/保管人/仓库/描述）已拆分至 useAssetExtendedInfoCards.ts。
+ * @file 资产详情页面卡片配置（基础 + 扩展），驱动生成 InfoCard 组件
+ * @module composables/useAssetInfoCards
+ * @exports
+ *   - useAssetInfoCards: 生成资产详情全部卡片配置（8 张卡片）
+ *   - useAssetExtendedInfoCards: 扩展卡片配置（re-export）
+ * @callers
+ *   - components/componentsdetails/detils/BasicAssetDetails.vue
+ * @dependsOn
+ *   - types/asset: 资产详情类型
+ *   - types/info-card: 卡片配置类型
+ *   - utils/Format: 日期/数字格式化、状态/合同类型映射
+ *   - composables/useAssetExtendedInfoCards: 扩展卡片组合
  */
-
 import { computed } from 'vue'
 import type { Ref } from 'vue'
 import type { AssetDetail } from '@/types/asset'
 import type { InfoCardConfig } from '@/types/info-card'
-import {
-  formatDate,
-  formatNumber,
-  getStatusDisplay,
-  contractTypeMapping,
-  contractSettlementStatusMapping,
-} from '@/utils/Format'
+import { formatDate, formatNumber, getStatusDisplay, contractTypeMapping } from '@/utils/Format'
 
 // 向后兼容：扩展卡片通过 re-export 保持原有 API
 export { useAssetExtendedInfoCards } from './useAssetExtendedInfoCards'
@@ -83,24 +83,23 @@ export function useAssetInfoCards(assetDetail: Ref<AssetDetail | null>) {
             value: contract?.contract_type,
             formatter: (v) => contractTypeMapping[v as string] ?? String(v ?? ''),
           },
-          { label: '供应商', value: contract?.contract_supplier },
+          { label: '供应商', value: contract?.supplier_name },
         ],
         [
           {
             label: '合同金额',
-            value: contract?.contract_price,
+            value: contract?.contract_amount,
             isPrice: true,
             formatter: (v: unknown) => `¥${formatNumber(v as string | number)}`,
           },
           {
             label: '签订日期',
-            value: contract?.contract_signing_date,
+            value: contract?.contract_start_date,
             formatter: (v) => formatDate(v as string) ?? '',
           },
           {
-            label: '结算状态',
-            value: contract?.contract_settledment_status,
-            formatter: (v) => contractSettlementStatusMapping[v as string] ?? String(v ?? ''),
+            label: '合同状态',
+            value: contract?.contract_status,
           },
         ],
       ],

@@ -1,10 +1,24 @@
-// guards.ts
-// 路由守卫配置（含 RBAC 角色检查）
+/**
+ * @file 路由守卫配置，包含认证检查、RBAC 角色权限校验与面包屑导航生成
+ * @module src/router/guards
+ * @exports
+ *   - setupAuthGuard: 注册路由全局前置守卫与后置钩子
+ * @callers
+ *   - @/router/index
+ * @dependsOn
+ *   - vue-router (Router, RouteLocationNormalized)
+ *   - @/stores/auth, @/stores/app
+ *   - @/utils/tokenCrypto (getDecryptedToken)
+ *   - element-plus (ElMessage)
+ */
+
 import type { Router, RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { getDecryptedToken } from '@/utils/tokenCrypto'
+import { decodeJWTPayload } from '@/utils/decodeJwt'
 import { ElMessage } from 'element-plus'
+import { ROLE_CODES } from '@/constants/roles'
 
 // 不需要认证的页面白名单
 const whiteList = ['/login']
@@ -14,26 +28,51 @@ const whiteList = ['/login']
 // 未列出的路由默认所有已认证角色可访问
 const roleWhitelist: Record<string, string[]> = {
   // 系统配置：仅系统管理员
-  '/main/assettypedetails': ['system_admin'],
-  '/main/storagedetails': ['system_admin'],
-  '/main/contractdetails': ['system_admin'],
-  '/main/userdetails': ['system_admin'],
-  '/main/departmentdetails': ['system_admin'],
-  '/main/system': ['system_admin'],
+  '/main/assettypedetails': [ROLE_CODES.SYSTEM_ADMIN],
+  '/main/storagedetails': [ROLE_CODES.SYSTEM_ADMIN],
+  '/main/contractdetails': [ROLE_CODES.SYSTEM_ADMIN],
+  '/main/userdetails': [ROLE_CODES.SYSTEM_ADMIN],
+  '/main/departmentdetails': [ROLE_CODES.SYSTEM_ADMIN],
+  '/main/system': [ROLE_CODES.SYSTEM_ADMIN],
   // 报废审批：部门经理及以上
-  '/main/damagedassetdetails': ['system_admin', 'dept_manager'],
-  '/main/damagedassetbasicdetails': ['system_admin', 'dept_manager'],
+  '/main/damagedassetdetails': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER],
+  '/main/damagedassetbasicdetails': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER],
   // 未登记资产：部门经理及以上
-  '/main/unregisteredassetdetails': ['system_admin', 'dept_manager'],
-  '/main/unregisteredassetbasicdetails': ['system_admin', 'dept_manager'],
+  '/main/unregisteredassetdetails': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER],
+  '/main/unregisteredassetbasicdetails': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER],
   // 审计日志：审计员或管理员
-  '/main/auditlogdetails': ['system_admin', 'auditor'],
+  '/main/auditlogdetails': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.AUDITOR],
+  // ====== 资产操作路由（资产管理员及以上） ======
+  '/assets/recycle': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER, ROLE_CODES.ASSET_ADMIN],
+  '/assets/repair': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER, ROLE_CODES.ASSET_ADMIN],
+  '/assets/scrap': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER, ROLE_CODES.ASSET_ADMIN],
+  '/assets/lost': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER, ROLE_CODES.ASSET_ADMIN],
+  '/assets/found': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER, ROLE_CODES.ASSET_ADMIN],
+  '/assets/repair-done': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER, ROLE_CODES.ASSET_ADMIN],
+  '/assets/repair-failed': [
+    ROLE_CODES.SYSTEM_ADMIN,
+    ROLE_CODES.DEPT_MANAGER,
+    ROLE_CODES.ASSET_ADMIN,
+  ],
+  '/assets/mark-broken': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER, ROLE_CODES.ASSET_ADMIN],
+}
+
+/**
+ * 从 JWT access_token 中解析是否超级管理员
+ * 后端 Phase 7 清理后 JWT 不再包含 role 字段，超级管理员仅标记 is_superuser
+ */
+function isSuperuserFromToken(token: string | null): boolean {
+  return decodeJWTPayload(token)?.is_superuser === true
 }
 
 /**
  * 检查用户角色是否允许访问目标路由
+ * 超级管理员短路放行（JWT is_superuser=true）
  */
-function checkRoleAccess(targetPath: string, userRole: string): boolean {
+function checkRoleAccess(targetPath: string, userRole: string, isSuperuser: boolean): boolean {
+  // 超级管理员拥有所有路由的访问权限
+  if (isSuperuser) return true
+
   // 精确匹配：从最长前缀开始
   const sortedPrefixes = Object.keys(roleWhitelist).sort((a, b) => b.length - a.length)
   for (const prefix of sortedPrefixes) {
@@ -97,8 +136,15 @@ export const setupAuthGuard = (router: Router) => {
             await authStore.getAuthInfo()
           }
 
+          // [新增] 兜底加载权限：刷新页面走 initAuthState，权限可能未联网加载
+          // permissions 为空且非管理员时，必须联网拉取，否则 hasPermission 全 false
+          if (authStore.permissions.length === 0) {
+            await authStore.loadMyPermissions()
+          }
+
           // RBAC: 检查角色是否有权访问目标路由
-          if (!checkRoleAccess(to.path, authStore.userRole)) {
+          const isSuperuser = isSuperuserFromToken(authStore.access_token)
+          if (!checkRoleAccess(to.path, authStore.userRole, isSuperuser)) {
             ElMessage.error('您没有权限访问该页面')
             return '/main' // 无权限则回首页
           }

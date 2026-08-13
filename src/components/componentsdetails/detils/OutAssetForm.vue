@@ -157,7 +157,7 @@
             </el-form-item>
           </el-col>
 
-          <!-- [HR-02] 出库保管人（自动完成＀-->
+          <!-- [HR-02] 出库保管人（自动完成）-->
           <el-col :xs="24" :sm="24" :md="12">
             <el-form-item label="保管人" prop="outasset_manager_name">
               <el-autocomplete
@@ -243,7 +243,7 @@ import type {
   OutAssetCreateForm,
   OutAssetCreateExtended,
   AssetAutocompleteItem,
-} from '@/utils/OutAsset'
+} from '@/types/outasset'
 import type { AssetDetail, AssetUpdateForm } from '@/types/asset'
 import type { EmployeeAutocompleteItem } from '@/types/outasset'
 // [HR-01] 后端 v1.1.0 改为 read_only，移除EmployeeExtended（用户搜索联动已移除了
@@ -253,10 +253,11 @@ import ExportableAssetsSearch from '@/components/componentsdetails/detils/detils
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
 import { useEmployeeSuggestionFetcher } from '@/composables/useEmployeeSuggestionFetcher'
 import { useAutocompleteField } from '@/composables/useAutocompleteField'
+import { AssetCurrentStatus } from '@/types/asset'
 
 // ========== 类型增强：解决assetStore 类型定义缺失（运行时方法存在）==========
 // 注意：createEntityStore 实际返回了getByName/getById/update 等方法，但TypeScript 未能正确推断
-// 此处使用类型断言，符合“类型严格”原则（不引入any，而是明确扩展类型。
+// 此处使用类型断言，符合“类型严格”原则（不引入any，而是明确扩展类型）。
 type ExtendedAssetStore = ReturnType<typeof useAssetStore> & {
   getByName: (name: string) => Promise<AssetDetail[]>
   getById: (code: string) => Promise<AssetDetail | null>
@@ -296,7 +297,7 @@ const outAssetCreateExtendedForm = reactive<OutAssetCreateExtended>({
 const originalFormData = ref<OutAssetCreateExtended | null>(null)
 
 // 计算属性：转换为后端需要的 OutAssetCreateForm
-// [HR-02] 恢复传退outasset_applicant_jobcode / outasset_manager_jobcode / outasset_using_location
+// [HR-02] 恢复传递 outasset_applicant_jobcode / outasset_manager_jobcode / outasset_using_location
 const outAssetForm = computed<OutAssetCreateForm>(() => ({
   outasset_code: outAssetCreateExtendedForm.outasset_code,
   outasset_number: outAssetCreateExtendedForm.outasset_number,
@@ -345,17 +346,20 @@ const rules = {
   ],
 }
 
-// ========== 建议获取器（使用公共函数＀=========
-// [HR-01] 后端 v1.1.0 改为 read_only，移陀UserSuggestion 接口（用户搜索联动已移除了
+// ========== 建议获取器（使用公共函数）=========
+// [HR-01] 后端 v1.1.0 改为 read_only，移除 UserSuggestion 接口（用户搜索联动已移除了
 /**
  * 资产名称建议获取器
  * - 使用 assetStore.getByName 获取数据
- * - 仅过滤在库资产（asset_current_status === 'in_store')
+ * - - 过滤在库和待发放资产（均可出库 asset_current_status === AssetCurrentStatus.in_store || AssetCurrentStatus.pending)
  * - 转换后返回 AssetAutocompleteItem 格式
  */
 const fetchAssetSuggestions = createSuggestionFetcher({
   fetchData: (query: string) => assetStore.getByName(query),
-  filter: (asset: AssetDetail) => asset.asset_current_status === 'in_store',
+  // 允许在库和待发放资产出库（与后端 OutAssetService 校验对齐）
+  filter: (asset: AssetDetail) =>
+    asset.asset_current_status === AssetCurrentStatus.IN_STORE ||
+    asset.asset_current_status === AssetCurrentStatus.RECYCLED_PENDING,
   transform: (asset: AssetDetail): AssetAutocompleteItem => ({
     value: asset.asset_name,
     asset_name: asset.asset_name,
@@ -526,7 +530,7 @@ const loadEditData = async (recordcode: string) => {
     outAssetCreateExtendedForm.outasset_description = detail.outasset_description || ''
     outAssetCreateExtendedForm.outasset_name = detail.asset_name || ''
     // [HR-02] 回填后同步选中状态（用于变更检测）
-    // 注意：detail.outasset_applicant/outasset_manager 一EmployeeExtended 类型
+    // 注意：detail.outasset_applicant/outasset_manager 为 EmployeeExtended 类型
     // 包含 employee_department 关联对象；使用类型断言绕过 TypeScript 推断限制
     if (outAssetCreateExtendedForm.outasset_applicant_name) {
       const applicant = detail.outasset_applicant as Record<string, unknown> | undefined

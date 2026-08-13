@@ -1,22 +1,13 @@
 <!--
-  DepartmentDetails.vue
-  部门管理列表页（重构版 - 方案A架构）
-
-  架构调整：
-  1. 引入 SmartListContainer 管理数据（分页、搜索、加载状态）
-  2. CommonList 纯展示，不管理数据
-  3. 搜索统一使用 departmentStore.getList({ search: keyword }) 后端搜索
-  4. 删除后使用 smartListRef.value?.refresh() 刷新列表
-  5. 移除 isDataLoaded 和 onMounted 中的 getList() 调用（SmartListContainer 自动加载）
-
-  数据流：
-  SmartListContainer (数据管理) → slot props → CommonList (纯展示)
-
-  功能：
-  - 展示部门列表（支持后端分页和搜索）
-  - 新增部门、编辑部门、删除部门（带确认弹窗）
-  - 批量导入
-  - 子路由：新增/编辑表单（浮层遮罩）
+@file 部门列表管理页面，展示所有部门信息并支持增删改查及批量操作
+@component DepartmentDetails
+@usedBy
+  - views/DepartmentDetails.vue: 通过 router-view 渲染部门列表
+@dependsOn
+  - composables/useSmartListConfig: 列表配置
+  - stores/departmentStore: 部门数据管理
+  - components/commoncomponents/SmartListContainer: 数据管理容器
+  - components/commoncomponents/CommonList: 列表展示组件
 -->
 <template>
   <div class="department-details-root">
@@ -106,7 +97,7 @@ import SmartListContainer from '@/components/commoncomponents/SmartListContainer
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
-import type { Department } from '@/utils/Department'
+import type { Department } from '@/types/department'
 import { useDepartmentStore } from '@/stores/departmentStore'
 import type { SmartListContainerExpose } from '@/types/common'
 

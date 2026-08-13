@@ -1,23 +1,20 @@
 <!--
-  StorageDetails.vue
-  仓库列表页面（重构版）
-  
-  架构调整：
-  1. 使用 SmartListContainer 封装数据管理逻辑（分页、搜索、加载）
-  2. CommonList 只负责 UI 展示，不管理数据
-  3. 从本地搜索改为后端搜索，与其他列表页保持一致
-  
-  数据流：
-  SmartListContainer (数据管理) → slot props → CommonList (纯展示)
-  
-  功能：
-  - 展示仓库列表（支持增删改查）
-  - 子路由：新增/编辑仓库表单（浮层遮罩）
+@file 仓库列表管理页面，展示所有仓库信息并支持增删改查操作
+@component StorageDetails.vue
+@usedBy
+  - views/StorageDetails.vue: 通过 router-view 渲染仓库列表
+@dependsOn
+  - composables/useSmartListConfig: 列表配置
+  - stores/storageStore: 仓库数据管理
+  - components/commoncomponents/SmartListContainer.vue: 数据管理容器
+  - components/commoncomponents/CommonList.vue: 列表展示组件
+  - types/storageasset: 仓库资产类型定义
+  - utils/Format: 格式化仓库类型
 -->
 <template>
   <div class="storage-details-root">
     <div class="table-container">
-      <!-- 
+      <!--
         表格容器
         使用 SmartListContainer 管理数据，通过 slot 将数据传递给 CommonList
       -->
@@ -28,7 +25,7 @@
         :initial-page="1"
         :initial-page-size="10"
       >
-        <!-- 
+        <!--
           slot 接收 SmartListContainer 传递的数据管理状态
           包括：data, loading, currentPage, pageSize, total, search 等
         -->
@@ -109,7 +106,7 @@ import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
 import type { SmartListContainerExpose } from '@/types/common'
 import { useStorageStore } from '@/stores/storageStore'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
-import type { Storage } from '@/utils/Storage'
+import type { Storage } from '@/types/storage'
 import { storageMapping } from '@/utils/Format'
 
 // ===== 状态与实例 =====

@@ -1,9 +1,16 @@
-/**
- * useRecyclePersonLinkage
- * 回收人姓名-工号联动
+﻿/**
+ * @file 回收人姓名-工号联动（自动完成建议、选中、名称反查）
+ * @module composables/useRecyclePersonLinkage
+ * @exports
+ *   - useRecyclePersonLinkage: 回收人联动 composable
+ * @callers
+ *   - components/componentsdetails/detils/RecycleAssetForm.vue
+ * @dependsOn
+ *   - types/user: EmployeeExtended 类型
+ *   - composables/useSuggestionFetcher: 通用建议获取器
  */
 import { ref, watch } from 'vue'
-import type { EmployeeExtended } from '@/utils/User'
+import type { EmployeeExtended } from '@/types/user'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
 
 export function useRecyclePersonLinkage(

@@ -1,4 +1,20 @@
 /**
+ * @file 找回资产数据模型定义，包括找回表单、详情等类型
+ * @module types/foundasset
+ * @exports
+ *   - FoundAssetCreateForm/FoundAssetUpdateForm: 找回资产表单接口
+ *   - FoundAsset/FoundAssetExtended: 找回资产基础与扩展接口
+ *   - FoundAssetQueryParams: 找回资产查询参数
+ *   - FoundAssetListResponse: 找回资产列表响应接口
+ * @callers
+ *   - stores/foundassetStore（找回资产状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
+ */
+
+import type { PaginatedResponse } from '@/types/common'
+
+/**
  * FoundAsset data model
  * Backend table: am_found_asset
  */
@@ -47,9 +63,5 @@ export interface FoundAssetQueryParams {
   [key: string]: string | number | boolean | null | undefined
 }
 
-export interface FoundAssetListResponse {
-  count: number
-  next: string | null
-  previous: string | null
-  results: FoundAssetExtended[]
-}
+/** 找回资产列表响应 */
+export type FoundAssetListResponse = PaginatedResponse<FoundAssetExtended>

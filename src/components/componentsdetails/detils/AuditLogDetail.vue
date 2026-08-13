@@ -85,12 +85,12 @@ export default { name: 'AuditLogDetail' }
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { auditLogAPI } from '@/api/auditLog'
-import type { AuditLog } from '@/utils/AuditLog'
+import type { AuditLog } from '@/types/auditlog'
 import {
   auditOperationTypeMapping,
   appLabelMapping,
   auditOperationTypeTagMapping,
-} from '@/utils/AuditLog'
+} from '@/types/auditlog'
 
 const route = useRoute()
 const router = useRouter()

@@ -1,10 +1,18 @@
 /**
- * 操作日志 Store
- * 操作日志为只读模块，create/update/delete 传空函数
+ * @file 操作日志 Store，只读模块，基于 createEntityStore 工厂创建
+ * @module stores/operationLogStore
+ * @exports
+ *   - useOperationLogStore: 操作日志状态 Store
+ * @callers
+ *   - components/componentsdetails/OperationLogDetails.vue
+ *   - components/componentsdetails/detils/OperationLogDetail.vue
+ * @dependsOn
+ *   - api/operationLog: 操作日志 API 接口
+ *   - stores/createEntityStore: 实体 Store 工厂
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { operationLogAPI } from '@/api/operationLog'
-import type { OperationLog } from '@/utils/OperationLog'
+import type { OperationLog } from '@/types/operationlog'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 
 /**

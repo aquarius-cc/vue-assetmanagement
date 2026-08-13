@@ -1,14 +1,16 @@
 /**
- * useWastedAssets
- * 已报废资产列表管琀Composable
- *
- * 职责＀ * - 搜索资产状态为 scrapped 的资人 * - 管理列表数据、分页状态、加载状态 * - 提供搜索、翻页、重置等操作方法
- *
- * 遵守 AGENTS 规范＀ * - 类型严格，无 any
- * - 单向依赖：Composable ↀStore ↀAPI 局 * - 单一职责：仅处理已报废资产列表相关逻辑
- * - 可被多个组件复用
+ * @file 已报废资产列表管理（状态为 scrapped）
+ * @module composables/useWastedAssets
+ * @exports
+ *   - useWastedAssets: 已报废资产列表 composable
+ *   - UseWastedAssetsReturn: 返回值类型
+ * @callers
+ *   - components/componentsdetails/detils/detilschildcomponents/WastedAssetsSearch.vue
+ * @dependsOn
+ *   - stores/assetStore: 资产搜索 API（searchAssets）
+ *   - types/asset: 资产详情类型
+ *   - stores/createEntityStore: 分页查询参数类型
  */
-
 import { ref } from 'vue'
 import { useAssetStore } from '@/stores/assetStore'
 import type { AssetDetail } from '@/types/asset'
@@ -18,7 +20,7 @@ import type { PaginationQuery } from '@/stores/createEntityStore'
 /**
  * 已报废资产列血Composable 返回值接号 */
 export interface UseWastedAssetsReturn {
-  /** 列表数据（响应式＀*/
+  /** 列表数据（响应式）*/
   list: import('vue').Ref<AssetDetail[]>
   /** 加载中状态*/
   loading: import('vue').Ref<boolean>
@@ -35,11 +37,13 @@ export interface UseWastedAssetsReturn {
    */
   search: (extraParams?: Omit<PaginationQuery, 'page' | 'page_size'>) => Promise<void>
   /**
-   * 切换页码（自动使用上次的搜索条件重新请求＀   * @param page - 目标页码
+   * 切换页码（自动使用上次的搜索条件重新请求）
+   * @param page - 目标页码
    */
   changePage: (page: number) => Promise<void>
   /**
-   * 重置所有状态（清空列表、重置分页、清空缓存的搜索条件＀   */
+   * 重置所有状态（清空列表、重置分页、清空缓存的搜索条件）
+   */
   reset: () => void
 }
 
@@ -62,7 +66,8 @@ export function useWastedAssets(): UseWastedAssetsReturn {
 
   /**
    * 内部请求方法
-   * @param params - 完整查询参数（包含分页和搜索条件＀   */
+   * @param params - 完整查询参数（包含分页和搜索条件）
+   */
   const fetchList = async (params: PaginationQuery) => {
     loading.value = true
     try {
@@ -73,7 +78,7 @@ export function useWastedAssets(): UseWastedAssetsReturn {
       }
 
       const response = await assetStore.searchAssets(searchParams)
-      console.log('[useWastedAssets] 获取已报废资产成劀', response)
+      console.log('[useWastedAssets] 获取已报废资产成功', response)
       // 后端 search_assets 返回 AssetSimpleReturn[]，与 AssetDetail[] 结构兼容
       list.value = response.results as unknown as typeof list.value
       total.value = response.count
@@ -107,7 +112,8 @@ export function useWastedAssets(): UseWastedAssetsReturn {
   }
 
   /**
-   * 切换页码（自动使用缓存的搜索条件重新请求＀   * @param page - 目标页码
+   * 切换页码（自动使用缓存的搜索条件重新请求）
+   * @param page - 目标页码
    */
   const changePage = async (page: number) => {
     if (page === currentPage.value) return
@@ -121,7 +127,8 @@ export function useWastedAssets(): UseWastedAssetsReturn {
   }
 
   /**
-   * 重置所有状态   */
+   * 重置所有状态
+   */
   const reset = () => {
     currentPage.value = 1
     total.value = 0

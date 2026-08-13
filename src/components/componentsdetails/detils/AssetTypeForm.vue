@@ -104,7 +104,7 @@ import { Plus } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
 import { isAxiosError } from 'axios'
 import { useAssetTypeStore } from '@/stores/assetTypeStore'
-import type { AssetTypeCreateForm, AssetTypeUpdateForm } from '@/utils/AssetType'
+import type { AssetTypeCreateForm, AssetTypeUpdateForm } from '@/types/assettype'
 
 const route = useRoute()
 const router = useRouter()

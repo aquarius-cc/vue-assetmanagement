@@ -22,15 +22,51 @@ vi.mock('@/utils/statusMapping', () => ({
   getStatusColor: vi.fn((status: string) => {
     const map: Record<string, string> = {
       in_store: '#52C41A',
-      in_use: '#409EFF',
-      damaged: '#E6A23C',
+      in_use: '#2B5FD7',
+      damaged: '#FAAD14',
     }
     return map[status] || '#909399'
   }),
+  // [新增] 状态图表颜色映射
+  ASSET_STATUS_CHART_COLORS: {
+    in_store: '#52C41A',
+    in_use: '#2B5FD7',
+    recycled_pending: '#13C2C2',
+    broken: '#FF4D4F',
+    repairing: '#FAAD14',
+    lost: '#F759AB',
+    damaged: '#FA8C16',
+    scrapped: '#909399',
+  },
 }))
 
 describe('DashboardStore', () => {
   let store: ReturnType<typeof useDashboardStore>
+  const mockOverview = {
+    total_assets: 100,
+    total_value: 50000, // [新增]
+    total_contracts: 5, // [新增]
+    active_assets: 80,
+    in_stock_assets: 20,
+    monthly_distributed: 10,
+    monthly_recycled: 5,
+    pending_waste: 3,
+    wasted_assets: 2,
+    total_recycled: 50,
+    total_distributed: 60,
+    status_distribution: {
+      // [新增]
+      in_store: { name: '在库', count: 20 },
+      in_use: { name: '在用', count: 80 },
+      recycled_pending: { name: '已回收待发放', count: 5 },
+      broken: { name: '已损坏', count: 3 },
+      repairing: { name: '维修中', count: 2 },
+      lost: { name: '已遗失', count: 1 },
+      damaged: { name: '待报废', count: 3 },
+      scrapped: { name: '已报废', count: 2 },
+    },
+    timestamp: '2026-01-01T00:00:00Z',
+  }
 
   beforeEach(() => {
     const pinia = createPinia()
@@ -57,19 +93,6 @@ describe('DashboardStore', () => {
   })
 
   describe('fetchDashboardOverview', () => {
-    const mockOverview = {
-      total_assets: 100,
-      active_assets: 80,
-      in_stock_assets: 20,
-      monthly_distributed: 10,
-      monthly_recycled: 5,
-      pending_waste: 3,
-      wasted_assets: 2,
-      total_recycled: 50,
-      total_distributed: 60,
-      timestamp: '2026-01-01T00:00:00Z',
-    }
-
     it('应该获取概览数据并更新状态', async () => {
       const { dashboardAPI } = await import('@/api/dashboard')
       vi.mocked(dashboardAPI.getDashboardOverview).mockResolvedValue(mockOverview)
@@ -113,7 +136,7 @@ describe('DashboardStore', () => {
       vi.mocked(dashboardAPI.getDashboardOverview).mockRejectedValue(new Error('网络错误'))
 
       await expect(store.fetchDashboardOverview()).rejects.toThrow('网络错误')
-      expect(ElMessage.error).toHaveBeenCalledWith('获取仪表盘概览数据失败')
+      expect(ElMessage.error).toHaveBeenCalledWith('网络错误')
       expect(store.overviewLoading).toBe(false)
     })
   })
@@ -186,8 +209,8 @@ describe('DashboardStore', () => {
   describe('getStatusColor', () => {
     it('应该返回正确的状态颜色', () => {
       expect(store.getStatusColor('in_store')).toBe('#52C41A')
-      expect(store.getStatusColor('in_use')).toBe('#409EFF')
-      expect(store.getStatusColor('damaged')).toBe('#E6A23C')
+      expect(store.getStatusColor('in_use')).toBe('#2B5FD7')
+      expect(store.getStatusColor('damaged')).toBe('#FAAD14')
       expect(store.getStatusColor('unknown')).toBe('#909399')
     })
   })
@@ -257,6 +280,58 @@ describe('DashboardStore', () => {
       expect(store.wasteStats.pendingWaste).toBe(3)
       expect(store.wasteStats.wastedAssets).toBe(2)
     })
+
+    it('statusOverview 应该正确分组并计算图表数据', async () => {
+      const { dashboardAPI } = await import('@/api/dashboard')
+      vi.mocked(dashboardAPI.getDashboardOverview).mockResolvedValue(mockOverview)
+
+      await store.fetchDashboardOverview()
+
+      // 正常资产分组: 20+80+5 = 105
+      const normalGroup = store.statusOverview.groups.find((g) => g.key === 'normal')
+      expect(normalGroup).toBeDefined()
+      expect(normalGroup!.total).toBe(105)
+      expect(normalGroup!.items).toHaveLength(3)
+
+      // 异常资产分组: 3+2+1 = 6
+      const abnormalGroup = store.statusOverview.groups.find((g) => g.key === 'abnormal')
+      expect(abnormalGroup).toBeDefined()
+      expect(abnormalGroup!.total).toBe(6)
+
+      // 报废流程分组: 3+2 = 5
+      const scrapGroup = store.statusOverview.groups.find((g) => g.key === 'scrap')
+      expect(scrapGroup).toBeDefined()
+      expect(scrapGroup!.total).toBe(5)
+
+      // 图表数据应包含全部 8 种状态
+      expect(store.statusOverview.chartData).toHaveLength(8)
+      expect(store.statusOverview.totalAssets).toBe(100)
+    })
+
+    it('statusOverview 应过滤零值状态', async () => {
+      const { dashboardAPI } = await import('@/api/dashboard')
+      vi.mocked(dashboardAPI.getDashboardOverview).mockResolvedValue({
+        ...mockOverview,
+        status_distribution: {
+          in_store: { name: '在库', count: 20 },
+          in_use: { name: '在用', count: 0 },
+          broken: { name: '已损坏', count: 0 },
+        },
+      })
+
+      await store.fetchDashboardOverview()
+
+      const normalGroup = store.statusOverview.groups.find((g) => g.key === 'normal')
+      expect(normalGroup!.items).toHaveLength(1) // 仅 in_store
+
+      expect(store.statusOverview.chartData).toHaveLength(1)
+    })
+
+    it('statusOverview 无数据时返回空结构', () => {
+      expect(store.statusOverview.groups).toHaveLength(3) // 三个分组
+      expect(store.statusOverview.chartData).toHaveLength(0)
+      expect(store.statusOverview.totalAssets).toBe(0)
+    })
   })
 
   describe('fetchRecentOutAssets', () => {
@@ -296,7 +371,7 @@ describe('DashboardStore', () => {
       vi.mocked(dashboardAPI.getRecentOutAssets).mockRejectedValue(new Error('网络错误'))
 
       await expect(store.fetchRecentOutAssets()).rejects.toThrow('网络错误')
-      expect(ElMessage.error).toHaveBeenCalledWith('获取最近发放记录失败')
+      expect(ElMessage.error).toHaveBeenCalledWith('网络错误')
       expect(store.outAssetsLoading).toBe(false)
     })
   })
@@ -337,7 +412,7 @@ describe('DashboardStore', () => {
       vi.mocked(dashboardAPI.getRecentRecycleAssets).mockRejectedValue(new Error('网络错误'))
 
       await expect(store.fetchRecentRecycleAssets()).rejects.toThrow('网络错误')
-      expect(ElMessage.error).toHaveBeenCalledWith('获取最近回收记录失败')
+      expect(ElMessage.error).toHaveBeenCalledWith('网络错误')
       expect(store.recycleAssetsLoading).toBe(false)
     })
   })
@@ -371,7 +446,7 @@ describe('DashboardStore', () => {
       const { dashboardAPI } = await import('@/api/dashboard')
       vi.mocked(dashboardAPI.getDashboardOverview).mockRejectedValue(new Error('网络错误'))
 
-      await expect(store.initDashboardData()).resolves.toBeUndefined()
+      await expect(store.initDashboardData()).rejects.toThrow('网络错误')
     })
   })
 

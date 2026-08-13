@@ -119,7 +119,7 @@ import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { departmentAPI } from '@/api/department'
-import type { Department, DepartmentCreateForm, DepartmentTreeNode } from '@/utils/Department'
+import type { Department, DepartmentCreateForm, DepartmentTreeNode } from '@/types/department'
 
 // ==================== Props & Emits ====================
 

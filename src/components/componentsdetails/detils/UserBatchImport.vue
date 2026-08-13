@@ -160,7 +160,7 @@ import {
   type ExampleColumn,
 } from '@/utils/batchImportHelpers'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
-import type { ExcelEmployeeData, EmployeeCreateForm } from '@/utils/User'
+import type { ExcelEmployeeData, EmployeeCreateForm } from '@/types/user'
 
 const router = useRouter()
 const userStore = useUserStore()

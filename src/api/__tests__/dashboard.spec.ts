@@ -1,91 +1,135 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-
-const { mockRequest, mockUnwrapResponse } = vi.hoisted(() => ({
-  mockRequest: {
-    get: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
-    post: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
-    put: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
-    patch: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
-    delete: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
-  },
-  mockUnwrapResponse: vi.fn(
-    async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
-      const res = await promise
-      if (res.code !== 0) throw new Error(res.message || '请求失败')
-      return res.data
-    },
-  ),
-}))
+import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('@/api/index', () => ({
-  request: mockRequest,
-  unwrapResponse: mockUnwrapResponse,
+  request: { get: vi.fn() },
+  unwrapResponse: (p: Promise<unknown>) => p,
 }))
 
-import { dashboardAPI } from '@/api/dashboard'
+import { request } from '@/api/index'
+import { dashboardAPI } from '../dashboard'
+
+const mockGet = vi.mocked(request.get)
 
 describe('dashboardAPI', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    vi.stubEnv('PROD', false)
-  })
+  it('getDashboardOverview 请求概览端点', async () => {
+    mockGet.mockResolvedValue({ code: 0, data: { total: 1 }, message: 'ok' })
 
-  afterEach(() => {
-    vi.unstubAllEnvs()
-  })
-
-  it('getDashboardOverview calls GET /dashboard/overview/', async () => {
     await dashboardAPI.getDashboardOverview()
-    expect(mockRequest.get).toHaveBeenCalledWith('/dashboard/overview/')
+
+    expect(mockGet).toHaveBeenCalledWith<[string]>('/dashboard/overview/')
   })
 
-  it('getRecentOutAssets calls GET /dashboard/recent_out_assets/', async () => {
-    await dashboardAPI.getRecentOutAssets(5)
-    expect(mockRequest.get).toHaveBeenCalledWith('/dashboard/recent_out_assets/', { limit: 5 })
-  })
+  it('getRecentOutAssets 无 limit 时默认 10', async () => {
+    mockGet.mockResolvedValue({ code: 0, data: [{ id: 1 }], message: 'ok' })
 
-  it('getRecentOutAssets defaults limit to 10', async () => {
     await dashboardAPI.getRecentOutAssets()
-    expect(mockRequest.get).toHaveBeenCalledWith('/dashboard/recent_out_assets/', { limit: 10 })
+
+    expect(mockGet).toHaveBeenCalledWith('/dashboard/recent_out_assets/', { limit: 10 })
   })
 
-  it('getRecentRecycleAssets calls GET /dashboard/recent_recycle_assets/', async () => {
-    await dashboardAPI.getRecentRecycleAssets(3)
-    expect(mockRequest.get).toHaveBeenCalledWith('/dashboard/recent_recycle_assets/', { limit: 3 })
+  it('getRecentOutAssets 传 limit 时使用该值', async () => {
+    mockGet.mockResolvedValue({ code: 0, data: [{ id: 1 }], message: 'ok' })
+
+    await dashboardAPI.getRecentOutAssets(5)
+
+    expect(mockGet).toHaveBeenCalledWith('/dashboard/recent_out_assets/', { limit: 5 })
   })
 
-  it('getRecentRecycleAssets defaults limit to 10', async () => {
+  it('getRecentRecycleAssets 无 limit 时默认 10', async () => {
+    mockGet.mockResolvedValue({ code: 0, data: [{ id: 1 }], message: 'ok' })
+
     await dashboardAPI.getRecentRecycleAssets()
-    expect(mockRequest.get).toHaveBeenCalledWith('/dashboard/recent_recycle_assets/', { limit: 10 })
+
+    expect(mockGet).toHaveBeenCalledWith('/dashboard/recent_recycle_assets/', { limit: 10 })
   })
 
-  it('getAssetTrend calls GET /dashboard/trend/', async () => {
-    await dashboardAPI.getAssetTrend({ period: 'daily' })
-    expect(mockRequest.get).toHaveBeenCalledWith('/dashboard/trend/', { period: 'daily' })
+  it('getAssetTrend 请求趋势端点', async () => {
+    mockGet.mockResolvedValue({ code: 0, data: [{ date: '2026-01-01' }], message: 'ok' })
+
+    await dashboardAPI.getAssetTrend({ start_date: '2026-01-01' })
+
+    expect(mockGet).toHaveBeenCalledWith('/dashboard/trend/', { start_date: '2026-01-01' })
   })
 
-  it('getDepartmentDistribution calls GET /dashboard/department_distribution/', async () => {
+  it('getDepartmentDistribution 请求分布端点', async () => {
+    mockGet.mockResolvedValue({
+      code: 0,
+      data: [{ department_name: 'IT', asset_count: 1, percentage: 1 }],
+      message: 'ok',
+    })
+
     await dashboardAPI.getDepartmentDistribution()
-    expect(mockRequest.get).toHaveBeenCalledWith('/dashboard/department_distribution/')
+
+    expect(mockGet).toHaveBeenCalledWith('/dashboard/department_distribution/')
   })
 
-  it('getAssetTypeDistribution calls GET /dashboard/type_distribution/', async () => {
+  it('getAssetTypeDistribution 请求类型分布端点', async () => {
+    mockGet.mockResolvedValue({
+      code: 0,
+      data: [{ type_name: 'pc', count: 1, percentage: 1 }],
+      message: 'ok',
+    })
+
     await dashboardAPI.getAssetTypeDistribution()
-    expect(mockRequest.get).toHaveBeenCalledWith('/dashboard/type_distribution/')
+
+    expect(mockGet).toHaveBeenCalledWith('/dashboard/type_distribution/')
   })
 
-  it('getExpiringAssets calls GET /dashboard/expiring_assets/', async () => {
-    await dashboardAPI.getExpiringAssets(15)
-    expect(mockRequest.get).toHaveBeenCalledWith('/dashboard/expiring_assets/', { days: 15 })
-  })
+  it('getExpiringAssets 无 days 时默认 30', async () => {
+    mockGet.mockResolvedValue({ code: 0, data: [{ asset_id: 1 }], message: 'ok' })
 
-  it('getExpiringAssets defaults days to 30', async () => {
     await dashboardAPI.getExpiringAssets()
-    expect(mockRequest.get).toHaveBeenCalledWith('/dashboard/expiring_assets/', { days: 30 })
+
+    expect(mockGet).toHaveBeenCalledWith('/dashboard/expiring_assets/', { days: 30 })
   })
 
-  it('getMaintenanceReminders calls GET /dashboard/maintenance_reminders/', async () => {
+  it('getMaintenanceReminders 请求提醒端点', async () => {
+    mockGet.mockResolvedValue({ code: 0, data: [{ asset_id: 1 }], message: 'ok' })
+
     await dashboardAPI.getMaintenanceReminders()
-    expect(mockRequest.get).toHaveBeenCalledWith('/dashboard/maintenance_reminders/')
+
+    expect(mockGet).toHaveBeenCalledWith('/dashboard/maintenance_reminders/')
+  })
+
+  describe('PROD 环境下未实现端点直接返回空', () => {
+    it('getAssetTrend 返回空数组', async () => {
+      vi.stubEnv('PROD', 'true')
+
+      await expect(dashboardAPI.getAssetTrend()).resolves.toEqual([])
+
+      vi.unstubAllEnvs()
+    })
+
+    it('getDepartmentDistribution 返回空数组', async () => {
+      vi.stubEnv('PROD', 'true')
+
+      await expect(dashboardAPI.getDepartmentDistribution()).resolves.toEqual([])
+
+      vi.unstubAllEnvs()
+    })
+
+    it('getAssetTypeDistribution 返回空数组', async () => {
+      vi.stubEnv('PROD', 'true')
+
+      await expect(dashboardAPI.getAssetTypeDistribution()).resolves.toEqual([])
+
+      vi.unstubAllEnvs()
+    })
+
+    it('getExpiringAssets 返回空数组', async () => {
+      vi.stubEnv('PROD', 'true')
+
+      await expect(dashboardAPI.getExpiringAssets()).resolves.toEqual([])
+
+      vi.unstubAllEnvs()
+    })
+
+    it('getMaintenanceReminders 返回空数组', async () => {
+      vi.stubEnv('PROD', 'true')
+
+      await expect(dashboardAPI.getMaintenanceReminders()).resolves.toEqual([])
+
+      vi.unstubAllEnvs()
+    })
   })
 })

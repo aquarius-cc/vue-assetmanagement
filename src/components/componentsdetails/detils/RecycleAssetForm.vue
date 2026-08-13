@@ -163,9 +163,9 @@ import { Edit, Plus } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 
 import { useRecycleAssetStore, useOutAssetStore, useUserStore } from '@/stores'
-import type { RecycleAssetExtended } from '@/utils/RecycleAsset'
-import type { RecyclableOutAsset } from '@/utils/OutAsset'
-import type { OutAssetDetail } from '@/utils/OutAsset'
+import type { RecycleAssetExtended } from '@/types/recycleasset'
+import type { RecyclableOutAsset } from '@/types/outasset'
+import type { OutAssetDetail } from '@/types/outasset'
 
 import { useRecycleFormAssociations } from '@/composables/useRecycleFormAssociations'
 import { useRecyclePersonLinkage } from '@/composables/useRecyclePersonLinkage'

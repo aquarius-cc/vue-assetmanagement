@@ -1,7 +1,16 @@
 <!--
-  BatchImportGuideCard.vue
-  批量导入格式参考卡片 — 从 7 个 BatchImport.vue 提取的重复模板
-  接收 headerExamples / exampleRows / exampleColumns / notices 渲染统一格式
+@file 批量导入格式引导卡片，展示必填列说明和示例数据
+@component BatchImportGuideCard
+@usedBy
+  - detils/AssetBatchImport.vue: 资产批量导入
+  - detils/AssetTypeBatchImport.vue: 资产类型批量导入
+  - detils/ContractBatchImport.vue: 合同批量导入
+  - detils/OutAssetBatchImport.vue: 出库批量导入
+  - detils/StorageBatchImport.vue: 仓库批量导入
+  - detils/UnregisteredAssetBatchImport.vue: 未登记资产批量导入
+  - detils/UserBatchImport.vue: 用户批量导入
+@dependsOn
+  - (无外部依赖，纯展示组件)
 -->
 <template>
   <div class="import-guide-card">

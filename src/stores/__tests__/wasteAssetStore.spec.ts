@@ -127,4 +127,43 @@ describe('WasteAssetStore', () => {
       expect(wasteAssetAPI.deleteWasteAsset).toHaveBeenCalledWith('WA-001')
     })
   })
+
+  describe('详情/更新/批量删除', () => {
+    it('应该调用API获取详情', async () => {
+      const { wasteAssetAPI } = await import('@/api/wasteAsset')
+      vi.mocked(wasteAssetAPI.getWasteAsset).mockResolvedValue({
+        asset_code: 'WA-001',
+      } as never)
+
+      const result = await store.getById('WA-001')
+
+      expect(result).toBeDefined()
+    })
+
+    it('应该调用API更新记录', async () => {
+      const { wasteAssetAPI } = await import('@/api/wasteAsset')
+      vi.mocked(wasteAssetAPI.updateWasteAsset).mockResolvedValue({
+        asset_code: 'WA-001',
+      } as never)
+
+      await store.update({ asset_code: 'WA-001' } as never)
+
+      expect(wasteAssetAPI.updateWasteAsset).toHaveBeenCalled()
+    })
+
+    it('应该调用API批量删除', async () => {
+      const { wasteAssetAPI } = await import('@/api/wasteAsset')
+      vi.mocked(wasteAssetAPI.batchDeleteWasteAssets).mockResolvedValue({
+        total: 1,
+        success_count: 1,
+        fail_count: 0,
+        success_ids: ['WA-001'],
+        fail_items: [],
+      })
+
+      await store.removeBatch(['WA-001'])
+
+      expect(wasteAssetAPI.batchDeleteWasteAssets).toHaveBeenCalledWith(['WA-001'])
+    })
+  })
 })

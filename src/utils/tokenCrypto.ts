@@ -1,17 +1,17 @@
 /**
- * Token 加密/解密工具
- * 用于对 localStorage 中的 Token 进行简单加密
- * 目的是防止明文存储，提高安全性
- *
- * 安全说明：
- * - 加密密钥必须通过环境变量 VITE_TOKEN_CRYPTO_KEY 配置
- * - 开发环境和生产环境应使用不同的密钥
- * - 此加密仅增加窃取成本，不影响后端验证（后端使用JWT签名验证）
- *
- * 迁移说明：
- * - 旧版本使用默认密钥 'asset_management_default_key_2024' 加密
- * - 更换密钥后，旧token无法解密，用户会被强制登出重新登录
- * - 这是预期行为，确保密钥变更后不会使用不安全的旧数据
+ * @file Token 加密/解密工具，对 localStorage 中的 Token 进行 XOR 加密存储
+ * @module src/utils/tokenCrypto
+ * @exports
+ *   - setEncryptedToken: 存储加密后的 Token
+ *   - getDecryptedToken: 获取解密后的 Token（含旧密钥兼容检测）
+ *   - removeToken: 清除指定 Token
+ *   - clearAllAuthTokens: 清除所有认证相关 Token
+ * @callers
+ *   - stores/auth
+ *   - composables/useNotification
+ *   - router/guards
+ * @dependsOn
+ *   - 环境变量 VITE_TOKEN_CRYPTO_KEY（构建时必须配置）
  */
 
 // 构建时验证：必须配置加密密钥，否则构建失败

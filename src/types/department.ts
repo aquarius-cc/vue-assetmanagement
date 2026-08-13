@@ -1,11 +1,20 @@
 /**
- * 部门数据模型
- * 对应后端数据库表: am_department
- *
- * 树形关联设计（方案 D）：
- * - parent: FK 指向父级 recordcode
- * - parent_department_code: 父级业务编码（方便用户操作）
- * - path: 物化路径，如 /ROOT/IT/DEV
+ * @file 部门数据模型定义，支持树形结构的部门组织
+ * @module types/department.ts
+ * @exports
+ *   - DepartmentCreateForm/DepartmentUpdateForm: 部门表单接口
+ *   - Department/DepartmentBrief: 部门基础与简要信息接口
+ *   - DepartmentQueryParams: 部门查询参数
+ *   - DepartmentListResponse/DepartmentListResponseOld: 部门列表响应接口（兼容旧版） 已删除
+ *   - DepartmentTreeNode/DepartmentTreeQueryParams: 部门树形结构接口
+ *   - DepartmentSortItem/MoveDepartmentParams: 部门排序与移动接口
+ *   - DepartmentEmployeeListResponse/DepartmentEmployeeListQueryParams: 部门员工列表接口
+ *   - DepartmentForm: 部门表单接口（兼容性）
+ *   - ExcelDepartmentData/ValidatedDepartmentData: Excel导入导出接口
+ * @callers
+ *   - stores/departmentStore（部门状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
  */
 
 import type { EmployeeExtended } from '@/types/user'
@@ -110,11 +119,6 @@ export interface DepartmentListResponse {
 /**
  * 部门简化接口
  */
-export interface DepartmentItem {
-  value: string
-  department_name: string
-  department_code: string
-}
 
 // ==================== 部门树形结构接口 ====================
 
@@ -176,26 +180,15 @@ export interface DepartmentForm {
   department_information: string
 }
 
-export interface DepartmentOld extends DepartmentForm {
-  id: number
-}
-
-export interface DepartmentQueryParamsOld {
-  page?: number
-  page_size?: number
-  search?: string
-  department_code?: string
-  department_name?: string
-  [key: string]: string | number | boolean | null | undefined
-}
-
-export interface DepartmentListResponseOld {
-  success: boolean
-  count: number
-  next: string | null
-  previous: string | null
-  results: DepartmentOld[]
-}
+// ==================== 兼容性接口 ====================
+// 旧版部门列表响应接口，用于兼容旧版后端返回的部门列表   可删除
+// export interface DepartmentListResponseOld {
+//   success: boolean
+//   count: number
+//   next: string | null
+//   previous: string | null
+//   results: Department[]
+// }
 
 // ==================== Excel 导入类型 ====================
 

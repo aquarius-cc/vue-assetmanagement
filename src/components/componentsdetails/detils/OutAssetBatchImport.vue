@@ -122,7 +122,7 @@ import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuide
 import { outAssetAPI } from '@/api/outAsset'
 import { useOutAssetStore } from '@/stores/outAssetStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
-import type { OutAssetCreateForm } from '@/utils/OutAsset'
+import type { OutAssetCreateForm } from '@/types/outasset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { OutAssetExcelRow } from '@/types/batch-import'
 

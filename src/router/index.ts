@@ -1,5 +1,17 @@
+/**
+ * @file 路由配置，定义应用所有页面路由规则（含嵌套路由与懒加载）
+ * @module src/router
+ * @exports
+ *   - default: Vue Router 实例
+ * @callers
+ *   - src/main.ts
+ * @dependsOn
+ *   - vue-router (createRouter, createWebHistory)
+ *   - @/router/guards (setupAuthGuard)
+ *   - @/views/LogIn.vue
+ */
+
 // TECHNICAL_DEBT: >500 lines
-// index.ts
 
 import { createRouter, createWebHistory } from 'vue-router'
 // import Login from '@/views/LogIn.vue'
@@ -606,6 +618,7 @@ const router = createRouter({
       meta: {
         title: '资产回收',
         requiresAuth: true,
+        requiredMinRole: 'asset_admin',
       },
     },
     {
@@ -615,6 +628,7 @@ const router = createRouter({
       meta: {
         title: '资产维修',
         requiresAuth: true,
+        requiredMinRole: 'asset_admin',
       },
     },
     {
@@ -624,6 +638,7 @@ const router = createRouter({
       meta: {
         title: '维修完成',
         requiresAuth: true,
+        requiredMinRole: 'asset_admin',
       },
     },
     {
@@ -633,6 +648,7 @@ const router = createRouter({
       meta: {
         title: '维修失败',
         requiresAuth: true,
+        requiredMinRole: 'asset_admin',
       },
     },
     {
@@ -642,6 +658,17 @@ const router = createRouter({
       meta: {
         title: '资产遗失',
         requiresAuth: true,
+        requiredMinRole: 'asset_admin',
+      },
+    },
+    {
+      path: '/assets/:code/mark-broken',
+      name: 'MarkBroken',
+      component: () => import('@/views/MarkBrokenView.vue'),
+      meta: {
+        title: '资产损坏登记',
+        requiresAuth: true,
+        requiredMinRole: 'asset_admin',
       },
     },
     {
@@ -651,6 +678,7 @@ const router = createRouter({
       meta: {
         title: '找回遗失资产',
         requiresAuth: true,
+        requiredMinRole: 'asset_admin',
       },
     },
     {
@@ -660,6 +688,7 @@ const router = createRouter({
       meta: {
         title: '资产报废申请',
         requiresAuth: true,
+        requiredMinRole: 'asset_admin',
       },
     },
     {

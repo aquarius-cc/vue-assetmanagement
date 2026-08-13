@@ -75,36 +75,39 @@ describe('repairAssetAPI', () => {
     })
   })
 
-  it('batchCreateRepairAssets calls POST /assets/repair-assets/batch-create/', async () => {
-    await repairAssetAPI.batchCreateRepairAssets({ items: [{ asset_code: 'A001' }] } as never)
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/repair-assets/batch-create/', {
-      items: [{ asset_code: 'A001' }],
-    })
-  })
-
   it('getRepairAssetsByAsset calls GET /assets/repair-assets/by-asset/{code}/', async () => {
     await repairAssetAPI.getRepairAssetsByAsset('A001')
     expect(mockRequest.get).toHaveBeenCalledWith('/assets/repair-assets/by-asset/A001/')
   })
 
-  it('repairAsset calls POST /assets/assets/{code}/repair/', async () => {
-    await repairAssetAPI.repairAsset('A001', { asset_code: 'A001' } as never)
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/assets/A001/repair/', {
-      asset_code: 'A001',
+  it('repairAsset calls POST /assets/assets/{recordcode}/repair/', async () => {
+    await repairAssetAPI.repairAsset('RC001', {
+      repair_asset_number: 1,
+      repair_date: '2024-01-15',
+      repair_reason: 'screen cracked',
+      repair_description: 'needs screen replacement',
+    })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/assets/RC001/repair/', {
+      repair_asset_number: 1,
+      repair_date: '2024-01-15',
+      repair_reason: 'screen cracked',
+      repair_description: 'needs screen replacement',
     })
   })
 
-  it('repairDone calls POST /assets/assets/{code}/repair-done/', async () => {
-    await repairAssetAPI.repairDone('A001', { description: 'Fixed' } as never)
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/assets/A001/repair-done/', {
-      description: 'Fixed',
+  it('repairDone calls POST /assets/assets/{recordcode}/repair-done/', async () => {
+    await repairAssetAPI.repairDone('RC001', {
+      actual_return_date: '2024-01-20',
+      physical_grade_after: 'good',
+    })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/assets/RC001/repair-done/', {
+      actual_return_date: '2024-01-20',
+      physical_grade_after: 'good',
     })
   })
 
-  it('repairFailed calls POST /assets/assets/{code}/repair-failed/', async () => {
-    await repairAssetAPI.repairFailed('A001', { description: 'Unfixable' } as never)
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/assets/A001/repair-failed/', {
-      description: 'Unfixable',
-    })
+  it('repairFailed calls POST /assets/assets/{recordcode}/repair-failed/', async () => {
+    await repairAssetAPI.repairFailed('RC001')
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/assets/RC001/repair-failed/')
   })
 })

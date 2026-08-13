@@ -38,7 +38,7 @@
             </div>
             <div class="info-item">
               <span class="info-label">编码：</span>
-              <span class="info-value">{{ detailData.code || 'N/A' }}</span>
+              <span class="info-value">{{ detailData.unregistered_code || 'N/A' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">资产名称：</span>
@@ -71,8 +71,17 @@
           </div>
           <div class="info-column">
             <div class="info-item">
+              <span class="info-label">发现人：</span>
+              <span class="info-value">
+                {{ detailData.discovery_person?.name || detailData.discovery_person_name || 'N/A' }}
+                <template v-if="detailData.discovery_person?.jobcode">
+                  （{{ detailData.discovery_person.jobcode }}）
+                </template>
+              </span>
+            </div>
+            <div class="info-item">
               <span class="info-label">资产类型编码：</span>
-              <span class="info-value">{{ detailData.asset_type_code || '无' }}</span>
+              <span class="info-value">{{ detailData.unregistered_asset_type || '无' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">预估价值：</span>
@@ -80,11 +89,17 @@
             </div>
             <div class="info-item">
               <span class="info-label">关联资产编码：</span>
-              <span class="info-value">{{ detailData.related_asset_code || '无' }}</span>
+              <span class="info-value">
+                {{
+                  typeof detailData.related_asset === 'object' && detailData.related_asset
+                    ? detailData.related_asset.code
+                    : detailData.related_asset || '无'
+                }}
+              </span>
             </div>
             <div class="info-item">
               <span class="info-label">目标仓库编码：</span>
-              <span class="info-value">{{ detailData.target_storage_code || '无' }}</span>
+              <span class="info-value">{{ detailData.unregistered_asset_storage || '无' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">审批状态：</span>
@@ -96,7 +111,12 @@
             </div>
             <div class="info-item">
               <span class="info-label">审批人：</span>
-              <span class="info-value">{{ detailData.approver || '无' }}</span>
+              <span class="info-value">
+                {{ detailData.approver?.name || detailData.approver_name || '无' }}
+                <template v-if="detailData.approver?.jobcode">
+                  （{{ detailData.approver.jobcode }}）
+                </template>
+              </span>
             </div>
             <div class="info-item">
               <span class="info-label">审批备注：</span>
@@ -124,17 +144,17 @@
             <div class="info-column">
               <div class="info-item">
                 <span class="info-label">创建时间：</span>
-                <span class="info-value">{{ formatDate(detailData.create_time) }}</span>
+                <span class="info-value">{{ formatDate(detailData.created_at) }}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">更新时间：</span>
-                <span class="info-value">{{ formatDate(detailData.update_time) }}</span>
+                <span class="info-value">{{ formatDate(detailData.updated_at) }}</span>
               </div>
             </div>
             <div class="info-column">
               <div class="info-item">
                 <span class="info-label">处理时间：</span>
-                <span class="info-value">{{ formatDate(detailData.handle_time) }}</span>
+                <span class="info-value">{{ formatDate(detailData.approval_date) }}</span>
               </div>
             </div>
           </div>
@@ -162,7 +182,7 @@ import { useUnregisteredAssetStore } from '@/stores/unregisteredAssetStore'
 import { unregisteredAssetAPI } from '@/api/unregisteredAsset'
 import { useExcelExport } from '@/composables/useExcelExport'
 import type { ColumnConfig } from '@/utils/excelExporter'
-import type { UnregisteredAsset } from '@/utils/UnregisteredAsset'
+import type { UnregisteredAsset } from '@/types/unregisteredasset'
 import {
   // UnregisteredAssetStatus,
   HandleType,
@@ -171,7 +191,7 @@ import {
   unregisteredAssetStatusTextMap,
   unregisteredAssetStatusTagMap,
   handleTypeTextMap,
-} from '@/utils/UnregisteredAsset'
+} from '@/types/unregisteredasset'
 import { formatDate } from '@/utils/Format'
 
 // ===== 场景类型辅助函数 =====
@@ -220,7 +240,7 @@ const { exportDetail } = useExcelExport()
 
 const exportColumns: ColumnConfig<UnregisteredAsset>[] = [
   { title: 'ID', key: 'id', default: '' },
-  { title: '编码', key: 'code', default: '' },
+  { title: '编码', key: 'unregistered_code', default: '' },
   { title: '资产名称', key: 'asset_name', default: '' },
   {
     title: '场景类型',
@@ -237,17 +257,33 @@ const exportColumns: ColumnConfig<UnregisteredAsset>[] = [
   { title: '发现地点', key: 'discovery_location', default: '' },
   { title: '资产品牌', key: 'asset_brand', default: '' },
   { title: '资产规格型号', key: 'asset_specification', default: '' },
-  { title: '资产类型编码', key: 'asset_type_code', default: '' },
+  { title: '资产类型编码', key: 'unregistered_asset_type', default: '' },
   { title: '预估价值', key: 'estimated_value', default: '' },
-  { title: '关联资产编码', key: 'related_asset_code', default: '' },
-  { title: '目标仓库编码', key: 'target_storage_code', default: '' },
+  {
+    title: '关联资产编码',
+    key: 'related_asset',
+    default: '',
+    formatter: (v) => {
+      if (typeof v === 'object' && v !== null) return (v as { code?: string }).code ?? ''
+      return (v as string) || ''
+    },
+  },
+  { title: '目标仓库编码', key: 'unregistered_asset_storage', default: '' },
   {
     title: '审批状态',
     key: 'approval_status',
     default: '',
     formatter: (v) => getApprovalStatusText(v as string),
   },
-  { title: '审批人', key: 'approver', default: '' },
+  {
+    title: '审批人',
+    key: 'approver',
+    default: '',
+    formatter: (v) => {
+      if (typeof v === 'object' && v !== null) return (v as { name?: string }).name ?? ''
+      return (v as string) || ''
+    },
+  },
   { title: '审批备注', key: 'approval_remark', default: '' },
   {
     title: '处理类型',
@@ -258,19 +294,19 @@ const exportColumns: ColumnConfig<UnregisteredAsset>[] = [
   { title: '处理描述', key: 'handle_description', default: '' },
   {
     title: '创建时间',
-    key: 'create_time',
+    key: 'created_at',
     default: '',
     formatter: (v) => formatDate(v as string) || '',
   },
   {
     title: '更新时间',
-    key: 'update_time',
+    key: 'updated_at',
     default: '',
     formatter: (v) => formatDate(v as string) || '',
   },
   {
     title: '处理时间',
-    key: 'handle_time',
+    key: 'approval_date',
     default: '',
     formatter: (v) => formatDate(v as string) || '',
   },
@@ -301,13 +337,13 @@ const handleApprove = async () => {
     const selectedHandleType = await selectHandleType()
     if (!selectedHandleType) return
 
-    await unregisteredAssetAPI.approveUnregisteredAsset(detailData.value.code, {
+    await unregisteredAssetAPI.approveUnregisteredAsset(detailData.value.unregistered_code, {
       handle_type: selectedHandleType,
       approval_remark: '审批通过',
     })
     ElMessage.success('审批通过')
     // 重新加载详情
-    await loadDetail(detailData.value.code)
+    await loadDetail(detailData.value.unregistered_code)
     unregisteredAssetStore.setRefreshFlag(true)
   } catch (error) {
     console.error('审批操作失败:', error)
@@ -325,13 +361,13 @@ const handleReject = async () => {
       inputPlaceholder: '请输入拒绝原因',
       inputType: 'textarea',
     })
-    await unregisteredAssetAPI.approveUnregisteredAsset(detailData.value.code, {
+    await unregisteredAssetAPI.approveUnregisteredAsset(detailData.value.unregistered_code, {
       handle_type: HandleType.REJECT,
       approval_remark: remark || '审批拒绝',
     })
     ElMessage.success('已拒绝')
     // 重新加载详情
-    await loadDetail(detailData.value.code)
+    await loadDetail(detailData.value.unregistered_code)
     unregisteredAssetStore.setRefreshFlag(true)
   } catch (error) {
     // 用户取消操作不提示错误
@@ -421,7 +457,7 @@ const handleExport = async () => {
   await exportDetail(
     detailData.value,
     exportColumns,
-    `未登记资产_${detailData.value.code || detailData.value.id}`,
+    `未登记资产_${detailData.value.unregistered_code || detailData.value.id}`,
     '未登记资产详情',
   )
 }

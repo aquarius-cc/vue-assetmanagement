@@ -1,5 +1,13 @@
 /**
- * BrokenAsset Store
+ * @file 故障资产 Store，基于 createEntityStore 工厂创建
+ * @module stores/brokenAssetStore
+ * @exports
+ *   - useBrokenAssetStore: 故障资产管理状态 Store
+ * @callers
+ *   - components/componentsdetails/BrokenAssetDetails.vue
+ * @dependsOn
+ *   - api/brokenAsset: 故障资产 API 接口
+ *   - stores/createEntityStore: 实体 Store 工厂
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { brokenAssetAPI } from '@/api/brokenAsset'
@@ -7,7 +15,7 @@ import type {
   BrokenAssetExtended,
   BrokenAssetCreateForm,
   BrokenAssetUpdateForm,
-} from '@/utils/BrokenAsset'
+} from '@/types/brokenasset'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 

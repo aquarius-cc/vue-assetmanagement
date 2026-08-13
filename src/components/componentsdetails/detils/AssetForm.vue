@@ -1,7 +1,10 @@
 <!--
   AssetForm.vue
-  资产表单（新?/ 编辑?
-  后端规则变更说明?  - asset_code 由后端自动生成（格式：ASSET-{category}-{type_code}-{YYYYMMDD}-{random}-{seq}?  - 前端新增时无需传?asset_code，编辑时作为唯一标识仍需传?  - ?asset_purchase_number > 1 时，后端创建多条 Asset 记录并返?List[AssetDetail]
+  资产表单（新增/编辑）
+  后端规则变更说明：
+  - asset_code 由后端自动生成（格式：ASSET-{category}-{type_code}-{YYYYMMDD}-{random}-{seq}）
+  - 前端新增时无需传 asset_code，编辑时作为唯一标识仍需传递
+  - asset_purchase_number > 1 时，后端创建多条 Asset 记录并返回 List[AssetDetail]
 -->
 <template>
   <div class="asset-form">
@@ -237,7 +240,8 @@ const loadAssetDetail = async (assetCode: string) => {
     assetForm.asset_description = detail.asset_description ?? ''
     assetForm.asset_current_status = detail.asset_current_status ?? ''
 
-    // FK 字段：后端返?_code 后缀，表单使用同名字?    assetForm.asset_type = detail.asset_type_code ?? ''
+    // FK 字段：后端返回 _code 后缀，表单使用同名字段
+    assetForm.asset_type = detail.asset_type_code ?? ''
     assetForm.asset_contract = detail.asset_contract_code ?? ''
     assetForm.asset_storage = detail.asset_storage_code ?? ''
     assetForm.asset_entry_person = detail.asset_entry_person_jobcode ?? ''
@@ -272,7 +276,7 @@ const displayStatus = computed(() => getAssetStatusText(assetForm.asset_current_
 /**
  * 提交表单
  * 新增模式：不传 asset_code，后端自动生成并返回 List[AssetDetail]
- * 编辑模式：传?asset_code 作为唯一标识，后端返回单个 AssetDetail
+ * 编辑模式：传递 asset_code 作为唯一标识，后端返回单个 AssetDetail
  */
 const submitForm = () => {
   formRef.value?.validate(async (valid: boolean) => {

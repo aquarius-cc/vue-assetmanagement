@@ -1,6 +1,28 @@
 /**
- * 统一状态映射工具
- * 消除 16 个文件中的重复状态映射函数（DR-4 / HIGH-10）
+ * @file 统一状态映射工具，提供各类业务状态的标签、类型与颜色映射
+ * @module src/utils/statusMapping
+ * @exports
+ *   - ASSET_STATUS_MAP: 资产状态映射表
+ *   - OUTASSET_STATUS_MAP: 出库状态映射表
+ *   - APPROVAL_STATUS_MAP: 审批状态映射表
+ *   - REPAIR_STATUS_MAP: 维修状态映射表
+ *   - HARD_DISK_STATUS_MAP: 硬盘状态映射表
+ *   - EMPLOYEE_STATUS_MAP: 员工状态映射表
+ *   - ASSET_TYPE_MAP: 资产分类映射表
+ *   - STATUS_COLOR_MAP: 状态颜色 hex 映射表
+ *   - getStatusInfo: 通用状态映射获取函数
+ *   - getAssetStatusText / getAssetStatusTagType: 资产状态文本与标签类型
+ *   - getApprovalStatusText / getApprovalStatusTagType: 审批状态文本与标签类型
+ *   - getRepairStatusText / getRepairStatusTagType: 维修状态文本与标签类型
+ *   - getHardDiskStatusText / getHardDiskStatusTagType: 硬盘状态文本与标签类型
+ *   - getOutAssetStatusText / getOutAssetStatusTagType: 出库状态文本与标签类型
+ *   - getEmployeeStatusText / getEmployeeStatusTagType: 员工状态文本与标签类型
+ *   - getStatusColor: 获取状态对应的 hex 颜色值
+ * @callers
+ *   - stores/dashboard
+ *   - components/commoncomponents/StatusTag.vue
+ * @dependsOn
+ *   - 无外部依赖
  */
 
 // ===== 资产状态映射 =====
@@ -162,11 +184,12 @@ export function getEmployeeStatusText(status: string) {
 }
 
 // ===== 状态颜色映射（用于图表等需要 hex 值的场景） =====
+// F1: 主色 #2B5FD7, F2: 成功 #52C41A, 警告 #FAAD14, 危险 #FF4D4F
 export const STATUS_COLOR_MAP: Record<string, string> = {
   success: '#52C41A',
-  primary: '#409EFF',
-  warning: '#E6A23C',
-  danger: '#F56C6C',
+  primary: '#2B5FD7',
+  warning: '#FAAD14',
+  danger: '#FF4D4F',
   info: '#909399',
 }
 
@@ -174,4 +197,20 @@ export const STATUS_COLOR_MAP: Record<string, string> = {
 export function getStatusColor(status: string): string {
   const info = getStatusInfo(status, ASSET_STATUS_MAP)
   return STATUS_COLOR_MAP[info.type] || STATUS_COLOR_MAP.info
+}
+
+/**
+ * [新增] 资产状态 → 图表颜色映射
+ * 从 ASSET_STATUS_MAP + STATUS_COLOR_MAP 推导，确保与标签颜色语义一致。
+ * 用于 ECharts 环形图扇区着色，避免在 Store/组件中重复定义颜色值（DR-4）。
+ */
+export const ASSET_STATUS_CHART_COLORS: Record<string, string> = {
+  in_store: STATUS_COLOR_MAP.success, // 在库 → 绿色
+  in_use: STATUS_COLOR_MAP.primary, // 在用 → 蓝色
+  recycled_pending: '#13C2C2', // 已回收待发放 → 青色
+  broken: STATUS_COLOR_MAP.danger, // 已损坏 → 红色
+  repairing: STATUS_COLOR_MAP.warning, // 维修中 → 橙色
+  lost: '#F759AB', // 已遗失 → 品红
+  damaged: '#FA8C16', // 待报废 → 深橙
+  scrapped: STATUS_COLOR_MAP.info, // 已报废 → 灰色
 }

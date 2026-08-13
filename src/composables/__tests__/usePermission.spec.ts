@@ -5,6 +5,7 @@ const mockAuthStore = {
   userRole: 'regular_user',
   userDepartmentCode: 'DEPT001' as string | null,
   access_token: null as string | null,
+  permissions: [] as string[], // [新增] mock 权限码列表
 }
 
 // Mock auth store
@@ -23,6 +24,7 @@ describe('usePermission', () => {
     mockAuthStore.userRole = 'regular_user'
     mockAuthStore.userDepartmentCode = 'DEPT001'
     mockAuthStore.access_token = null
+    mockAuthStore.permissions = [] // [新增] mock 权限码列表
 
     // Dynamic import to get fresh module with mocked dependencies
     const module = await import('../usePermission')
@@ -239,6 +241,54 @@ describe('usePermission', () => {
       const { departmentCode } = usePermission()
 
       expect(departmentCode.value).toBeNull()
+    })
+  })
+
+  // [新增] 测试 hasPermission 方法
+  describe('hasPermission', () => {
+    it('returns true for superuser regardless of permissions list', () => {
+      // 模拟 superuser：access_token 含 is_superuser=true
+      mockAuthStore.access_token =
+        'eyJhbGciOiJIUzI1NiJ9.' + btoa(JSON.stringify({ is_superuser: true })) + '.sig'
+      const { hasPermission } = usePermission()
+
+      expect(hasPermission('asset:create')).toBe(true)
+      expect(hasPermission('any:permission')).toBe(true)
+    })
+
+    it('returns true for system_admin role', () => {
+      mockAuthStore.userRole = 'system_admin'
+      mockAuthStore.access_token = null
+      const { hasPermission } = usePermission()
+
+      expect(hasPermission('asset:create')).toBe(true)
+    })
+
+    it('returns true when permission code exists in list', () => {
+      mockAuthStore.userRole = 'asset_admin'
+      mockAuthStore.access_token = null
+      mockAuthStore.permissions = ['asset:read', 'asset:create']
+      const { hasPermission } = usePermission()
+
+      expect(hasPermission('asset:create')).toBe(true)
+    })
+
+    it('returns false when permission code not in list', () => {
+      mockAuthStore.userRole = 'asset_admin'
+      mockAuthStore.access_token = null
+      mockAuthStore.permissions = ['asset:read']
+      const { hasPermission } = usePermission()
+
+      expect(hasPermission('asset:delete')).toBe(false)
+    })
+
+    it('returns false when permissions list is empty', () => {
+      mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.access_token = null
+      mockAuthStore.permissions = []
+      const { hasPermission } = usePermission()
+
+      expect(hasPermission('asset:read')).toBe(false)
     })
   })
 })

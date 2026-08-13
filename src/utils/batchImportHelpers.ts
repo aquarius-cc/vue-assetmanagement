@@ -1,5 +1,16 @@
-// utils/batchImportHelpers.ts
-// 批量导入公共辅助函数 — 从 7 个 BatchImport.vue 提取的重复模式
+/**
+ * @file 批量导入公共辅助函数，提供验证状态标签类型与文本
+ * @module src/utils/batchImportHelpers
+ * @exports
+ *   - validationTagType: 根据验证/提交状态返回 Element Plus 标签类型
+ *   - validationTagText: 根据验证/提交状态返回标签显示文本
+ *   - HeaderExample: 表头说明行接口
+ *   - ExampleColumn: 示例数据列配置接口
+ * @callers
+ *   - composables/useBatchImport
+ * @dependsOn
+ *   - @/composables/useBatchImport (ValidatedRow 类型)
+ */
 
 import type { ValidatedRow } from '@/composables/useBatchImport'
 

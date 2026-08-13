@@ -1,7 +1,10 @@
 <!--
-  DashboardStatCard.vue
-  仪表盘统计卡片通用组件 — 从 DashboardPage 提取的重复卡片模式
-  接收 title/icon/statistics/refreshable 渲染统一格式
+@file 仪表盘统计卡片，展示资产统计数据并支持刷新
+@component DashboardStatCard
+@usedBy
+  - components/DashboardPage.vue: 仪表盘统计信息卡片
+@dependsOn
+  - (无外部依赖，纯展示组件)
 -->
 <template>
   <el-card class="info-card" :class="cardClass">

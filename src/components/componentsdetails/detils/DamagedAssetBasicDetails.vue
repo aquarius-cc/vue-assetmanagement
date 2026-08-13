@@ -31,11 +31,11 @@
             </div>
             <div class="info-item">
               <span class="info-label">待报废资产编码：</span>
-              <span class="info-value">{{ detailData.damaged_asset_code || 'N/A' }}</span>
+              <span class="info-value">{{ detailData.damaged_asset || 'N/A' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">资产编码：</span>
-              <span class="info-value">{{ detailData.damaged_asset_code || 'N/A' }}</span>
+              <span class="info-value">{{ detailData.damaged_asset || 'N/A' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">资产名称：</span>
@@ -85,11 +85,11 @@
             </div>
             <div class="info-item">
               <span class="info-label">创建时间：</span>
-              <span class="info-value">{{ formatDate(detailData.create_time) }}</span>
+              <span class="info-value">{{ formatDate(detailData.created_at) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">更新时间：</span>
-              <span class="info-value">{{ formatDate(detailData.update_time) }}</span>
+              <span class="info-value">{{ formatDate(detailData.updated_at) }}</span>
             </div>
           </div>
         </div>
@@ -115,8 +115,8 @@ import { Back, Download, Document } from '@element-plus/icons-vue'
 import { useDamagedAssetStore } from '@/stores/damagedAssetStore'
 import { useExcelExport } from '@/composables/useExcelExport'
 import type { ColumnConfig } from '@/utils/excelExporter'
-import type { DamagedAsset } from '@/utils/DamagedAsset'
-import { ApprovalStatus } from '@/utils/DamagedAsset'
+import type { DamagedAsset } from '@/types/damagedasset'
+import { ApprovalStatus } from '@/types/damagedasset'
 import { formatDate } from '@/utils/Format'
 
 // ===== 审批状态辅助函数 =====
@@ -160,8 +160,8 @@ const { exportDetail } = useExcelExport()
 
 const exportColumns: ColumnConfig<DamagedAsset>[] = [
   { title: 'ID', key: 'id', default: '' },
-  { title: '待报废资产编码', key: 'damaged_asset_code', default: '' },
-  { title: '资产编码', key: 'damaged_asset_code', default: '' },
+  { title: '待报废资产编码', key: 'damaged_asset', default: '' },
+  { title: '资产编码', key: 'damaged_asset', default: '' },
   { title: '资产名称', key: 'damaged_asset_name', default: '' },
   { title: '待报废数量', key: 'damaged_asset_number', default: '' },
   {
@@ -184,13 +184,13 @@ const exportColumns: ColumnConfig<DamagedAsset>[] = [
   { title: '描述', key: 'damaged_asset_description', default: '' },
   {
     title: '创建时间',
-    key: 'create_time',
+    key: 'created_at',
     default: '',
     formatter: (v) => formatDate(v as string) || '',
   },
   {
     title: '更新时间',
-    key: 'update_time',
+    key: 'updated_at',
     default: '',
     formatter: (v) => formatDate(v as string) || '',
   },
@@ -259,7 +259,7 @@ const handleExport = async () => {
   await exportDetail(
     detailData.value,
     exportColumns,
-    `待报废资产_${detailData.value.damaged_asset_code || detailData.value.id}`,
+    `待报废资产_${detailData.value.damaged_asset || detailData.value.id}`,
     '待报废资产详情',
   )
 }

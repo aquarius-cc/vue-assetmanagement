@@ -146,7 +146,7 @@ import ExcelJS from 'exceljs'
 import { useBatchImport } from '@/composables/useBatchImport'
 import type { ValidatedRow } from '@/composables/useBatchImport'
 import { useDamagedAssetStore } from '@/stores/damagedAssetStore'
-import type { DamagedAssetCreateForm } from '@/utils/DamagedAsset'
+import type { DamagedAssetCreateForm } from '@/types/damagedasset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { DamagedAssetExcelRow } from '@/types/batch-import'
 
@@ -185,8 +185,9 @@ const importConfig: BatchImportConfig<DamagedAssetExcelRow, DamagedAssetCreateFo
       errors.approval_status = '审批状态非法，可选：pending / approved / rejected'
     return { valid: Object.keys(errors).length === 0, errors }
   },
+  // [HALT] FE-C2修复：字段名从 damaged_asset_code 改为 asset_recordcode，与后端Serializer对齐
   transformToApiData: (row: DamagedAssetExcelRow): DamagedAssetCreateForm => ({
-    damaged_asset_code: row.damaged_asset_code?.trim() || null,
+    asset_recordcode: row.damaged_asset_code?.trim() || null,
     damaged_asset_number: Number(row.damaged_asset_number),
     damaged_asset_storage_code: row.damaged_asset_storage_code.trim(),
     damaged_asset_contract_code: row.damaged_asset_contract_code?.trim() || null,
@@ -196,7 +197,7 @@ const importConfig: BatchImportConfig<DamagedAssetExcelRow, DamagedAssetCreateFo
     damaged_asset_description: row.damaged_asset_description?.trim() || null,
   }),
   createFn: (data: DamagedAssetCreateForm) => damagedAssetStore.create(data),
-  idField: 'damaged_asset_code',
+  idField: 'asset_recordcode',
   concurrency: 5,
 }
 

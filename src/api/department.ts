@@ -1,7 +1,16 @@
 /**
- * 部门管理 API
- * 对应后端接口: /api/users/departments/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 部门管理 API，提供部门的增删改查、树形结构、批量操作等接口
+ * @module api/department
+ * @exports
+ *   - departmentAPI: 部门管理 API 对象（包含所有部门相关方法）
+ *   - DepartmentBatchCreateResult: 批量创建部门响应类型
+ * @callers
+ *   - stores/departmentStore: 部门状态管理
+ *   - views/ContactsView: 通讯录视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/department: 部门相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
@@ -17,7 +26,7 @@ import type {
   DepartmentEmployeeListResponse,
   DepartmentEmployeeListQueryParams,
   DepartmentBrief,
-} from '@/utils/Department'
+} from '@/types/department'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
 /**

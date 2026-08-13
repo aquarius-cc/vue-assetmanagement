@@ -1,6 +1,13 @@
 <!--
-  FoundAssetDetails.vue
-  Found asset list page
+@file 找回资产列表页面，展示找回资产记录并支持删除和导出操作
+@component FoundAssetDetails
+@usedBy
+  - views/FoundAssetDetails.vue: 通过 router-view 渲染找回资产列表
+@dependsOn
+  - composables/useSmartListConfig: 列表配置
+  - stores/foundAssetStore: 找回资产数据管理
+  - components/commoncomponents/SmartListContainer: 数据管理容器
+  - components/commoncomponents/CommonList: 列表展示组件
 -->
 <template>
   <div class="found-asset-details-root">
@@ -69,7 +76,7 @@ import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
-import type { FoundAssetExtended } from '@/utils/FoundAsset'
+import type { FoundAssetExtended } from '@/types/foundasset'
 import { useFoundAssetStore } from '@/stores/foundAssetStore'
 import { formatDate } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'
@@ -78,21 +85,21 @@ const foundAssetStore = useFoundAssetStore()
 const smartListRef = ref<SmartListContainerExpose | null>(null)
 
 const columns: TableColumn[] = [
-  { type: 'index', label: 'No.', width: 60, align: 'center' },
-  { prop: 'recordcode', label: 'Record Code', width: 160, align: 'center' },
-  { prop: 'lost_asset_code', label: 'Lost Record', width: 160, align: 'center' },
-  { prop: 'asset_code', label: 'Asset Code', width: 160, align: 'center' },
-  { prop: 'asset_name', label: 'Asset Name', width: 150, align: 'left' },
-  { prop: 'found_location', label: 'Location', width: 120, align: 'left' },
+  { type: 'index', label: '序号', width: 60, align: 'center' },
+  { prop: 'recordcode', label: '唯一记录码', width: 160, align: 'center' },
+  { prop: 'lost_asset_code', label: '丢失资产编号', width: 160, align: 'center' },
+  { prop: 'asset_code', label: '资产编号', width: 160, align: 'center' },
+  { prop: 'asset_name', label: '资产名称', width: 150, align: 'left' },
+  { prop: 'found_location', label: '找回位置', width: 120, align: 'left' },
   {
     type: 'custom',
     prop: 'found_date',
-    label: 'Found Date',
+    label: '找回日期',
     width: 120,
     align: 'center',
     slotName: 'found_date',
   },
-  { prop: 'operator_name', label: 'Operator', width: 100, align: 'center' },
+  { prop: 'operator_name', label: '操作人', width: 100, align: 'center' },
 ]
 
 const storeConfig = useSmartListConfig<FoundAssetExtended>({

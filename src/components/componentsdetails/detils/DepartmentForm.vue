@@ -98,7 +98,7 @@ import { Plus } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
 import { isAxiosError } from 'axios'
 import { useDepartmentStore } from '@/stores/departmentStore'
-import type { DepartmentCreateForm } from '@/utils/Department'
+import type { DepartmentCreateForm } from '@/types/department'
 
 // ===== 路由与 Store =====
 const route = useRoute()

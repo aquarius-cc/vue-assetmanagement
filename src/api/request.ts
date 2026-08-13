@@ -1,6 +1,48 @@
-// api/request.ts
-// Axios 实例封装、拦截器、通用请求方法
-// 遵守 AGENTS 红线：类型严格，无 any，隐晦逻辑必注释
+/**
+ * @file Axios 实例封装、请求/响应拦截器、通用请求方法
+ * @module api/request
+ * @exports
+ *   - default: Axios 实例（包含拦截器配置）
+ *   - get: GET 请求方法
+ *   - post: POST 请求方法
+ *   - put: PUT 请求方法
+ *   - patch: PATCH 请求方法
+ *   - del: DELETE 请求方法
+ *   - unwrapResponse: 响应解包函数
+ *   - ApiResponse: 统一响应类型定义
+ * @callers
+ *   - api/index.ts: 统一导出入口
+ *   - api/auth.ts: 认证 API
+ *   - api/user.ts: 员工管理 API
+ *   - api/department.ts: 部门管理 API
+ *   - api/asset.ts: 资产管理 API
+ *   - api/dashboard.ts: 仪表盘 API
+ *   - api/contract.ts: 合同管理 API
+ *   - api/storage.ts: 仓库管理 API
+ *   - api/assetType.ts: 资产类型管理 API
+ *   - api/outAsset.ts: 出库资产管理 API
+ *   - api/recycleAsset.ts: 回收资产管理 API
+ *   - api/damagedAsset.ts: 损坏资产管理 API
+ *   - api/wasteAsset.ts: 报废资产管理 API
+ *   - api/network.ts: 网络连通性测试 API
+ *   - api/unregisteredAsset.ts: 未登记资产管理 API
+ *   - api/operationLog.ts: 操作日志管理 API
+ *   - api/harddiskSn.ts: 硬盘序列号管理 API
+ *   - api/lostAsset.ts: 遗失资产管理 API
+ *   - api/repairAsset.ts: 维修资产管理 API
+ *   - api/auditLog.ts: 通用审计日志 API
+ *   - api/authusers.ts: AuthUser 管理 API
+ *   - api/brokenAsset.ts: 损坏资产 API
+ *   - api/foundAsset.ts: 找到资产 API
+ *   - api/notification.ts: 通知 API
+ *   - api/permissions.ts: 权限模块 API
+ *   - api/roles.ts: 角色管理 API
+ * @dependsOn
+ *   - api/cache.ts: 使用 MemoryCache 进行请求缓存
+ *   - utils/tokenCrypto.ts: Token 加解密工具
+ *   - axios: HTTP 客户端库
+ *   - element-plus: UI 组件库（ElMessage）
+ */
 
 import axios, {
   type AxiosInstance,
@@ -11,6 +53,7 @@ import { isAxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
 import { MemoryCache } from '@/api/cache'
 import { setEncryptedToken, getDecryptedToken, clearAllAuthTokens } from '@/utils/tokenCrypto'
+import { generateTraceId } from '@/utils/traceId'
 
 // ---------- 扩展 Axios 类型，添加自定义属性 _retry ----------
 declare module 'axios' {
@@ -45,14 +88,79 @@ interface RequestOptions {
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1'
 const TIMEOUT = 15_000
 
-// Token 刷新最大重试次数
 const MAX_REFRESH_RETRY_COUNT = 2
+const REFRESH_TIMEOUT = 15_000
+const REFRESH_NETWORK_RETRY = 1
+const REFRESH_RETRY_DELAY = 300
 
 const cache = new MemoryCache()
 
-// 401 错误提示去重：防止多个并发请求同时触发 "登录已过期" 提示
 let loginExpiredMessageShown = false
-const LOGIN_EXPIRED_MESSAGE_DURATION = 3000 // 3秒内不重复显示
+const LOGIN_EXPIRED_MESSAGE_DURATION = 3000
+const transientMessageShown = new Set<string>()
+
+// ======================== 提示/跳转 helper ========================
+
+function showLoginExpired(): void {
+  if (loginExpiredMessageShown) return
+  loginExpiredMessageShown = true
+  ElMessage.error('登录已过期，请重新登录')
+  setTimeout(() => {
+    loginExpiredMessageShown = false
+  }, LOGIN_EXPIRED_MESSAGE_DURATION)
+}
+
+function showErrorDedup(message: string): void {
+  if (transientMessageShown.has(message)) return
+  transientMessageShown.add(message)
+  ElMessage.error(message)
+  setTimeout(() => transientMessageShown.delete(message), LOGIN_EXPIRED_MESSAGE_DURATION)
+}
+
+function redirectToLogin(): void {
+  window.location.href = '/login'
+}
+
+// ======================== Token 刷新核心 ========================
+
+class RefreshSessionError extends Error {}
+
+function isTransientError(e: unknown): boolean {
+  return isAxiosError(e) && (!e.response || e.response.status === 429 || e.response.status >= 500)
+}
+
+// [待确认] 跨标签页并发刷新需 BroadcastChannel/storage 事件，另行处理
+let refreshPromise: Promise<string> | null = null
+
+async function refreshAccessToken(): Promise<string> {
+  const refreshToken = getDecryptedToken('refresh_token')
+  if (!refreshToken) throw new RefreshSessionError('无 refresh_token')
+  for (let attempt = 0; attempt <= REFRESH_NETWORK_RETRY; attempt++) {
+    try {
+      const response = await axios.post<ApiResponse<{ access: string; refresh: string }>>(
+        `${BASE_URL}/auth/token/refresh/`,
+        { refresh: refreshToken },
+        {
+          headers: { 'X-Request-ID': generateTraceId() },
+          timeout: REFRESH_TIMEOUT,
+        },
+      )
+      if (response.data.code !== 0) {
+        throw new RefreshSessionError(response.data.message || 'Token 刷新失败')
+      }
+      const access = response.data.data?.access
+      if (!access) throw new RefreshSessionError('刷新响应缺少 access token')
+      return access
+    } catch (error: unknown) {
+      if (isTransientError(error) && attempt < REFRESH_NETWORK_RETRY) {
+        await new Promise((resolve) => setTimeout(resolve, REFRESH_RETRY_DELAY))
+        continue
+      }
+      throw error
+    }
+  }
+  throw new RefreshSessionError('Token 刷新失败')
+}
 
 // ======================== Axios 实例 ========================
 
@@ -71,12 +179,9 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
     config.headers['X-Requested-With'] = 'XMLHttpRequest'
-    // OC-1: 传递 trace_id 实现调用链透传
-    const traceId =
-      typeof crypto !== 'undefined' && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`
-    config.headers['X-Request-ID'] = traceId
+    if (!config.headers['X-Request-ID']) {
+      config.headers['X-Request-ID'] = generateTraceId()
+    }
     return config
   },
   (error: unknown) => {
@@ -109,64 +214,48 @@ api.interceptors.response.use(
     const originalRequest = error.config
     const status = error.response?.status
 
-    // 401 自动刷新 token（带重试机制）
+    // 认证端点（登录）的 401 表示凭据错误，非 Token 过期，
+    // 跳过刷新逻辑和统一错误提示，直接抛出由调用方处理
+    const requestUrl = originalRequest?.url || ''
+    if (status === 401 && requestUrl.includes('/auth/login/')) {
+      return Promise.reject(error)
+    }
+
     if (status === 401 && originalRequest && !originalRequest._retry) {
-      // 初始化重试计数
       originalRequest._retryCount = originalRequest._retryCount || 0
 
-      // 检查是否超过最大重试次数
       if (originalRequest._retryCount >= MAX_REFRESH_RETRY_COUNT) {
         console.error('Token 刷新重试次数超过上限')
         clearAllAuthTokens()
-        // 去重：防止与下方统一错误提示重复显示
-        if (!loginExpiredMessageShown) {
-          loginExpiredMessageShown = true
-          ElMessage.error('登录已过期，请重新登录')
-          setTimeout(() => {
-            loginExpiredMessageShown = false
-          }, LOGIN_EXPIRED_MESSAGE_DURATION)
-        }
-        window.location.href = '/login'
+        showLoginExpired()
+        redirectToLogin()
         return Promise.reject(error)
       }
 
-      // 标记为已重试（防止无限循环）
       originalRequest._retry = true
       originalRequest._retryCount++
 
       try {
-        const refreshToken = getDecryptedToken('refresh_token')
-        if (!refreshToken) {
-          throw new Error('无 refresh_token')
-        }
-
-        // 独立 axios 实例避免拦截器循环
-        const refreshResponse = await axios.post<{ access: string }>(
-          `${BASE_URL}/auth/token/refresh/`,
-          { refresh: refreshToken },
-        )
-
-        const newAccessToken = refreshResponse.data.access
-        // 加密存储新的 Token
+        refreshPromise ??= refreshAccessToken()
+        const newAccessToken = await refreshPromise
         setEncryptedToken('access_token', newAccessToken)
-
-        // 重置重试标记，更新请求头，重新发送原始请求
         originalRequest._retry = false
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
         return api(originalRequest)
       } catch (refreshError: unknown) {
-        console.error('Token 刷新失败:', refreshError)
-        clearAllAuthTokens()
-        // 与 retry 超限路径保持一致：显示去重的登录过期提示
-        if (!loginExpiredMessageShown) {
-          loginExpiredMessageShown = true
-          ElMessage.error('登录已过期，请重新登录')
-          setTimeout(() => {
-            loginExpiredMessageShown = false
-          }, LOGIN_EXPIRED_MESSAGE_DURATION)
+        const detail = refreshError instanceof Error ? refreshError.message : String(refreshError)
+        if (isTransientError(refreshError)) {
+          console.error(`Token 刷新瞬时失败（保留会话）: ${detail}`)
+          showErrorDedup('网络异常，请稍后重试')
+        } else {
+          console.error(`Token 刷新失败（会话失效）: ${detail}`)
+          clearAllAuthTokens()
+          showLoginExpired()
+          redirectToLogin()
         }
-        window.location.href = '/login'
         return Promise.reject(refreshError)
+      } finally {
+        refreshPromise = null
       }
     }
 
@@ -183,20 +272,13 @@ api.interceptors.response.use(
 
       switch (code) {
         case 401:
-          // 去重：防止多个并发 401 请求重复显示 "登录已过期" 提示
-          if (!loginExpiredMessageShown) {
-            loginExpiredMessageShown = true
-            ElMessage.error('登录已过期，请重新登录')
-            setTimeout(() => {
-              loginExpiredMessageShown = false
-            }, LOGIN_EXPIRED_MESSAGE_DURATION)
-          }
+          showLoginExpired()
           break
         case 403:
           ElMessage.error('没有权限访问该资源')
           break
         case 404:
-          ElMessage.error('请求的资源不存在')
+          ElMessage.error('请求的资源不存在或您无权访问')
           break
         case 500:
           ElMessage.error(`服务器内部错误: ${msg}`)

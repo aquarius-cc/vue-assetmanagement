@@ -1,6 +1,15 @@
 /**
- * AuthUser 管理 API
- * 对应后端接口: /api/v1/auth/users/ + /api/v1/users/
+ * @file AuthUser 管理 API，提供认证用户的增删改查、角色绑定等接口
+ * @module api/authusers
+ * @exports
+ *   - authUserAPI: AuthUser 管理 API 对象（包含所有认证用户相关方法）
+ *   - EmployeeBrief: 员工简要信息接口
+ *   - UserRole: 用户角色关联接口
+ * @callers
+ *   - views/system/AuthUserManage: 认证用户管理视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/authuser: 认证用户相关类型定义
  */
 import { request, unwrapResponse } from '@/api/index'
 import type { AuthUser, AuthUserCreateForm, AuthUserListResponse } from '@/types/authuser'
@@ -15,17 +24,19 @@ export interface EmployeeBrief {
 }
 
 /** 角色简要信息（用于角色分配） */
-export interface RoleBrief {
-  id: number
-  role_code: string
-  role_name: string
-}
+// export interface RoleBrief {
+//   id: number
+//   role_code: string
+//   role_name: string
+// }
 
-/** 用户-角色关联 */
+/** 用户-角色关联（与后端 UserRoleSerializer 字段对齐） */
 export interface UserRole {
   id: number
-  user_id: number
-  role: RoleBrief
+  auth_user: number
+  role: number
+  role_name: string
+  role_code: string
   data_scope: Record<string, unknown>
   created_at: string
 }
@@ -62,44 +73,47 @@ export const authUserAPI = {
 
   /** 根据 AuthUser ID 查询绑定的 Employee */
   getBoundEmployee: (authId: number) => {
-    return unwrapResponse(
-      request.get<EmployeeBrief>(`/users/employees/by-auth-user/${authId}/`),
-    )
+    return unwrapResponse(request.get<EmployeeBrief>(`/users/employees/by-auth-user/${authId}/`))
   },
 
   /** 绑定 Employee 到 AuthUser */
-  bindAuthUser: (jobcode: string, authId: number) => {
+  bindAuthUser: (jobcode: string, authUsername: string) => {
     return unwrapResponse(
-      request.post(`/users/${jobcode}/bind-auth-user/`, { auth_user_id: authId }),
+      request.post(`/users/employees/${jobcode}/bind-auth-user/`, { auth_username: authUsername }),
     )
   },
 
   /** 解绑 Employee 的 AuthUser */
   unbindAuthUser: (jobcode: string) => {
-    return unwrapResponse(request.post(`/users/${jobcode}/unbind-auth-user/`))
+    return unwrapResponse(request.post(`/users/employees/${jobcode}/unbind-auth-user/`))
   },
 
   /** 替换 Employee 的 AuthUser */
-  replaceAuthUser: (jobcode: string, newAuthId: number) => {
+  replaceAuthUser: (jobcode: string, newAuthUsername: string) => {
     return unwrapResponse(
-      request.post(`/users/${jobcode}/replace-auth-user/`, { auth_user_id: newAuthId }),
+      request.post(`/users/employees/${jobcode}/replace-auth-user/`, {
+        auth_username: newAuthUsername,
+      }),
     )
   },
 
   // ==================== 用户角色分配 ====================
 
   /** 获取用户的所有角色 */
+  /** @param userId 用户ID
+   * 后端 UserRoleViewSet 设置了 pagination_class = None，
+   * 但 ResponseWrapperMixin.list() 无分页时仍包装为 {count, results} 结构。
+   * unwrapResponse 提取 res.data 后得到一个对象而非数组，需要声明正确的返回类型。
+   */
   getUserRoles: (userId: number) => {
     return unwrapResponse(
-      request.get<UserRole[]>(`/users/${userId}/roles/`),
+      request.get<{ count: number; results: UserRole[] }>(`/users/${userId}/roles/`),
     )
   },
 
   /** 为用户分配角色 */
   assignUserRole: (userId: number, roleId: number) => {
-    return unwrapResponse(
-      request.post(`/users/${userId}/roles/`, { role_id: roleId }),
-    )
+    return unwrapResponse(request.post(`/users/${userId}/roles/`, { role_id: roleId }))
   },
 
   /** 撤销用户角色 */

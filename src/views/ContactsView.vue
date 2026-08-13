@@ -1,3 +1,26 @@
+<!--
+@file 通讯录页面，展示部门树与人员列表，支持搜索筛选
+@component ContactsView.vue
+@usedBy
+  - router/index.ts: 路由懒加载通讯录页面
+  - views/ContactsView.vue: 通讯录页面组件
+  - views/system/BindAuthUserDialog.vue: 绑定认证用户弹窗组件
+  - views/system/RoleAssignDialog.vue: 角色分配弹窗组件
+  - views/system/DepartmentTree.vue: 部门树组件
+  - views/system/UserManagementPage.vue: 用户管理页面组件
+  - views/system/AuthUserManage.vue: 认证用户管理页面组件
+  - views/system/RoleManage.vue: 角色管理页面组件
+  - views/system/EmployeeManage.vue: 员工管理页面组件
+  - views/system/EmployeeList.vue: 员工列表组件
+  - views/system/RoleList.vue: 角色列表组件
+@dependsOn
+  - api/user: 用户数据接口
+  - api/department: 部门数据接口
+  - composables/useDebouncedSearch: 防抖搜索
+  - api/employeeAPI: getEmployeeInfo/getEmployeeList 员工相关接口
+  - api/roleAPI: getRoleList 角色相关接口
+  - api/authUserAPI: getAuthUserInfo/bindAuthUser/unbindAuthUser 认证用户相关接口
+-->
 <template>
   <div class="contacts-view">
     <!-- 左侧：部门树 -->
@@ -41,7 +64,6 @@
                 placeholder="搜索姓名、工号..."
                 clearable
                 style="width: 240px"
-                @input="handleSearch"
               >
                 <template #prefix>
                   <el-icon><Search /></el-icon>
@@ -83,9 +105,10 @@ import { ref, onMounted } from 'vue'
 import { User, Search, OfficeBuilding } from '@element-plus/icons-vue'
 import { userAPI } from '@/api/user'
 import { departmentAPI } from '@/api/department'
-import type { EmployeeExtended } from '@/utils/User'
-import type { DepartmentTreeNode } from '@/utils/Department'
+import type { EmployeeExtended } from '@/types/user'
+import type { DepartmentTreeNode } from '@/types/department'
 import DepartmentTree from '@/components/componentsdetails/components/DepartmentTree.vue'
+import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
 
 const loading = ref(true)
 const contacts = ref<EmployeeExtended[]>([])
@@ -97,7 +120,11 @@ const selectedDepartmentCode = ref<string | null>(null)
 const selectedDepartmentName = ref('')
 const departmentData = ref<DepartmentTreeNode[]>([])
 
-let searchTimer: ReturnType<typeof setTimeout> | null = null
+// 使用防抖搜索 composable
+useDebouncedSearch(searchKeyword, () => {
+  currentPage.value = 1
+  fetchContacts()
+})
 
 const fetchDepartmentTree = async () => {
   try {
@@ -147,14 +174,6 @@ const clearDepartmentFilter = () => {
   selectedDepartmentName.value = ''
   currentPage.value = 1
   fetchContacts()
-}
-
-const handleSearch = () => {
-  if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => {
-    currentPage.value = 1
-    fetchContacts()
-  }, 300)
 }
 
 onMounted(() => {

@@ -1,20 +1,21 @@
-// composables/useRecycleFormAssociations.ts
-/**
- * 回收资产表单关联数据管理 Composable
- * 职责：
- * 1. 加载回收表单所需的下拉选项（仓库、资产类型等）
- * 2. 维护响应式数据与加载状态
- * 3. 提供缓存与防重复请求机制
- *
- * 遵循 AGENTS 规范：单一职责、类型严格、无 any、别名导入
+﻿/**
+ * @file 回收资产表单关联数据加载（仓库、资产类型下拉选项，含缓存）
+ * @module composables/useRecycleFormAssociations
+ * @exports
+ *   - useRecycleFormAssociations: 关联数据加载 composable
+ * @callers
+ *   - components/componentsdetails/detils/RecycleAssetForm.vue
+ * @dependsOn
+ *   - stores/storageStore: 仓库数据
+ *   - stores/assetTypeStore: 资产类型数据
  */
 
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useStorageStore } from '@/stores/storageStore'
 import { useAssetTypeStore } from '@/stores/assetTypeStore'
-import type { Storage } from '@/utils/Storage'
-import type { AssetType } from '@/utils/AssetType'
+import type { Storage } from '@/types/storage'
+import type { AssetType } from '@/types/assettype'
 
 export function useRecycleFormAssociations() {
   const storageStore = useStorageStore()

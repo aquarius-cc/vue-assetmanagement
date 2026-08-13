@@ -50,7 +50,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { ArrowDown, ArrowUp, Folder, FolderOpened, Document } from '@element-plus/icons-vue'
-import type { AssetType } from '@/utils/AssetType'
+import type { AssetType } from '@/types/assettype'
 
 interface AssetTypeTreeNode extends AssetType {
   children?: AssetTypeTreeNode[]

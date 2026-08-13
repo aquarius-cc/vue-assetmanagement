@@ -1,7 +1,15 @@
-// composables/useSmartListConfig.ts
-// 通用列表页 storeConfig 工厂 — 从 7 个 Details 页面提取的重复模式
-// 消除 pagination getter/setter 三元组 + list/loading/refreshFlag computed 的重复
-
+/**
+ * @file 通用列表页 PaginationSearchConfig 工厂，消除 Details 页面的 storeConfig 重复
+ * @module composables/useSmartListConfig
+ * @exports
+ *   - useSmartListConfig: 列表页配置工厂 composable
+ * @callers
+ *   - components/commoncomponents/SmartListContainer.vue
+ *   - components/componentsdetails/*Details.vue（各实体列表页）
+ * @dependsOn
+ *   - composables/usePaginationSearch: PaginationSearchConfig 类型
+ *   - stores/createEntityStore: PaginationQuery 类型
+ */
 import { computed } from 'vue'
 import type { PaginationSearchConfig } from './usePaginationSearch'
 import type { PaginationQuery } from '@/stores/createEntityStore'

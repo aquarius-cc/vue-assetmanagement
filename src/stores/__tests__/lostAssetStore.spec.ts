@@ -62,7 +62,7 @@ describe('LostAssetStore', () => {
             lost_description: '测试描述',
             create_time: '2026-07-09T10:00:00Z',
             update_time: '2026-07-09T10:00:00Z',
-            is_delete: false,
+            is_deleted: false,
           },
         ],
       }
@@ -89,7 +89,7 @@ describe('LostAssetStore', () => {
         lost_description: '测试描述',
         create_time: '2026-07-09T10:00:00Z',
         update_time: '2026-07-09T10:00:00Z',
-        is_delete: false,
+        is_deleted: false,
       }
 
       const { lostAssetAPI } = await import('@/api/lostAsset')
@@ -129,6 +129,45 @@ describe('LostAssetStore', () => {
       await lostAssetStore.remove('lost-001')
 
       expect(lostAssetAPI.deleteLostAsset).toHaveBeenCalledWith('lost-001')
+    })
+  })
+
+  describe('详情/更新/批量删除', () => {
+    it('应该调用API获取详情', async () => {
+      const { lostAssetAPI } = await import('@/api/lostAsset')
+      vi.mocked(lostAssetAPI.getLostAssetByCode).mockResolvedValue({
+        recordcode: 'lost-001',
+      } as never)
+
+      const result = await lostAssetStore.getById('lost-001')
+
+      expect(result).toBeDefined()
+    })
+
+    it('应该调用API更新记录', async () => {
+      const { lostAssetAPI } = await import('@/api/lostAsset')
+      vi.mocked(lostAssetAPI.updateLostAsset).mockResolvedValue({
+        recordcode: 'lost-001',
+      } as never)
+
+      await lostAssetStore.update({ recordcode: 'lost-001', asset_name: '新名称' } as never)
+
+      expect(lostAssetAPI.updateLostAsset).toHaveBeenCalled()
+    })
+
+    it('应该调用API批量删除', async () => {
+      const { lostAssetAPI } = await import('@/api/lostAsset')
+      vi.mocked(lostAssetAPI.batchDeleteLostAssets).mockResolvedValue({
+        total: 1,
+        success_count: 1,
+        fail_count: 0,
+        success_ids: ['lost-001'],
+        fail_items: [],
+      })
+
+      await lostAssetStore.removeBatch(['lost-001'])
+
+      expect(lostAssetAPI.batchDeleteLostAssets).toHaveBeenCalledWith(['lost-001'])
     })
   })
 })

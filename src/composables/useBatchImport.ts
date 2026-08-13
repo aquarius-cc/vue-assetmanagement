@@ -1,5 +1,17 @@
-// composables/useBatchImport.ts
-// 批量导入功能提取的公共函数
+/**
+ * @file 通用批量导入基座（Excel 解析、行校验、分批提交），供资产/合同导入复用
+ * @module composables/useBatchImport
+ * @exports
+ *   - useBatchImport: 通用批量导入 composable
+ *   - ValidatedRow: 校验行数据类型
+ * @callers
+ *   - composables/useAssetBatchImport: 资产批量导入
+ *   - composables/useContractBatchImport: 合同批量导入
+ * @dependsOn
+ *   - utils/batchImport/types: BatchImportConfig 类型
+ *   - utils/SubmitBatch: 分批提交工具
+ *   - utils/readExcelFile: Excel 文件解析
+ */
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { BatchImportConfig } from '@/utils/batchImport/types'

@@ -1,0 +1,40 @@
+// 资产操作页面公共样式
+// 用于: RecycleAssetView, ScrapAssetView, FoundAssetView, LostAssetView,
+//        RepairAssetView, RepairDoneView, RepairFailedView, ScanAssetView, AssetLogsView
+
+.asset-operation-view {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+  min-height: 100vh;
+  background: var(--background-color);
+}
+
+.operation-card {
+  width: 100%;
+  max-width: 720px;
+  border-radius: 8px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.loading-container {
+  min-height: 200px;
+}
+
+.asset-info {
+  margin-bottom: 16px;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
+}

@@ -1,4 +1,21 @@
 /**
+ * @file 报废资产数据模型定义，包括报废表单、详情、统计等类型
+ * @module types/wasteasset
+ * @exports
+ *   - WasteAssetCreateForm/WasteAssetUpdateForm: 报废资产表单接口
+ *   - WasteAsset: 报废资产基础接口
+ *   - WasteAssetQueryParams: 报废资产查询参数
+ *   - WasteAssetListResponse: 报废资产列表响应接口
+ *   - WasteAssetStats: 报废资产统计接口
+ * @callers
+ *   - stores/wasteassetStore（报废资产状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
+ */
+
+import type { PaginatedResponse } from '@/types/common'
+
+/**
  * 报废资产数据模型
  * 对应后端数据库表: am_waste_asset
  */
@@ -40,11 +57,11 @@ export interface WasteAsset {
   /** 主键 ID */
   id?: number
   /** 创建时间 */
-  create_time?: string
+  created_at?: string
   /** 更新时间 */
-  update_time?: string
+  updated_at?: string
   /** 是否删除标记 */
-  is_delete?: boolean
+  is_deleted?: boolean
   /** 关联资产编码 (OneToOne → Asset.recordcode, 用于 lookup/delete) */
   waste_asset: string
   /** 资产编号 (Asset.asset_code, 后端 readonly extra 字段, 用于 URL lookup) */
@@ -94,19 +111,8 @@ export interface WasteAssetQueryParams {
 
 // ==================== 响应接口 ====================
 
-/**
- * 报废资产列表响应接口
- */
-export interface WasteAssetListResponse {
-  /** 总记录数 */
-  count: number
-  /** 下一页链接 */
-  next: string | null
-  /** 上一页链接 */
-  previous: string | null
-  /** 报废资产列表数据 */
-  results: WasteAsset[]
-}
+/** 报废资产列表响应 */
+export type WasteAssetListResponse = PaginatedResponse<WasteAsset>
 
 // ==================== 统计接口 ====================
 

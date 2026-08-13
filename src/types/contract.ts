@@ -1,6 +1,21 @@
 /**
- * 合同数据模型
- * 对应后端数据库表: am_contract
+ * @file 合同数据模型定义，包括合同类型、结算状态、表单、详情等类型
+ * @module types/contract
+ * @exports
+ *   - ContractType: 合同类型枚举
+ *   - ContractStatus: 合同状态枚举
+ *   - ContractCreateForm/ContractUpdateForm: 合同表单接口
+ *   - Contract: 合同基础接口
+ *   - PaymentRecord/PaidRecord: 支付记录接口
+ *   - ContractQueryParams: 合同查询参数
+ *   - ContractListResponse/ContractListResponseOld: 合同列表响应接口
+ *   - ContractTableData: 合同表格数据接口
+ *   - ContractStats: 合同统计接口
+ *   - ExcelContractData/ValidatedContractData: Excel导入导出接口
+ * @callers
+ *   - stores/contractStore（合同状态管理）
+ *   - utils/Format（格式化工具）
+ *   - components/*（组件）
  */
 
 // ==================== 枚举类型定义 ====================
@@ -20,15 +35,58 @@ export enum ContractType {
 }
 
 /**
- * 合同结算状态枚举
- * pending", "待结算,
- * settling_up", "结算中,
- * settled", "已结算
+ * 合同状态枚举（对应后端 ContractStatus）
  */
-export enum ContractSettlementStatus {
-  PENDING = 'pending',
-  SETTLING_UP = 'settling_up',
-  SETTLED = 'settled',
+export enum ContractStatus {
+  PURCHASING = 'purchasing',
+  PURCHASE_FINISHED = 'purchase_finished',
+  RECEIVE_CHECK = 'receive_check',
+  INITIAL_CHECK = 'initial_check',
+  PROJECT_SETTLEMENT = 'project_settlement',
+  SETTLEMENT_DONE = 'settlement_done',
+  FINAL_CHECK = 'final_check',
+  PROJECT_FINISHED = 'project_finished',
+}
+
+/**
+ * 合同结算状态枚举（保留向后兼容）
+ */
+export const ContractSettlementStatus = {
+  PENDING: 'pending',
+  SETTLING_UP: 'settling_up',
+  SETTLED: 'settled',
+} as const
+
+export type ContractSettlementStatus =
+  (typeof ContractSettlementStatus)[keyof typeof ContractSettlementStatus]
+
+/**
+ * 支付记录接口
+ * 对应后端 ContractPaymentService.add_payment() 返回的单条支付记录
+ */
+export interface PaymentRecord {
+  id: string
+  date: string
+  amount: number
+  description: string
+  payment_method: string | null
+  operator: string
+  status: 'pending' | 'approved' | 'deleted'
+  created_at: string
+  deleted_at?: string
+  deleted_by?: string
+  approved_by?: string
+  approved_at?: string
+}
+
+/**
+ * 支付记录汇总结构
+ * 对应后端 ContractPaymentService.get_paid_record() 返回的 JSON 结构
+ */
+export interface PaidRecord {
+  payments: PaymentRecord[]
+  total_paid: number
+  last_payment_date: string | null
 }
 
 // ==================== 基础接口定义 ====================
@@ -42,30 +100,28 @@ export interface ContractCreateForm {
   contract_code: string
   /** 合同名称 */
   contract_name: string
-  /** 合同金额 */
-  contract_price: number | string
-  /** 合同供应商 */
-  contract_supplier: string
-  /** 合同签订日期 */
-  contract_signing_date: string | null
+  /** 合同金额（对应后端 contract_amount） */
+  contract_amount: number | string
+  /** 供应商名称（对应后端 supplier_name） */
+  supplier_name: string
+  /** 合同开始日期（对应后端 contract_start_date） */
+  contract_start_date: string | null
   /** 合同类型 (可选) */
   contract_type?: ContractType | string | null
   /** 保修期(年) (可选) */
   contract_warranty_period?: number | null
   /** 初验日期 (可选) */
-  contract_preliminary_acceptance_date?: string | null
+  initial_check_date?: string | null
   /** 终验日期 (可选) */
-  contract_final_acceptance_date?: string | null
-  /** 结算状态 (可选) */
-  contract_settledment_status: ContractSettlementStatus | null
-  /** 结算金额 (可选) */
-  contract_settledment_price?: number | string | null
-  /** 已付次数 (可选) */
-  contract_paid_count_number?: number | string | null
-  /** 已付金额 (可选) */
-  contract_paid_price?: number | string | null
-  /** 付款记录 (可选) */
-  contract_paid_record?: string | null
+  final_check_date?: string | null
+  /** 合同状态 (可选) */
+  contract_status?: ContractStatus | string | null
+  /** 结算金额（对应后端 settlemented_price） */
+  settlemented_price?: number | string | null
+  /** 付款记录（对应后端 paid_record） */
+  paid_record?: PaidRecord | string | null
+  /** 已支付金额（对应后端 amount_paid） */
+  amount_paid?: number | string
 }
 
 /**
@@ -79,56 +135,45 @@ export interface ContractUpdateForm extends Partial<ContractCreateForm> {
 
 /**
  * 合同基础接口
- * 对应后端数据库表 am_contract 的基础字段
+ * 对应后端数据库表 am_contract 的字段
  */
 export interface Contract extends ContractCreateForm {
   /** 主键 ID */
   recordcode: string
+  /** 合同结束日期 */
+  contract_end_date: string | null
+  /** 合同状态 */
+  contract_status: ContractStatus | string | null
+  /** 到货验收日期 */
+  receive_check_date: string | null
+  /** 初步验收日期 */
+  initial_check_date: string | null
+  /** 最终验收日期 */
+  final_check_date: string | null
+  /** 项目变更标记 */
+  project_change: boolean
+  /** 变更类型 */
+  project_change_type: string | null
+  /** 变更描述 */
+  project_change_description: string | null
+  /** 结算金额 */
+  settlemented_price: number | string | null
+  /** 已支付金额 */
+  amount_paid: number | string
+  /** 未支付金额 */
+  amount_unpaid: number | string
+  /** 是否有支付记录 */
+  has_payment: boolean
+  /** 合同描述 */
+  contract_description: string | null
+  /** 排序 */
+  sort_order: number
+  /** 版本号（乐观锁） */
+  version: number
   /** 创建时间 */
-  create_time: string
+  created_at: string
   /** 更新时间 */
   updated_at: string
-  /** 是否删除标记 */
-  is_delete: boolean
-  /** 合同类型 */
-  contract_type: string | null
-  /** 保修期(年) */
-  contract_warranty_period: number | null
-  /** 初验日期 */
-  contract_preliminary_acceptance_date: string | null
-  /** 终验日期 */
-  contract_final_acceptance_date: string | null
-  /** 结算状态 */
-  contract_settledment_status: ContractSettlementStatus | null
-  /** 结算金额 */
-  contract_settledment_price: number | string | null
-  /** 已付次数 */
-  contract_paid_count_number: number | string | null
-  /** 已付金额 */
-  contract_paid_price: number | string | null
-  /** 付款记录 */
-  contract_paid_record: string | null
-}
-
-/**
- * 合同简化接口
- * 用于在资产关联中引用
- */
-export interface ContractSimplified {
-  /** 合同编码 */
-  contract_code: string
-  /** 合同名称 */
-  contract_name: string
-  /** 合同金额 */
-  contract_price: number
-  /** 结算状态 */
-  contract_settledment_status: ContractSettlementStatus | null
-  /** 合同签订日期 */
-  contract_signing_date: string | Date
-  /** 合同供应商 */
-  contract_supplier: string
-  /** 合同类型 */
-  contract_type: string
 }
 
 // ==================== 查询参数接口 ====================
@@ -150,10 +195,10 @@ export interface ContractQueryParams {
   contract_name?: string
   /** 合同类型 */
   contract_type?: string
-  /** 合同供应商 */
-  contract_supplier?: string
-  /** 结算状态 */
-  contract_settledment_status?: ContractSettlementStatus | null
+  /** 供应商名称 */
+  supplier_name?: string
+  /** 合同状态 */
+  contract_status?: ContractStatus | string | null
   /** 排序字段 */
   ordering?: string
   /** 索引签名：允许任意 string key，但值必须是 string/number/boolean/null/undefined */
@@ -178,28 +223,13 @@ export interface ContractListResponse {
 
 /**
  * 创建用于表格显示的Contract类型
- * 日期字段为string类型
  */
-export interface ContractForTable extends Omit<
-  Contract,
-  | 'contract_signing_date'
-  | 'contract_preliminary_acceptance_date'
-  | 'contract_final_acceptance_date'
-> {
-  contract_signing_date: string | null
-  contract_preliminary_acceptance_date: string | null
-  contract_final_acceptance_date: string | null
-}
+export type ContractTableData = Contract
 
 /**
  * 合同简化接口
  * 用于在组件间引用
  */
-export interface ContractItem {
-  value: string
-  contract_name: string
-  contract_code: string
-}
 
 // ==================== 统计接口 ====================
 
@@ -265,29 +295,27 @@ export interface ValidatedContractData {
   /** 合同名称 */
   contract_name: string
   /** 供应商 */
-  contract_supplier: string
+  supplier_name: string
   /** 合同价格 */
-  contract_price: number
+  contract_amount: number
   /** 合同签订日期 */
-  contract_signing_date: string | null
+  contract_start_date: string | null
   /** 合同类型 */
   contract_type: string
   /** 保修期 */
   contract_warranty_period: number
   /** 初验日期 */
-  contract_preliminary_acceptance_date: string | null
+  initial_check_date: string | null
   /** 终验日期 */
-  contract_final_acceptance_date: string | null
+  final_check_date: string | null
   /** 结算状态 */
-  contract_settledment_status: ContractSettlementStatus | null
+  contract_status: ContractStatus | string | null
   /** 结算价格 */
-  contract_settledment_price: number
-  /** 已付次数 */
-  contract_paid_count_number: number
-  /** 已付金额 */
-  contract_paid_price: number
+  settlemented_price: number
+  /** 已支付金额 */
+  amount_paid: number
   /** 已付记录 */
-  contract_paid_record: string
+  paid_record: string
   /** 验证状态 */
   validationStatus: 'success' | 'error'
   /** 验证错误信息 */
@@ -295,9 +323,6 @@ export interface ValidatedContractData {
 }
 
 // ==================== 兼容性接口（保留原有的兼容性定义以兼容现有代码） ====================
-
-// 兼容性别名
-// export interface ContractForm extends ContractCreateForm {}
 
 export interface ContractListResponseOld {
   success: boolean

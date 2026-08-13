@@ -223,11 +223,11 @@ import { useAssetStore } from '@/stores/assetStore'
 import { useAssetTypeStore } from '@/stores/assetTypeStore'
 import { useStorageStore } from '@/stores/storageStore'
 import { useUnregisteredAssetStore } from '@/stores/unregisteredAssetStore'
-import type { UnregisteredAssetCreateForm } from '@/utils/UnregisteredAsset'
-import { ScenarioType } from '@/utils/UnregisteredAsset'
+import type { UnregisteredAssetCreateForm } from '@/types/unregisteredasset'
+import { ScenarioType } from '@/types/unregisteredasset'
 import type { AssetDetail } from '@/types/asset'
-import type { AssetType } from '@/utils/AssetType'
-import type { Storage } from '@/utils/Storage'
+import type { AssetType } from '@/types/assettype'
+import type { Storage } from '@/types/storage'
 import type { AssetTypeSuggestion } from '@/types/form-helpers'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
 
@@ -250,7 +250,7 @@ const scenarioTypeOptions = [
   { value: ScenarioType.S3_STATUS_MISMATCH, label: '状态不匹配' },
 ]
 
-// ===== S2/S3 场景下关联资产编码必填判?=====
+// ===== S2/S3 场景下关联资产编码必填判断 =====
 const isRelatedAssetRequired = computed(() => {
   return (
     formData.scenario_type === ScenarioType.S2_NO_OUTASSET ||
@@ -295,7 +295,7 @@ const formData = reactive<FormDataType>({
 
 const originalFormData = ref<FormDataType | null>(null)
 
-// ===== 提交数据（仅包含 API 需要的字段?=====
+// ===== 提交数据（仅包含 API 需要的字段）=====
 const submitData = computed<UnregisteredAssetCreateForm>(() => ({
   scenario_type: formData.scenario_type,
   discovery_date: formData.discovery_date,
@@ -303,10 +303,10 @@ const submitData = computed<UnregisteredAssetCreateForm>(() => ({
   asset_name: formData.asset_name,
   asset_brand: formData.asset_brand || null,
   asset_specification: formData.asset_specification || null,
-  asset_type_code: formData.asset_type_code || null,
+  unregistered_asset_type: formData.asset_type_code || null,
   estimated_value: formData.estimated_value ?? null,
-  related_asset_code: formData.related_asset_code || null,
-  target_storage_code: formData.target_storage_code || null,
+  related_asset: formData.related_asset_code || null,
+  unregistered_asset_storage: formData.target_storage_code || null,
   handle_description: formData.handle_description || null,
 }))
 
@@ -327,7 +327,7 @@ const formRules = computed(() => ({
 
 // ===== 场景类型切换处理 =====
 const handleScenarioTypeChange = (value: string) => {
-  // 切换?S1 场景时，清空关联资产编码
+  // 切换到 S1 场景时，清空关联资产编码
   if (value === ScenarioType.S1_NO_RECORD) {
     formData.related_asset_code = ''
     formData.related_asset_code_display = ''
@@ -419,7 +419,7 @@ const handleStorageCodeChange = (value: string) => {
   }
 }
 
-// ===== 编辑模式：加载现有数?=====
+// ===== 编辑模式：加载现有数据 =====
 const loadEditData = async (code: string) => {
   isLoading.value = true
   try {
@@ -436,18 +436,26 @@ const loadEditData = async (code: string) => {
     formData.asset_name = detail.asset_name || ''
     formData.asset_brand = detail.asset_brand || ''
     formData.asset_specification = detail.asset_specification || ''
-    formData.asset_type_code = detail.asset_type_code || ''
-    formData.asset_type_code_display = detail.asset_type_code || ''
+    formData.asset_type_code =
+      typeof detail.unregistered_asset_type === 'string' ? detail.unregistered_asset_type : ''
+    formData.asset_type_code_display = formData.asset_type_code
     formData.estimated_value = detail.estimated_value ? Number(detail.estimated_value) : null
-    formData.related_asset_code = detail.related_asset_code || ''
-    formData.related_asset_code_display = detail.related_asset_code || ''
-    formData.target_storage_code = detail.target_storage_code || ''
-    formData.target_storage_code_display = detail.target_storage_code || ''
+    const relatedAssetCode =
+      typeof detail.related_asset === 'object' && detail.related_asset !== null
+        ? detail.related_asset.code
+        : typeof detail.related_asset === 'string'
+          ? detail.related_asset
+          : ''
+    formData.related_asset_code = relatedAssetCode || ''
+    formData.related_asset_code_display = formData.related_asset_code
+    formData.target_storage_code =
+      typeof detail.unregistered_asset_storage === 'string' ? detail.unregistered_asset_storage : ''
+    formData.target_storage_code_display = formData.target_storage_code
     formData.handle_description = detail.handle_description || ''
 
     originalFormData.value = JSON.parse(JSON.stringify(formData))
   } catch (error) {
-    console.error('加载未登记资产详情失?', error)
+    console.error('加载未登记资产详情失败', error)
     ElMessage.error('加载数据失败，请刷新重试')
     router.back()
   } finally {
@@ -491,13 +499,13 @@ const submitForm = () => {
       router.push({ name: 'UnregisteredAssetDetails' })
     } catch (error: unknown) {
       if (isAxiosError(error)) {
-        ElMessage.error(`操作失败?{error.response?.data?.message || error.message}`)
+        ElMessage.error(`操作失败${error.response?.data?.message || error.message}`)
       } else if (error instanceof Error) {
-        ElMessage.error(`操作失败?{error.message}`)
+        ElMessage.error(`操作失败${error.message}`)
       } else {
         ElMessage.error('操作失败，请重试')
       }
-      console.error('未登记资产提交失?', error)
+      console.error('未登记资产提交失败', error)
     }
   })
 }

@@ -127,4 +127,43 @@ describe('OutAssetStore', () => {
       expect(outAssetAPI.deleteOutAsset).toHaveBeenCalledWith('OA-001')
     })
   })
+
+  describe('详情/更新/批量删除', () => {
+    it('应该调用API获取详情', async () => {
+      const { outAssetAPI } = await import('@/api/outAsset')
+      vi.mocked(outAssetAPI.getOutAssetByCode).mockResolvedValue({
+        recordcode: 'OA-001',
+      } as never)
+
+      const result = await store.getById('OA-001')
+
+      expect(result).toBeDefined()
+    })
+
+    it('应该调用API更新记录', async () => {
+      const { outAssetAPI } = await import('@/api/outAsset')
+      vi.mocked(outAssetAPI.updateOutAsset).mockResolvedValue({
+        recordcode: 'OA-001',
+      } as never)
+
+      await store.update({ recordcode: 'OA-001' } as never)
+
+      expect(outAssetAPI.updateOutAsset).toHaveBeenCalled()
+    })
+
+    it('应该调用API批量删除', async () => {
+      const { outAssetAPI } = await import('@/api/outAsset')
+      vi.mocked(outAssetAPI.batchDeleteOutAssets).mockResolvedValue({
+        total: 1,
+        success_count: 1,
+        fail_count: 0,
+        success_ids: ['OA-001'],
+        fail_items: [],
+      })
+
+      await store.removeBatch(['OA-001'])
+
+      expect(outAssetAPI.batchDeleteOutAssets).toHaveBeenCalledWith(['OA-001'])
+    })
+  })
 })

@@ -1,10 +1,17 @@
 /**
- * 通用审计日志 API
- * 对应后端接口: /api/audit-logs/
- * 记录非资产操作的审计日志（部门、员工、用户等）
+ * @file 通用审计日志 API，提供非资产操作的审计日志查询、导出等接口
+ * @module api/auditLog
+ * @exports
+ *   - auditLogAPI: 通用审计日志 API 对象（包含所有审计日志相关方法）
+ * @callers
+ *   - stores/auditLogStore: 审计日志状态管理
+ *   - views/AuditLogManage: 审计日志管理视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/auditlog: 审计日志相关类型定义
  */
 import { request, unwrapResponse } from '@/api/index'
-import type { AuditLog, AuditLogQueryParams, AuditLogListResponse } from '@/utils/AuditLog'
+import type { AuditLog, AuditLogQueryParams, AuditLogListResponse } from '@/types/auditlog'
 
 export const auditLogAPI = {
   /**

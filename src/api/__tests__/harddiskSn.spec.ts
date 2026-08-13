@@ -34,14 +34,9 @@ describe('harddiskSnAPI', () => {
     expect(mockRequest.get).toHaveBeenCalledWith('/assets/harddisk-sn/', { page: 1 })
   })
 
-  it('getHardDiskSN calls GET /assets/harddisk-sn/{code}/', async () => {
-    await harddiskSnAPI.getHardDiskSN('HS001')
-    expect(mockRequest.get).toHaveBeenCalledWith(
-      '/assets/harddisk-sn/HS001/',
-      undefined,
-      true,
-      300000,
-    )
+  it('getHardDiskSN calls GET /assets/harddisk-sn/{recordcode}/', async () => {
+    await harddiskSnAPI.getHardDiskSN('HDSN-20260810-ABC12345')
+    expect(mockRequest.get).toHaveBeenCalledWith('/assets/harddisk-sn/HDSN-20260810-ABC12345/')
   })
 
   it('getHardDiskSNByCode calls POST /assets/harddisk-sn/search_by_serial_number/', async () => {
@@ -73,11 +68,14 @@ describe('harddiskSnAPI', () => {
     expect(mockRequest.delete).toHaveBeenCalledWith('/assets/harddisk-sn/SN001/')
   })
 
-  it('saveHardDiskSNBatch calls POST /assets/harddisk-sn/batch/', async () => {
-    await harddiskSnAPI.saveHardDiskSNBatch({ asset_code: 'A001', disks: [] } as never)
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/harddisk-sn/batch/', {
-      asset_code: 'A001',
-      disks: [],
+  it('saveHardDiskSNBatch calls POST /assets/harddisk-sn/batch-save/', async () => {
+    await harddiskSnAPI.saveHardDiskSNBatch({
+      asset_recordcode: 'ASSET-20260810-XYZ98765',
+      disks: [{ recordcode: 'HDSN-001', harddisk_no: 1, harddisk_sn_code: 'SN123' }],
+    } as never)
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/harddisk-sn/batch-save/', {
+      asset_recordcode: 'ASSET-20260810-XYZ98765',
+      disks: [{ recordcode: 'HDSN-001', harddisk_no: 1, harddisk_sn_code: 'SN123' }],
     })
   })
 

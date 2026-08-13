@@ -1,16 +1,17 @@
 /**
- * 认证模块 API
- * 对应后端接口: /api/auth/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 认证模块 API，提供登录、登出等认证相关接口
+ * @module api/auth
+ * @exports
+ *   - authAPI: 认证模块 API 对象（包含所有认证相关方法）
+ * @callers
+ *   - stores/auth: 认证状态管理
+ *   - views/LogIn: 登录视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/authuser: 认证相关类型定义
  */
 import { request, unwrapResponse } from '@/api/index'
-import type {
-  LoginRequest,
-  LoginResponse,
-  VerifyTokenResponse,
-  AuthUser,
-  LogoutResponse,
-} from '@/utils/AuthUser'
+import type { LoginRequest, LoginResponse, AuthUser, LogoutResponse } from '@/types/authuser'
 
 /**
  * 认证模块 API
@@ -25,7 +26,7 @@ export const authAPI = {
    *   - auth_username: 用户名
    *   - password: 密码
    * @returns Promise<LoginResponse>
-   *   - code: 200 表示成功
+   *   - code: 0 表示成功
    *   - data.user: 用户信息对象
    *   - data.access: 访问令牌
    *   - data.refresh: 刷新令牌
@@ -52,7 +53,13 @@ export const authAPI = {
       } else {
         console.error('登录失败:', '未知错误')
       }
-      throw error
+      // 提取后端返回的错误信息，包装为 Error 抛出
+      // 确保调用方（authStore.login）能通过 error.message 获取准确提示
+      // 注意：业务失败时抛出的 Error 无 .response，需保留其原始 message
+      const backendMsg = (error as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message
+      const errMsg = backendMsg || (error instanceof Error ? error.message : '')
+      throw new Error(errMsg || '登录失败，请稍后重试')
     }
   },
 
@@ -66,8 +73,8 @@ export const authAPI = {
    *   - 路径: POST /api/auth/logout/
    *   - 认证: Bearer Token (access_token)
    *   - 请求体: { "refresh": "<refresh_token>" }
-   *   - 成功响应 (200): { code: 200, msg: "退出成功，Token 已作废", data: {} }
-   *   - 错误响应 (400): { code: 400, msg: "Token 无效或已过期: ...", data: {} }
+   *   - 成功响应 (200): { code: 0, message: "退出成功，Token 已作废", data: {} }
+   *   - 错误响应 (400): { code: <业务错误码>, message: "Token 无效或已过期: ...", data: {} }
    */
   async logout(refreshToken: string): Promise<LogoutResponse> {
     try {
@@ -88,28 +95,6 @@ export const authAPI = {
       }
       // 即使后端接口调用失败，也向上抛出错误
       // 由 Store 层决定是否仍然清除本地状态
-      throw error
-    }
-  },
-
-  /**
-   * 验证 Token
-   * @description 调用 POST /api/auth/token/verify/ 接口
-   * @returns Promise<VerifyTokenResponse>
-   */
-  async verifyToken(): Promise<VerifyTokenResponse> {
-    try {
-      const response: VerifyTokenResponse =
-        await request.post<VerifyTokenResponse>('/auth/token/verify/')
-      return response
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error('Token验证失败:', error.message)
-      } else if (typeof error === 'string') {
-        console.error('Token验证失败:', error)
-      } else {
-        console.error('Token验证失败:', '未知错误')
-      }
       throw error
     }
   },

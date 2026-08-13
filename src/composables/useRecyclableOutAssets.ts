@@ -1,22 +1,18 @@
 /**
- * useRecyclableOutAssets
- * 可回收出库资产列表管理 Composable
- *
- * 职责：
- * - 封装可回收出库资产的 API 调用（专用接口 /assets/out-assets/recyclable/）
- * - 管理列表数据、分页状态、加载状态
- * - 提供搜索、翻页、重置等操作方法
- *
- * 遵守 AGENTS 规范：
- * - 类型严格，无 any
- * - 单向依赖：Composable → API 层
- * - 单一职责：仅处理可回收列表相关逻辑
- * - 可被多个组件复用
+ * @file 可回收出库资产列表管理（专用接口 /assets/out-assets/recyclable/）
+ * @module composables/useRecyclableOutAssets
+ * @exports
+ *   - useRecyclableOutAssets: 可回收出库资产列表 composable
+ *   - UseRecyclableOutAssetsReturn: 返回值类型
+ * @callers
+ *   - components/componentsdetails/detils/detilschildcomponents/RecyclableOutAssetsSearch.vue
+ * @dependsOn
+ *   - api/outAsset: getRecyclableOutAssets 接口
+ *   - types/outasset: 出库资产查询与响应类型
  */
-
 import { ref } from 'vue'
 import { outAssetAPI } from '@/api/outAsset'
-import type { OutAssetQueryParams, RecyclableOutAssetResponse } from '@/utils/OutAsset'
+import type { OutAssetQueryParams, RecyclableOutAssetResponse } from '@/types/outasset'
 import { ElMessage } from 'element-plus'
 
 /**

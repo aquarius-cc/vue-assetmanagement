@@ -36,7 +36,7 @@
 
 <script lang="ts" setup>
 import type { AssetCreateFormExtended } from '@/types/asset'
-import type { Storage } from '@/utils/Storage'
+import type { Storage } from '@/types/storage'
 
 defineProps<{
   form: AssetCreateFormExtended

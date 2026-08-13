@@ -1,5 +1,13 @@
 /**
- * FoundAsset Store
+ * @file 拾获资产 Store，基于 createEntityStore 工厂创建
+ * @module stores/foundAssetStore
+ * @exports
+ *   - useFoundAssetStore: 拾获资产管理状态 Store
+ * @callers
+ *   - components/componentsdetails/FoundAssetDetails.vue
+ * @dependsOn
+ *   - api/foundAsset: 拾获资产 API 接口
+ *   - stores/createEntityStore: 实体 Store 工厂
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { foundAssetAPI } from '@/api/foundAsset'
@@ -7,7 +15,7 @@ import type {
   FoundAssetExtended,
   FoundAssetCreateForm,
   FoundAssetUpdateForm,
-} from '@/utils/FoundAsset'
+} from '@/types/foundasset'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 

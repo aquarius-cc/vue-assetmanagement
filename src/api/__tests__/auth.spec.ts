@@ -60,13 +60,6 @@ describe('authAPI', () => {
     })
   })
 
-  describe('verifyToken', () => {
-    it('calls POST /auth/token/verify/', async () => {
-      await authAPI.verifyToken()
-      expect(mockRequest.post).toHaveBeenCalledWith('/auth/token/verify/')
-    })
-  })
-
   describe('getCurrentUserProfile', () => {
     it('calls GET /auth/profile/', async () => {
       await authAPI.getCurrentUserProfile()

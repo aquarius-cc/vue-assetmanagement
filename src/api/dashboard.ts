@@ -1,82 +1,37 @@
 /**
- * 仪表盘 API
- * 对应后端接口: /api/dashboard/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 仪表盘 API，提供仪表盘概览、趋势数据、提醒信息等接口
+ * @module api/dashboard
+ * @exports
+ *   - dashboardAPI: 仪表盘 API 对象（包含所有仪表盘相关方法）
+ *   - DashboardOverview: 仪表盘概览类型
+ *   - OutAssetRecord: 出库资产记录类型
+ *   - RecycleAssetRecord: 回收资产记录类型
+ *   - AssetTrendData: 资产趋势数据类型
+ *   - ExpiringAsset: 即将过期资产类型
+ *   - MaintenanceReminder: 维护提醒类型
+ * @callers
+ *   - stores/dashboard: 仪表盘状态管理
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/dashboard: 仪表盘相关类型定义
  */
 import { request, unwrapResponse } from '@/api/index'
+import type {
+  DashboardOverview,
+  OutAssetRecord,
+  RecycleAssetRecord,
+  AssetTrendData,
+  ExpiringAsset,
+  MaintenanceReminder,
+} from '@/types/dashboard'
 
-// [MR-10] DashboardStats 接口已删除 — /dashboard/stats/ 端点废弃，统一使用 /dashboard/overview/
-
-// 仪表盘概览数据
-export interface DashboardOverview {
-  // 资产统计
-  total_assets: number
-  active_assets: number
-  in_stock_assets: number
-
-  // 本月统计
-  monthly_distributed: number
-  monthly_recycled: number
-
-  // 报废统计
-  pending_waste: number
-  wasted_assets: number
-
-  // 回收统计
-  total_recycled: number
-
-  // 发放统计
-  total_distributed: number
-
-  // 时间戳
-  timestamp: string
-}
-
-// 发放记录项
-export interface OutAssetRecord {
-  id: number
-  asset_name: string
-  asset_code: string
-  distribute_time: string
-  recipient_name: string
-  department_name: string
-}
-
-// 回收记录项
-export interface RecycleAssetRecord {
-  id: number
-  asset_name: string
-  asset_code: string
-  recycle_time: string
-  returner_name: string
-  department_name: string
-}
-
-// 资产趋势数据
-export interface AssetTrendData {
-  date: string
-  new_assets: number
-  distributed: number
-  recovered: number
-  scrapped: number
-}
-
-// 即将到期的资产项
-export interface ExpiringAsset {
-  id: number
-  asset_name: string
-  asset_code: string
-  expire_date: string
-  days_until_expire: number
-}
-
-// 维护提醒项
-export interface MaintenanceReminder {
-  id: number
-  asset_name: string
-  asset_code: string
-  maintenance_date: string
-  type: string
+export type {
+  DashboardOverview,
+  OutAssetRecord,
+  RecycleAssetRecord,
+  AssetTrendData,
+  ExpiringAsset,
+  MaintenanceReminder,
 }
 
 /**

@@ -7,11 +7,11 @@
  */
 
 // ========== 色彩变量（统一主题） ==========
-$primary-color: #409eff;
-$success-color: #67c23a;
-$warning-color: #e6a23c;
-$danger-color: #f56c6c;
-$info-color: #909399;
+// F1: 主色 #2B5FD7, F2: 成功 #52C41A, 警告 #FAAD14, 危险 #FF4D4F
+$primary-color: #2b5fd7;
+$success-color: #52c41a;
+$warning-color: #faad14;
+$danger-color: #ff4d4f;
 
 // 文本色
 $text-primary: #303133;
@@ -43,7 +43,7 @@ $breakpoint-tablet: 1024px;
   box-sizing: border-box;
   width: 100%;
   min-height: 100vh;
-  background-color: $background-color;
+  background-color: var(--background-color, $background-color);
 
   .box-card {
     margin: 0;
@@ -51,7 +51,7 @@ $breakpoint-tablet: 1024px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     border: none;
     overflow: hidden;
-    background: $white;
+    background: var(--card-background, $white);
 
     // 卡片头部（局部 mixin，避免污染外部）
     .card-header {
@@ -59,19 +59,23 @@ $breakpoint-tablet: 1024px;
       align-items: center;
       gap: 10px;
       font-weight: 600;
-      color: $primary-color;
+      color: var(--color-primary, $primary-color);
       padding: 18px 24px;
-      background: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
-      border-bottom: 1px solid $border-color;
+      background: linear-gradient(
+        135deg,
+        var(--color-primary-lighter, #f0f7ff) 0%,
+        var(--color-primary-lighter, #e6f0ff) 100%
+      );
+      border-bottom: 1px solid var(--border-color, $border-color);
 
       .el-icon {
         font-size: 20px;
-        color: $primary-color;
+        color: var(--color-primary, $primary-color);
       }
 
       span {
         font-size: 16px;
-        color: $text-primary;
+        color: var(--text-primary, $text-primary);
       }
     }
   }
@@ -84,7 +88,7 @@ $breakpoint-tablet: 1024px;
 
       .el-form-item__label {
         font-weight: 500;
-        color: $text-primary;
+        color: var(--text-primary, $text-primary);
         font-size: 14px;
         text-align: right;
         padding-right: 12px;
@@ -96,14 +100,14 @@ $breakpoint-tablet: 1024px;
         transition: all 0.3s ease;
 
         &:hover {
-          box-shadow: 0 0 0 1px $primary-color inset;
+          box-shadow: 0 0 0 1px var(--color-primary, $primary-color) inset;
         }
       }
 
       .el-input.is-disabled .el-input__wrapper,
       .el-input-number.is-disabled .el-input__inner {
-        background-color: #f5f7fa;
-        border-color: $border-color;
+        background-color: var(--background-color, #f5f7fa);
+        border-color: var(--border-color, $border-color);
         cursor: not-allowed;
       }
     }
@@ -111,13 +115,17 @@ $breakpoint-tablet: 1024px;
 
   // 分段标题样式
   .section-title {
-    color: $text-primary;
+    color: var(--text-primary, $text-primary);
     font-size: 16px;
     font-weight: 600;
     margin: 28px 0 20px 0;
     padding: 12px 16px;
-    background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%);
-    border-left: 4px solid $primary-color;
+    background: linear-gradient(
+      135deg,
+      var(--color-primary-lighter, #f0f7ff) 0%,
+      var(--color-primary-lighter, #e8f4ff) 100%
+    );
+    border-left: 4px solid var(--color-primary, $primary-color);
     border-radius: 4px;
   }
 
@@ -128,7 +136,7 @@ $breakpoint-tablet: 1024px;
     gap: 16px;
     margin-top: 32px;
     padding-top: 24px;
-    border-top: 1px solid $border-color;
+    border-top: 1px solid var(--border-color, $border-color);
 
     .el-button {
       min-width: 100px;
@@ -139,13 +147,13 @@ $breakpoint-tablet: 1024px;
     }
 
     .el-button--primary {
-      background-color: $primary-color;
-      border-color: $primary-color;
+      background-color: var(--color-primary, $primary-color);
+      border-color: var(--color-primary, $primary-color);
     }
 
     .el-button--success {
-      background-color: $success-color;
-      border-color: $success-color;
+      background-color: var(--color-success, $success-color);
+      border-color: var(--color-success, $success-color);
     }
   }
 }
@@ -160,7 +168,7 @@ $breakpoint-tablet: 1024px;
   box-sizing: border-box;
   width: 100%;
   min-height: 100vh;
-  background-color: $background-color;
+  background-color: var(--background-color, $background-color);
 
   // 头部区域（标题+操作按钮）
   .header-section {
@@ -169,7 +177,7 @@ $breakpoint-tablet: 1024px;
     align-items: center;
     margin-bottom: 24px;
     padding-bottom: 16px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--border-color-light, #e5e7eb);
 
     .title-area {
       flex: 1;
@@ -177,7 +185,7 @@ $breakpoint-tablet: 1024px;
       .page-title {
         font-size: 24px;
         font-weight: 700;
-        color: $text-dark;
+        color: var(--text-dark, $text-dark);
         margin: 0 0 8px 0;
       }
 
@@ -189,8 +197,8 @@ $breakpoint-tablet: 1024px;
 
         .info-tag {
           font-size: 14px;
-          color: $text-light;
-          background-color: #f3f4f6;
+          color: var(--text-light, $text-light);
+          background-color: var(--card-background-subtle, #f3f4f6);
           padding: 4px 12px;
           border-radius: 4px;
           font-weight: 500;
@@ -211,18 +219,18 @@ $breakpoint-tablet: 1024px;
         font-size: 14px;
 
         &.el-button--primary {
-          background-color: $primary-color;
-          border-color: $primary-color;
+          background-color: var(--color-primary, $primary-color);
+          border-color: var(--color-primary, $primary-color);
         }
 
         &.el-button--success {
-          background-color: $success-color;
-          border-color: $success-color;
+          background-color: var(--color-success, $success-color);
+          border-color: var(--color-success, $success-color);
         }
 
         &.el-button--danger {
-          background-color: $danger-color;
-          border-color: $danger-color;
+          background-color: var(--color-danger, $danger-color);
+          border-color: var(--color-danger, $danger-color);
         }
       }
     }
@@ -246,10 +254,10 @@ $breakpoint-tablet: 1024px;
   // 描述内容区域
   .description-content {
     padding: 20px;
-    color: $text-dark;
+    color: var(--text-dark, $text-dark);
     line-height: 1.6;
     font-size: 14px;
-    background-color: #f9fafb;
+    background-color: var(--background-color-light, #f9fafb);
     border-radius: 4px;
   }
 }
@@ -262,14 +270,14 @@ $breakpoint-tablet: 1024px;
 @mixin info-card {
   margin-bottom: 20px;
   border-radius: 8px;
-  box-shadow: $card-shadow;
+  box-shadow: var(--card-shadow, $card-shadow);
   border: none;
   overflow: hidden;
   transition: all 0.3s ease;
-  background: $white;
+  background: var(--card-background, $white);
 
   &:hover {
-    box-shadow: $card-hover-shadow;
+    box-shadow: var(--card-hover-shadow, $card-hover-shadow);
     transform: translateY(-2px);
   }
 
@@ -278,14 +286,14 @@ $breakpoint-tablet: 1024px;
     align-items: center;
     font-size: 16px;
     font-weight: 600;
-    color: $text-dark;
+    color: var(--text-dark, $text-dark);
     padding: 12px 16px;
-    background-color: #f9fafb;
-    border-bottom: 1px solid #e5e7eb;
+    background-color: var(--background-color-light, #f9fafb);
+    border-bottom: 1px solid var(--border-color-light, #e5e7eb);
 
     .section-icon {
       margin-right: 8px;
-      color: #3b82f6;
+      color: var(--color-primary, $primary-color);
     }
   }
 
@@ -306,14 +314,14 @@ $breakpoint-tablet: 1024px;
 
     .info-label {
       flex: 0 0 140px;
-      color: $text-light;
+      color: var(--text-light, $text-light);
       font-weight: 500;
       font-size: 14px;
     }
 
     .info-value {
       flex: 1;
-      color: $text-dark;
+      color: var(--text-dark, $text-dark);
       font-size: 14px;
       word-break: break-word;
       line-height: 1.4;
@@ -323,7 +331,7 @@ $breakpoint-tablet: 1024px;
   .info-group {
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px dashed #e5e7eb;
+    border-top: 1px dashed var(--border-color-light, #e5e7eb);
   }
 }
 
@@ -337,7 +345,7 @@ $breakpoint-tablet: 1024px;
   min-height: 100vh;
   padding: 16px;
   box-sizing: border-box;
-  background-color: $background-color;
+  background-color: var(--background-color, $background-color);
 }
 
 /**
@@ -348,7 +356,7 @@ $breakpoint-tablet: 1024px;
   width: 100%;
   overflow-x: auto;
   margin-bottom: 100px;
-  background: $white;
+  background: var(--card-background, $white);
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   padding: 16px;
@@ -361,25 +369,25 @@ $breakpoint-tablet: 1024px;
     table-layout: fixed;
 
     .el-table__header-wrapper th {
-      background-color: #f9fafb;
+      background-color: var(--background-color-light, #f9fafb);
       font-weight: 600;
-      color: $text-primary;
+      color: var(--text-primary, $text-primary);
       padding: 14px 12px !important; // 覆盖第三方默认内边距
       text-align: center !important;
       white-space: nowrap;
-      border-bottom: 2px solid #e4e7ed;
+      border-bottom: 2px solid var(--border-color-light, #e4e7ed);
     }
 
     .el-table__body-wrapper tr:hover {
-      background-color: #f5f7fa;
+      background-color: var(--background-color, #f5f7fa);
     }
 
     .el-table__body-wrapper td {
       padding: 12px 10px !important;
-      color: $text-regular;
+      color: var(--text-regular, $text-regular);
       text-align: center !important;
       white-space: nowrap;
-      border-bottom: 1px solid #ebeef5;
+      border-bottom: 1px solid var(--border-color-lighter, #ebeef5);
     }
 
     .el-table__header-wrapper th.el-table__cell,
@@ -452,23 +460,23 @@ $breakpoint-tablet: 1024px;
   }
 
   .el-button--primary {
-    background-color: $primary-color;
-    border-color: $primary-color;
+    background-color: var(--color-primary, $primary-color);
+    border-color: var(--color-primary, $primary-color);
   }
 
   .el-button--success {
-    background-color: $success-color;
-    border-color: $success-color;
+    background-color: var(--color-success, $success-color);
+    border-color: var(--color-success, $success-color);
   }
 
   .el-button--warning {
-    background-color: $warning-color;
-    border-color: $warning-color;
+    background-color: var(--color-warning, $warning-color);
+    border-color: var(--color-warning, $warning-color);
   }
 
   .el-button--danger {
-    background-color: $danger-color;
-    border-color: $danger-color;
+    background-color: var(--color-danger, $danger-color);
+    border-color: var(--color-danger, $danger-color);
   }
 }
 
@@ -505,24 +513,28 @@ $breakpoint-tablet: 1024px;
   max-width: 1200px;
   max-height: 90vh;
   overflow-y: auto;
-  background: $white;
+  background: var(--card-background, $white);
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   box-sizing: border-box;
 
   .child-page-header {
     padding: 20px 28px;
-    border-bottom: 1px solid $border-color;
+    border-bottom: 1px solid var(--border-color, $border-color);
     margin-bottom: 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(135deg, #f9fafb 0%, #f5f7fa 100%);
+    background: linear-gradient(
+      135deg,
+      var(--background-color-light, #f9fafb) 0%,
+      var(--background-color, #f5f7fa) 100%
+    );
 
     h2 {
       font-size: 18px;
       font-weight: 600;
-      color: $text-primary;
+      color: var(--text-primary, $text-primary);
       margin: 0;
     }
   }
@@ -674,18 +686,22 @@ $breakpoint-tablet: 1024px;
   align-items: center;
   gap: 10px;
   font-weight: 600;
-  color: $primary-color;
+  color: var(--color-primary, $primary-color);
   padding: 18px 24px;
-  background: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
-  border-bottom: 1px solid $border-color;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-lighter, #f0f7ff) 0%,
+    var(--color-primary-lighter, #e6f0ff) 100%
+  );
+  border-bottom: 1px solid var(--border-color, $border-color);
 
   .el-icon {
     font-size: 20px;
-    color: $primary-color;
+    color: var(--color-primary, $primary-color);
   }
 
   span {
     font-size: 16px;
-    color: $text-primary;
+    color: var(--text-primary, $text-primary);
   }
 }

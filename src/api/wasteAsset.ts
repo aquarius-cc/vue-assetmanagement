@@ -1,7 +1,15 @@
 /**
- * 报废资产管理 API
- * 对应后端接口: /api/assets/waste-assets/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 报废资产管理 API，提供报废资产的增删改查、批量操作等接口
+ * @module api/wasteAsset
+ * @exports
+ *   - wasteAssetAPI: 报废资产管理 API 对象（包含所有报废资产相关方法）
+ * @callers
+ *   - stores/wasteAssetStore: 报废资产状态管理
+ *   - views/WasteAssetManage: 报废资产管理视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/wasteasset: 报废资产相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
@@ -11,7 +19,7 @@ import type {
   WasteAssetQueryParams,
   WasteAssetListResponse,
   WasteAssetStats,
-} from '@/utils/WasteAsset'
+} from '@/types/wasteasset'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
 /**

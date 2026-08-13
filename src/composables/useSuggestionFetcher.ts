@@ -1,8 +1,16 @@
-// composables/useSuggestionFetcher.ts
 /**
- * 通用建议获取器（用于 el-autocomplete 的 fetch-suggestions）
- * @template T 原始数据类型
- * @template R 建议项类型（必须包含 value 字段供 el-autocomplete 显示）
+ * @file 通用建议获取器工厂，适配 el-autocomplete 的 fetch-suggestions 签名
+ * @module composables/useSuggestionFetcher
+ * @exports
+ *   - createSuggestionFetcher: 创建建议获取函数
+ *   - SuggestionFetcherOptions: 配置选项类型
+ * @callers
+ *   - composables/useEmployeeSuggestionFetcher
+ *   - composables/useOutAssetForm
+ *   - composables/useRecyclePersonLinkage
+ *   - components/componentsdetails/detils/*Form.vue（各表单组件）
+ * @dependsOn
+ *   - （无外部依赖，纯函数式工厂）
  */
 export interface SuggestionFetcherOptions<T, R> {
   /** 获取原始数据的异步函数，参数为查询关键词 */

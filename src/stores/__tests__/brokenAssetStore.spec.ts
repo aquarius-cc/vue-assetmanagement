@@ -124,4 +124,43 @@ describe('BrokenAssetStore', () => {
       expect(brokenAssetAPI.deleteBrokenAsset).toHaveBeenCalledWith('BA-001')
     })
   })
+
+  describe('详情/更新/批量删除', () => {
+    it('应该调用API获取详情', async () => {
+      const { brokenAssetAPI } = await import('@/api/brokenAsset')
+      vi.mocked(brokenAssetAPI.getBrokenAssetByCode).mockResolvedValue({
+        recordcode: 'BA-001',
+      } as never)
+
+      const result = await store.getById('BA-001')
+
+      expect(result).toBeDefined()
+    })
+
+    it('应该调用API更新记录', async () => {
+      const { brokenAssetAPI } = await import('@/api/brokenAsset')
+      vi.mocked(brokenAssetAPI.updateBrokenAsset).mockResolvedValue({
+        recordcode: 'BA-001',
+      } as never)
+
+      await store.update({ recordcode: 'BA-001', asset_name: '新名称' } as never)
+
+      expect(brokenAssetAPI.updateBrokenAsset).toHaveBeenCalled()
+    })
+
+    it('应该调用API批量删除', async () => {
+      const { brokenAssetAPI } = await import('@/api/brokenAsset')
+      vi.mocked(brokenAssetAPI.batchDeleteBrokenAssets).mockResolvedValue({
+        total: 1,
+        success_count: 1,
+        fail_count: 0,
+        success_ids: ['BA-001'],
+        fail_items: [],
+      })
+
+      await store.removeBatch(['BA-001'])
+
+      expect(brokenAssetAPI.batchDeleteBrokenAssets).toHaveBeenCalledWith(['BA-001'])
+    })
+  })
 })

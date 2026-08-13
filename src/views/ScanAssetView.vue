@@ -1,3 +1,12 @@
+<!--
+@file 扫码查看资产页面，通过记录编码展示资产详情
+@component ScanAssetView
+@usedBy
+  - router/index.ts: 路由懒加载
+@dependsOn
+  - api/request: HTTP请求封装
+  - components/commoncomponents/StatusTag: 资产状态标签
+-->
 <template>
   <div class="asset-operation-view">
     <el-card class="operation-card">
@@ -48,6 +57,19 @@
         </div>
       </template>
 
+      <!-- [修复] 加载失败状态：区分于"未找到资产" -->
+      <el-result
+        v-else-if="loadError"
+        icon="error"
+        title="加载失败"
+        sub-title="资产信息加载失败，请检查网络连接后重试"
+      >
+        <template #extra>
+          <el-button type="primary" @click="fetchAsset">重试</el-button>
+          <el-button @click="router.push('/main')">返回首页</el-button>
+        </template>
+      </el-result>
+
       <el-result
         v-else
         icon="error"
@@ -67,6 +89,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Iphone } from '@element-plus/icons-vue'
 import { get } from '@/api/request'
+import { isAxiosError } from 'axios'
+import { ElMessage } from 'element-plus'
 import type { AssetDetail } from '@/types/asset'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 
@@ -74,7 +98,9 @@ const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
 const asset = ref<AssetDetail | null>(null)
-const recordcode = ref(route.params.recordcode as string)
+const recordcode = computed(() => route.params.recordcode as string)
+// 新增 loadError 状态
+const loadError = ref(false)
 
 const storageName = computed(() => {
   const storage = asset.value?.asset_storage as Record<string, unknown> | undefined
@@ -89,54 +115,42 @@ const managerName = computed(() => {
   return (manager?.employee_name as string) || '-'
 })
 
-onMounted(async () => {
+// 新增 retry 函数
+const fetchAsset = async () => {
   if (!recordcode.value) return
+  loading.value = true
+  loadError.value = false // [修复] 重置错误状态
   try {
     const res = await get<AssetDetail>(`/public/scan/${recordcode.value}`)
+    // [修复] 手动校验业务 code（此接口未使用 unwrapResponse）
+    if (res.code !== 0) {
+      ElMessage.error(res.message || '查询失败')
+      loadError.value = true
+      return
+    }
     asset.value = res.data as AssetDetail
   } catch (err) {
     console.error('获取资产信息失败:', err)
+    // [修复] 分类处理：404 = 资产不存在（保持 null），其他 = 加载失败
+    if (isAxiosError(err) && err.response?.status === 404) {
+      // 404：asset 保持 null，模板走"未找到资产"分支
+    } else if (!isAxiosError(err)) {
+      // 非 AxiosError（理论不会出现，因为未用 unwrapResponse，但防御性处理）
+      ElMessage.error((err as Error).message || '获取资产信息失败')
+      loadError.value = true
+    } else {
+      // AxiosError（500/超时/网络断开）：拦截器已弹窗，设置 loadError
+      loadError.value = true
+    }
   } finally {
     loading.value = false
   }
-})
+}
+
+// onMounted 改为调用 fetchAsset
+onMounted(fetchAsset)
 </script>
 
-<style scoped>
-.asset-operation-view {
-  display: flex;
-  justify-content: center;
-  padding: 24px;
-  min-height: 100vh;
-  background: var(--background-color);
-}
-
-.operation-card {
-  width: 100%;
-  max-width: 720px;
-  border-radius: 8px;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.loading-container {
-  min-height: 200px;
-}
-
-.asset-info {
-  margin-bottom: 16px;
-}
-
-.action-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 24px;
-}
+<style lang="scss" scoped>
+@use '@/assets/styles/asset-operation.scss' as *;
 </style>

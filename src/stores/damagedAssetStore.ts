@@ -1,5 +1,17 @@
 /**
- * 待报废资产 Store
+ * @file 待报废资产 Store，基于 createEntityStore 工厂创建
+ * @module stores/damagedAssetStore
+ * @exports
+ *   - useDamagedAssetStore: 待报废资产管理状态 Store
+ * @callers
+ *   - services/assetLifecycleService.ts
+ *   - components/componentsdetails/DamagedAssetDetails.vue
+ *   - components/componentsdetails/detils/DamagedAssetForm.vue
+ *   - components/componentsdetails/detils/DamagedAssetBatchImport.vue
+ *   - components/componentsdetails/detils/DamagedAssetBasicDetails.vue
+ * @dependsOn
+ *   - api/damagedAsset: 待报废资产 API 接口
+ *   - stores/createEntityStore: 实体 Store 工厂
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { damagedAssetAPI } from '@/api/damagedAsset'
@@ -7,7 +19,7 @@ import type {
   DamagedAsset,
   DamagedAssetCreateForm,
   DamagedAssetUpdateForm,
-} from '@/utils/DamagedAsset'
+} from '@/types/damagedasset'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 

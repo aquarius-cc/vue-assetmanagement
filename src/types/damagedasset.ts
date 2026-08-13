@@ -1,4 +1,21 @@
 /**
+ * @file 待报废资产数据模型定义，包括审批状态、表单、详情等类型
+ * @module types/damagedasset
+ * @exports
+ *   - ApprovalStatus: 审批状态枚举
+ *   - DamagedAssetCreateForm/DamagedAssetUpdateForm: 待报废资产表单接口
+ *   - DamagedAsset: 待报废资产基础接口
+ *   - DamagedAssetQueryParams: 待报废资产查询参数
+ *   - DamagedAssetListResponse: 待报废资产列表响应接口
+ * @callers
+ *   - stores/damagedassetStore（待报废资产状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
+ */
+
+import type { PaginatedResponse } from '@/types/common'
+
+/**
  * 待报废资产数据模型
  * 对应后端数据库表: am_damaged_asset
  */
@@ -26,8 +43,8 @@ export enum ApprovalStatus {
  * 后端 v1.1.0 将 damaged_asset_contract_code 和 damaged_asset_storage_code 改为 read_only（通过 asset_code 关联自动获取），前端传递会被忽略但不会报错
  */
 export interface DamagedAssetCreateForm {
-  /** 待报废资产编码 (一对一关联 am_asset.asset_code, 可选) */
-  damaged_asset_code?: string | null
+  /** [HALT] FE-C2修复：字段名从 damaged_asset_code 改为 asset_recordcode，与后端Serializer对齐 */
+  asset_recordcode?: string | null
   /** 待报废日期 (可选) */
   damaged_date?: string | null
   /** 待报废数量 */
@@ -65,11 +82,9 @@ export interface DamagedAsset extends DamagedAssetCreateForm {
   /** 关联资产编码 (后端字段名 damaged_asset, OneToOne → Asset.recordcode, 用于 lookup/delete) */
   damaged_asset: string
   /** 创建时间 */
-  create_time: string
+  created_at: string
   /** 更新时间 */
-  update_time: string
-  /** 是否删除标记 */
-  is_delete: boolean
+  updated_at: string
   /** 资产名称 */
   damaged_asset_name: string
   /** 合同名称 */
@@ -78,6 +93,8 @@ export interface DamagedAsset extends DamagedAssetCreateForm {
   damaged_asset_storage_name: string
   /** 规格型号 */
   damaged_asset_specification: string | null
+  /** 业务是否激活 */
+  is_active: boolean
 }
 
 // ==================== 查询参数接口 ====================
@@ -105,16 +122,5 @@ export interface DamagedAssetQueryParams {
 
 // ==================== 响应接口 ====================
 
-/**
- * 待报废资产列表响应接口
- */
-export interface DamagedAssetListResponse {
-  /** 总记录数 */
-  count: number
-  /** 下一页链接 */
-  next: string | null
-  /** 上一页链接 */
-  previous: string | null
-  /** 待报废资产列表数据 */
-  results: DamagedAsset[]
-}
+/** 待报废资产列表响应 */
+export type DamagedAssetListResponse = PaginatedResponse<DamagedAsset>

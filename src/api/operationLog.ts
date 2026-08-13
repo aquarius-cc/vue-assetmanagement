@@ -1,14 +1,21 @@
 /**
- * 操作日志管理 API
- * 对应后端接口: /api/assets/operation-logs/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 操作日志管理 API，提供操作日志的查询、导出等接口
+ * @module api/operationLog
+ * @exports
+ *   - operationLogAPI: 操作日志管理 API 对象（包含所有操作日志相关方法）
+ * @callers
+ *   - stores/operationLogStore: 操作日志状态管理
+ *   - views/OperationLogManage: 操作日志管理视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/operationlog: 操作日志相关类型定义
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
   OperationLog,
   OperationLogListResponse,
   OperationLogQueryParams,
-} from '@/utils/OperationLog'
+} from '@/types/operationlog'
 
 /**
  * 操作日志管理 API

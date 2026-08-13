@@ -1,7 +1,14 @@
-// composables/useAutocompleteField.ts
-// 自动完成字段通用处理 — 从 OutAssetForm/DamagedAssetForm/UnregisteredAssetForm 提取
-// 消除 selectedXxx + handleXxxSelect + handleXxxChange 的重复模式
-
+/**
+ * @file 自动完成字段通用处理（选中/变更/清除），消除重复的 selectedXxx 模式
+ * @module composables/useAutocompleteField
+ * @exports
+ *   - useAutocompleteField: 创建自动完成字段 handler 集合
+ * @callers
+ *   - composables/useOutAssetForm: 出库表单申请人/保管人字段
+ *   - components/componentsdetails/detils/OutAssetForm.vue
+ * @dependsOn
+ *   - vue: ref 响应式
+ */
 import { ref } from 'vue'
 
 interface AutocompleteFieldOptions {

@@ -175,4 +175,53 @@ describe('AppStore', () => {
       consoleSpy.mockRestore()
     })
   })
+
+  describe('补充 action', () => {
+    it('setSidebarCollapsed 设置并保存状态', () => {
+      store.setSidebarCollapsed(true)
+      expect(store.sidebarCollapsed).toBe(true)
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('sidebarCollapsed', 'true')
+    })
+
+    it('setPrimaryColor 设置颜色并保存 CSS 变量', () => {
+      store.setPrimaryColor('#123456')
+      expect(store.primaryColor).toBe('#123456')
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('primaryColor', '#123456')
+      expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
+        '--el-color-primary',
+        '#123456',
+      )
+    })
+
+    it('resetAppState 重置全部状态并清理存储', () => {
+      store.setSidebarCollapsed(true)
+      store.setPageTitle('测试页')
+      store.setTheme('dark')
+      store.setBreadcrumbs([{ name: '首页' }])
+
+      store.resetAppState()
+
+      expect(store.loading).toBe(false)
+      expect(store.sidebarCollapsed).toBe(false)
+      expect(store.breadcrumbs).toEqual([])
+      expect(store.pageTitle).toBe('资产管理系统')
+      expect(store.theme).toBe('light')
+      expect(store.primaryColor).toBe('#2B5FD7')
+      expect(store.settings.pageSize).toBe(20)
+      for (const key of ['sidebarCollapsed', 'theme', 'primaryColor', 'appSettings']) {
+        expect(localStorageMock.removeItem).toHaveBeenCalledWith(key)
+      }
+    })
+
+    it('updateSettings 合并并保存设置', () => {
+      store.updateSettings({ pageSize: 50, language: 'en-US' })
+      expect(store.settings.pageSize).toBe(50)
+      expect(store.settings.language).toBe('en-US')
+      expect(store.settings.showBreadcrumbs).toBe(true)
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        'appSettings',
+        JSON.stringify(store.settings),
+      )
+    })
+  })
 })

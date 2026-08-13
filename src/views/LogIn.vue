@@ -1,3 +1,13 @@
+<!--
+@file 用户登录页面，包含用户名密码登录表单与暗色模式切换
+@component LogIn
+@usedBy
+  - router/index.ts: 路由懒加载
+@dependsOn
+  - stores/auth: 登录认证与Token管理
+  - stores/app: 应用全局状态
+  - api/network: 网络请求封装
+-->
 <template>
   <div class="login-container">
     <el-card class="login-card">
@@ -82,7 +92,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
-import type { LoginForm } from '@/utils/AuthUser'
+import type { LoginForm } from '@/types/authuser'
 import { networkAPI } from '@/api/network'
 
 const router = useRouter()
@@ -189,7 +199,7 @@ const handleLogin = async () => {
     // 清除之前的错误提示
     loginError.value = ''
 
-    const valid = await formRef.value.validate()
+    const valid = await formRef.value.validate().catch(() => false)
     if (valid) {
       loading.value = true
       appStore.setLoading(true)
@@ -227,9 +237,10 @@ const handleLogin = async () => {
   } catch (error: unknown) {
     // 表单验证失败：Element Plus validate() 拒绝时返回 { valid: false, errors: [...] }
     // 此时无需显示错误提示（表单字段下方已有校验提示）
-    if (error && typeof error === 'object' && 'valid' in error) {
-      return
-    }
+    // 以下代码可删除（不再需要判断校验失败）
+    // if (error && typeof error === 'object' && 'valid' in error) {
+    //   return
+    // }
     // 其他异常（网络异常、服务器错误等）
     console.error('登录异常:', error)
     loginError.value = '网络异常，请检查网络连接后重试'
@@ -258,7 +269,6 @@ const testNetwork = async () => {
 
   const results = {
     connection: await networkAPI.testConnection(),
-    api: await networkAPI.testAPI(),
     login: await networkAPI.testLoginAPI(),
   }
 
@@ -267,7 +277,6 @@ const testNetwork = async () => {
   // 显示诊断结果
   let message = '🔍 网络诊断报告:\n\n'
   message += `📡 Django服务器连接: ${results.connection.status === 'success' ? '✅ 正常' : '❌ 失败'}\n`
-  message += `🔗 API基础接口: ${results.api.status === 'success' ? '✅ 正常' : '❌ 失败'}\n`
   message += `🔐 登录接口: ${results.login.status === 'success' ? '✅ 正常' : '❌ 失败'}\n\n`
 
   if (results.login.status === 'error') {
@@ -283,7 +292,6 @@ const testNetwork = async () => {
     type: results.login.status === 'success' ? 'success' : 'warning',
     duration: 8000,
     showClose: true,
-    dangerouslyUseHTMLString: true,
   })
 }
 
@@ -391,5 +399,12 @@ const handleKeyPress = (event: KeyboardEvent) => {
 .login-error {
   margin-top: 16px;
   border-radius: 8px;
+}
+</style>
+
+<!-- 全局样式：ElMessage 纯文本模式保留换行 -->
+<style>
+.el-message .el-message__content {
+  white-space: pre-line;
 }
 </style>

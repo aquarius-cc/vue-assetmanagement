@@ -1,15 +1,44 @@
-// Format.ts
+/**
+ * @file 通用数据格式化工具集，提供日期、金额、状态映射、Excel数据校验等函数
+ * @module src/utils/Format
+ * @exports
+ *   - formatDate: 将日期转为 YYYY-MM-DD 格式
+ *   - formatDateTime: 将日期转为 MM-DD HH:mm 格式
+ *   - formatDateTimeFull: 将日期转为完整日期时间格式
+ *   - formatPrice: 金额格式化为两位小数
+ *   - formatNumber: 数字千分位格式化
+ *   - contractiInfoFormate: 合同信息上传数据格式化
+ *   - assetCurrentStatusMapping: 资产状态枚举映射
+ *   - assetStatusMapping: 资产状态映射别名
+ *   - contractTypeMapping / contractSettlementStatusMapping / assetTypeMapping / storageMapping / userStatusMapping: 各类业务枚举映射
+ *   - getStatusDisplay: 用户状态中文显示
+ *   - USER_STATUS_INPUT_MAPPING / USER_STATUS_DISPLAY_MAPPING: 用户状态双向映射
+ *   - validateUserStatus: 校验用户状态合法性
+ *   - transformAndValidateExcelUser: Excel 用户数据转换与校验
+ *   - transformAndValidateExcelDepartment: Excel 部门数据转换与校验
+ *   - outassetStatusMapping / outassetTypeMapping: 出库资产状态与类型映射
+ *   - parseExcelDate: 解析 Excel 中的日期字符串
+ *   - getAssetStatusText: 获取资产状态中文文本
+ *   - getOutAssetStatusText: 获取出库资产状态中文文本
+ * @callers
+ *   - stores/dashboard
+ *   - composables/useAssetInfoCards, useAssetExtendedInfoCards, useOutAssetDetailCards, useRecycleAssetDetailCards, useAssetListConfig
+ *   - services/assetLifecycleService
+ * @dependsOn
+ *   - vue (isRef)
+ *   - @/types/contract, @/types/user, @/types/department, @/types/asset, @/types/outasset
+ */
+
 import { isRef } from 'vue'
 import type { Ref } from 'vue'
 // import { ref } from 'vue'
 // import type { Contract } from '@/types/asset'
 import type { ContractCreateForm } from '@/types/contract'
-import { EmployeeStatus } from '@/utils/User'
-import type { ExcelEmployeeData, ValidatedEmployeeData } from '@/utils/User'
-import type { ExcelDepartmentData, ValidatedDepartmentData } from '@/utils/Department'
+import { EmployeeStatus } from '@/types/user'
+import type { ExcelEmployeeData, ValidatedEmployeeData } from '@/types/user'
+import type { ExcelDepartmentData, ValidatedDepartmentData } from '@/types/department'
 import type { AssetCurrentStatus } from '@/types/asset'
-import type { OutAssetCurrentStatus } from '@/utils/OutAsset'
-import { ContractSettlementStatus } from '@/types/contract'
+import type { OutAssetCurrentStatus } from '@/types/outasset'
 
 // 日期格式化函数（修复类型错误）
 const formatDate = (date: Date | number | string | null | undefined): string | null => {
@@ -49,16 +78,39 @@ const formatDate = (date: Date | number | string | null | undefined): string | n
   // return `${dateObj.getFullYear()}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getDate().toString().padStart(2, '0')}`
 }
 
-// 金额格式化函数：转为 ￀xxxxx.xx 格式
+const pad = (n: number): string => String(n).padStart(2, '0')
+
+const formatDateTime = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return ''
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+const formatDateTimeFull = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return ''
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
+const exactFormatDate = (date: string | null | undefined): string => {
+  if (!date) return ''
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return ''
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`
+}
+
+// 金额格式化函数：转为 ￥xxxxx.xx 格式
 const formatPrice = (price: number | string | null | undefined): string => {
-  // 1. 先将输入转为数字（处理字符串格式的金额，妀"1000" 戀"1000.5"）
+  // 1. 先将输入转为数字（处理字符串格式的金额，测试"1000" 转 "1000.5"）
   const num = typeof price === 'number' ? price : Number(price)
   // 2. 处理非数字、NaN 或 null 的情况，返回默认值
   if (isNaN(num) || price === null || price === undefined) {
     return Number(0).toFixed(2)
   }
   // const num = Number(price)
-  // 3. 保留两位小数，再拼接 "￀" 前缀
+  // 3. 保留两位小数，再拼接 "￥" 前缀
   return num.toFixed(2)
 }
 
@@ -67,7 +119,7 @@ const formatNumber = (num: number | string | null | undefined) => {
   // 处理空值情况
   if (num === undefined || num === null || num === '') return '0'
 
-  // 将输入转换为数字（处理字符串类型的数字，妀"1234"）
+  // 将输入转换为数字（处理字符串类型的数字，如"1234"）
   const number = typeof num === 'number' ? num : Number(num)
 
   // 处理转换失败的情况（如非数字字符串）
@@ -82,48 +134,34 @@ const contractiInfoFormate = (
 ): Partial<ContractCreateForm> => {
   const rawData = isRef(contract_info) ? contract_info.value : contract_info
 
-  // 苀rawData 为空（undefined 或 null），返回空对象（或抛出错误，根据业务需求）
+  // 若 rawData 为空（undefined 或 null），返回空对象（或抛出错误，根据业务需求）
   if (!rawData) {
     console.warn('格式化合同数据失败：原始数据为空')
     return {}
   }
 
   // ----- 安全获取枚举状态的辅助函数 -----
-  const getSettlementStatus = (value: unknown): ContractSettlementStatus => {
-    if (value == null) return ContractSettlementStatus.PENDING
-    const trimmed = String(value).trim()
-    // 校验是否为合法的枚举值（利用 Object.values 获取所有枚举值）
-    const validStatuses = Object.values(ContractSettlementStatus) // ['pending', 'settling_up', 'settled']
-    return validStatuses.includes(trimmed as ContractSettlementStatus)
-      ? (trimmed as ContractSettlementStatus)
-      : ContractSettlementStatus.PENDING // 非法值降级为默认
-  }
   // 格式化 + 修正字段 + 确保类型正确
   // 第二步：格式化数据（确保 rawData 是对象类型，可安入spread）
   const formattedData = {
     ...rawData,
     // 日期字段格式化（兼容 undefined，formatDate 需处理空值）
-    contract_signing_date: formatDate(rawData.contract_signing_date),
-    contract_preliminary_acceptance_date: formatDate(rawData.contract_preliminary_acceptance_date),
-    contract_final_acceptance_date: formatDate(rawData.contract_final_acceptance_date),
+    contract_start_date: formatDate(rawData.contract_start_date),
+    initial_check_date: formatDate(rawData.initial_check_date),
+    final_check_date: formatDate(rawData.final_check_date),
     // 数字字段处理（兼容 undefined，避免 Number(undefined) 转为 NaN）
-    contract_price: rawData.contract_price !== null ? Number(rawData.contract_price) : undefined,
+    contract_amount: rawData.contract_amount !== null ? Number(rawData.contract_amount) : undefined,
     contract_warranty_period:
       rawData.contract_warranty_period !== null
         ? Number(rawData.contract_warranty_period)
         : undefined,
-    contract_settledment_price:
-      rawData.contract_settledment_price !== null
-        ? Number(rawData.contract_settledment_price)
-        : null,
-    contract_paid_price:
-      rawData.contract_paid_price !== null ? Number(rawData.contract_paid_price) : 0, // 默认为 0
-    contract_paid_count_number:
-      rawData.contract_paid_count_number !== null ? Number(rawData.contract_paid_count_number) : 0, // 默认为 0
+    settlemented_price:
+      rawData.settlemented_price !== null ? Number(rawData.settlemented_price) : null,
+    amount_paid: rawData.amount_paid !== null ? Number(rawData.amount_paid) : 0,
     // 字符串字段处理（兼容 undefined，避免 String(undefined) 转为 "undefined"）
     contract_type:
       rawData.contract_type !== null ? String(rawData.contract_type).trim() : undefined,
-    contract_settledment_status: getSettlementStatus(rawData.contract_settledment_status),
+    contract_status: rawData.contract_status || undefined,
   }
   return formattedData
 }
@@ -132,10 +170,10 @@ const contractiInfoFormate = (
 //   const result = ref('')
 //   if (data === 'purchase') result.value = '采购合同'
 //   else if (data === 'service') result.value = '服务合同'
-//   else if (data === 'information_construction') result.value = '信息化建设合吀
+//   else if (data === 'information_construction') result.value = '信息化建设合同
 //   else if (data === 'direct_procurement') result.value = '直接采购合同'
-//   else if (data === 'pending') result.value = '待结简
-//   else if (data === 'settled') result.value = '已结简
+//   else if (data === 'pending') result.value = '待结算
+//   else if (data === 'settled') result.value = '已结算
 //   else result.value = '未知类型'
 //   return result
 // }
@@ -160,7 +198,7 @@ const assetCurrentStatusMapping: Record<string, string> = {
 
 /**
  * 根据英文状态获取中文显示文本
- * @param status - 英文状态（可能一undefined 或 null）
+ * @param status - 英文状态（可能为 undefined 或 null）
  * @returns 中文状态，若未匹配则返回 '
  */
 export function getAssetStatusText(status?: string | null): string {
@@ -181,13 +219,14 @@ const assetStatusMapping: Record<string, string> = assetCurrentStatusMapping
 // }
 
 const contractTypeMapping: Record<string, string> = {
-  purchase: '采购合同',
+  tender_procurement: '招标采购合同',
   service: '服务合同',
   information_construction: '信息化建设合同',
   direct_procurement: '直接采购合同',
 }
 
 const contractSettlementStatusMapping: Record<string, string> = {
+  purchasing: '供货中',
   pending: '待结算',
   settling_up: '结算中',
   settled: '已结算',
@@ -203,6 +242,7 @@ const assetTypeMapping: Record<string, string> = {
 const storageMapping: Record<string, string> = {
   newasset: '新货仓库',
   recycle: '回收仓库',
+  broken: '损坏存放仓库',
   damaged: '待报废仓库',
 }
 
@@ -217,7 +257,7 @@ const getStatusDisplay = (status: string | undefined): string => {
   return userStatusMapping[status] ?? status
 }
 
-// ✀中文/别名 ↀ后端需要的 key
+// ✓中文/别名 后端需要的 key
 // 🌟 新增：用户状态映射（中文→枚举）
 const USER_STATUS_INPUT_MAPPING: Record<string, EmployeeStatus> = {
   active: EmployeeStatus.ACTIVE,
@@ -329,7 +369,7 @@ const outassetStatusMapping: Record<string, string> = {
 }
 /**
  * 根据英文状态获取中文显示文本
- * @param status - 英文状态（可能一undefined 或 null）
+ * @param status - 英文状态（可能为 undefined 或 null）
  * @returns 中文状态，若未匹配则返回 '
  */
 export function getOutAssetStatusText(status?: string | null): string {
@@ -353,7 +393,7 @@ const outassetTypeMapping: Record<string, string> = {
 // const userStatusSearchingMapping: Record<string, string> = {
 //   active: '在职',
 //   left: '离职',
-//   retirement: '退伀,
+//   retirement: '退休',
 // }
 
 // 解析Excel中的日期数据，转换为后端需要的格式 (YYYY-MM-DD)
@@ -361,8 +401,8 @@ const outassetTypeMapping: Record<string, string> = {
 const parseExcelDate = (dateStr: string): string | null => {
   // if (!dateStr) return null
   if (!dateStr) {
-    // 返回一个默认日期或空字符串，具体取决于后端API的要求求
-    // 如果后端允许空日期，可以返回空字符串；否则返回一个默认日最
+    // 返回一个默认日期或空字符串，具体取决于后端API的要求
+    // 如果后端允许空日期，可以返回空字符串；否则返回一个默认日期
     return '' // 或者return '1970-01-01' 作为默认候
   }
 
@@ -372,10 +412,10 @@ const parseExcelDate = (dateStr: string): string | null => {
     return dateStr
   }
 
-  // 尝试解析各种可能的日期格开
+  // 尝试解析各种可能的日期格式
   let date: Date | null = null
 
-  // 尝试解析�MM-DD-�MM-DD-YYYY 格式
+  // MM-DD/YYYY  MM-DD/YYYY 格式
   if (/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/.test(dateStr)) {
     date = new Date(dateStr.replace(/[\/\-]/g, '/'))
   }
@@ -383,24 +423,24 @@ const parseExcelDate = (dateStr: string): string | null => {
   else if (/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/.test(dateStr)) {
     const parts = dateStr.split(/[\/\-]/)
     if (parts.length === 3) {
-      // 假设昀DD/MM/YYYY 格式，需要转换为 MM/DD/YYYY
+      // 假设是 DD/MM/YYYY 格式，需要转换为 MM/DD/YYYY
       date = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`)
     }
   }
-  // 尝试解析Excel序列号日最(数字形式)
+  // 尝试解析Excel序列号日期(数字形式)
   else if (/^\d+$/.test(dateStr) && parseInt(dateStr) > 1) {
-    // Excel日期是从1900幀最日开始计算的天数
+    // Excel日期是从1900年1月1日开始计算的天数
     const excelDate = new Date(1900, 0, parseInt(dateStr) - 1)
     date = excelDate
   }
-  // 尝试解析带有时区的ISO格式或其他常见格开
+  // 尝试解析带有时区的ISO格式或其他常见格式
   else {
     date = new Date(dateStr)
   }
 
   // 验证日期是否有效
   if (date && !isNaN(date.getTime())) {
-    // 转换一YYYY-MM-DD 格式
+    // 转换为YYYY-MM-DD 格式
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
@@ -414,6 +454,9 @@ const parseExcelDate = (dateStr: string): string | null => {
 
 export {
   formatDate,
+  formatDateTime,
+  exactFormatDate,
+  formatDateTimeFull,
   formatPrice,
   formatNumber,
   contractiInfoFormate,

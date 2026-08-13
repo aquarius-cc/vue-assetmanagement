@@ -1,11 +1,22 @@
-// types/form-helpers.ts
-// 表单辅助类型（从各 .vue 文件迁移至此）
+/**
+ * @file 表单辅助类型定义，包括各种建议项、树节点、时间线等辅助接口
+ * @module types/form-helpers
+ * @exports
+ *   - AssetSuggestion/ContractFormSuggestion/StorageSuggestion/AssetTypeSuggestion: 建议项接口
+ *   - AssetTypeTreeNode/ElTreeNode/ElTreeStore: 树节点与存储接口
+ *   - TimelineItem/ChangeRecord/DepartmentFormItem: 其他辅助接口
+ * @callers
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
+ *   - views/*（页面视图）
+ */
 
 /** 资产建议项 */
 export interface AssetSuggestion {
   value: string
   asset_code: string
   asset_name: string
+  recordcode?: string
 }
 
 /** 合同建议项 */

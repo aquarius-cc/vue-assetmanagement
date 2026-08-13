@@ -1,4 +1,22 @@
 /**
+ * @file 遗失资产数据模型定义，包括遗失状态、表单、详情、批量创建等类型
+ * @module types/lostasset
+ * @exports
+ *   - LostStatus: 遗失状态枚举
+ *   - LostAssetCreateForm/LostAssetUpdateForm: 遗失资产表单接口
+ *   - LostAsset/LostAssetExtended: 遗失资产基础与扩展接口
+ *   - LostAssetQueryParams: 遗失资产查询参数
+ *   - LostAssetListResponse: 遗失资产列表响应接口
+ *   - LostAssetBatchItem/LostAssetBatchCreateForm/LostAssetBatchCreateResult: 批量创建接口
+ * @callers
+ *   - stores/lostassetStore（遗失资产状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
+ */
+
+import type { PaginatedResponse } from '@/types/common'
+
+/**
  * 遗失资产数据模型
  * 对应后端数据库表: am_lost_asset
  */
@@ -116,19 +134,8 @@ export interface LostAssetQueryParams {
 
 // ==================== 响应接口 ====================
 
-/**
- * 遗失资产列表响应接口
- */
-export interface LostAssetListResponse {
-  /** 总记录数 */
-  count: number
-  /** 下一页链接 */
-  next: string | null
-  /** 上一页链接 */
-  previous: string | null
-  /** 遗失资产列表数据 */
-  results: LostAssetExtended[]
-}
+/** 遗失资产列表响应 */
+export type LostAssetListResponse = PaginatedResponse<LostAssetExtended>
 
 // ==================== 批量创建接口 ====================
 

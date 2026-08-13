@@ -144,7 +144,7 @@ import type { ValidatedRow } from '@/composables/useBatchImport'
 import { departmentAPI } from '@/api/department'
 import { useDepartmentStore } from '@/stores/departmentStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
-import type { DepartmentCreateForm } from '@/utils/Department'
+import type { DepartmentCreateForm } from '@/types/department'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { DepartmentExcelRow } from '@/types/batch-import'
 

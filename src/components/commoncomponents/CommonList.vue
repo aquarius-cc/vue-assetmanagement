@@ -1,34 +1,11 @@
 <!--
-  CommonList.vue
-  通用列表展示组件（纯展示版）
-
-  职责：负责列表的 UI 展示，包括表格渲染、分页控件、操作按钮
-  不管理任何数据状态，所有数据通过 props 传入
-
-  设计原则：
-  1. 纯展示：只接收 props，不发起数据请求
-  2. 数据驱动：表格数据、分页状态、加载状态均由父组件控制
-  3. 事件通知：用户交互（分页、搜索、操作）通过事件通知父组件处理
-  4. 插槽扩展：支持自定义列内容和操作按钮
-
-  与 SmartListContainer 配合使用：
-  SmartListContainer 负责数据管理 → 通过 slot props 传递数据 → CommonList 负责展示
-
-  使用示例：
-  <SmartListContainer :store-config="storeConfig">
-    <template #default="slotProps">
-      <CommonList
-        :data="slotProps.data"
-        :loading="slotProps.loading"
-        v-model:current-page="slotProps.currentPage"
-        v-model:page-size="slotProps.pageSize"
-        :total="slotProps.total"
-        :columns="columns"
-        @size-change="slotProps.handleSizeChange"
-        @current-change="slotProps.handleCurrentChange"
-      />
-    </template>
-  </SmartListContainer>
+@file 通用列表展示组件，负责表格渲染、分页和操作按钮
+@component CommonList
+@usedBy
+  - 多个 *Details.vue 页面（AssetContentDetails, ContractDetails 等）
+@dependsOn
+  - components/CommonListActions: 操作按钮列
+  - components/CommonListColumn: 列定义渲染
 -->
 <template>
   <div class="common-list">

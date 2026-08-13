@@ -63,7 +63,7 @@ describe('RepairAssetStore', () => {
             repair_description: '测试描述',
             create_time: '2026-07-09T10:00:00Z',
             update_time: '2026-07-09T10:00:00Z',
-            is_delete: false,
+            is_deleted: false,
           },
         ],
       }
@@ -90,7 +90,7 @@ describe('RepairAssetStore', () => {
         repair_description: '测试描述',
         create_time: '2026-07-09T10:00:00Z',
         update_time: '2026-07-09T10:00:00Z',
-        is_delete: false,
+        is_deleted: false,
       }
 
       const { repairAssetAPI } = await import('@/api/repairAsset')
@@ -130,6 +130,45 @@ describe('RepairAssetStore', () => {
       await repairAssetStore.remove('repair-001')
 
       expect(repairAssetAPI.deleteRepairAsset).toHaveBeenCalledWith('repair-001')
+    })
+  })
+
+  describe('详情/更新/批量删除', () => {
+    it('应该调用API获取详情', async () => {
+      const { repairAssetAPI } = await import('@/api/repairAsset')
+      vi.mocked(repairAssetAPI.getRepairAssetByCode).mockResolvedValue({
+        recordcode: 'repair-001',
+      } as never)
+
+      const result = await repairAssetStore.getById('repair-001')
+
+      expect(result).toBeDefined()
+    })
+
+    it('应该调用API更新记录', async () => {
+      const { repairAssetAPI } = await import('@/api/repairAsset')
+      vi.mocked(repairAssetAPI.updateRepairAsset).mockResolvedValue({
+        recordcode: 'repair-001',
+      } as never)
+
+      await repairAssetStore.update({ recordcode: 'repair-001' } as never)
+
+      expect(repairAssetAPI.updateRepairAsset).toHaveBeenCalled()
+    })
+
+    it('应该调用API批量删除', async () => {
+      const { repairAssetAPI } = await import('@/api/repairAsset')
+      vi.mocked(repairAssetAPI.batchDeleteRepairAssets).mockResolvedValue({
+        total: 1,
+        success_count: 1,
+        fail_count: 0,
+        success_ids: ['repair-001'],
+        fail_items: [],
+      })
+
+      await repairAssetStore.removeBatch(['repair-001'])
+
+      expect(repairAssetAPI.batchDeleteRepairAssets).toHaveBeenCalledWith(['repair-001'])
     })
   })
 })

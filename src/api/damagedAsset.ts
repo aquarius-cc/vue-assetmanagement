@@ -1,7 +1,15 @@
 /**
- * 损坏资产管理 API
- * 对应后端接口: /api/assets/damaged-assets/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 损坏资产管理 API，提供损坏资产的增删改查、批量操作等接口
+ * @module api/damagedAsset
+ * @exports
+ *   - damagedAssetAPI: 损坏资产管理 API 对象（包含所有损坏资产相关方法）
+ * @callers
+ *   - stores/damagedAssetStore: 损坏资产状态管理
+ *   - views/DamagedAssetManage: 损坏资产管理视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/damagedasset: 损坏资产相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
@@ -10,7 +18,7 @@ import type {
   DamagedAssetUpdateForm,
   DamagedAssetListResponse,
   DamagedAssetQueryParams,
-} from '@/utils/DamagedAsset'
+} from '@/types/damagedasset'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
 /**

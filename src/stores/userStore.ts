@@ -1,12 +1,28 @@
 /**
- * 员工管理 Store
- * 基于 createEntityStore 工厂创建
+ * @file 员工管理 Store，基于 createEntityStore 工厂创建，含表单校验辅助函数
+ * @module stores/userStore
+ * @exports
+ *   - useUserStore: 员工管理状态 Store
+ * @callers
+ *   - composables/useDepartmentEmployeeList.ts
+ *   - components/componentsdetails/UserDetails.vue
+ *   - components/componentsdetails/detils/AssetForm.vue
+ *   - components/componentsdetails/detils/UserForm.vue
+ *   - components/componentsdetails/detils/UserBatchImport.vue
+ *   - components/componentsdetails/detils/OutAssetBasicDetails.vue
+ *   - components/componentsdetails/detils/RecycleAssetForm.vue
+ *   - components/componentsdetails/detils/RecycleAssetBasicDetails.vue
+ *   - components/componentsdetails/components/DepartmentEmployeeList.vue
+ * @dependsOn
+ *   - api/user: 员工 API 接口
+ *   - stores/createEntityStore: 实体 Store 工厂
+ *   - types/user: 员工相关类型定义
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { userAPI } from '@/api/user'
-import type { EmployeeExtended, EmployeeCreateForm, EmployeeUpdateForm } from '@/utils/User'
+import type { EmployeeExtended, EmployeeCreateForm, EmployeeUpdateForm } from '@/types/user'
 import type { PaginationQuery } from '@/stores/createEntityStore'
-import { EmployeeStatus } from '@/utils/User'
+import { EmployeeStatus } from '@/types/user'
 import { ElMessage } from 'element-plus'
 
 /**

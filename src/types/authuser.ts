@@ -1,4 +1,22 @@
 /**
+ * @file 认证用户数据模型定义，包括登录、认证、用户管理等类型
+ * @module types/authuser
+ * @exports
+ *   - AuthUserCreateForm/AuthUserUpdateForm: 认证用户表单接口
+ *   - AuthUser: 认证用户基础接口
+ *   - LoginForm/AuthInfo/LoginRequest/LoginResponse: 登录相关接口
+ *   - LogoutResponse: 认证响应接口
+ *   - AuthUserQueryParams: 认证用户查询参数
+ *   - AuthUserListResponse: 认证用户列表响应接口
+ * @callers
+ *   - stores/authuserStore（认证用户状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
+ */
+
+import type { PaginatedResponse } from '@/types/common'
+
+/**
  * 认证用户数据模型
  * 对应后端数据库表: auth_user_management_table
  * 后端 API 路径: /api/auth/
@@ -64,6 +82,11 @@ export interface AuthUser {
   sort_order: number
   /** 最后登录时间 */
   last_login: string | null
+  /** 绑定的员工信息（后端列表接口返回，仅 list/list_active 包含此字段） */
+  bound_employee?: {
+    employee_jobcode: string
+    employee_name: string
+  } | null
 }
 
 // ======================== 登录相关接口 ========================
@@ -144,16 +167,6 @@ export interface LogoutResponse {
   data: Record<string, never>
 }
 
-/**
- * Token 验证响应接口
- */
-export interface VerifyTokenResponse {
-  /** 状态码 */
-  code?: number
-  /** 消息 */
-  message?: string
-}
-
 // ======================== 查询参数接口 ========================
 
 /**
@@ -179,16 +192,5 @@ export interface AuthUserQueryParams {
 
 // ======================== 响应接口 ========================
 
-/**
- * 认证用户列表响应接口
- */
-export interface AuthUserListResponse {
-  /** 总记录数 */
-  count: number
-  /** 下一页链接 */
-  next: string | null
-  /** 上一页链接 */
-  previous: string | null
-  /** 用户列表数据 */
-  results: AuthUser[]
-}
+/** 认证用户列表响应 */
+export type AuthUserListResponse = PaginatedResponse<AuthUser>

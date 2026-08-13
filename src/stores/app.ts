@@ -1,4 +1,16 @@
-// app.ts
+/**
+ * @file 应用全局状态管理，包含主题、侧边栏、面包屑、系统设置等
+ * @module stores/app
+ * @exports
+ *   - useAppStore: 应用全局状态 Store
+ * @callers
+ *   - views/MainView.vue
+ *   - views/LogIn.vue
+ *   - router/guards.ts
+ *   - components/AsideMenu.vue
+ * @dependsOn
+ *   - 无外部依赖
+ */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -11,7 +23,7 @@ export const useAppStore = defineStore('app', () => {
 
   // 主题设置
   const theme = ref<'light' | 'dark'>('light')
-  const primaryColor = ref('#409EFF')
+  const primaryColor = ref('#2B5FD7')
 
   // 系统设置
   const settings = ref({
@@ -108,7 +120,7 @@ export const useAppStore = defineStore('app', () => {
     breadcrumbs.value = []
     pageTitle.value = '资产管理系统'
     theme.value = 'light'
-    primaryColor.value = '#409EFF'
+    primaryColor.value = '#2B5FD7'
     settings.value = {
       showBreadcrumbs: true,
       autoSave: true,

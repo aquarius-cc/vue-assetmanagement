@@ -1,4 +1,18 @@
-// composables/useExcelExport.ts
+/**
+ * @file 通用 Excel 导出（列表导出选择范围 + 详情导出）
+ * @module composables/useExcelExport
+ * @exports
+ *   - useExcelExport: Excel 导出 composable（exportList / exportDetail）
+ *   - ExportOptions: 列表导出配置类型
+ * @callers
+ *   - composables/useAssetListConfig
+ *   - components/componentsdetails/detils/*Details.vue（各详情页）
+ *   - components/componentsdetails/AssetContentDetails.vue
+ *   - components/componentsdetails/AuditLogDetails.vue
+ * @dependsOn
+ *   - utils/excelExporter: exportToExcel / ColumnConfig
+ *   - element-plus: ElMessage / ElMessageBox
+ */
 import { h } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { exportToExcel } from '@/utils/excelExporter'

@@ -115,7 +115,7 @@
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { departmentAPI } from '@/api/department'
-import type { Department, DepartmentCreateForm } from '@/utils/Department'
+import type { Department, DepartmentCreateForm } from '@/types/department'
 import type { DepartmentBatchCreateResult } from '@/api/department'
 
 // ==================== Props & Emits ====================

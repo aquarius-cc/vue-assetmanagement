@@ -1,23 +1,13 @@
 <!--
-  WasteAssetDetails.vue
-  已报废资产列表页面（重构版）
-
-  架构调整：
-  1. 使用 SmartListContainer 封装数据管理逻辑（分页、搜索、加载）
-  2. CommonList 只负责 UI 展示，不管理数据
-  3. 解决原架构中父组件和 CommonList 重复请求的问题
-
-  数据流：
-  SmartListContainer (数据管理) → slot props → CommonList (纯展示)
-
-  功能：
-  - 展示已报废资产列表（只读模块）
-  - 导出 Excel
-  - 子路由：详情页（浮层遮罩）
-
-  业务说明：
-  - 已报废资产由后端在审批通过后自动创建，前端只读
-  - 无新增/编辑/删除功能
+@file 已报废资产列表页面，展示已报废资产记录并支持删除和导出操作
+@component WasteAssetDetails
+@usedBy
+  - views/WasteAssetDetails.vue: 通过 router-view 渲染已报废资产列表
+@dependsOn
+  - composables/useSmartListConfig: 列表配置
+  - stores/wasteAssetStore: 已报废资产数据管理
+  - components/commoncomponents/SmartListContainer: 数据管理容器
+  - components/commoncomponents/CommonList: 列表展示组件
 -->
 <template>
   <div class="waste-asset-details-root">
@@ -112,7 +102,7 @@ import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
-import type { WasteAsset } from '@/utils/WasteAsset'
+import type { WasteAsset } from '@/types/wasteasset'
 import { useWasteAssetStore } from '@/stores/wasteAssetStore'
 import { formatDate } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'

@@ -12,6 +12,12 @@
   --scrollbar-thumb-hover-bg: #a8a8a8;
 }
 
+html.dark {
+  --scrollbar-track-bg: #2a2a2a;
+  --scrollbar-thumb-bg: #555;
+  --scrollbar-thumb-hover-bg: #666;
+}
+
 /* WebKit 浏览器 (Chrome, Edge, Safari) */
 ::-webkit-scrollbar {
   width: var(--scrollbar-width);

@@ -1,4 +1,19 @@
-// 通用类型定义
+/**
+ * @file 通用类型定义，包括API响应、分页、搜索等公共类型
+ * @module types/common
+ * @exports
+ *   - ApiResponse: API响应基础接口
+ *   - PaginatedResponse: 分页响应接口
+ *   - PaginationParams/SearchParams/DateRangeParams/BaseQueryParams: 查询参数接口
+ *   - TableColumn: 表格列配置接口
+ *   - UserStatus/OperationType: 状态枚举
+ *   - SmartListContainerExpose: 组件暴露方法接口
+ *   - SearchFieldType/SearchFieldConfig/SearchBarProps/SearchBarEmits: 搜索栏类型
+ * @callers
+ *   - api/*（所有API模块）
+ *   - stores/*（所有Store模块）
+ *   - components/*（公共组件）
+ */
 
 // API响应基础接口（AGENTS.md §3 跨端契约：code=0 成功，message 字段名）
 export interface ApiResponse<T = unknown> {
@@ -39,31 +54,6 @@ export interface DateRangeParams {
 // 基础查询参数（组合上述所有参数）
 export interface BaseQueryParams extends PaginationParams, SearchParams, DateRangeParams {}
 
-// 表单验证规则接口
-export interface FormRule {
-  required?: boolean
-  message: string
-  trigger?: 'blur' | 'change'
-  type?:
-    | 'string'
-    | 'number'
-    | 'boolean'
-    | 'method'
-    | 'regexp'
-    | 'integer'
-    | 'float'
-    | 'array'
-    | 'object'
-    | 'enum'
-    | 'date'
-    | 'url'
-    | 'hex'
-    | 'email'
-  min?: number
-  max?: number
-  pattern?: RegExp
-}
-
 // 表格列配置接口
 export interface TableColumn {
   prop?: string
@@ -79,46 +69,6 @@ export interface TableColumn {
     index: number,
   ) => string
   type?: 'selection' | 'index' | 'expand'
-}
-
-// 菜单项接口
-export interface MenuItem {
-  id: string
-  name: string
-  path?: string
-  icon?: string
-  children?: MenuItem[]
-  meta?: {
-    requiresAuth?: boolean
-    roles?: string[]
-    title?: string
-  }
-}
-
-// 文件上传响应接口
-export interface FileUploadResponse {
-  url: string
-  filename: string
-  size: number
-  type: string
-}
-
-// 操作按钮接口
-export interface ActionButton {
-  label: string
-  type?: 'primary' | 'success' | 'warning' | 'danger' | 'info'
-  icon?: string
-  disabled?: boolean
-  loading?: boolean
-  onClick: () => void | Promise<void>
-}
-
-// 状态选项接口
-export interface StatusOption {
-  value: string
-  label: string
-  color?: string
-  disabled?: boolean
 }
 
 // 注意：资产状态枚举已统一在 types/asset.ts 的 AssetCurrentStatus 中定义
@@ -137,56 +87,6 @@ export enum OperationType {
   UPDATE = 'update',
   DELETE = 'delete',
   VIEW = 'view',
-}
-
-// 排序方向枚举
-export enum SortDirection {
-  ASC = 'asc',
-  DESC = 'desc',
-}
-
-// 导出格式枚举
-export enum ExportFormat {
-  EXCEL = 'xlsx',
-  CSV = 'csv',
-  PDF = 'pdf',
-}
-
-// 通用选择器选项接口
-export interface SelectOption {
-  value: string | number
-  label: string
-  disabled?: boolean
-  children?: SelectOption[]
-}
-
-// 面包屑导航接口
-export interface BreadcrumbItem {
-  name: string
-  path?: string
-}
-
-// 统计卡片数据接口
-export interface StatCard {
-  title: string
-  value: string | number
-  icon?: string
-  color?: string
-  trend?: {
-    value: number
-    type: 'up' | 'down'
-  }
-}
-
-// 图表数据接口
-export interface ChartData {
-  labels: string[]
-  datasets: {
-    label: string
-    data: number[]
-    backgroundColor?: string[]
-    borderColor?: string[]
-  }[]
 }
 
 // ===== SmartListContainer 组件类型定义 =====

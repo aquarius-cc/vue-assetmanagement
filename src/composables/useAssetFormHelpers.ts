@@ -1,9 +1,23 @@
-// composables/useAssetFormHelpers.ts
+/**
+ * @file 资产表单关联数据加载与合同/仓库联动方法
+ * @module composables/useAssetFormHelpers
+ * @exports
+ *   - useAssetFormAssociations: 加载资产类型、合同、仓库下拉数据
+ *   - useAssetFormAssociationMethods: 合同/仓库联动方法
+ *   - ContractSuggestion / UserSuggestion: 建议项类型
+ *   - useEmployeeLinkage: re-export
+ * @callers
+ *   - components/componentsdetails/detils/AssetForm.vue
+ *   - components/componentsdetails/detils/detilschildcomponents/{AssetBasicInfo,AssetContractInfo}.vue
+ * @dependsOn
+ *   - types/assettype | types/contract | types/storage
+ *   - stores/createEntityStore: PaginationQuery
+ */
 import { ref, type Ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import type { AssetType } from '@/utils/AssetType'
+import type { AssetType } from '@/types/assettype'
 import type { Contract } from '@/types/contract'
-import type { Storage } from '@/utils/Storage'
+import type { Storage } from '@/types/storage'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 
 // 向后兼容：useEmployeeLinkage 已拆分至独立文件

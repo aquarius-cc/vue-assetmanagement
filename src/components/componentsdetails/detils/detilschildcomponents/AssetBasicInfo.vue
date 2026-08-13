@@ -157,7 +157,7 @@
 
 <script lang="ts" setup>
 import type { AssetCreateFormExtended } from '@/types/asset'
-import type { AssetType } from '@/utils/AssetType'
+import type { AssetType } from '@/types/assettype'
 import type { UserSuggestion } from '@/composables/useAssetFormHelpers'
 
 defineProps<{

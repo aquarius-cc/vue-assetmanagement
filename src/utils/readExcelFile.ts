@@ -1,5 +1,14 @@
-// utils/readExcelFile.ts
-// Excel 文件解析工具（从 useBatchImport 拆分）
+/**
+ * @file Excel 文件解析工具，读取 .xlsx 文件并按表头映射转为对象数组
+ * @module src/utils/readExcelFile
+ * @exports
+ *   - readExcelFile: 读取 Excel 文件并解析为泛型对象数组
+ * @callers
+ *   - composables/useBatchImport
+ * @dependsOn
+ *   - exceljs
+ */
+
 import ExcelJS from 'exceljs'
 
 /**

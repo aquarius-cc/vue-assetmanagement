@@ -1,3 +1,16 @@
+<!--
+@file 状态标签组件，将状态枚举值映射为彩色标签展示
+@component StatusTag
+@usedBy
+  - componentsdetails/AssetContentDetails.vue: 资产列表状态列
+  - componentsdetails/OutAssetDetails.vue: 出库列表状态列
+  - detils/BasicAssetDetails.vue: 资产详情状态展示
+  - detils/OutAssetBasicDetails.vue: 出库详情状态展示
+  - views/ScanAssetView.vue: 扫码资产状态
+  - views/AssetLogsView.vue: 操作日志状态
+@dependsOn
+  - utils/statusMapping: 状态枚举映射表
+-->
 <template>
   <el-tag :type="tagType" size="small" effect="light">
     {{ displayText }}

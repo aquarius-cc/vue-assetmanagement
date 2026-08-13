@@ -1,8 +1,18 @@
 /**
- * 图片优化工具函数
+ * @file 图片优化工具集，提供懒加载指令、预加载、压缩、格式转换等功能
+ * @module src/utils/Image
+ * @exports
+ *   - lazyLoadDirective: 图片懒加载 Vue 自定义指令
+ *   - preloadImage: 图片预加载函数
+ *   - compressImage: 图片压缩函数（Canvas 实现）
+ *   - convertImageToWebP: 图片格式转换为 WebP
+ *   - getImageDimensions: 获取图片尺寸
+ *   - supportsWebP: 检测浏览器是否支持 WebP 格式
+ * @callers
+ *   - components/commoncomponents/* (通过 main.ts 注册全局指令)
+ * @dependsOn
+ *   - vue (DirectiveBinding)
  */
-// Image.ts
-// 图片懒加载指令
 
 import type { DirectiveBinding } from 'vue'
 

@@ -1,5 +1,14 @@
-// utils/exportImportTemplate.ts
-// 批量导入模板导出工具 — 从 7 个 BatchImport.vue 提取的重复 ExcelJS 逻辑
+/**
+ * @file 批量导入模板导出工具，生成含表头与示例数据的 .xlsx 模板文件
+ * @module src/utils/exportImportTemplate
+ * @exports
+ *   - exportImportTemplate: 导出批量导入 Excel 模板（含表头 + 示例数据行）
+ * @callers
+ *   - components/componentsdetails/detils/*BatchImport.vue
+ * @dependsOn
+ *   - exceljs
+ *   - element-plus (ElMessage)
+ */
 
 import ExcelJS from 'exceljs'
 import { ElMessage } from 'element-plus'
@@ -15,10 +24,6 @@ interface ExportTemplateOptions {
   fileName: string
 }
 
-/**
- * 导出批量导入 Excel 模板
- * 生成包含表头 + 一行示例数据的 .xlsx 文件并触发下载
- */
 export async function exportImportTemplate(options: ExportTemplateOptions): Promise<void> {
   const { headers, exampleRowData, sheetName, fileName } = options
 

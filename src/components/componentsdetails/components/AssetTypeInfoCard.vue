@@ -41,7 +41,7 @@
 
 <script setup lang="ts">
 import { Edit, Plus, Upload, Delete } from '@element-plus/icons-vue'
-import type { AssetType } from '@/utils/AssetType'
+import type { AssetType } from '@/types/assettype'
 
 defineProps<{
   assetType: AssetType

@@ -64,25 +64,6 @@ describe('networkAPI', () => {
     expect(result.status).toBe('success')
   })
 
-  it('testAPI calls GET /test/', async () => {
-    mockRequest.get.mockResolvedValueOnce({ data: 'ok' })
-    const result = await networkAPI.testAPI()
-    expect(result.status).toBe('success')
-    expect(mockRequest.get).toHaveBeenCalledWith('/test/')
-  })
-
-  it('testAPI returns error details on failure', async () => {
-    const error = Object.assign(new Error('fail'), {
-      isAxiosError: true,
-      message: 'fail',
-      response: { status: 404, data: { detail: 'Not found' } },
-      config: { url: '/test/' },
-    })
-    mockRequest.get.mockRejectedValueOnce(error)
-    const result = await networkAPI.testAPI()
-    expect(result.status).toBe('error')
-  })
-
   it('testLoginAPI calls fetch with OPTIONS method', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,

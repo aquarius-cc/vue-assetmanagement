@@ -1,9 +1,17 @@
 /**
- * 遗失资产 Store
+ * @file 遗失资产 Store，基于 createEntityStore 工厂创建
+ * @module stores/lostAssetStore
+ * @exports
+ *   - useLostAssetStore: 遗失资产管理状态 Store
+ * @callers
+ *   - components/componentsdetails/LostAssetDetails.vue
+ * @dependsOn
+ *   - api/lostAsset: 遗失资产 API 接口
+ *   - stores/createEntityStore: 实体 Store 工厂
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { lostAssetAPI } from '@/api/lostAsset'
-import type { LostAssetExtended, LostAssetCreateForm, LostAssetUpdateForm } from '@/utils/LostAsset'
+import type { LostAssetExtended, LostAssetCreateForm, LostAssetUpdateForm } from '@/types/lostasset'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 

@@ -1,6 +1,15 @@
 /**
- * BrokenAsset API
- * Backend: /api/assets/broken-assets/
+ * @file 损坏资产管理 API，提供损坏资产的增删改查、批量操作等接口
+ * @module api/brokenAsset
+ * @exports
+ *   - brokenAssetAPI: 损坏资产管理 API 对象（包含所有损坏资产相关方法）
+ * @callers
+ *   - stores/brokenAssetStore: 损坏资产状态管理
+ *   - views/BrokenAssetManage: 损坏资产管理视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/brokenasset: 损坏资产相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
@@ -11,7 +20,7 @@ import type {
   BrokenAssetQueryParams,
   BrokenAssetBatchCreateForm,
   BrokenAssetBatchCreateResult,
-} from '@/utils/BrokenAsset'
+} from '@/types/brokenasset'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
 export const brokenAssetAPI = {

@@ -1,3 +1,12 @@
+<!--
+@file 资产状态日志页面，展示指定资产的状态变更历史记录
+@component AssetLogsView
+@usedBy
+  - router/index.ts: 路由懒加载
+@dependsOn
+  - api/asset: 资产数据接口
+  - components/commoncomponents/StatusTag: 资产状态标签
+-->
 <template>
   <div class="asset-operation-view">
     <el-card class="operation-card">
@@ -55,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Document } from '@element-plus/icons-vue'
 import { assetAPI } from '@/api/asset'
@@ -73,7 +82,7 @@ const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
 const asset = ref<AssetDetail | null>(null)
-const assetCode = ref(route.params.code as string)
+const assetCode = computed(() => route.params.code as string)
 const timeline = ref<TimelineItem[]>([])
 
 onMounted(async () => {
@@ -93,36 +102,8 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
-.asset-operation-view {
-  display: flex;
-  justify-content: center;
-  padding: 24px;
-  min-height: 100vh;
-  background: var(--background-color);
-}
-
-.operation-card {
-  width: 100%;
-  max-width: 720px;
-  border-radius: 8px;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.loading-container {
-  min-height: 200px;
-}
-
-.asset-info {
-  margin-bottom: 16px;
-}
+<style lang="scss" scoped>
+@use '@/assets/styles/asset-operation.scss' as *;
 
 .timeline-container {
   padding: 16px 0;

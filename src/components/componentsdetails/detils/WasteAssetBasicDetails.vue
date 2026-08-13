@@ -63,11 +63,11 @@
             </div>
             <div class="info-item">
               <span class="info-label">创建时间：</span>
-              <span class="info-value">{{ formatDate(detailData.create_time) }}</span>
+              <span class="info-value">{{ formatDate(detailData.created_at) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">更新时间：</span>
-              <span class="info-value">{{ formatDate(detailData.update_time) }}</span>
+              <span class="info-value">{{ formatDate(detailData.updated_at) }}</span>
             </div>
           </div>
         </div>
@@ -93,7 +93,7 @@ import { Back, Download, Document } from '@element-plus/icons-vue'
 import { useWasteAssetStore } from '@/stores/wasteAssetStore'
 import { useExcelExport } from '@/composables/useExcelExport'
 import type { ColumnConfig } from '@/utils/excelExporter'
-import type { WasteAsset } from '@/utils/WasteAsset'
+import type { WasteAsset } from '@/types/wasteasset'
 import { formatDate } from '@/utils/Format'
 
 // ===== 状态与实例 =====
@@ -123,13 +123,13 @@ const exportColumns: ColumnConfig<WasteAsset>[] = [
   { title: '报废描述', key: 'waste_asset_description', default: '' },
   {
     title: '创建时间',
-    key: 'create_time',
+    key: 'created_at',
     default: '',
     formatter: (v) => formatDate(v as string) || '',
   },
   {
     title: '更新时间',
-    key: 'update_time',
+    key: 'updated_at',
     default: '',
     formatter: (v) => formatDate(v as string) || '',
   },

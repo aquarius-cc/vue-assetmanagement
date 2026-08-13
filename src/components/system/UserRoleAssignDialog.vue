@@ -1,3 +1,19 @@
+<!--
+@file 用户角色分配弹窗，展示已分配角色和可分配角色列表
+@component UserRoleAssignDialog.vue
+@description
+  - 提供用户角色分配弹窗的组件
+  - 包含已分配角色和可分配角色列表
+  - 提供添加角色和删除角色的功能
+  - 提供关闭弹窗的功能
+  - 提供刷新角色列表的功能
+  - 提供关闭弹窗的功能
+@usedBy
+  - views/system/UserManagementPage.vue: 用户管理页面中分配角色
+@dependsOn
+  - api/userAPI: getUserRoles/assignUserRoles 用户角色相关接口
+  - api/roleAPI: getAllRoles 获取所有角色接口
+-->
 <template>
   <el-dialog
     :model-value="visible"
@@ -20,19 +36,14 @@
             closable
             @close="handleRemoveRole(item)"
           >
-            {{ item.role.role_name }} ({{ item.role.role_code }})
+            {{ item.role_name }} {{ item.role_code }}
           </el-tag>
         </div>
       </div>
       <div class="role-section">
         <div class="section-title">添加角色</div>
         <div class="add-role-bar">
-          <el-select
-            v-model="selectedRoleId"
-            filterable
-            placeholder="选择角色"
-            class="role-select"
-          >
+          <el-select v-model="selectedRoleId" filterable placeholder="选择角色" class="role-select">
             <el-option
               v-for="role in unassignedRoles"
               :key="role.id"
@@ -62,9 +73,10 @@ import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { authUserAPI } from '@/api/authusers'
 import { roleAPI } from '@/api/roles'
+import { getErrorMessage } from '@/utils/errorHandler'
 import type { AuthUser } from '@/types/authuser'
-import type { UserRole, RoleBrief } from '@/api/authusers'
-import type { Role } from '@/api/roles'
+import type { UserRole } from '@/api/authusers'
+import type { Role } from '@/types/roles'
 
 const props = defineProps<{
   visible: boolean
@@ -84,7 +96,7 @@ const assignedRoles = ref<UserRole[]>([])
 const allRoles = ref<Role[]>([])
 
 const unassignedRoles = computed(() => {
-  const assignedIds = new Set(assignedRoles.value.map((ur) => ur.role.id))
+  const assignedIds = new Set(assignedRoles.value.map((ur) => ur.role))
   return allRoles.value.filter((r) => !assignedIds.has(r.id))
 })
 
@@ -97,7 +109,7 @@ const loadData = async () => {
       authUserAPI.getUserRoles(props.authUser.auth_id),
     ])
     allRoles.value = roles.results
-    assignedRoles.value = userRoles
+    assignedRoles.value = userRoles.results
   } catch {
     ElMessage.error('加载角色数据失败')
   } finally {
@@ -124,9 +136,8 @@ const handleAddRole = async () => {
     selectedRoleId.value = null
     await loadData()
     emit('saved')
-  } catch (error: any) {
-    const msg = error?.response?.data?.message || error?.message || '角色分配失败'
-    ElMessage.error(msg)
+  } catch (error: unknown) {
+    ElMessage.error(getErrorMessage(error, '角色分配失败'))
   } finally {
     adding.value = false
   }
@@ -135,11 +146,11 @@ const handleAddRole = async () => {
 const handleRemoveRole = async (userRole: UserRole) => {
   if (!props.authUser) return
   try {
-    await ElMessageBox.confirm(
-      `确定要移除角色「${userRole.role.role_name}」吗？`,
-      '移除角色确认',
-      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' },
-    )
+    await ElMessageBox.confirm(`确定要移除角色「${userRole.role_name}」吗？`, '移除角色确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
   } catch {
     return
   }
@@ -148,9 +159,8 @@ const handleRemoveRole = async (userRole: UserRole) => {
     ElMessage.success('角色已移除')
     await loadData()
     emit('saved')
-  } catch (error: any) {
-    const msg = error?.response?.data?.message || error?.message || '移除角色失败'
-    ElMessage.error(msg)
+  } catch (error: unknown) {
+    ElMessage.error(getErrorMessage(error, '移除角色失败'))
   }
 }
 </script>
@@ -167,12 +177,12 @@ const handleRemoveRole = async (userRole: UserRole) => {
 .section-title {
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-primary);
   margin-bottom: 12px;
 }
 
 .empty-hint {
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 

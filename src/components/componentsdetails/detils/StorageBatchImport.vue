@@ -115,7 +115,7 @@ import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuide
 import { storageAPI } from '@/api/storage'
 import { useStorageStore } from '@/stores/storageStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
-import type { StorageCreateForm } from '@/utils/Storage'
+import type { StorageCreateForm } from '@/types/storage'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { StorageExcelRow } from '@/types/batch-import'
 

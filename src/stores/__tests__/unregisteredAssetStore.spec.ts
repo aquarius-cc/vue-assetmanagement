@@ -47,7 +47,7 @@ describe('UnregisteredAssetStore', () => {
         previous: null,
         results: [
           {
-            code: 'UNR-001',
+            unregistered_code: 'UNR-001',
             asset_name: '未登记设备',
           },
         ],
@@ -59,7 +59,7 @@ describe('UnregisteredAssetStore', () => {
       await store.getList()
 
       expect(store.list).toHaveLength(1)
-      expect(store.list[0].code).toBe('UNR-001')
+      expect(store.list[0].unregistered_code).toBe('UNR-001')
       expect(store.list[0].asset_name).toBe('未登记设备')
     })
 
@@ -89,7 +89,7 @@ describe('UnregisteredAssetStore', () => {
   describe('创建记录', () => {
     it('应该调用API创建未登记资产', async () => {
       const mockCreated = {
-        code: 'UNR-001',
+        unregistered_code: 'UNR-001',
         asset_name: '未登记设备',
       }
 
@@ -99,7 +99,7 @@ describe('UnregisteredAssetStore', () => {
       await store.create({ asset_name: '未登记设备' })
 
       expect(store.list).toHaveLength(1)
-      expect(store.list[0].code).toBe('UNR-001')
+      expect(store.list[0].unregistered_code).toBe('UNR-001')
     })
 
     it('应该处理创建失败', async () => {
@@ -120,6 +120,45 @@ describe('UnregisteredAssetStore', () => {
       await store.remove('UNR-001')
 
       expect(unregisteredAssetAPI.deleteUnregisteredAsset).toHaveBeenCalledWith('UNR-001')
+    })
+  })
+
+  describe('详情/更新/批量删除', () => {
+    it('应该调用API获取详情', async () => {
+      const { unregisteredAssetAPI } = await import('@/api/unregisteredAsset')
+      vi.mocked(unregisteredAssetAPI.getUnregisteredAsset).mockResolvedValue({
+        unregistered_code: 'UNR-001',
+      } as never)
+
+      const result = await store.getById('UNR-001')
+
+      expect(result).toBeDefined()
+    })
+
+    it('应该调用API更新记录', async () => {
+      const { unregisteredAssetAPI } = await import('@/api/unregisteredAsset')
+      vi.mocked(unregisteredAssetAPI.updateUnregisteredAsset).mockResolvedValue({
+        unregistered_code: 'UNR-001',
+      } as never)
+
+      await store.update({ unregistered_code: 'UNR-001' } as never)
+
+      expect(unregisteredAssetAPI.updateUnregisteredAsset).toHaveBeenCalled()
+    })
+
+    it('应该调用API批量删除', async () => {
+      const { unregisteredAssetAPI } = await import('@/api/unregisteredAsset')
+      vi.mocked(unregisteredAssetAPI.batchDeleteUnregisteredAssets).mockResolvedValue({
+        total: 1,
+        success_count: 1,
+        fail_count: 0,
+        success_ids: ['UNR-001'],
+        fail_items: [],
+      })
+
+      await store.removeBatch(['UNR-001'])
+
+      expect(unregisteredAssetAPI.batchDeleteUnregisteredAssets).toHaveBeenCalledWith(['UNR-001'])
     })
   })
 })

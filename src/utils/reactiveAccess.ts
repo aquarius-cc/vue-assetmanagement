@@ -1,6 +1,16 @@
-// utils/reactiveAccess.ts
-// 统一 3-way 类型访问器：Ref / computed(get/set) / plain value
-// 从 usePaginationSearch 重复模式中提取
+/**
+ * @file 统一 3-way 响应式类型访问器，兼容 Ref / computed(get-set) / plain value
+ * @module src/utils/reactiveAccess
+ * @exports
+ *   - readReactive: 读取 Ref / get() / 直接值
+ *   - writeReactive: 写入 Ref / set() / 直接赋值
+ *   - readStoreValue: 安全获取 ComputedRef / Ref / getter 的值
+ * @callers
+ *   - composables/usePaginationSearch
+ *   - composables/usePaginationSearchState
+ * @dependsOn
+ *   - vue (isRef, Ref, ComputedRef)
+ */
 
 import { isRef, type Ref, type ComputedRef } from 'vue'
 

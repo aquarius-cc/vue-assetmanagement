@@ -1,12 +1,15 @@
 <!--
-  DepartmentManagement.vue
-  部门-人员综合管理页面
-
-  功能：
-    - 左侧：部门树形目录（可展开折叠、拖拽排序、新增根部门）
-    - 右侧：部门信息卡片（编辑、新增子部门）+ 人员列表（新增人员、批量导入、排序编辑）
-
-  布局：左右分栏，左侧固定宽度 300px，右侧自适应
+@file 部门-人员综合管理页面，左侧部门树形目录与右侧信息卡片及人员列表联动展示
+@component DepartmentManagement
+@usedBy
+  - views/DepartmentManagement.vue: 通过 router-view 渲染部门综合管理
+@dependsOn
+  - api/department: 部门树形结构接口
+  - components/componentsdetails/components/DepartmentTree: 部门树形目录组件
+  - components/componentsdetails/components/DepartmentInfoCard: 部门信息卡片组件
+  - components/componentsdetails/components/DepartmentEmployeeList: 部门人员列表组件
+  - components/componentsdetails/components/DepartmentFormDialog: 部门表单弹窗组件
+  - components/componentsdetails/components/DepartmentBatchAddDialog: 批量新增弹窗组件
 -->
 <template>
   <div class="department-management" v-loading="isLoading" element-loading-text="加载中...">
@@ -135,7 +138,7 @@ import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Sort } from '@element-plus/icons-vue'
 import { departmentAPI } from '@/api/department'
-import type { Department, DepartmentTreeNode, MoveDepartmentParams } from '@/utils/Department'
+import type { Department, DepartmentTreeNode, MoveDepartmentParams } from '@/types/department'
 
 // ==================== 组件导入 ====================
 import DepartmentTree from '@/components/componentsdetails/components/DepartmentTree.vue'

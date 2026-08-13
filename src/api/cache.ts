@@ -1,5 +1,13 @@
-// api/cache.ts（独立缓存模块）
-// 内存缓存模块，遵循单一职责红线
+/**
+ * @file 内存缓存模块，提供通用的内存缓存功能
+ * @module api/cache
+ * @exports
+ *   - MemoryCache: 泛型内存缓存类
+ * @callers
+ *   - api/request.ts: 请求缓存
+ * @dependsOn
+ *   - 无外部依赖
+ */
 
 interface CacheEntry<T> {
   data: T

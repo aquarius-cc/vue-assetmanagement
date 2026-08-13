@@ -1,5 +1,13 @@
 /**
- * 维修资产 Store
+ * @file 维修资产 Store，基于 createEntityStore 工厂创建
+ * @module stores/repairAssetStore
+ * @exports
+ *   - useRepairAssetStore: 维修资产管理状态 Store
+ * @callers
+ *   - components/componentsdetails/RepairAssetDetails.vue
+ * @dependsOn
+ *   - api/repairAsset: 维修资产 API 接口
+ *   - stores/createEntityStore: 实体 Store 工厂
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { repairAssetAPI } from '@/api/repairAsset'
@@ -7,7 +15,7 @@ import type {
   RepairAssetExtended,
   RepairAssetCreateForm,
   RepairAssetUpdateForm,
-} from '@/utils/RepairAsset'
+} from '@/types/repairasset'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 

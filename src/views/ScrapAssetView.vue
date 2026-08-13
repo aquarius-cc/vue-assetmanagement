@@ -1,84 +1,96 @@
+<!--
+@file 资产报废申请页面，填写报废原因并提交申请
+@component ScrapAssetView.vue
+@description 资产报废申请页面，填写报废原因并提交申请
+@usedBy
+  - router/index.ts: 路由懒加载
+@dependsOn
+  - components/AssetOperationLayout: 资产操作通用布局
+  - composables/useAssetOperationForm: 资产操作表单逻辑
+  - api/asset: 资产数据接口
+-->
 <template>
-  <div class="asset-operation-view">
-    <el-card class="operation-card">
-      <template #header>
-        <div class="card-header">
-          <el-icon><Delete /></el-icon>
-          <span>资产报废申请</span>
-        </div>
-      </template>
+  <AssetOperationLayout
+    title="资产报废申请"
+    :icon="Delete"
+    :asset-code="assetCode"
+    :loading="loading"
+    :asset="asset"
+    :fetch-error="fetchError"
+    @retry="fetchAsset"
+  >
+    <template #form>
+      <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
+        <el-form-item label="报废原因" prop="reason">
+          <el-input
+            v-model="formData.reason"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入报废原因"
+          />
+        </el-form-item>
+      </el-form>
+    </template>
 
-      <el-result
-        v-if="!assetCode"
-        icon="warning"
-        title="缺少资产编码"
-        sub-title="请通过正确的方式访问此页面"
-      >
-        <template #extra>
-          <el-button type="primary" @click="router.push('/main')">返回首页</el-button>
-        </template>
-      </el-result>
-
-      <div v-else-if="loading" v-loading="true" class="loading-container" />
-
-      <template v-else-if="asset">
-        <el-descriptions :column="2" border class="asset-info">
-          <el-descriptions-item label="资产编码">{{ asset.asset_code }}</el-descriptions-item>
-          <el-descriptions-item label="资产名称">{{ asset.asset_name }}</el-descriptions-item>
-          <el-descriptions-item label="资产规格">{{
-            asset.asset_specification || '-'
-          }}</el-descriptions-item>
-          <el-descriptions-item label="当前状态">{{
-            asset.asset_current_status
-          }}</el-descriptions-item>
-        </el-descriptions>
-
-        <el-divider />
-
-        <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
-          <el-form-item label="报废原因" prop="reason">
-            <el-input
-              v-model="formData.reason"
-              type="textarea"
-              :rows="3"
-              placeholder="请输入报废原因"
-            />
-          </el-form-item>
-        </el-form>
-
-        <div class="action-buttons">
-          <el-button type="danger" :loading="submitting" @click="handleSubmit"
-            >提交报废申请</el-button
-          >
-          <el-button @click="router.back()">取消</el-button>
-        </div>
-      </template>
-
-      <el-result v-else icon="error" title="资产不存在" sub-title="未找到该资产信息">
-        <template #extra>
-          <el-button type="primary" @click="router.push('/main')">返回首页</el-button>
-        </template>
-      </el-result>
-    </el-card>
-  </div>
+    <template #actions>
+      <div class="action-buttons">
+        <el-button type="danger" :loading="submitting" :disabled="!canSubmit" @click="handleSubmit">
+          提交报废申请
+        </el-button>
+        <el-button @click="router.back()">取消</el-button>
+      </div>
+    </template>
+  </AssetOperationLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { reactive, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Delete } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import type { FormInstance, FormRules } from 'element-plus'
+import type { FormRules } from 'element-plus'
+import AssetOperationLayout from '@/components/AssetOperationLayout.vue'
+import { useAssetOperationForm } from '@/composables/useAssetOperationForm'
 import { assetAPI } from '@/api/asset'
-import type { AssetDetail } from '@/types/asset'
+import { AssetCurrentStatus } from '@/types/asset' // [修复] 新增状态枚举导入
 
-const route = useRoute()
 const router = useRouter()
-const formRef = ref<FormInstance>()
-const loading = ref(true)
-const submitting = ref(false)
-const asset = ref<AssetDetail | null>(null)
-const assetCode = ref(route.params.code as string)
+
+const {
+  loading,
+  submitting,
+  asset,
+  assetCode,
+  fetchError, // [修复] 新增：加载失败状态
+  fetchAsset, // [修复] 补充解构：供 @retry 事件调用
+  formRef,
+  handleSubmit: baseHandleSubmit,
+} = useAssetOperationForm<{ reason: string }>({
+  // [修复] 切换为专用报废 API，不再直接调用 changeAssetStatus 绕过状态机校验
+  submitFn: async (data) => {
+    await assetAPI.applyDamaged(assetCode.value, {
+      reason: data.reason,
+    })
+  },
+  successMessage: '报废申请已提交',
+  errorMessage: '提交报废申请失败，请重试',
+  // [修复] 移除 suppressDefaultError: true — 新分类处理逻辑已天然避免重复弹窗
+})
+
+// formRef 由模板 ref="formRef" 绑定到 el-form，供 composable 内部校验；
+// vue-tsc 不将模板 ref 绑定计为变量使用，此处显式消费以消除 TS6133
+void formRef
+// [修复] 前端状态校验：仅允许以下状态的资产提交报废申请
+// 与后端 FSM 允许的前置状态（in_use|recycled_pending|broken|lost）严格对齐
+const canSubmit = computed(
+  () =>
+    asset.value?.asset_current_status &&
+    [
+      AssetCurrentStatus.IN_USE,
+      AssetCurrentStatus.RECYCLED_PENDING,
+      AssetCurrentStatus.BROKEN,
+      AssetCurrentStatus.LOST,
+    ].includes(asset.value.asset_current_status),
+)
 
 const formData = reactive({
   reason: '',
@@ -88,74 +100,9 @@ const rules: FormRules = {
   reason: [{ required: true, message: '请输入报废原因', trigger: 'blur' }],
 }
 
-onMounted(async () => {
-  if (!assetCode.value) return
-  try {
-    asset.value = await assetAPI.getAssetByCode(assetCode.value)
-  } catch (err) {
-    console.error('获取资产信息失败:', err)
-  } finally {
-    loading.value = false
-  }
-})
-
-const handleSubmit = async () => {
-  if (!formRef.value) return
-  const valid = await formRef.value.validate().catch(() => false)
-  if (!valid) return
-
-  submitting.value = true
-  try {
-    await assetAPI.changeAssetStatus(assetCode.value, {
-      status: 'damaged',
-      description: formData.reason,
-    })
-    ElMessage.success('报废申请已提交')
-    router.push('/main')
-  } catch (err) {
-    console.error('提交报废申请失败:', err)
-    ElMessage.error('提交报废申请失败，请重试')
-  } finally {
-    submitting.value = false
-  }
-}
+const handleSubmit = () => baseHandleSubmit(formData)
 </script>
 
-<style scoped>
-.asset-operation-view {
-  display: flex;
-  justify-content: center;
-  padding: 24px;
-  min-height: 100vh;
-  background: var(--background-color);
-}
-
-.operation-card {
-  width: 100%;
-  max-width: 720px;
-  border-radius: 8px;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.loading-container {
-  min-height: 200px;
-}
-
-.asset-info {
-  margin-bottom: 16px;
-}
-
-.action-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 24px;
-}
+<style lang="scss" scoped>
+@use '@/assets/styles/asset-operation.scss' as *;
 </style>

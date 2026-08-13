@@ -118,8 +118,8 @@ import {
 } from '@/utils/batchImportHelpers'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { useUnregisteredAssetStore } from '@/stores/unregisteredAssetStore'
-import type { UnregisteredAssetCreateForm } from '@/utils/UnregisteredAsset'
-import { ScenarioType } from '@/utils/UnregisteredAsset'
+import type { UnregisteredAssetCreateForm } from '@/types/unregisteredasset'
+import { ScenarioType } from '@/types/unregisteredasset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { UnregisteredAssetExcelRow } from '@/types/batch-import'
 
@@ -201,15 +201,15 @@ const importConfig: BatchImportConfig<UnregisteredAssetExcelRow, UnregisteredAss
     asset_name: row.asset_name.trim(),
     asset_brand: row.asset_brand?.trim() || null,
     asset_specification: row.asset_specification?.trim() || null,
-    asset_type_code: row.asset_type_code?.trim() || null,
+    unregistered_asset_type: row.asset_type_code?.trim() || null,
     estimated_value:
       row.estimated_value !== undefined &&
       row.estimated_value !== null &&
       row.estimated_value !== ''
         ? Number(row.estimated_value)
         : null,
-    related_asset_code: row.related_asset_code?.trim() || null,
-    target_storage_code: row.target_storage_code?.trim() || null,
+    related_asset: row.related_asset_code?.trim() || null,
+    unregistered_asset_storage: row.target_storage_code?.trim() || null,
     handle_description: row.handle_description?.trim() || null,
   }),
   createFn: (data: UnregisteredAssetCreateForm) => unregisteredAssetStore.create(data),

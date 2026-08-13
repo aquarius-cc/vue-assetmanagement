@@ -1,6 +1,13 @@
 <!--
-  BrokenAssetDetails.vue
-  Broken asset list page
+@file 损坏资产列表页面，展示损坏资产记录并支持删除和导出操作
+@component BrokenAssetDetails
+@usedBy
+  - views/BrokenAssetDetails.vue: 通过 router-view 渲染损坏资产列表
+@dependsOn
+  - composables/useSmartListConfig: 列表配置
+  - stores/brokenAssetStore: 损坏资产数据管理
+  - components/commoncomponents/SmartListContainer: 数据管理容器
+  - components/commoncomponents/CommonList: 列表展示组件
 -->
 <template>
   <div class="broken-asset-details-root">
@@ -69,7 +76,7 @@ import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
-import type { BrokenAssetExtended } from '@/utils/BrokenAsset'
+import type { BrokenAssetExtended } from '@/types/brokenasset'
 import { useBrokenAssetStore } from '@/stores/brokenAssetStore'
 import { formatDate } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'
@@ -78,20 +85,20 @@ const brokenAssetStore = useBrokenAssetStore()
 const smartListRef = ref<SmartListContainerExpose | null>(null)
 
 const columns: TableColumn[] = [
-  { type: 'index', label: 'No.', width: 60, align: 'center' },
-  { prop: 'recordcode', label: 'Record Code', width: 160, align: 'center' },
-  { prop: 'asset_code', label: 'Asset Code', width: 160, align: 'center' },
-  { prop: 'asset_name', label: 'Asset Name', width: 150, align: 'left' },
-  { prop: 'broken_reason', label: 'Reason', width: 150, align: 'left' },
+  { type: 'index', label: '序号', width: 60, align: 'center' },
+  { prop: 'recordcode', label: '唯一记录码', width: 160, align: 'center' },
+  { prop: 'asset_code', label: '资产编号', width: 160, align: 'center' },
+  { prop: 'asset_name', label: '资产名称', width: 150, align: 'left' },
+  { prop: 'broken_reason', label: '损坏原因', width: 150, align: 'left' },
   {
     type: 'custom',
     prop: 'broken_date',
-    label: 'Broken Date',
+    label: '损坏日期',
     width: 120,
     align: 'center',
     slotName: 'broken_date',
   },
-  { prop: 'operator_name', label: 'Operator', width: 100, align: 'center' },
+  { prop: 'operator_name', label: '操作人', width: 100, align: 'center' },
 ]
 
 const storeConfig = useSmartListConfig<BrokenAssetExtended>({

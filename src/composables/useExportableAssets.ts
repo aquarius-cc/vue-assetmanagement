@@ -1,6 +1,13 @@
 /**
- * 可出库资产搜紀Composable
- * 后端接口＀assets/assets/search_available/（仅返回 asset_current_status = 'in_store' 的资产）
+ * @file 可出库资产搜索列表管理（状态为 in_store 的资产）
+ * @module composables/useExportableAssets
+ * @exports
+ *   - useExportableAssets: 可出库资产列表 composable
+ * @callers
+ *   - components/componentsdetails/detils/detilschildcomponents/ExportableAssetsSearch.vue
+ * @dependsOn
+ *   - api/asset: searchAvailableAssets 接口
+ *   - types/asset: 资产简化返回类型
  */
 import { ref } from 'vue'
 import { assetAPI } from '@/api/asset'

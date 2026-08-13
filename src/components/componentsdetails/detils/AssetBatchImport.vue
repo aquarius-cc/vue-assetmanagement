@@ -166,7 +166,7 @@ const uploadRef = ref<UploadInstance>()
 const fileList = ref<UploadFile[]>([])
 const localIsSubmitting = ref(false)
 
-// ===== 预览表格分页状?=====
+// ===== 预览表格分页状态 =====
 const previewPageSize = 10
 const currentPreviewPage = ref(1)
 
@@ -195,8 +195,8 @@ const importConfig: BatchImportConfig<AssetExcelRow, AssetCreateForm> = {
     仓库编码: 'asset_storage',
     资产描述: 'asset_description',
   },
-  // 必填字段（基?AssetCreateForm 必需字段?）
-  // 注意：asset_code 已改为后端自动生成，不再是必填字?）
+  // 必填字段（基于 AssetCreateForm 的必需字段）
+  // 注意：asset_code 已改为后端自动生成，不再是必填字段）
   requiredFields: [
     'asset_name',
     'asset_specification',
@@ -210,10 +210,10 @@ const importConfig: BatchImportConfig<AssetExcelRow, AssetCreateForm> = {
   validateItem: (item: AssetExcelRow) => {
     const errors: Record<string, string> = {}
 
-    // ?asset_code 改为可选（后端自动生成），移除必填校验和长度校?    // if (!item.asset_code?.toString().trim()) {
+    // asset_code 改为可选（后端自动生成），移除必填校验和长度校验    // if (!item.asset_code?.toString().trim()) {
     //   errors.asset_code = '资产编码不能为空'
     // } else if (item.asset_code.length < 3 || item.asset_code.length > 50) {
-    //   errors.asset_code = '编码长度 3-50 个字?
+    //   errors.asset_code = '编码长度 3-50 个字符'
     // }
 
     if (!item.asset_name?.trim()) {
@@ -229,7 +229,7 @@ const importConfig: BatchImportConfig<AssetExcelRow, AssetCreateForm> = {
     // 单价校验
     const price = Number(item.asset_purchase_price)
     if (isNaN(price) || price < 0) {
-      errors.asset_purchase_price = '单价必须是有效数字且不小?'
+      errors.asset_purchase_price = '单价必须是有效数字且不小于0'
     }
 
     // 采购数量校验
@@ -290,7 +290,7 @@ const importConfig: BatchImportConfig<AssetExcelRow, AssetCreateForm> = {
     asset_description: row.asset_description?.trim() || null,
   }),
 
-  // placeholder: 实际提交逻辑?handleSubmit 中直接调?batchCreateAssets
+  // placeholder: 实际提交逻辑在 handleSubmit 中直接调用 batchCreateAssets
   createFn: async () => ({}) as AssetCreateForm,
   // 注意：后端规则变更：asset_code 由后端自动生成，不再作为前端唯一标识
   // 使用 asset_name 作为追踪字段（批量导入时用于标识提交状态）
@@ -319,7 +319,7 @@ const resetPreviewPage = () => {
   currentPreviewPage.value = 1
 }
 
-// ===== 适配 el-upload ?onChange 事件 =====
+// ===== 适配 el-upload 的 onChange 事件 =====
 /**
  * 将 el-upload 的 UploadFile 对象适配为原生 File 对象 * 再调用批量导入 Hook 的 handleFileChange
  * @param uploadFile - el-upload 提供的文件对象 @param uploadFileList - 当前文件列表（用于更新组件状态）
@@ -454,7 +454,7 @@ const headerExamples: HeaderExample[] = [
     remark: 'YYYY-MM-DD',
   },
   {
-    headerName: '质保??',
+    headerName: '质保期',
     field: 'asset_warranty_period',
     required: false,
     example: '3',
@@ -582,7 +582,7 @@ const exampleRows = [
 ]
 
 /**
- * 提交处理：调用后端批量创建接口，一次性提交所有有效数? * 解决原有逐条创建因并发请求去重导致的数据丢失问题
+ * 提交处理：调用后端批量创建接口，一次性提交所有有效数据 * 解决原有逐条创建因并发请求去重导致的数据丢失问题
  */
 const handleSubmit = async () => {
   const validRows = previewData.value.filter((r) => r.validationStatus === 'success')
@@ -621,7 +621,7 @@ const handleSubmit = async () => {
         fail_items: respData.fail_items as Array<{ index: number; error_message: string }>,
       }
     } catch (axiosError: unknown) {
-      // 处理 400 错误：后端返?{ code: 400, data: { items: [{ field: ["错误"] }] } }
+      // 处理 400 错误：后端返回 { code: 400, data: { items: [{ field: ["错误"] }] } }
       if (isAxiosError(axiosError) && axiosError.response?.status === 400) {
         const respData = axiosError.response.data as Record<string, unknown>
         // console.log('后端返回错误数据:', respData)
@@ -694,11 +694,14 @@ const handleSubmit = async () => {
 
 // ===== 清空数据（同时重置上传组件状态） =====
 const handleClear = () => {
-  clearData() // 清除预览数据和提交结?  fileList.value = [] // 清空本地文件列表
-  uploadRef.value?.clearFiles() // 清空 el-upload 组件内部的文件列表  resetPreviewPage() // 分页重置到第一页  ElMessage.info('已清空所有数?)
+  clearData() // 清除预览数据和提交结果
+  fileList.value = [] // 清空本地文件列表
+  uploadRef.value?.clearFiles() // 清空 el-upload 组件内部的文件列表
+  resetPreviewPage() // 分页重置到第一页
+  ElMessage.info('已清空所有数据')
 }
 
-// ===== 返回上一?=====
+// ===== 返回上一页 =====
 const goBack = () => {
   router.go(-1)
 }

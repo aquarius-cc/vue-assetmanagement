@@ -1,5 +1,20 @@
-// types/batch-import.ts
-// 批量导入 Excel 行类型（从各 .vue 文件迁移至此）
+/**
+ * @file 批量导入 Excel 行类型定义，包括各类资产、合同、部门等导入行接口
+ * @module types/batch-import
+ * @exports
+ *   - AssetExcelRow: 资产批量导入行接口
+ *   - ContractExcelRow: 合同批量导入行接口
+ *   - AssetTypeExcelRow: 资产类型批量导入行接口
+ *   - StorageExcelRow: 仓库批量导入行接口
+ *   - OutAssetExcelRow: 出库批量导入行接口
+ *   - DamagedAssetExcelRow: 损坏资产批量导入行接口
+ *   - UnregisteredAssetExcelRow: 未登记资产批量导入行接口
+ *   - DepartmentExcelRow: 部门批量导入行接口
+ * @callers
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
+ *   - views/*（页面视图）
+ */
 
 /** 资产批量导入行 */
 export interface AssetExcelRow {
@@ -24,22 +39,21 @@ export interface AssetExcelRow {
   asset_description?: string
 }
 
-/** 合同批量导入行 */
+/** 合同批量导入行（字段名与后端 Contract 模型保持一致） */
 export interface ContractExcelRow {
   contract_code: string
   contract_name: string
-  contract_supplier: string
-  contract_price: number | string
-  contract_signing_date: string
+  supplier_name: string
+  contract_amount: number | string
+  contract_start_date: string
   contract_type: string
   contract_warranty_period: number | string
-  contract_preliminary_acceptance_date?: string
-  contract_final_acceptance_date?: string
-  contract_settledment_status: string
-  contract_settledment_price?: number | string
-  contract_paid_count_number?: number | string
-  contract_paid_price?: number | string
-  contract_paid_record?: string
+  initial_check_date?: string
+  final_check_date?: string
+  contract_status: string
+  settlemented_price?: number | string
+  amount_paid?: number | string
+  paid_record?: string
 }
 
 /** 资产类型批量导入行 */

@@ -1,10 +1,24 @@
 /**
- * 仓库管理 Store
- * 基于 createEntityStore 工厂创建
+ * @file 仓库管理 Store，基于 createEntityStore 工厂创建
+ * @module stores/storageStore
+ * @exports
+ *   - useStorageStore: 仓库管理状态 Store
+ * @callers
+ *   - composables/useRecycleFormAssociations.ts
+ *   - components/componentsdetails/StorageDetails.vue
+ *   - components/componentsdetails/detils/AssetForm.vue
+ *   - components/componentsdetails/detils/StorageForm.vue
+ *   - components/componentsdetails/detils/StorageBatchImport.vue
+ *   - components/componentsdetails/detils/RecycleAssetBasicDetails.vue
+ *   - components/componentsdetails/detils/UnregisteredAssetForm.vue
+ *   - components/componentsdetails/detils/DamagedAssetForm.vue
+ * @dependsOn
+ *   - api/storage: 仓库 API 接口
+ *   - stores/createEntityStore: 实体 Store 工厂
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { storageAPI } from '@/api/storage'
-import type { Storage, StorageCreateForm, StorageUpdateForm } from '@/utils/Storage'
+import type { Storage, StorageCreateForm, StorageUpdateForm } from '@/types/storage'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 

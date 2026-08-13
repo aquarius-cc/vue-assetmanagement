@@ -1,29 +1,16 @@
-﻿<!--
-  DamagedAssetDetails.vue
-  待报废资产列表页面（重构版）
-  
-  架构调整：
-  1. 使用 SmartListContainer 封装数据管理逻辑（分页、搜索、加载）
-  2. CommonList 只负责 UI 展示，不管理数据
-  3. 解决原架构中父组件和 CommonList 重复请求的问题
-  
-  数据流：
-  SmartListContainer (数据管理) → slot props → CommonList (纯展示)
-  
-  功能：
-  - 展示待报废资产列表（只显示 approval_status=pending 的记录）
-  - 新增、编辑、删除待报废记录
-  - 批量导入、导出 Excel
-  - 子路由：新增/编辑表单、详情页、批量导入（浮层遮罩）
-  
-  业务说明：
-  - 待报废资产需要经过审批流程
-  - 本页面只显示审批状态为 pending（待审批）的记录
-  - 审批通过后会自动创建已报废资产记录
+<!--
+@file 待报废资产列表页面，展示待审批的报废资产记录并支持增删改查操作
+@component DamagedAssetDetails
+@usedBy
+  - views/DamagedAssetDetails.vue: 通过 router-view 渲染待报废资产列表
+@dependsOn
+  - stores/damagedAssetStore: 待报废资产数据管理
+  - components/commoncomponents/SmartListContainer: 数据管理容器
+  - components/commoncomponents/CommonList: 列表展示组件
 -->
 <template>
   <div class="damaged-asset-details-root">
-    <!-- 
+    <!--
       表格容器
       使用 SmartListContainer 管理数据，通过 slot 将数据传递给 CommonList
     -->
@@ -35,7 +22,7 @@
         :initial-page="1"
         :initial-page-size="20"
       >
-        <!-- 
+        <!--
           slot 接收 SmartListContainer 传递的数据管理状态
           包括：data, loading, currentPage, pageSize, total, search 等
         -->
@@ -125,8 +112,8 @@ import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
 import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
-import type { DamagedAsset } from '@/utils/DamagedAsset'
-import { ApprovalStatus } from '@/utils/DamagedAsset'
+import type { DamagedAsset } from '@/types/damagedasset'
+import { ApprovalStatus } from '@/types/damagedasset'
 import { useDamagedAssetStore } from '@/stores/damagedAssetStore'
 import { formatDate } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'
@@ -195,7 +182,7 @@ const getApprovalStatusText = (status: string | null | undefined): string => {
  */
 const columns: TableColumn[] = [
   { type: 'index', label: '序号', width: 60, align: 'center' },
-  { prop: 'damaged_asset_code', label: '待报废资产编码', width: 150, align: 'center' },
+  { prop: 'asset_recordcode', label: '待报废资产编码', width: 150, align: 'center' },
   { prop: 'damaged_asset_name', label: '资产名称', width: 150, align: 'left' },
   { prop: 'damaged_asset_specification', label: '规格型号', width: 100, align: 'center' },
   { prop: 'damaged_asset_contract_name', label: '合同名称', width: 150, align: 'left' },
@@ -344,16 +331,15 @@ watch(
  * @param row 待编辑的行数据
  */
 const handleEdit = (row: DamagedAsset) => {
-  if (!row.damaged_asset_code) {
+  // [HALT] FE-C2修复：字段名从 damaged_asset_code 改为 asset_recordcode，与后端Serializer对齐
+  if (!row.asset_recordcode) {
     ElMessage.error('资产编码不存在，无法编辑')
     return
   }
-  router
-    .push({ name: 'DamagedAssetForm', query: { code: row.damaged_asset_code } })
-    .catch((err) => {
-      console.error('编辑跳转失败:', err)
-      ElMessage.error('跳转编辑页失败，请重试')
-    })
+  router.push({ name: 'DamagedAssetForm', query: { code: row.asset_recordcode } }).catch((err) => {
+    console.error('编辑跳转失败:', err)
+    ElMessage.error('跳转编辑页失败，请重试')
+  })
 }
 
 /**
@@ -361,7 +347,8 @@ const handleEdit = (row: DamagedAsset) => {
  * @param row 待删除的行数据
  */
 const handleDelete = (row: DamagedAsset) => {
-  if (!row.damaged_asset_code) {
+  // [HALT] FE-C2修复：字段名从 damaged_asset_code 改为 asset_recordcode，与后端Serializer对齐
+  if (!row.asset_recordcode) {
     ElMessage.error('记录 ID 不存在，无法删除')
     return
   }
@@ -371,7 +358,7 @@ const handleDelete = (row: DamagedAsset) => {
     type: 'warning',
   })
     .then(() => {
-      return damagedAssetStore.remove(row.damaged_asset_code || '')
+      return damagedAssetStore.remove(row.asset_recordcode || '')
     })
     .then(() => {
       ElMessage.success('删除成功')
@@ -412,7 +399,8 @@ const handleBatchImport = () => {
  */
 const handleExportExcel = async () => {
   const exportColumns: ColumnConfig<DamagedAsset>[] = [
-    { title: '待报废资产编码', key: 'damaged_asset_code', default: '' },
+    // [HALT] FE-C2修复：字段名从 damaged_asset_code 改为 asset_recordcode，与后端Serializer对齐
+    { title: '待报废资产编码', key: 'asset_recordcode', default: '' },
     { title: '资产名称', key: 'damaged_asset_name', default: '' },
     { title: '合同名称', key: 'damaged_asset_contract_name', default: '' },
     { title: '仓库名称', key: 'damaged_asset_storage_name', default: '' },
@@ -513,7 +501,7 @@ const handleBatchDelete = async (rows: DamagedAsset[] | undefined) => {
   }
 
   // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows.map((row) => row.damaged_asset_code).filter((code): code is string => !!code)
+  const codes = rows.map((row) => row.damaged_asset).filter((code): code is string => !!code)
 
   if (codes.length === 0) {
     ElMessage.error('无法删除：选中的数据缺少唯一标识')

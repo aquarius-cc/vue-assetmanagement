@@ -1,9 +1,18 @@
 /**
- * 资产列表页配置 composable
- * 封装搜索栏字段、SmartListContainer 的 store 配置、导出列配置
- * 从 AssetContentDetails.vue 提取，解决 DR-5 超限问题
+ * @file 资产列表页搜索字段、分页 store 配置与 Excel 导出列配置
+ * @module composables/useAssetListConfig
+ * @exports
+ *   - useAssetListConfig: 资产列表页完整配置工厂
+ * @callers
+ *   - components/componentsdetails/AssetContentDetails.vue
+ * @dependsOn
+ *   - composables/usePaginationSearch: 分页搜索框架
+ *   - composables/useExcelExport: Excel 导出列配置引用
+ *   - stores/assetStore: 资产数据与搜索 API
+ *   - utils/excelExporter: 列配置类型
+ *   - utils/Format: 状态/类型映射
+ *   - types/common: 搜索字段配置类型
  */
-
 import { computed } from 'vue'
 import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import type { ColumnConfig } from '@/utils/excelExporter'

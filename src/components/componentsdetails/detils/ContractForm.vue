@@ -52,9 +52,9 @@
 
           <!-- 合同金额 -->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="合同金额" prop="contract_price">
+            <el-form-item label="合同金额" prop="contract_amount">
               <el-input-number
-                v-model="contractForm.contract_price"
+                v-model="contractForm.contract_amount"
                 :min="0"
                 :precision="2"
                 placeholder="请输入合同金额"
@@ -66,9 +66,9 @@
 
           <!-- 供应商-->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="供应商" prop="contract_supplier">
+            <el-form-item label="供应商" prop="supplier_name">
               <el-input
-                v-model="contractForm.contract_supplier"
+                v-model="contractForm.supplier_name"
                 placeholder="请输入供应商"
                 clearable
                 :readonly="isEdit"
@@ -92,9 +92,9 @@
             </el-form-item>
           </el-col>
 
-          <!-- 质保最-->
+          <!-- 质保期（年）-->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="质保最幀" prop="contract_warranty_period">
+            <el-form-item label="质保期（年）" prop="contract_warranty_period">
               <el-input-number
                 v-model="contractForm.contract_warranty_period"
                 :min="0"
@@ -107,9 +107,9 @@
 
           <!-- 合同签订日期 -->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="合同签订日期" prop="contract_signing_date">
+            <el-form-item label="合同签订日期" prop="contract_start_date">
               <el-date-picker
-                v-model="contractForm.contract_signing_date"
+                v-model="contractForm.contract_start_date"
                 type="date"
                 placeholder="请选择合同签订日期"
                 format="YYYY-MM-DD"
@@ -122,9 +122,9 @@
 
           <!-- 合同结算状态-->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="合同结算状态" prop="contract_settledment_status">
+            <el-form-item label="合同结算状态" prop="contract_status">
               <el-select
-                v-model="contractForm.contract_settledment_status"
+                v-model="contractForm.contract_status"
                 placeholder="请选择结算状态"
                 style="width: 100%"
               >
@@ -136,9 +136,9 @@
 
           <!-- 合同初验日期 -->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="合同初验日期" prop="contract_preliminary_acceptance_date">
+            <el-form-item label="合同初验日期" prop="initial_check_date">
               <el-date-picker
-                v-model="contractForm.contract_preliminary_acceptance_date"
+                v-model="contractForm.initial_check_date"
                 type="date"
                 placeholder="请选择合同初验日期"
                 format="YYYY-MM-DD"
@@ -151,9 +151,9 @@
 
           <!-- 结算金额 -->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="结算金额" prop="contract_settledment_price">
+            <el-form-item label="结算金额" prop="settlemented_price">
               <el-input-number
-                v-model="contractForm.contract_settledment_price"
+                v-model="contractForm.settlemented_price"
                 :min="0"
                 :precision="2"
                 placeholder="请输入结算金额"
@@ -164,9 +164,9 @@
 
           <!-- 合同终验日期 -->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="合同终验日期" prop="contract_final_acceptance_date">
+            <el-form-item label="合同终验日期" prop="final_check_date">
               <el-date-picker
-                v-model="contractForm.contract_final_acceptance_date"
+                v-model="contractForm.final_check_date"
                 type="date"
                 placeholder="请选择合同终验日期"
                 format="YYYY-MM-DD"
@@ -177,23 +177,11 @@
             </el-form-item>
           </el-col>
 
-          <!-- 已付款次数-->
-          <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="已付款次数" prop="contract_paid_count_number">
-              <el-input-number
-                v-model="contractForm.contract_paid_count_number"
-                :min="0"
-                placeholder="请输入已付款次数"
-                style="width: 100%"
-              />
-            </el-form-item>
-          </el-col>
-
           <!-- 已支付金额-->
           <el-col :xs="24" :sm="24" :md="12">
-            <el-form-item label="已支付金额" prop="contract_paid_price">
+            <el-form-item label="已支付金额" prop="amount_paid">
               <el-input-number
-                v-model="contractForm.contract_paid_price"
+                v-model="contractForm.amount_paid"
                 :min="0"
                 :precision="2"
                 placeholder="请输入已支付金额"
@@ -204,11 +192,11 @@
 
           <!-- 支付记录 -->
           <el-col :span="24">
-            <el-form-item label="支付记录" prop="contract_paid_record">
+            <el-form-item label="支付记录" prop="paid_record">
               <el-input
                 type="textarea"
                 :rows="3"
-                v-model="contractForm.contract_paid_record"
+                v-model="contractForm.paid_record"
                 placeholder="请输入支付记录"
                 clearable
               />
@@ -241,7 +229,7 @@ import { ElMessage } from 'element-plus'
 import { Plus, Edit } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useContractStore } from '@/stores/contractStore'
-import type { Contract, ContractCreateForm, ContractSettlementStatus } from '@/types/contract'
+import type { Contract, ContractCreateForm, ContractStatus } from '@/types/contract'
 import { formatDate } from '@/utils/Format'
 import { isAxiosError } from 'axios'
 
@@ -260,18 +248,17 @@ interface ContractFormData extends ContractCreateForm {
   id: number
   contract_code: string
   contract_name: string
-  contract_price: number
-  contract_settledment_status: ContractSettlementStatus | null
-  contract_signing_date: string | null
-  contract_supplier: string
+  contract_amount: number
+  contract_status: ContractStatus | null
+  contract_start_date: string | null
+  supplier_name: string
   contract_type: string
   contract_warranty_period: number
-  contract_settledment_price: number
-  contract_preliminary_acceptance_date: string | null
-  contract_final_acceptance_date: string | null
-  contract_paid_count_number: number
-  contract_paid_price: number
-  contract_paid_record: string
+  settlemented_price: number
+  initial_check_date: string | null
+  final_check_date: string | null
+  amount_paid: number
+  paid_record: string
 }
 
 // 初始化表单数据
@@ -279,18 +266,17 @@ const initFormData = (): ContractFormData => ({
   id: 0,
   contract_code: '',
   contract_name: '',
-  contract_price: 0,
-  contract_settledment_status: null,
-  contract_signing_date: null,
-  contract_supplier: '',
+  contract_amount: 0,
+  contract_status: null,
+  contract_start_date: null,
+  supplier_name: '',
   contract_type: '',
   contract_warranty_period: 3,
-  contract_settledment_price: 0,
-  contract_preliminary_acceptance_date: null,
-  contract_final_acceptance_date: null,
-  contract_paid_count_number: 0,
-  contract_paid_price: 0,
-  contract_paid_record: '',
+  settlemented_price: 0,
+  initial_check_date: null,
+  final_check_date: null,
+  amount_paid: 0,
+  paid_record: '',
 })
 
 const contractForm = reactive<ContractFormData>(initFormData())
@@ -305,21 +291,19 @@ const rules = {
     { required: true, message: '请输入合同名称', trigger: 'blur' },
     { min: 2, max: 100, message: '合同名称长度在2到100个字符', trigger: 'blur' },
   ],
-  contract_price: [
+  contract_amount: [
     { required: true, message: '请输入合同金额', trigger: 'blur' },
     { type: 'number', min: 0, message: '合同金额必须大于等于0', trigger: 'blur' },
   ],
-  contract_supplier: [{ required: true, message: '请输入供应商', trigger: 'blur' }],
-  contract_signing_date: [{ required: true, message: '请选择合同签订日期', trigger: 'change' }],
-  contract_settledment_status: [
-    { required: true, message: '请选择合同结算状态', trigger: 'change' },
-  ],
+  supplier_name: [{ required: true, message: '请输入供应商', trigger: 'blur' }],
+  contract_start_date: [{ required: true, message: '请选择合同签订日期', trigger: 'change' }],
+  contract_status: [{ required: true, message: '请选择合同结算状态', trigger: 'change' }],
   contract_warranty_period: [
     { required: true, message: '请输入质保期', trigger: 'blur' },
-    { type: 'number', min: 0, message: '质保期必须大于等人', trigger: 'blur' },
+    { type: 'number', min: 0, message: '质保期必须大于等于0', trigger: 'blur' },
   ],
   contract_type: [{ required: true, message: '请选择合同类型', trigger: 'change' }],
-  contract_settledment_price: [
+  settlemented_price: [
     { required: true, message: '请输入结算金额', trigger: 'blur' },
     { type: 'number', min: 0, message: '结算金额必须大于等于0', trigger: 'blur' },
   ],
@@ -362,19 +346,15 @@ const loadContractDetail = async (code: string) => {
     // 填充表单数据
     Object.assign(contractForm, {
       ...targetContract,
-      contract_price: toNumber(targetContract.contract_price),
+      contract_amount: toNumber(targetContract.contract_amount),
       contract_warranty_period: toNumber(targetContract.contract_warranty_period, 3),
-      contract_settledment_price: toNumber(targetContract.contract_settledment_price),
-      contract_paid_count_number: toNumber(targetContract.contract_paid_count_number),
-      contract_paid_price: toNumber(targetContract.contract_paid_price),
-      contract_signing_date: safeFormatDate(targetContract.contract_signing_date),
-      contract_preliminary_acceptance_date: safeFormatDate(
-        targetContract.contract_preliminary_acceptance_date,
-      ),
-      contract_final_acceptance_date: safeFormatDate(targetContract.contract_final_acceptance_date),
-      // 确保结算状态值为枚举字符
-      contract_settledment_status:
-        targetContract.contract_settledment_status as ContractSettlementStatus,
+      settlemented_price: toNumber(targetContract.settlemented_price),
+      amount_paid: toNumber(targetContract.amount_paid),
+      contract_start_date: safeFormatDate(targetContract.contract_start_date),
+      initial_check_date: safeFormatDate(targetContract.initial_check_date),
+      final_check_date: safeFormatDate(targetContract.final_check_date),
+      // 确保合同状态值为枚举字符
+      contract_status: targetContract.contract_status as ContractStatus,
     })
   } catch (error) {
     console.error('获取合同详情失败:', error)
@@ -410,21 +390,16 @@ const submitForm = () => {
     const submitData: ContractCreateForm = {
       contract_code: contractForm.contract_code,
       contract_name: contractForm.contract_name,
-      contract_price: Number(contractForm.contract_price),
-      contract_settledment_status:
-        contractForm.contract_settledment_status as ContractSettlementStatus,
-      contract_signing_date: safeFormatDate(contractForm.contract_signing_date) || '',
-      contract_supplier: contractForm.contract_supplier,
+      contract_amount: Number(contractForm.contract_amount),
+      contract_status: contractForm.contract_status as ContractStatus,
+      contract_start_date: safeFormatDate(contractForm.contract_start_date) || '',
+      supplier_name: contractForm.supplier_name,
       contract_type: contractForm.contract_type,
       contract_warranty_period: Number(contractForm.contract_warranty_period),
-      contract_settledment_price: Number(contractForm.contract_settledment_price),
-      contract_preliminary_acceptance_date: safeFormatDate(
-        contractForm.contract_preliminary_acceptance_date,
-      ),
-      contract_final_acceptance_date: safeFormatDate(contractForm.contract_final_acceptance_date),
-      contract_paid_count_number: Number(contractForm.contract_paid_count_number),
-      contract_paid_price: Number(contractForm.contract_paid_price),
-      contract_paid_record: contractForm.contract_paid_record || '',
+      settlemented_price: Number(contractForm.settlemented_price),
+      initial_check_date: safeFormatDate(contractForm.initial_check_date),
+      final_check_date: safeFormatDate(contractForm.final_check_date),
+      paid_record: contractForm.paid_record || '',
     }
 
     try {
@@ -439,7 +414,7 @@ const submitForm = () => {
       router.push({ name: 'ContractDetails' })
     } catch (error: unknown) {
       const errorMsg = isAxiosError(error)
-        ? `操作失败'{error.response?.data?.message || '服务器错诀}`
+        ? `操作失败${error.response?.data?.message || '服务器错误'}`
         : error instanceof Error
           ? error.message
           : '操作失败：未知错误'

@@ -1,8 +1,18 @@
-// composables/usePaginationSearch.ts
-// 通用分页搜索 Composable — 薄编排层
-// 搜索逻辑已拆分至 usePaginationSearchState.ts
-// 类型访问器已提取至 utils/reactiveAccess.ts
-
+/**
+ * @file 通用分页搜索编排层，桥接 Store 与 usePaginationSearchState
+ * @module composables/usePaginationSearch
+ * @exports
+ *   - usePaginationSearch: 分页搜索 composable
+ *   - PaginationData: 分页数据类型
+ *   - PaginationSearchConfig: 分页搜索配置类型
+ * @callers
+ *   - composables/useAssetListConfig: 资产列表配置
+ *   - components/commoncomponents/SmartListContainer.vue
+ * @dependsOn
+ *   - composables/usePaginationSearchState: 搜索状态管理
+ *   - utils/reactiveAccess: 3-way 响应式读写工具
+ *   - stores/createEntityStore: PaginationQuery 类型
+ */
 import { ref, computed, nextTick, watch } from 'vue'
 import type { Ref, ComputedRef } from 'vue'
 import { ElMessage } from 'element-plus'
@@ -21,9 +31,13 @@ export interface PaginationData {
 
 export interface PaginationSearchConfig<T> {
   store: {
-    getList: (
-      params: PaginationQuery,
-    ) => Promise<{ count: number; results: T[]; next?: string | null; previous?: string | null }>
+    getList: (params: PaginationQuery) => Promise<{
+      count: number
+      results: T[]
+      total_pages?: number
+      next?: string | null
+      previous?: string | null
+    }>
     pagination: PaginationRef
     list: ComputedRef<T[]> | T[] | (() => T[])
     loading: ComputedRef<boolean> | boolean | (() => boolean)

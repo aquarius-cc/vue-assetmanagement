@@ -108,7 +108,7 @@ import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuide
 import { assetTypeAPI } from '@/api/assetType'
 import { useAssetTypeStore } from '@/stores/assetTypeStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
-import type { AssetTypeCreateForm } from '@/utils/AssetType'
+import type { AssetTypeCreateForm } from '@/types/assettype'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { AssetTypeExcelRow } from '@/types/batch-import'
 

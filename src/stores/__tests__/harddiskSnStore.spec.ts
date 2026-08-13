@@ -46,6 +46,7 @@ describe('HardDiskSnStore', () => {
         previous: null,
         results: [
           {
+            recordcode: 'HD-001',
             harddisksn_asset: 'AS-001',
             harddisk_sn_code: 'SN12345678',
           },
@@ -88,6 +89,7 @@ describe('HardDiskSnStore', () => {
   describe('创建记录', () => {
     it('应该调用API创建硬盘序列号', async () => {
       const mockCreated = {
+        recordcode: 'HD-001',
         harddisksn_asset: 'AS-001',
         harddisk_sn_code: 'SN12345678',
       }

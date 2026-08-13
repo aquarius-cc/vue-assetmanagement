@@ -1,5 +1,14 @@
-// composables/useEmployeeLinkage.ts
-// 姓名/工号联动通用逻辑（从 useAssetFormHelpers 拆分）
+/**
+ * @file 员工姓名-工号联动通用逻辑（自动完成、选中、变更校验）
+ * @module composables/useEmployeeLinkage
+ * @exports
+ *   - useEmployeeLinkage: 员工姓名-工号联动 composable
+ * @callers
+ *   - composables/useAssetFormHelpers: 通过 re-export 对外暴露
+ * @dependsOn
+ *   - vue: ref
+ *   - composables/useAssetFormHelpers: UserSuggestion 类型
+ */
 import { ref } from 'vue'
 import type { UserSuggestion } from './useAssetFormHelpers'
 

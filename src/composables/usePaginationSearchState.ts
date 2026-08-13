@@ -1,7 +1,14 @@
-// composables/usePaginationSearchState.ts
-// 搜索状态管理 — 从 usePaginationSearch 拆分
-// 职责：单关键词搜索 + 多参数搜索 + 搜索结果状态
-
+/**
+ * @file 分页搜索状态管理（单关键词搜索 + 多参数搜索 + 结果状态）
+ * @module composables/usePaginationSearchState
+ * @exports
+ *   - usePaginationSearchState: 搜索状态 composable
+ *   - SearchConfig: 搜索配置接口
+ * @callers
+ *   - composables/usePaginationSearch: 作为搜索子模块调用
+ * @dependsOn
+ *   - utils/reactiveAccess: 3-way 响应式读写工具
+ */
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { readReactive } from '@/utils/reactiveAccess'

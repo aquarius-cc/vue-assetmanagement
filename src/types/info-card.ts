@@ -1,9 +1,13 @@
 /**
- * info-card.ts
- * 通用信息卡片组件类型定义
- *
+ * @file 通用信息卡片组件类型定义，包括字段配置与卡片配置接口
  * @module types/info-card
- * @description 定义 InfoCard 组件的配置接口，用于数据驱动的卡片渲染
+ * @exports
+ *   - InfoField: 单个信息字段配置接口
+ *   - InfoCardConfig: 信息卡片配置接口
+ * @callers
+ *   - components/InfoCard（信息卡片组件）
+ *   - composables/*（组合式函数）
+ *   - views/*（页面视图）
  */
 
 /**

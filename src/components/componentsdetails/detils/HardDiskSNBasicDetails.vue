@@ -26,8 +26,8 @@
         <div class="info-grid">
           <div class="info-column">
             <div class="info-item">
-              <span class="info-label">ID：</span>
-              <span class="info-value">{{ detailData.id || 'N/A' }}</span>
+              <span class="info-label">记录编码：</span>
+              <span class="info-value">{{ detailData.recordcode || 'N/A' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">资产编码：</span>
@@ -73,7 +73,7 @@
             </div>
             <div class="info-item">
               <span class="info-label">描述：</span>
-              <span class="info-value">{{ detailData.harddisk_sn_description || '无' }}</span>
+              <span class="info-value">{{ detailData.harddisk_description || '无' }}</span>
             </div>
             <!-- // <div class="info-item">
             //   <span class="info-label">创建时间：</span>
@@ -107,8 +107,8 @@ import { Back, Download, Document } from '@element-plus/icons-vue'
 import { useHardDiskSnStore } from '@/stores/harddiskSnStore'
 import { useExcelExport } from '@/composables/useExcelExport'
 import type { ColumnConfig } from '@/utils/excelExporter'
-import type { HardDiskSN } from '@/utils/HardDiskSN'
-import { HardDiskType, HardDiskStatus } from '@/utils/HardDiskSN'
+import type { HardDiskSN } from '@/types/harddisksn'
+import { HardDiskType, HardDiskStatus } from '@/types/harddisksn'
 // import { formatDate } from '@/utils/Format'
 
 // ===== 硬盘类型辅助函数 =====
@@ -190,7 +190,7 @@ const detailData = ref<HardDiskSN | null>(null)
 const { exportDetail } = useExcelExport()
 
 const exportColumns: ColumnConfig<HardDiskSN>[] = [
-  { title: 'ID', key: 'id', default: '' },
+  { title: '记录编码', key: 'recordcode', default: '' },
   { title: '资产编码', key: 'asset_code', default: '' },
   { title: '资产名称', key: 'asset_name', default: '' },
   { title: '硬盘编号', key: 'harddisk_no', default: '', formatter: (v) => String(v) },
@@ -209,7 +209,7 @@ const exportColumns: ColumnConfig<HardDiskSN>[] = [
     formatter: (v) => getHardDiskStatusText(v as string),
   },
   { title: '用户工号', key: 'harddisk_user_jobcode', default: '' },
-  { title: '描述', key: 'harddisk_sn_description', default: '' },
+  { title: '描述', key: 'harddisk_description', default: '' },
   // {
   //   title: '创建时间',
   //   key: 'create_time',
@@ -270,7 +270,7 @@ const handleExport = async () => {
   await exportDetail(
     detailData.value,
     exportColumns,
-    `硬盘序列号_${detailData.value.harddisk_sn_code || detailData.value.id}`,
+    `硬盘序列号_${detailData.value.harddisk_sn_code || detailData.value.recordcode}`,
     '硬盘序列号详情',
   )
 }

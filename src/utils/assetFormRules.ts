@@ -1,16 +1,16 @@
+/**
+ * @file 资产表单验证规则，对齐后端 AssetCreateSerializer 必填字段
+ * @module src/utils/assetFormRules
+ * @exports
+ *   - assetFormRules: 资产表单 Element Plus 验证规则集
+ * @callers
+ *   - components/componentsdetails/detils/AssetForm.vue
+ * @dependsOn
+ *   - element-plus (FormRules)
+ */
+
 import type { FormRules } from 'element-plus'
 
-/**
- * 资产表单验证规则
- * 对齐后端 AssetCreateSerializer 必填字段：
- * - asset_name（必填）
- * - asset_type（必填）
- * - asset_purchase_price（必填）
- * - asset_purchase_date（必填）
- * - asset_entry_date（必填）
- *
- * 其余字段后端均为可选
- */
 export const assetFormRules: FormRules = {
   asset_name: [
     { required: true, message: '请输入资产名称', trigger: 'blur' },

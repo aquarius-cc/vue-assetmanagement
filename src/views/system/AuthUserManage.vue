@@ -1,3 +1,13 @@
+<!--
+@file 认证用户管理页面，支持用户增删改查与权限分配
+@component AuthUserManage.vue
+@usedBy
+  - router/index.ts: 路由懒加载
+@dependsOn
+  - api/authusers: 认证用户数据接口
+  - composables/usePermission: 权限校验
+  - composables/useDebouncedSearch: 防抖搜索
+-->
 <template>
   <div class="authuser-manage">
     <el-card class="main-card">
@@ -13,7 +23,6 @@
               placeholder="搜索用户名..."
               clearable
               style="width: 200px"
-              @input="handleSearch"
             >
               <template #prefix>
                 <el-icon><Search /></el-icon>
@@ -41,8 +50,8 @@
         </el-table-column>
         <el-table-column label="绑定员工" width="160">
           <template #default="{ row }">
-            <span v-if="row._boundEmployee">
-              {{ row._boundEmployee.employee_name }} ({{ row._boundEmployee.employee_jobcode }})
+            <span v-if="row.bound_employee">
+              {{ row.bound_employee.employee_name }} ({{ row.bound_employee.employee_jobcode }})
             </span>
             <span v-else class="unbound-hint">未绑定</span>
           </template>
@@ -56,7 +65,9 @@
           <template #default="{ row }">
             <el-button v-if="isAdmin" size="small" @click="openBindDialog(row)">绑定</el-button>
             <el-button v-if="isAdmin" size="small" @click="openRoleDialog(row)">角色</el-button>
-            <el-button v-if="isAdmin" size="small" type="primary" @click="openEditDialog(row)">编辑</el-button>
+            <el-button v-if="isAdmin" size="small" type="primary" @click="openEditDialog(row)"
+              >编辑</el-button
+            >
             <el-popconfirm
               v-if="isAdmin"
               :title="`确认删除用户「${row.auth_username}」？`"
@@ -94,10 +105,19 @@
     >
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px">
         <el-form-item label="用户名" prop="auth_username">
-          <el-input v-model="formData.auth_username" placeholder="请输入用户名" :disabled="isEdit" />
+          <el-input
+            v-model="formData.auth_username"
+            placeholder="请输入用户名"
+            :disabled="isEdit"
+          />
         </el-form-item>
         <el-form-item v-if="!isEdit" label="密码" prop="password">
-          <el-input v-model="formData.password" type="password" placeholder="请输入密码" show-password />
+          <el-input
+            v-model="formData.password"
+            type="password"
+            placeholder="请输入密码"
+            show-password
+          />
         </el-form-item>
         <el-form-item label="邮箱" prop="email">
           <el-input v-model="formData.email" placeholder="请输入邮箱" />
@@ -119,30 +139,31 @@
     <BindAuthUserDialog
       v-model:visible="bindDialogVisible"
       mode="from-authuser"
-      :auth-user="currentAuthUser"
+      :auth-user="currentAuthUserForBind"
       @saved="fetchAuthUsers"
     />
 
     <!-- 角色分配弹窗 -->
-    <UserRoleAssignDialog
-      v-model:visible="roleDialogVisible"
-      :auth-user="currentAuthUser"
-    />
+    <UserRoleAssignDialog v-model:visible="roleDialogVisible" :auth-user="currentAuthUser" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { User, Search, Plus } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { authUserAPI } from '@/api/authusers'
+import { getErrorMessage } from '@/utils/errorHandler'
 import { usePermission } from '@/composables/usePermission'
+import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
 import type { AuthUser, AuthUserCreateForm } from '@/types/authuser'
 import BindAuthUserDialog from '@/components/system/BindAuthUserDialog.vue'
 import UserRoleAssignDialog from '@/components/system/UserRoleAssignDialog.vue'
 
 // 权限检查
-const { isSuperuser: isAdmin } = usePermission()
+// 实际上 usePermission 已经导出了 isAdmin,
+// 并且 isAdmin 的判断逻辑已经包含了 isSuperuser 的判断,直接解构 isAdmin,不需要别名
+const { isAdmin } = usePermission()
 
 // ==================== 用户列表 ====================
 const loading = ref(false)
@@ -152,7 +173,11 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const searchKeyword = ref('')
 
-let searchTimer: ReturnType<typeof setTimeout> | null = null
+// 使用防抖搜索 composable
+useDebouncedSearch(searchKeyword, () => {
+  currentPage.value = 1
+  fetchAuthUsers()
+})
 
 const fetchAuthUsers = async () => {
   loading.value = true
@@ -167,32 +192,12 @@ const fetchAuthUsers = async () => {
     const res = await authUserAPI.getAuthUsers(params)
     authUsers.value = res.results
     total.value = res.count
-
-    // 并行获取每个用户的绑定员工信息
-    const results = await Promise.allSettled(
-      res.results.map((user) => authUserAPI.getBoundEmployee(user.auth_id)),
-    )
-    res.results.forEach((user, index) => {
-      const result = results[index]
-      if (result.status === 'fulfilled') {
-        ;(user as any)._boundEmployee = result.value
-      } else {
-        ;(user as any)._boundEmployee = null
-      }
-    })
+    // bound_employee 已由后端列表接口内联返回，无需额外请求
   } catch {
     ElMessage.error('获取用户列表失败')
   } finally {
     loading.value = false
   }
-}
-
-const handleSearch = () => {
-  if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => {
-    currentPage.value = 1
-    fetchAuthUsers()
-  }, 300)
 }
 
 const formatDate = (dateStr: string) => {
@@ -280,23 +285,31 @@ const handleSubmit = async () => {
       }
       dialogVisible.value = false
       fetchAuthUsers()
-    } catch (error: any) {
-      const msg = error?.response?.data?.message || error?.message || (isEdit.value ? '更新失败' : '创建失败')
-      ElMessage.error(msg)
+    } catch (error: unknown) {
+      ElMessage.error(getErrorMessage(error, isEdit.value ? '更新失败' : '创建失败'))
     } finally {
       submitting.value = false
     }
   })
 }
 
+// 计算当前绑定的用户信息
+// 用于在绑定员工弹窗中显示当前绑定的员工信息
+const currentAuthUserForBind = computed(() => {
+  if (!currentAuthUser.value) return null
+  return {
+    id: currentAuthUser.value.auth_id,
+    username: currentAuthUser.value.auth_username,
+  }
+})
+
 const handleDelete = async (row: AuthUser) => {
   try {
     await authUserAPI.deleteAuthUser(row.auth_id)
     ElMessage.success('删除成功')
     fetchAuthUsers()
-  } catch (error: any) {
-    const msg = error?.response?.data?.message || error?.message || '删除失败'
-    ElMessage.error(msg)
+  } catch (error: unknown) {
+    ElMessage.error(getErrorMessage(error, '删除失败'))
   }
 }
 
@@ -320,10 +333,6 @@ const openRoleDialog = (row: AuthUser) => {
 // ==================== 初始化 ====================
 onMounted(() => {
   fetchAuthUsers()
-})
-
-onUnmounted(() => {
-  if (searchTimer) clearTimeout(searchTimer)
 })
 </script>
 
@@ -365,7 +374,7 @@ onUnmounted(() => {
 }
 
 .unbound-hint {
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 </style>

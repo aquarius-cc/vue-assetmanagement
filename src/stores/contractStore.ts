@@ -1,6 +1,20 @@
 /**
- * 合同管理 Store
- * 基于 createEntityStore 工厂创建
+ * @file 合同管理 Store，基于 createEntityStore 工厂创建
+ * @module stores/contractStore
+ * @exports
+ *   - useContractStore: 合同管理状态 Store
+ * @callers
+ *   - composables/useContractBatchImport.ts
+ *   - components/componentsdetails/ContractDetails.vue
+ *   - components/componentsdetails/detils/AssetForm.vue
+ *   - components/componentsdetails/detils/ContractForm.vue
+ *   - components/componentsdetails/detils/ContractBatchImport.vue
+ *   - components/componentsdetails/detils/ContractOfDetails.vue
+ *   - components/componentsdetails/detils/DamagedAssetForm.vue
+ *   - components/componentsdetails/detils/WasteAssetForm.vue
+ * @dependsOn
+ *   - api/contract: 合同 API 接口
+ *   - stores/createEntityStore: 实体 Store 工厂
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { contractAPI } from '@/api/contract'
@@ -29,7 +43,7 @@ export const useContractStore = createEntityStore<Contract, PaginationQuery>('co
         results: response.results as Contract[],
       }
     },
-    getById: (code) => contractAPI.getContractByCodeOrId(code),
+    getById: (code) => contractAPI.getContractByRecordcode(code),
     getByName: async (name) => {
       const response = await contractAPI.getContractByName(name)
       return response.results as Contract[]

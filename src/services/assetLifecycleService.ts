@@ -1,20 +1,31 @@
-// src/services/assetLifecycleService.ts
+/**
+ * @file 资产生命周期服务，负责跨 store 的业务逻辑联动（出库、回收、待报废、报废）
+ * @module src/services/assetLifecycleService
+ * @exports
+ *   - handleAssetOut: 资产出库处理（创建出库记录 + 刷新资产列表）
+ *   - handleAssetRecycle: 资产回收处理
+ *   - handleAssetDamaged: 资产待报废处理
+ *   - handleAssetWaste: 资产报废处理
+ * @callers
+ *   - components/componentsdetails/*Details.vue
+ * @dependsOn
+ *   - @/stores/assetStore, @/stores/outAssetStore, @/stores/recycleAssetStore, @/stores/damagedAssetStore, @/stores/wasteAssetStore
+ *   - @/types/outasset, @/types/recycleasset, @/types/damagedasset, @/types/wasteasset
+ *   - @/utils/Format (formatDate)
+ *   - element-plus (ElMessage)
+ */
+
 import { useAssetStore } from '@/stores/assetStore'
 import { useOutAssetStore } from '@/stores/outAssetStore'
 import { useRecycleAssetStore } from '@/stores/recycleAssetStore'
 import { useDamagedAssetStore } from '@/stores/damagedAssetStore'
 import { useWasteAssetStore } from '@/stores/wasteAssetStore'
-import type { OutAssetCreateForm } from '@/utils/OutAsset'
-import type { RecycleAssetCreateForm } from '@/utils/RecycleAsset'
-import type { DamagedAssetCreateForm } from '@/utils/DamagedAsset'
-import type { WasteAssetCreateForm } from '@/utils/WasteAsset'
+import type { OutAssetCreateForm } from '@/types/outasset'
+import type { RecycleAssetCreateForm } from '@/types/recycleasset'
+import type { DamagedAssetCreateForm } from '@/types/damagedasset'
+import type { WasteAssetCreateForm } from '@/types/wasteasset'
 import { ElMessage } from 'element-plus'
 import { formatDate } from '@/utils/Format'
-
-/**
- * 资产生命周期服务
- * 负责跨 store 的业务逻辑联动（如出库修改资产状态）
- */
 
 // ==================== 出库 ====================
 export const handleAssetOut = async (data: OutAssetCreateForm) => {

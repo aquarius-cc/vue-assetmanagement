@@ -1,37 +1,11 @@
-﻿<!--
-  HardDiskSNCard.vue
-  硬盘序列号卡片组件
-
-  @description
-  以表格形式展示资产的硬盘序列号信息，支持新增操作。
-  与 InfoCard 不同，此组件用于展示列表数据而非键值对。
-
-  @features
-  - 表格展示：支持多行硬盘数据展示
-  - 类型映射：自动将硬盘类型枚举转换为中文
-  - 状态标签：状态字段以彩色标签形式展示
-  - 新增功能：支持跳转到新增表单页面
-
-  @usage
-  ```vue
-  <HardDiskSNCard
-    :harddisk-sns="harddiskSns"
-    :asset-code="assetCode"
-    @refresh="handleRefresh"
-  />
-  ```
-
-  @props
-  - harddiskSns: 硬盘序列号列表
-  - assetCode: 当前资产编码（用于新增时传递）
-
-  @events
-  - refresh: 新增成功后的回调（可选）
-
-  @author System
-  @date 2025-06-02
+<!--
+@file 硬盘序列号卡片，以表格形式展示资产的硬盘序列号信息
+@component HardDiskSNCard
+@usedBy
+  - detils/BasicAssetDetails.vue: 资产基本信息详情页
+@dependsOn
+  - utils/statusMapping: 硬盘状态映射
 -->
-
 <template>
   <el-card class="info-card" shadow="hover">
     <!-- 卡片头部：图标 + 标题 + 新增按钮 -->
@@ -61,9 +35,9 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="harddisk_sn_description" label="描述">
+      <el-table-column prop="harddisk_description" label="描述">
         <template #default="{ row }">
-          {{ row.harddisk_sn_description || '-' }}
+          {{ row.harddisk_description || '-' }}
         </template>
       </el-table-column>
     </el-table>
@@ -85,8 +59,8 @@ export default {
 import { useRouter } from 'vue-router'
 import { Plus, Coin } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import type { HardDiskSNListResponse } from '@/utils/HardDiskSN'
-import { HardDiskType, HardDiskStatus } from '@/utils/HardDiskSN'
+import type { HardDiskSN } from '@/types/harddisksn'
+import { HardDiskType, HardDiskStatus } from '@/types/harddisksn'
 
 // ===== Props 定义 =====
 interface Props {
@@ -94,7 +68,7 @@ interface Props {
    * 硬盘序列号列表
    * 从父组件传入的硬盘数据数组
    */
-  harddiskSns: HardDiskSNListResponse[]
+  harddiskSns: HardDiskSN[]
 
   /**
    * 当前资产编码

@@ -1,7 +1,16 @@
 /**
- * 资产类型管理 API
- * 对应后端接口: /api/assets/asset-types/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 资产类型管理 API，提供资产类型的增删改查、批量操作等接口
+ * @module api/assetType
+ * @exports
+ *   - assetTypeAPI: 资产类型管理 API 对象（包含所有资产类型相关方法）
+ *   - AssetTypeBatchCreateResult: 批量创建资产类型响应类型
+ * @callers
+ *   - stores/assetTypeStore: 资产类型状态管理
+ *   - views/AssetTypeManage: 资产类型管理视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/assettype: 资产类型相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
@@ -10,7 +19,7 @@ import type {
   AssetTypeUpdateForm,
   AssetTypeListResponse,
   AssetTypeQueryParams,
-} from '@/utils/AssetType'
+} from '@/types/assettype'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
 /**

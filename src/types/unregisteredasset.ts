@@ -1,4 +1,22 @@
 /**
+ * @file 未登记资产数据模型定义，包括场景类型、处理类型、审批状态等类型
+ * @module types/unregisteredasset
+ * @exports
+ *   - ScenarioType/HandleType/UnregisteredAssetStatus: 枚举类型
+ *   - UnregisteredAssetCreateForm/UnregisteredAssetUpdateForm/UnregisteredAssetApproveForm: 表单接口
+ *   - UnregisteredAsset: 未登记资产基础接口
+ *   - UnregisteredAssetQueryParams: 查询参数
+ *   - UnregisteredAssetListResponse: 列表响应接口
+ *   - scenarioTypeTextMap/scenarioTypeTagMap/handleTypeTextMap/unregisteredAssetStatusTextMap/unregisteredAssetStatusTagMap: 中文映射常量
+ * @callers
+ *   - stores/unregisteredassetStore（未登记资产状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
+ */
+
+import type { PaginatedResponse } from '@/types/common'
+
+/**
  * 未登记资产数据模型
  * 对应后端接口: /unregisteredassets/unregistered-assets/
  * 所有字段名采用 snake_case 与后端保持一致
@@ -65,14 +83,14 @@ export interface UnregisteredAssetCreateForm {
   asset_brand?: string | null
   /** 资产规格型号 (可选) */
   asset_specification?: string | null
-  /** 资产类型编码 (可选) */
-  asset_type_code?: string | null
+  /** 资产类型编码 (可选，业务编码 type_code) */
+  unregistered_asset_type?: string | null
   /** 预估价值 (可选) */
   estimated_value?: number | string | null
-  /** 关联资产编码 (S2/S3场景必填) */
-  related_asset_code?: string | null
-  /** 目标仓库编码 (可选) */
-  target_storage_code?: string | null
+  /** 关联资产编码 (S2/S3场景必填，业务编码 asset_code) */
+  related_asset?: string | null
+  /** 目标仓库编码 (可选，业务编码 storage_code) */
+  unregistered_asset_storage?: string | null
   /** 处理描述 (可选) */
   handle_description?: string | null
   /** 附件列表 (可选) */
@@ -84,8 +102,8 @@ export interface UnregisteredAssetCreateForm {
  * 用于更新未登记资产信息时的表单数据
  */
 export interface UnregisteredAssetUpdateForm extends Partial<UnregisteredAssetCreateForm> {
-  /** 主键 ID (用于定位要更新的记录) */
-  id?: number
+  /** 未登记资产编码 (用于定位要更新的记录) */
+  unregistered_code?: string
 }
 
 /**
@@ -99,31 +117,75 @@ export interface UnregisteredAssetApproveForm {
   approval_remark?: string | null
 }
 
+/** 员工信息（发现人/审批人） */
+export interface UnregisteredPersonInfo {
+  /** 员工工号 */
+  jobcode: string
+  /** 员工姓名 */
+  name: string
+}
+
+/** 关联资产信息（详情返回） */
+export interface UnregisteredRelatedAssetInfo {
+  /** 资产编码 */
+  code: string
+  /** 资产名称 */
+  name: string
+}
+
 /**
- * 未登记资产基础接口
- * 在创建表单基础上增加后端返回的只读字段
+ * 未登记资产接口
+ * 列表与详情响应的字段并集
  */
-export interface UnregisteredAsset extends UnregisteredAssetCreateForm {
+export interface UnregisteredAsset {
   /** 主键 ID */
   id: number
   /** 未登记资产编码（唯一标识） */
-  code: string
-  /** 创建时间 */
-  create_time: string
-  /** 更新时间 */
-  update_time: string
-  /** 是否删除标记 */
-  is_delete: boolean
+  unregistered_code: string
+  /** 场景类型 */
+  scenario_type: string
+  /** 发现日期 */
+  discovery_date: string
+  /** 发现地点 */
+  discovery_location: string
+  /** 发现人（详情返回对象） */
+  discovery_person?: UnregisteredPersonInfo | null
+  /** 发现人姓名（列表返回） */
+  discovery_person_name?: string | null
+  /** 资产名称 */
+  asset_name: string
+  /** 资产品牌 */
+  asset_brand?: string | null
+  /** 资产规格型号 */
+  asset_specification?: string | null
+  /** 资产类型编码（业务编码） */
+  unregistered_asset_type?: string | null
+  /** 预估价值 */
+  estimated_value?: number | string | null
+  /** 关联资产（详情返回对象，创建提交时传业务编码字符串） */
+  related_asset?: string | UnregisteredRelatedAssetInfo | null
+  /** 目标仓库编码（业务编码） */
+  unregistered_asset_storage?: string | null
+  /** 处理类型 */
+  handle_type?: string | null
+  /** 处理描述 */
+  handle_description?: string | null
   /** 审批状态 */
   approval_status: string
-  /** 审批人 */
-  approver: string | null
+  /** 审批人（对象） */
+  approver?: UnregisteredPersonInfo | null
+  /** 审批人姓名（列表返回） */
+  approver_name?: string | null
   /** 审批备注 */
-  approval_remark: string | null
-  /** 处理类型 */
-  handle_type: string | null
-  /** 处理时间 */
-  handle_time: string | null
+  approval_remark?: string | null
+  /** 审批日期 */
+  approval_date?: string | null
+  /** 附件列表 */
+  attachments?: string[] | null
+  /** 创建时间 */
+  created_at: string
+  /** 更新时间 */
+  updated_at: string
 }
 
 // ==================== 查询参数接口 ====================
@@ -151,19 +213,8 @@ export interface UnregisteredAssetQueryParams {
 
 // ==================== 响应接口 ====================
 
-/**
- * 未登记资产列表响应接口
- */
-export interface UnregisteredAssetListResponse {
-  /** 总记录数 */
-  count: number
-  /** 下一页链接 */
-  next: string | null
-  /** 上一页链接 */
-  previous: string | null
-  /** 未登记资产列表数据 */
-  results: UnregisteredAsset[]
-}
+/** 未登记资产列表响应 */
+export type UnregisteredAssetListResponse = PaginatedResponse<UnregisteredAsset>
 
 // ==================== 辅助映射 ====================
 

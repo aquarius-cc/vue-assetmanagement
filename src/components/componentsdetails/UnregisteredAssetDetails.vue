@@ -1,25 +1,20 @@
 <!--
-  UnregisteredAssetDetails.vue
-  未登记资产列表页面（重构版）
-  
-  架构调整：
-  1. 使用 SmartListContainer 封装数据管理逻辑（分页、搜索、加载）
-  2. CommonList 只负责 UI 展示，不管理数据
-  3. 解决原架构中父组件和 CommonList 重复请求的问题
-  
-  数据流：
-  SmartListContainer (数据管理) → slot props → CommonList (纯展示)
-  
-  功能：
-  - 展示未登记资产列表
-  - 新增、编辑、删除未登记资产
-  - 批量导入
-  - 导出 Excel
-  - 子路由：表单页、详情页、批量导入页（浮层遮罩）
+@file 未登记资产列表页面，展示未登记资产记录并支持增删改查及批量操作
+@component UnregisteredAssetDetails.vue
+@description 未登记资产列表页面，展示未登记资产记录并支持增删改查及批量操作
+@usedBy
+  - views/UnregisteredAssetDetails.vue: 通过 router-view 渲染未登记资产列表
+  - components/commoncomponents/BindAuthUserDialog.vue: 绑定用户角色弹窗组件
+  - components/commoncomponents/SmartListContainer.vue: 数据管理容器
+  - components/commoncomponents/CommonList.vue: 列表展示组件
+@dependsOn
+  - composables/useSmartListConfig: 列表配置
+  - stores/unregisteredAssetStore: 未登记资产数据管理
+  - components/commoncomponents/SmartListContainer.vue: 数据管理容器
 -->
 <template>
   <div class="unregistered-asset-details-root">
-    <!-- 
+    <!--
       表格容器
       使用 SmartListContainer 管理数据，通过 slot 将数据传递给 CommonList
     -->
@@ -31,7 +26,7 @@
         :initial-page="1"
         :initial-page-size="20"
       >
-        <!-- 
+        <!--
           slot 接收 SmartListContainer 传递的数据管理状态
           包括：data, loading, currentPage, pageSize, total, search 等
         -->
@@ -128,13 +123,13 @@ import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
-import type { UnregisteredAsset } from '@/utils/UnregisteredAsset'
+import type { UnregisteredAsset } from '@/types/unregisteredasset'
 import {
   scenarioTypeTextMap,
   scenarioTypeTagMap,
   unregisteredAssetStatusTextMap,
   unregisteredAssetStatusTagMap,
-} from '@/utils/UnregisteredAsset'
+} from '@/types/unregisteredasset'
 import { useUnregisteredAssetStore } from '@/stores/unregisteredAssetStore'
 import { formatDate } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'
@@ -216,7 +211,7 @@ const getApprovalStatusText = (status: string | null | undefined): string => {
  */
 const columns: TableColumn[] = [
   { type: 'index', label: '序号', width: 60, align: 'center' },
-  { prop: 'code', label: '编码', width: 150, align: 'center' },
+  { prop: 'unregistered_code', label: '编码', width: 150, align: 'center' },
   { prop: 'asset_name', label: '资产名称', width: 150, align: 'left' },
   {
     type: 'custom',
@@ -287,14 +282,16 @@ watch(
  * @param row 未登记资产记录
  */
 const handleEdit = (row: UnregisteredAsset) => {
-  if (!row.code) {
+  if (!row.unregistered_code) {
     ElMessage.error('资产编码不存在，无法编辑')
     return
   }
-  router.push({ name: 'UnregisteredAssetForm', query: { code: row.code } }).catch((err) => {
-    console.error('编辑跳转失败:', err)
-    ElMessage.error('跳转编辑页失败，请重试')
-  })
+  router
+    .push({ name: 'UnregisteredAssetForm', query: { code: row.unregistered_code } })
+    .catch((err) => {
+      console.error('编辑跳转失败:', err)
+      ElMessage.error('跳转编辑页失败，请重试')
+    })
 }
 
 /**
@@ -304,7 +301,7 @@ const handleEdit = (row: UnregisteredAsset) => {
  * @param row 未登记资产记录
  */
 const handleDelete = (row: UnregisteredAsset) => {
-  if (!row.code) {
+  if (!row.unregistered_code) {
     ElMessage.error('记录编码不存在，无法删除')
     return
   }
@@ -314,7 +311,7 @@ const handleDelete = (row: UnregisteredAsset) => {
     type: 'warning',
   })
     .then(() => {
-      return unregisteredAssetStore.remove(row.code || '')
+      return unregisteredAssetStore.remove(row.unregistered_code || '')
     })
     .then(() => {
       ElMessage.success('删除成功')
@@ -357,7 +354,7 @@ const handleBatchImport = () => {
  */
 const handleExportExcel = async () => {
   const exportColumns: ColumnConfig<UnregisteredAsset>[] = [
-    { title: '编码', key: 'code', default: '' },
+    { title: '编码', key: 'unregistered_code', default: '' },
     { title: '资产名称', key: 'asset_name', default: '' },
     {
       title: '场景类型',
@@ -374,17 +371,17 @@ const handleExportExcel = async () => {
     { title: '发现地点', key: 'discovery_location', default: '' },
     { title: '资产品牌', key: 'asset_brand', default: '' },
     { title: '资产规格型号', key: 'asset_specification', default: '' },
-    { title: '资产类型编码', key: 'asset_type_code', default: '' },
+    { title: '资产类型编码', key: 'unregistered_asset_type', default: '' },
     { title: '预估价值', key: 'estimated_value', default: '' },
-    { title: '关联资产编码', key: 'related_asset_code', default: '' },
-    { title: '目标仓库编码', key: 'target_storage_code', default: '' },
+    { title: '关联资产编码', key: 'related_asset', default: '' },
+    { title: '目标仓库编码', key: 'unregistered_asset_storage', default: '' },
     {
       title: '审批状态',
       key: 'approval_status',
       default: '',
       formatter: (val) => getApprovalStatusText(val as string),
     },
-    { title: '审批人', key: 'approver', default: '' },
+    { title: '审批人', key: 'approver_name', default: '' },
     { title: '处理类型', key: 'handle_type', default: '' },
     { title: '描述', key: 'handle_description', default: '' },
   ]
@@ -462,7 +459,7 @@ const handleBatchDelete = async (rows: UnregisteredAsset[] | undefined) => {
   }
 
   // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows.map((row) => row.code).filter((code): code is string => !!code)
+  const codes = rows.map((row) => row.unregistered_code).filter((code): code is string => !!code)
 
   if (codes.length === 0) {
     ElMessage.error('无法删除：选中的数据缺少唯一标识')

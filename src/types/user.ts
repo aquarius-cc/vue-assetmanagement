@@ -1,6 +1,19 @@
 /**
- * 用户（员工）数据模型
- * 对应后端数据库表: user_database_table
+ * @file 用户（员工）数据模型定义，包括员工状态、表单、详情等类型
+ * @module types/user
+ * @exports
+ *   - EmployeeStatus: 员工状态枚举
+ *   - ExcelEmployeeData: Excel导入原始数据接口
+ *   - EmployeeCreateForm/EmployeeUpdateForm: 员工表单接口
+ *   - Employee/EmployeeExtended: 员工基础与扩展接口
+ *   - EmployeeQueryParams: 员工查询参数
+ *   - EmployeeListResponse/EmployeeListResponseOld: 员工列表响应接口（兼容旧版） 已删除
+ *   - EmployeeForm: 员工表单接口（兼容性）
+ *   - ValidatedEmployeeData: 验证后的员工数据接口
+ * @callers
+ *   - stores/userStore（用户状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
  */
 
 import type { Department } from '@/types/department'
@@ -86,11 +99,11 @@ export interface Employee extends EmployeeCreateForm {
   /** 主键 ID */
   id: number
   /** 创建时间 */
-  create_time: string
+  created_at: string
   /** 更新时间 */
-  update_time: string
+  updated_at: string
   /** 是否删除标记 */
-  is_delete: boolean
+  is_deleted: boolean
   /** 排序顺序 (后端返回，创建时若未传则默认为 0) */
   sort_order: number
   employee_department_name?: string | null
@@ -153,11 +166,6 @@ export interface EmployeeListResponse {
  * 员工简化接口
  * 用于在组件间引用
  */
-export interface EmployeeItem {
-  value: string
-  employee_name: string
-  employee_jobcode: string
-}
 
 // ==================== 统计接口（保留原有的兼容性定义以兼容现有代码
 export interface EmployeeForm {
@@ -170,49 +178,15 @@ export interface EmployeeForm {
   employee_description?: string | null
 }
 
-export interface EmployeeUpdateFormOld {
-  employee_jobcode: string
-  employee_name: string
-  employee_status: string
-  employee_location: string
-  employee_department: string
-  employee_phone: string
-  employee_description: string | null
-}
-
-export interface EmployeeOld {
-  id: number
-  employee_jobcode: string
-  employee_name: string
-  employee_status: string
-  employee_location: string
-  employee_department: string
-  employee_phone: string
-  employee_description: string | null
-}
-
-export interface EmployeeOldExtended extends EmployeeOld {
-  employee_department_name?: string
-}
-
-export interface EmployeeQueryParamsOld {
-  page?: number
-  page_size?: number
-  search?: string
-  employee_jobcode?: string
-  employee_name?: string
-  employee_status?: string
-  employee_department?: string
-  [key: string]: string | number | boolean | null | undefined
-}
-
-export interface EmployeeListResponseOld {
-  success: boolean
-  count: number
-  next: string | null
-  previous: string | null
-  results: EmployeeOld[]
-}
+// ==================== 兼容性接口 ====================
+// 旧版员工列表响应接口，用于兼容旧版后端返回的员工列表   可删除
+// export interface EmployeeListResponseOld {
+//   success: boolean
+//   count: number
+//   next: string | null
+//   previous: string | null
+//   results: Employee[]
+// }
 
 // ==================== Excel 导入验证类型 ====================
 
@@ -242,3 +216,25 @@ export interface ValidatedEmployeeData {
   /** 验证错误信息 */
   validationError: string
 }
+
+/*
+ * 权限相关类型定义已经移动到单独的文件 types/permission.ts 中
+ */
+/**
+ * 权限基础接口
+ * 对应后端数据库表 permission_database_table 的基础字段
+ */
+// export interface Permission {
+//   id: number               // 主键 ID
+//   permission_code: string  // 权限码,格式 module:action,如 "asset:create"
+//   module: string           // 所属模块,如 asset、outasset
+//   action: string           // 操作类型,如 read、create、update、delete
+//   description: string      // 权限描述(可为空字符串)
+// }
+// /**
+//  * 数据范围类型
+//  * 用于定义用户对数据的访问范围，如全部数据或限定部门
+//  */
+// export type DataScope =
+//   | { scope_type: 'all' }                // 全部数据(superuser 或任一角色含 all)
+//   | { scope_type: 'departments'; department_codes: string[]; include_children: boolean }  // 限定部门

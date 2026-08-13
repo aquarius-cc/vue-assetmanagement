@@ -1,4 +1,21 @@
 /**
+ * @file 损坏资产数据模型定义，包括损坏表单、详情、批量创建等类型
+ * @module types/brokenasset
+ * @exports
+ *   - BrokenAssetCreateForm/BrokenAssetUpdateForm: 损坏资产表单接口
+ *   - BrokenAsset/BrokenAssetExtended: 损坏资产基础与扩展接口
+ *   - BrokenAssetQueryParams: 损坏资产查询参数
+ *   - BrokenAssetListResponse: 损坏资产列表响应接口
+ *   - BrokenAssetBatchCreateForm/BrokenAssetBatchCreateResult: 批量创建接口
+ * @callers
+ *   - stores/brokenassetStore（损坏资产状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
+ */
+
+import type { PaginatedResponse } from '@/types/common'
+
+/**
  * BrokenAsset data model
  * Backend table: am_broken_asset
  */
@@ -44,12 +61,8 @@ export interface BrokenAssetQueryParams {
   [key: string]: string | number | boolean | null | undefined
 }
 
-export interface BrokenAssetListResponse {
-  count: number
-  next: string | null
-  previous: string | null
-  results: BrokenAssetExtended[]
-}
+/** 损坏资产列表响应 */
+export type BrokenAssetListResponse = PaginatedResponse<BrokenAssetExtended>
 
 export interface BrokenAssetBatchCreateForm {
   items: Array<{

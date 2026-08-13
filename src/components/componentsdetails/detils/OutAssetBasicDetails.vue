@@ -62,15 +62,15 @@ import { useOutAssetDetailCards } from '@/composables/useOutAssetDetailCards'
 import InfoCard from '@/components/commoncomponents/InfoCard.vue'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import type { ColumnConfig } from '@/utils/excelExporter'
-import type { OutAssetDetail } from '@/utils/OutAsset'
-import type { EmployeeExtended } from '@/utils/User'
+import type { OutAssetDetail } from '@/types/outasset'
+import type { EmployeeExtended } from '@/types/user'
 import type { AssetDetail } from '@/types/asset'
 import { formatDate, outassetStatusMapping, outassetTypeMapping } from '@/utils/Format'
 
-// ========== 辅助函数：枚举转文本（安全处?null/undefined?==========
+// ========== 辅助函数：枚举转文本（安全处理 null/undefined）==========
 /**
- * 获取资产状态文? * @param value 状态值（?'in_use', 'returned' 等）
- * @returns 可读的中文状? */
+ * 获取资产状态文本 * @param value 状态值（如 'in_use', 'returned' 等）
+ * @returns 可读的中文状态 */
 const getOutAssetStatusText = (value: string | null | undefined): string => {
   if (!value) return '未知'
   return outassetStatusMapping[value] || value
@@ -78,14 +78,14 @@ const getOutAssetStatusText = (value: string | null | undefined): string => {
 
 /**
  * 获取出库类型文本
- * @param value 类型值（?'normal', 'scrap' 等）
- * @returns 可读的中文类? */
+ * @param value 类型值（如 'normal', 'scrap' 等）
+ * @returns 可读的中文类型 */
 const getOutAssetTypeText = (value: string | null | undefined): string => {
   if (!value) return '未知'
   return outassetTypeMapping[value] || value
 }
 
-// ========== 路由与状态管?==========
+// ========== 路由与状态管理==========
 const route = useRoute()
 const router = useRouter()
 const outAssetStore = useOutAssetStore()
@@ -101,9 +101,11 @@ const applicantUser = ref<EmployeeExtended | null>(null)
 const managerUser = ref<EmployeeExtended | null>(null)
 const assetContract = ref<AssetDetail | null>(null)
 
-// ========== InfoCard 卡片配置：通过 composable 生成 4 个语义卡?==========
+// ========== InfoCard 卡片配置：通过 composable 生成 4 个语义卡片==========
 /**
- * 卡片数据源：将页面中的响应式数据聚合?composable 所需的格  * 包含出库资产主详情、申请人、保管人、关联合同信息 */
+ * 卡片数据源：将页面中的响应式数据聚合为 composable 所需的格式
+ * 包含出库资产主详情、申请人、保管人、关联合同信息
+ */
 const cardData = computed(() => ({
   detail: showOutAssetDetails.value,
   applicantUser: applicantUser.value,
@@ -112,18 +114,23 @@ const cardData = computed(() => ({
 }))
 
 /**
- * 使用 useOutAssetDetailCards composable 生成 4 个语义卡片的InfoCardConfig* - basicInfoConfig: 基本信息卡片?1 个字段，Document 图标? * - contractInfoConfig: 合同信息卡片? 个字段，Tickets 图标? * - applicantInfoConfig: 申请人信息卡片（2 个字段，User 图标? * - managerInfoConfig: 保管人信息卡片（2 个字段，UserFilled 图标? */
+ * 使用 useOutAssetDetailCards composable 生成 4 个语义卡片的 InfoCardConfig：
+ * - basicInfoConfig: 基本信息卡片（11 个字段，Document 图标）
+ * - contractInfoConfig: 合同信息卡片（2 个字段，Tickets 图标）
+ * - applicantInfoConfig: 申请人信息卡片（2 个字段，User 图标）
+ * - managerInfoConfig: 保管人信息卡片（2 个字段，UserFilled 图标）
+ */
 const { basicInfoConfig, contractInfoConfig, applicantInfoConfig, managerInfoConfig } =
   useOutAssetDetailCards(cardData)
 
-// ========== 计算属性：安全展示关联信息（避免模板中出现 null?==========
-/** 申请人展示信息（姓名/部门?*/
+// ========== 计算属性：安全展示关联信息（避免模板中出现 null）==========
+/** 申请人展示信息（姓名/部门）*/
 const displayApplicantInfo = computed(() => ({
   name: applicantUser.value?.employee_name || 'N/A',
   dept: applicantUser.value?.employee_department_name || 'N/A',
 }))
 
-/** 保管人展示信息（姓名/部门?*/
+/** 保管人展示信息（姓名/部门）*/
 const displayManagerInfo = computed(() => ({
   name: managerUser.value?.employee_name || 'N/A',
   dept: managerUser.value?.employee_department_name || 'N/A',
@@ -132,7 +139,7 @@ const displayManagerInfo = computed(() => ({
 // ========== 导出功能配置 ==========
 const { exportDetail } = useExcelExport()
 
-/** 导出列配置：定义导出的字段及格式化规?*/
+/** 导出列配置：定义导出的字段及格式化规则 */
 const exportColumns: ColumnConfig<OutAssetDetail>[] = [
   { title: '出库唯一标识', key: 'recordcode', default: '' },
   { title: '入库标识', key: 'asset_recordcode', default: '' },
@@ -240,7 +247,7 @@ onMounted(async () => {
 })
 
 // ========== 交互方法 ==========
-/** 返回上一?*/
+/** 返回上一页 */
 const handleBack = () => {
   router.go(-1)
 }

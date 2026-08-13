@@ -1,3 +1,14 @@
+<!--
+@file 应用侧边导航栏，提供菜单导航和权限控制
+@component AsideMenu
+@usedBy
+  - views/MainView.vue: 主布局页面侧边栏
+@dependsOn
+  - stores/appStore: 侧边栏折叠状态
+  - composables/usePermission: 菜单权限控制
+  - components/DarkModeToggle: 暗色模式切换
+  - components/NotificationBell: 通知铃铛
+-->
 <template>
   <div class="container">
     <el-row class="tac">

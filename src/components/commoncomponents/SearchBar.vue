@@ -1,25 +1,10 @@
 <!--
-  SearchBar.vue
-  通用可配置搜索栏组件
-
-  功能：
-    - 根据 fields 配置动态渲染搜索输入框
-    - 支持 text、select、date、dateRange 四种字段类型
-    - 自动收集所有非空字段值，通过 search 事件传递给父组件
-    - 支持重置功能，清空所有输入框
-
-  使用示例：
-    <SearchBar
-      :fields="searchFields"
-      @search="handleSearch"
-      @reset="handleSearchReset"
-    />
-
-  配置示例：
-    const searchFields = [
-      { key: 'keyword', label: '名称', type: 'text', placeholder: '请输入名称', span: 4 },
-      { key: 'status', label: '状态', type: 'select', options: [...], span: 4 },
-    ]
+@file 通用可配置搜索栏，根据字段配置动态渲染搜索输入框
+@component SearchBar
+@usedBy
+  - componentsdetails/AssetContentDetails.vue: 资产内容搜索
+@dependsOn
+  - (无外部依赖，纯交互组件)
 -->
 <template>
   <el-card class="search-bar" shadow="never">

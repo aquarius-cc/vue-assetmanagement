@@ -1,7 +1,16 @@
 /**
- * 仓库管理 API
- * 对应后端接口: /api/assets/storages/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 仓库管理 API，提供仓库的增删改查、批量操作等接口
+ * @module api/storage
+ * @exports
+ *   - storageAPI: 仓库管理 API 对象（包含所有仓库相关方法）
+ *   - StorageBatchCreateResult: 批量创建仓库响应类型
+ * @callers
+ *   - stores/storageStore: 仓库状态管理
+ *   - views/StorageManage: 仓库管理视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/storage: 仓库相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
@@ -11,7 +20,7 @@ import type {
   StorageUpdateForm,
   StorageStats,
   StorageResponse,
-} from '@/utils/Storage'
+} from '@/types/storage'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
 /**

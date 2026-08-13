@@ -389,4 +389,119 @@ describe('usePaginationSearch', () => {
       expect(pageSize.value).toBe(20)
     })
   })
+
+  describe('branch coverage', () => {
+    it('skips total update when response lacks count', async () => {
+      mockStore.getList.mockResolvedValue({ results: [] })
+
+      const { loadList, total } = usePaginationSearch({ store: mockStore })
+
+      await loadList(1, 20)
+
+      expect(total.value).toBe(0)
+    })
+
+    it('clamps current page to last page on size change', async () => {
+      mockStore.pagination.total = ref(20)
+
+      const { handleSizeChange, currentPage } = usePaginationSearch({ store: mockStore })
+
+      currentPage.value = 5
+      await handleSizeChange(50)
+
+      expect(currentPage.value).toBe(1)
+    })
+
+    it('re-searches when size changes with active search', async () => {
+      const mockSearch = vi.fn().mockResolvedValue({ count: 0, results: [] })
+
+      const { handleSizeChange, search } = usePaginationSearch({
+        store: mockStore,
+        search: { performSearch: mockSearch },
+      })
+
+      search.value = 'kw'
+      await handleSizeChange(50)
+
+      expect(mockSearch).toHaveBeenCalled()
+    })
+
+    it('warns and clamps page when search result page exceeds range', async () => {
+      const mockSearch = vi.fn().mockResolvedValue({ count: 2, results: [{ id: 1 }] })
+
+      const { handleCurrentChange, search } = usePaginationSearch({
+        store: mockStore,
+        search: { performSearch: mockSearch },
+      })
+
+      search.value = 'kw'
+      await handleCurrentChange(3)
+
+      expect((await import('element-plus')).ElMessage.warning).toHaveBeenCalledWith(
+        '页码超出范围，已跳转至最后一页（1）',
+      )
+      expect(mockSearch).toHaveBeenCalledTimes(2)
+    })
+
+    it('warns and clamps page when plain list page exceeds range', async () => {
+      mockStore.getList.mockResolvedValue({ count: 5, results: [{ id: 1 }] })
+
+      const { handleCurrentChange } = usePaginationSearch({ store: mockStore })
+
+      await handleCurrentChange(3)
+
+      expect((await import('element-plus')).ElMessage.warning).toHaveBeenCalledWith(
+        '页码超出范围，已跳转至最后一页（1）',
+      )
+      expect(mockStore.getList).toHaveBeenCalledTimes(2)
+    })
+
+    it('returns empty table data while searching', () => {
+      const mockSearch = vi.fn().mockReturnValue(new Promise(() => {}))
+
+      const { performSearch, tableData } = usePaginationSearch({
+        store: mockStore,
+        search: { performSearch: mockSearch },
+      })
+
+      performSearch('kw')
+
+      expect(tableData.value).toEqual([])
+    })
+
+    it('reacts to refreshFlag watch', async () => {
+      const { refreshCurrentPage } = usePaginationSearch({ store: mockStore })
+
+      mockStore.refreshFlag!.value = true
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(mockStore.getList).toHaveBeenCalled()
+      expect(refreshCurrentPage).toBeDefined()
+      expect(mockStore.setRefreshFlag).toHaveBeenCalledWith(false)
+    })
+
+    it('does nothing when refreshFlag is set to false', async () => {
+      usePaginationSearch({ store: mockStore })
+
+      mockStore.refreshFlag!.value = false
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(mockStore.getList).not.toHaveBeenCalled()
+    })
+
+    it('uses custom invalid page message', async () => {
+      mockStore.getList.mockResolvedValue({ count: 5, results: [{ id: 1 }] })
+
+      const { handleCurrentChange } = usePaginationSearch({
+        store: mockStore,
+        messages: { invalidPage: '自定义超范围提示' },
+      })
+
+      await handleCurrentChange(3)
+
+      expect((await import('element-plus')).ElMessage.warning).toHaveBeenCalledWith(
+        '自定义超范围提示（1）',
+      )
+    })
+  })
 })

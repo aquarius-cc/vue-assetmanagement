@@ -1,3 +1,11 @@
+<!--
+@file 暗色模式切换按钮，支持亮色/暗色主题切换
+@component DarkModeToggle
+@usedBy
+  - components/AsideMenu.vue: 侧边栏底部切换按钮
+@dependsOn
+  - composables/useDarkMode: 暗色模式状态管理
+-->
 <script setup lang="ts">
 /**
  * 暗色模式切换组件

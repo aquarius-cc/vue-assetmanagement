@@ -1,12 +1,12 @@
 <!--
-  NotificationBell.vue
-  通知铃铛组件
-
-  功能：
-  - 显示未读通知数量（红点/数字）
-  - 点击展开通知列表
-  - 支持标记已读/全部已读
-  - WebSocket 实时更新
+@file 通知铃铛组件，显示未读通知数量并支持标记已读
+@component NotificationBell.vue
+@description 通知铃铛组件，显示未读通知数量并支持标记已读
+@usedBy
+  - components/AsideMenu.vue: 侧边栏通知入口
+@dependsOn
+  - composables/useNotification: 通知数据管理和WebSocket连接
+  - utils/navigation: 安全路由跳转
 -->
 <template>
   <div class="notification-bell" ref="bellRef">
@@ -26,6 +26,8 @@
               link
               type="primary"
               size="small"
+              :loading="isMarkingAll"
+              :disabled="isMarkingAll"
               @click="handleMarkAllRead"
               v-if="unreadCount > 0"
             >
@@ -38,7 +40,15 @@
         </div>
 
         <div class="panel-body" v-loading="isLoading">
-          <div v-if="notifications.length === 0" class="empty-state">
+          <!-- [修复] 加载失败提示 -->
+          <div v-if="fetchError" class="error-state">
+            <el-empty description="通知加载失败" :image-size="60">
+              <el-button type="primary" size="small" @click="() => fetchNotifications()"
+                >重试</el-button
+              >
+            </el-empty>
+          </div>
+          <div v-else-if="notifications.length === 0" class="empty-state">
             <el-empty description="暂无通知" :image-size="60" />
           </div>
 
@@ -66,16 +76,17 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { safeNavigate } from '@/utils/navigation'
 import { Bell, Close } from '@element-plus/icons-vue'
 import { useNotification, type Notification } from '@/composables/useNotification'
 
-const router = useRouter()
 const {
   notifications,
   unreadCount,
   isConnected,
   isLoading,
+  isMarkingAll, // [修复] 新增：防重复点击
+  fetchError, // [修复] 新增：加载失败状态
   markAsRead,
   markAllAsRead,
   fetchNotifications,
@@ -98,7 +109,7 @@ function handleClick(n: Notification) {
   markAsRead(n.id)
   if (n.related_url) {
     showPanel.value = false
-    router.push(n.related_url)
+    safeNavigate(n.related_url)
   }
 }
 

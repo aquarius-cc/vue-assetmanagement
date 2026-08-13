@@ -1,33 +1,10 @@
 <!--
-  SmartListContainer.vue
-  智能列表数据管理容器组件
-
-  职责：封装分页、搜索、数据加载等数据管理逻辑
-  通过 slot 将管理好的数据状态暴露给子组件（如 CommonList）
-
-  设计原则：
-  1. 单一职责：本组件只负责数据管理，不负责 UI 展示
-  2. 数据向下传递：通过 slot props 将状态传递给子组件
-  3. 事件向上冒泡：子组件的事件通过 emit 传递给父组件处理
-  4. 自动加载：组件挂载时自动发起首次数据请求
-
-  使用示例：
-  <SmartListContainer :store-config="storeConfig">
-    <template #default="{
-      data, loading, currentPage, pageSize, total, search,
-      handleSizeChange, handleCurrentChange, refresh
-    }">
-      <CommonList
-        :data="data"
-        :loading="loading"
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :total="total"
-        :columns="columns"
-        @search="handleSearch"
-      />
-    </template>
-  </SmartListContainer>
+@file 智能列表数据管理容器，封装分页/搜索/数据加载逻辑
+@component SmartListContainer
+@usedBy
+  - 多个 *Details.vue 页面（AssetContentDetails, ContractDetails 等）
+@dependsOn
+  - composables/usePaginationSearch: 分页搜索状态管理
 -->
 <template>
   <div class="smart-list-container">

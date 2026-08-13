@@ -1,7 +1,15 @@
 /**
- * 维修资产管理 API
- * 对应后端接口: /api/assets/repair-assets/
- * 所有字段名采用 snake_case 与后端序列化器保持一致
+ * @file 维修资产管理 API，提供维修资产的增删改查、批量操作等接口
+ * @module api/repairAsset
+ * @exports
+ *   - repairAssetAPI: 维修资产管理 API 对象（包含所有维修资产相关方法）
+ * @callers
+ *   - stores/repairAssetStore: 维修资产状态管理
+ *   - views/RepairAssetManage: 维修资产管理视图
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/repairasset: 维修资产相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
 import type {
@@ -10,9 +18,7 @@ import type {
   RepairAssetUpdateForm,
   RepairAssetListResponse,
   RepairAssetQueryParams,
-  RepairAssetBatchCreateForm,
-  RepairAssetBatchCreateResult,
-} from '@/utils/RepairAsset'
+} from '@/types/repairasset'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
 /**
@@ -91,19 +97,6 @@ export const repairAssetAPI = {
   },
 
   /**
-   * 批量创建维修记录
-   * POST /api/assets/repair-assets/batch-create/
-   * 对应后端 RepairAssetViewSet.batch_create action
-   */
-  batchCreateRepairAssets: (
-    data: RepairAssetBatchCreateForm,
-  ): Promise<RepairAssetBatchCreateResult> => {
-    return unwrapResponse(
-      request.post<RepairAssetBatchCreateResult>('/assets/repair-assets/batch-create/', data),
-    )
-  },
-
-  /**
    * 根据资产编码获取维修记录
    * @param asset_code 资产编码
    * @returns 维修记录列表响应
@@ -115,41 +108,53 @@ export const repairAssetAPI = {
   },
 
   /**
-   * 送修资产
-   * POST /api/assets/assets/{asset_code}/repair/
-   * @param asset_code 资产编码
-   * @param data 维修信息
+   * 送修资产（Action 端点）
+   * POST /api/assets/assets/{recordcode}/repair/
+   * 对应后端 AssetViewSet.repair action
+   * 注意：asset 由 URL 中的 recordcode 标识（lookup_field="recordcode"），
+   *       请求体无需 asset_code 和 operator_jobcode（后端从 operator_context 获取）
+   * @param recordcode 资产记录编码（用作 URL 查找参数）
+   * @param data 维修信息（不含 asset_code）
    * @returns 维修记录详情
    */
-  repairAsset: (asset_code: string, data: RepairAssetCreateForm): Promise<RepairAssetExtended> => {
+  repairAsset: (
+    recordcode: string,
+    data: Omit<RepairAssetCreateForm, 'asset_code' | 'operator_jobcode'>,
+  ): Promise<RepairAssetExtended> => {
     return unwrapResponse(
-      request.post<RepairAssetExtended>(`/assets/assets/${asset_code}/repair/`, data),
+      request.post<RepairAssetExtended>(`/assets/assets/${recordcode}/repair/`, data),
     )
   },
 
   /**
-   * 维修完成
-   * POST /api/assets/assets/{asset_code}/repair-done/
-   * @param asset_code 资产编码
-   * @param data 维修完成信息
+   * 维修完成（Action 端点）
+   * POST /api/assets/assets/{recordcode}/repair-done/
+   * 对应后端 AssetViewSet.repair_done action
+   * 注意：asset 由 URL 中的 recordcode 标识
+   * @param recordcode 资产记录编码（用作 URL 查找参数）
+   * @param data 维修完成信息（actual_return_date, physical_grade_after）
    * @returns 维修记录详情
    */
-  repairDone: (asset_code: string, data: RepairAssetUpdateForm): Promise<RepairAssetExtended> => {
+  repairDone: (
+    recordcode: string,
+    data: Pick<RepairAssetUpdateForm, 'actual_return_date' | 'physical_grade_after'>,
+  ): Promise<RepairAssetExtended> => {
     return unwrapResponse(
-      request.post<RepairAssetExtended>(`/assets/assets/${asset_code}/repair-done/`, data),
+      request.post<RepairAssetExtended>(`/assets/assets/${recordcode}/repair-done/`, data),
     )
   },
 
   /**
-   * 维修失败
-   * POST /api/assets/assets/{asset_code}/repair-failed/
-   * @param asset_code 资产编码
-   * @param data 维修失败信息
+   * 维修失败（Action 端点）
+   * POST /api/assets/assets/{recordcode}/repair-failed/
+   * 对应后端 AssetViewSet.repair_failed action
+   * 注意：asset 由 URL 中的 recordcode 标识，请求体无需额外参数
+   * @param recordcode 资产记录编码（用作 URL 查找参数）
    * @returns 维修记录详情
    */
-  repairFailed: (asset_code: string, data: RepairAssetUpdateForm): Promise<RepairAssetExtended> => {
+  repairFailed: (recordcode: string): Promise<RepairAssetExtended> => {
     return unwrapResponse(
-      request.post<RepairAssetExtended>(`/assets/assets/${asset_code}/repair-failed/`, data),
+      request.post<RepairAssetExtended>(`/assets/assets/${recordcode}/repair-failed/`),
     )
   },
 }

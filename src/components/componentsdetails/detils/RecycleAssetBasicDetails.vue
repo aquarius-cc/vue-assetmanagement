@@ -48,10 +48,10 @@ import { useRecycleAssetDetailCards } from '@/composables/useRecycleAssetDetailC
 import InfoCard from '@/components/commoncomponents/InfoCard.vue'
 import { assetAPI } from '@/api/asset'
 import type { ColumnConfig } from '@/utils/excelExporter'
-import type { RecycleAssetExtended } from '@/utils/RecycleAsset'
+import type { RecycleAssetExtended } from '@/types/recycleasset'
 import type { Contract } from '@/types/contract'
-import type { EmployeeExtended } from '@/utils/User'
-import type { Storage } from '@/utils/Storage'
+import type { EmployeeExtended } from '@/types/user'
+import type { Storage } from '@/types/storage'
 import { formatDate } from '@/utils/Format'
 
 // ===== 状态与实例 =====
@@ -60,7 +60,7 @@ const router = useRouter()
 const recycleAssetStore = useRecycleAssetStore()
 /** 用户 Store：用于查询使用人、回收人详细信息 */
 const userStore = useUserStore()
-/** 仓库 Store：用于查询仓库详细信?*/
+/** 仓库 Store：用于查询仓库详细信息 */
 const storageStore = useStorageStore()
 const isLoading = ref(true)
 const detailData = ref<RecycleAssetExtended | null>(null)
@@ -68,15 +68,16 @@ const detailData = ref<RecycleAssetExtended | null>(null)
 // ===== 关联数据 ref =====
 /** 合同详情：通过 assetAPI.getContractByAssetCode 获取 */
 const contractDetail = ref<Contract | null>(null)
-/** 【v1.1.0 对齐】移?usingPerson ref，使用人信息通过后端序列化器 FK 链自动返?*/
+/** 【v1.1.0 对齐】移除 usingPerson ref，使用人信息通过后端序列化器 FK 链自动返回 */
 /** 回收人详情：通过 userStore.getById 获取 */
 const recyclePerson = ref<EmployeeExtended | null>(null)
 /** 仓库详情：通过 storageStore.getById 获取 */
 const storageDetail = ref<Storage | null>(null)
 
-// ===== InfoCard 卡片配置：通过 composable 生成 5 个语义卡?=====
+// ===== InfoCard 卡片配置：通过 composable 生成 5 个语义卡片 =====
 /**
- * 卡片数据源：将页面中的响应式数据聚合?composable 所需的格? * 【v1.1.0 对齐】移?usingPerson，使用人信息通过 detail 中的 read_only 字段展示
+ * 卡片数据源：将页面中的响应式数据聚合为 composable 所需的格式
+ * 【v1.1.0 对齐】移除 usingPerson，使用人信息通过 detail 中的 read_only 字段展示
  */
 const cardData = computed(() => ({
   detail: detailData.value,
@@ -86,7 +87,13 @@ const cardData = computed(() => ({
 }))
 
 /**
- * 使用 useRecycleAssetDetailCards composable 生成 5 ?InfoCardConfig? * - basicInfoConfig: 基本信息卡片? 个字段，Document 图标? * - contractInfoConfig: 合同信息卡片? 个字段，Tickets 图标? * - usingPersonInfoConfig: 使用人信息卡片（2 个字段，User 图标? * - recyclePersonInfoConfig: 回收人信息卡片（2 个字段，UserFilled 图标? * - storageInfoConfig: 仓库信息卡片? 个字段，Location 图标? */
+ * 使用 useRecycleAssetDetailCards composable 生成 5 个 InfoCardConfig：
+ * - basicInfoConfig: 基本信息卡片（8 个字段，Document 图标）
+ * - contractInfoConfig: 合同信息卡片（8 个字段，Tickets 图标）
+ * - usingPersonInfoConfig: 使用人信息卡片（2 个字段，User 图标）
+ * - recyclePersonInfoConfig: 回收人信息卡片（2 个字段，UserFilled 图标）
+ * - storageInfoConfig: 仓库信息卡片（5 个字段，Location 图标）
+ */
 const {
   basicInfoConfig,
   contractInfoConfig,
@@ -121,7 +128,7 @@ const exportColumns: ColumnConfig<RecycleAssetExtended>[] = [
 
 // ===== 加载详情数据 =====
 /**
- * 加载回收资产详情及关联数? *
+ * 加载回收资产详情及关联数据 *
  * @description
  * 1. 先获取回收资产主详情
  * 2. 根据主详情中的外键字段，通过 Promise.all 并行加载 3 个关联数据：
@@ -129,7 +136,7 @@ const exportColumns: ColumnConfig<RecycleAssetExtended>[] = [
  *    - 回收人：通过 userStore.getById(recycle_asset_recycle_person_jobcode)
  *    - 仓库：通过 storageStore.getById(recycle_asset_storage_code)
  * 3. 使用人信息通过后端序列化器 FK 链自动返回（using_person_name / using_person_jobcode），无需单独加载
- * 4. 每个查询前检查外键字段是否存在，避免空值调? */
+ * 4. 每个查询前检查外键字段是否存在，避免空值调用 */
 const loadDetail = async (code: string) => {
   try {
     isLoading.value = true
@@ -158,8 +165,8 @@ const loadDetail = async (code: string) => {
     // 使用人信息
     // 【v1.1.0 对齐】后端已删除 recycle_asset_using_person_jobcode 字段）
     // 使用人信息通过序列化器 FK 链自动返回（using_person_name / using_person_jobcode），
-    // 无需再通过 userStore.getById 单独加载）
-    // usingPerson 卡片改为直接使用 detail 中的 read_only 字段展示）
+    // 无需再通过 userStore.getById 单独加载（v1.1.0 对齐）
+    // usingPerson 卡片改为直接使用 detail 中的 read_only 字段展示（v1.1.0 对齐）
     // 回收人
     if (detail.recycle_asset_recycle_person_jobcode) {
       promises.push(

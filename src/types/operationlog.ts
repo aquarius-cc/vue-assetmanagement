@@ -1,4 +1,21 @@
 /**
+ * @file 操作日志数据模型定义，包括操作类型、日志详情、查询参数等类型
+ * @module types/operationlog
+ * @exports
+ *   - OperationType: 操作类型枚举
+ *   - OperationLog: 操作日志接口
+ *   - OperationLogQueryParams: 操作日志查询参数
+ *   - OperationLogListResponse: 操作日志列表响应接口
+ *   - operationTypeMapping/operationTypeTagMapping: 操作类型映射常量
+ * @callers
+ *   - stores/operationlogStore（操作日志状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
+ */
+
+import type { PaginatedResponse } from '@/types/common'
+
+/**
  * 操作日志数据模型
  * 对应后端接口: /api/assets/operation-logs/
  * 所有字段名采用 snake_case 与后端保持一致
@@ -42,7 +59,6 @@ export enum OperationType {
 //   /** 数据 */
 // }
 
-/**
 /**
  * 操作日志接口
  * 对应后端序列化器返回的完整数据
@@ -113,19 +129,8 @@ export interface OperationLogQueryParams {
 
 // ==================== 响应接口 ====================
 
-/**
- * 操作日志列表响应接口
- */
-export interface OperationLogListResponse {
-  /** 总记录数 */
-  count: number
-  /** 下一页链接 */
-  next: string | null
-  /** 上一页链接 */
-  previous: string | null
-  /** 操作日志列表数据 */
-  results: OperationLog[]
-}
+/** 操作日志列表响应 */
+export type OperationLogListResponse = PaginatedResponse<OperationLog>
 
 // ==================== 辅助映射常量 ====================
 

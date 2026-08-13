@@ -91,7 +91,7 @@
  */
 import { computed } from 'vue'
 import { OfficeBuilding, Edit, Plus, Delete } from '@element-plus/icons-vue'
-import type { Department, DepartmentTreeNode } from '@/utils/Department'
+import type { Department, DepartmentTreeNode } from '@/types/department'
 
 // ==================== Props & Emits ====================
 

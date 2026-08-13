@@ -1,4 +1,21 @@
 /**
+ * @file 硬盘序列号数据模型定义，包括硬盘类型、状态、表单、批量保存等类型
+ * @module types/harddisksn
+ * @exports
+ *   - HardDiskType/HardDiskStatus: 硬盘类型与状态枚举
+ *   - HardDiskSNCreateForm/HardDiskSNUpdateForm: 硬盘序列号表单接口
+ *   - HardDiskSN: 硬盘序列号基础接口
+ *   - HardDiskSNListResponse: 硬盘序列号列表响应接口
+ *   - DiskItem/HardDiskSNBatchSaveForm: 批量保存相关接口
+ * @callers
+ *   - stores/harddisksnStore（硬盘序列号状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
+ */
+
+import type { PaginatedResponse } from '@/types/common'
+
+/**
  * 硬盘序列号数据模型
  * 对应后端数据库表: am_hard_disk_sn
  */
@@ -42,8 +59,8 @@ export enum HardDiskStatus {
  * 用于创建硬盘序列号时的表单数据
  */
 export interface HardDiskSNCreateForm {
-  /** 资产编码 (外键关联 am_asset.asset_code) */
-  asset_code: string
+  /** 资产 recordcode (外键关联 am_asset.recordcode) */
+  asset_recordcode: string
   /** 硬盘数量 */
   harddisk_number: number
   /** 硬盘编号 */
@@ -53,7 +70,7 @@ export interface HardDiskSNCreateForm {
   /** 硬盘类型 (可选) */
   harddisk_type?: HardDiskType | string | null
   /** 硬盘描述 (可选) */
-  harddisk_sn_description?: string | null
+  harddisk_description?: string | null
   /** 硬盘状态 (可选) */
   harddisk_status?: HardDiskStatus | string | null
 }
@@ -63,8 +80,8 @@ export interface HardDiskSNCreateForm {
  * 用于更新硬盘序列号信息时的表单数据
  */
 export interface HardDiskSNUpdateForm extends Partial<HardDiskSNCreateForm> {
-  /** 主键 ID (用于定位要更新的记录) */
-  id?: number
+  /** 硬盘记录 recordcode (用于定位要更新的记录) */
+  recordcode?: string
 }
 
 /**
@@ -72,16 +89,18 @@ export interface HardDiskSNUpdateForm extends Partial<HardDiskSNCreateForm> {
  * 对应后端数据库表 am_hard_disk_sn 的基础字段
  */
 export interface HardDiskSN extends HardDiskSNCreateForm {
-  /** 主键 ID */
-  id: number
-  /** 关联资产编码 (后端字段 harddisksn_asset, FK → Asset.recordcode, 用于 lookup/delete) */
-  harddisksn_asset: string
+  /** 记录编码（后端主键，用于 lookup/delete） */
+  recordcode: string
+  /** 关联资产 recordcode */
+  asset_recordcode: string
+  /** 资产编码（后端只读字段，经 asset_recordcode 关联返回） */
+  asset_code?: string
   /** 创建时间 */
-  create_time: string
+  created_at: string
   /** 更新时间 */
-  update_time: string
+  updated_at: string
   /** 是否删除标记 */
-  is_delete: boolean
+  is_deleted: boolean
   /** 硬盘序列号对应的用户工号 (外键关联 user_database_table.employee_jobcode) */
   harddisk_user_jobcode: string
   /** 硬盘序列号对应的资产名称 */
@@ -89,19 +108,13 @@ export interface HardDiskSN extends HardDiskSNCreateForm {
   /** 硬盘类型 */
   harddisk_type: string | null
   /** 硬盘描述 */
-  harddisk_sn_description: string | null
+  harddisk_description: string | null
   /** 硬盘状态 */
   harddisk_status: string | null
 }
 
-export interface HardDiskSNListResponse extends Partial<HardDiskSN> {
-  id: number
-  harddisk_sn_code: string
-  harddisk_no: number
-  harddisk_type: HardDiskType | null
-  harddisk_status: HardDiskStatus | null
-  harddisk_sn_description: string | null
-}
+/** 硬盘序列号列表响应 */
+export type HardDiskSNListResponse = PaginatedResponse<HardDiskSN>
 
 // ==================== 批量保存相关接口 ====================
 
@@ -120,26 +133,27 @@ export interface DiskItem {
   /** 硬盘状态 */
   harddisk_status: string | null
   /** 硬盘描述 */
-  harddisk_sn_description: string | null
+  harddisk_description: string | null
   /** 前端状态标记：added / modified / unchanged / removed（不提交给后端） */
   _status?: 'added' | 'modified' | 'unchanged' | 'removed'
-  /** 后端记录 ID（编辑模式用，不提交给后端） */
-  _id?: number
+  /** 后端记录编码（编辑模式用，渲染 key 用） */
+  _id?: string
+  /** 后端记录 recordcode（编辑模式提交用） */
+  _recordcode?: string
 }
 
 /**
  * 硬盘序列号批量保存表单接口
- * 新增和编辑统一使用，直接提交 asset_code + disks 数组
- * 后端根据 disks.length 自动生成 harddisk_number
- * 后端根据每条记录是否有 id 决定新增或更新
+ * 新增和编辑统一使用，直接提交 asset_recordcode + disks 数组
+ * 后端根据每条记录是否有 recordcode 决定新增或更新
  */
 export interface HardDiskSNBatchSaveForm {
-  /** 资产编码 */
-  asset_code: string
+  /** 资产 recordcode（ASSET- 前缀） */
+  asset_recordcode: string
   /** 硬盘数组（1~N 条，含新增、修改、标记失效的记录） */
   disks: Array<{
-    /** 后端记录 ID（编辑已有记录时传递，新增时不传） */
-    id?: number
+    /** 后端记录 recordcode（编辑已有记录时传递，新增时不传） */
+    recordcode?: string
     /** 硬盘编号 */
     harddisk_no: number
     /** 硬盘序列号 */
@@ -149,6 +163,6 @@ export interface HardDiskSNBatchSaveForm {
     /** 硬盘状态（值为 'scrap' 时后端标记为失效） */
     harddisk_status?: string | null
     /** 硬盘描述 */
-    harddisk_sn_description?: string | null
+    harddisk_description?: string | null
   }>
 }

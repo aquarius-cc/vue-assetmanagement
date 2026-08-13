@@ -1,7 +1,17 @@
 /**
- * 合同管理 API
- * 对应后端接口: /api/assets/contracts/
- * 所有字段名采用 snake_case 与后端序列化器保持一臀 */
+ * @file 合同管理 API，提供合同的增删改查、统计、批量操作等接口
+ * @module api/contract
+ * @exports
+ *   - contractAPI: 合同管理 API 对象（包含所有合同相关方法）
+ *   - ContractBatchCreateResult: 批量创建合同响应类型
+ * @callers
+ *   - stores/contractStore: 合同状态管理
+ *   - composables/useContractBatchImport: 合同批量导入
+ * @dependsOn
+ *   - api/request.ts: 使用 request 实例
+ *   - types/contract: 合同相关类型定义
+ *   - stores/createEntityStore: 批量删除结果类型
+ */
 import { request, unwrapResponse } from '@/api/index'
 import type {
   Contract,
@@ -10,13 +20,14 @@ import type {
   ContractListResponse,
   ContractStats,
   ContractQueryParams,
+  PaidRecord,
 } from '@/types/contract'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
 /**
  * 批量创建合同响应
  * 对应后端 ContractViewSet.batch_create action 返回格式
- * fail_items 格式与后竀BatchOperationMixin.batch_execute 对齐
+ * fail_items 格式与后端BatchOperationMixin.batch_execute 对齐
  */
 export interface ContractBatchCreateResult {
   total: number
@@ -30,6 +41,15 @@ export interface ContractBatchCreateResult {
     input_data: ContractCreateForm
     row_number?: number
   }>
+}
+
+/**
+ * 支付记录操作响应
+ * 对应后端 payment_record/delete/approve action 返回格式
+ */
+export interface PaymentRecordResponse {
+  contract: Contract
+  paid_record: PaidRecord
 }
 
 /**
@@ -57,18 +77,8 @@ export const contractAPI = {
   },
 
   /**
-   * 根据 recordcode 获取合同详情（兼容旧调用）
-   * @param code 合同 recordcode
-   * @returns 合同详情
-   */
-  getContractByCodeOrId: (code: string): Promise<Contract> => {
-    return unwrapResponse(
-      request.get<Contract>(`/assets/contracts/${code}/`, undefined, true, 300000),
-    )
-  },
-
-  /**
-   * 按名称搜索合吀   * GET /api/assets/contracts/getcontractByname/{name}/
+   * 按名称搜索合同
+   * GET /api/assets/contracts/getcontractByname/{name}/
    * 对应后端 ContractViewSet.getcontractByname action
    */
   getContractByName: (contract_name: string): Promise<ContractListResponse> => {
@@ -95,14 +105,16 @@ export const contractAPI = {
   /**
    * 创建合同
    * @param data 合同创建表单数据
-   * @returns 创建的合吀   */
+   * @returns 创建的合同
+   */
   createContract: (data: ContractCreateForm): Promise<Contract> => {
     return unwrapResponse(request.post<Contract>('/assets/contracts/', data))
   },
 
   /**
    * 更新合同信息
-   * @param data 合同更新表单数据（需包含 contract_code＀   * @returns 更新后的合同
+   * @param data 合同更新表单数据（需包含 contract_code）
+   * @returns 更新后的合同
    */
   updateContract: (
     data: Partial<ContractUpdateForm> & { recordcode?: string },
@@ -115,7 +127,9 @@ export const contractAPI = {
   },
 
   /**
-   * 局部更新合同信息   * @param data 合同更新表单数据（需包含 contract_code＀   * @returns 更新后的合同
+   * 局部更新合同信息
+   * @param data 合同更新表单数据（需包含 contract_code）
+   * @returns 更新后的合同
    */
   partialUpdateContract: (
     data: Partial<ContractUpdateForm> & { recordcode?: string },
@@ -135,11 +149,6 @@ export const contractAPI = {
     return unwrapResponse(request.delete<void>(`/assets/contracts/${recordcode}/`))
   },
 
-  /**
-   * 批量删除合同
-   * @param contract_codes 合同编码数组
-   * @returns 批量删除结果
-   */
   /**
    * 批量删除合同
    * POST /api/assets/contracts/batch-delete/
@@ -163,16 +172,50 @@ export const contractAPI = {
 
   /**
    * 添加付款记录
+   * POST /api/assets/contracts/{recordcode}/payment_record/
+   * 对应后端 ContractViewSet.payment_record action
    * @param recordcode 合同 recordcode
    * @param data 付款记录数据
-   * @returns 更新后的合同信息
+   * @returns 更新后的合同和支付记录
    */
   addPaymentRecord: (
     recordcode: string,
     data: { amount: number; description?: string },
-  ): Promise<Contract> => {
+  ): Promise<PaymentRecordResponse> => {
     return unwrapResponse(
-      request.post<Contract>(`/assets/contracts/${recordcode}/payment_record/`, data),
+      request.post<PaymentRecordResponse>(`/assets/contracts/${recordcode}/payment_record/`, data),
+    )
+  },
+
+  /**
+   * 删除支付记录（软删除）
+   * POST /api/assets/contracts/{recordcode}/payment_record/{paymentId}/delete/
+   * 对应后端 ContractViewSet.delete_payment action
+   * @param recordcode 合同 recordcode
+   * @param paymentId 支付记录 ID
+   * @returns 更新后的合同和支付记录
+   */
+  deletePaymentRecord: (recordcode: string, paymentId: string): Promise<PaymentRecordResponse> => {
+    return unwrapResponse(
+      request.post<PaymentRecordResponse>(
+        `/assets/contracts/${recordcode}/payment_record/${paymentId}/delete/`,
+      ),
+    )
+  },
+
+  /**
+   * 审核支付记录
+   * POST /api/assets/contracts/{recordcode}/payment_record/{paymentId}/approve/
+   * 对应后端 ContractViewSet.approve_payment action
+   * @param recordcode 合同 recordcode
+   * @param paymentId 支付记录 ID
+   * @returns 更新后的合同和支付记录
+   */
+  approvePaymentRecord: (recordcode: string, paymentId: string): Promise<PaymentRecordResponse> => {
+    return unwrapResponse(
+      request.post<PaymentRecordResponse>(
+        `/assets/contracts/${recordcode}/payment_record/${paymentId}/approve/`,
+      ),
     )
   },
 
@@ -196,7 +239,7 @@ export const contractAPI = {
    * 批量创建合同
    * POST /api/assets/contracts/batch-create/
    * 对应后端 ContractViewSet.batch_create action
-   * 一次性提交多条合同数据，后端逐条处理并返回成劀失败明细
+   * 一次性提交多条合同数据，后端逐条处理并返回成功失败明细
    */
   batchCreateContracts: (items: ContractCreateForm[]): Promise<ContractBatchCreateResult> => {
     return unwrapResponse(

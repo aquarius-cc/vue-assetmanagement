@@ -91,8 +91,8 @@
 </template>
 
 <script lang="ts" setup>
-import type { Storage } from '@/utils/Storage'
-import type { EmployeeExtended } from '@/utils/User'
+import type { Storage } from '@/types/storage'
+import type { EmployeeExtended } from '@/types/user'
 
 defineProps<{
   formData: {

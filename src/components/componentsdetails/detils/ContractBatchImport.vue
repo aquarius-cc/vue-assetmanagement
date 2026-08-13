@@ -1,9 +1,10 @@
 <!--
   ContractBatchImport.vue
   合同批量导入页面
-  功能：上?Excel ?数据预览与验??并发批量提交
-  包含：导出模?+ 导入格式参考卡片（展示示例与规范）
-  遵守 AGENTS 规范?  - 组合?API + TypeScript 严格模式
+  功能：上传 Excel → 数据预览与验证 → 并发批量提交
+  包含：导出模板 + 导入格式参考卡片（展示示例与规范）
+  遵守 AGENTS 规范：
+  - 使用组合式 API + TypeScript 严格模式
   - 样式隔离 scoped
   - 禁止 any 类型
   - 单向数据流：通过 useBatchImport 封装业务逻辑
@@ -62,11 +63,11 @@
           </el-table-column>
           <el-table-column label="合同编码" prop="data.contract_code" width="150" />
           <el-table-column label="合同名称" prop="data.contract_name" min-width="200" />
-          <el-table-column label="供应商" prop="data.contract_supplier" width="150" />
-          <el-table-column label="合同价格" prop="data.contract_price" width="120" />
-          <el-table-column label="签订日期" prop="data.contract_signing_date" width="110" />
+          <el-table-column label="供应商" prop="data.supplier_name" width="150" />
+          <el-table-column label="合同金额" prop="data.contract_amount" width="120" />
+          <el-table-column label="签订日期" prop="data.contract_start_date" width="110" />
           <el-table-column label="合同类型" prop="data.contract_type" width="120" />
-          <el-table-column label="结算状态" prop="data.contract_settledment_status" width="100" />
+          <el-table-column label="合同状态" prop="data.contract_status" width="100" />
           <el-table-column label="错误信息" min-width="200" show-overflow-tooltip>
             <template #default="{ row }">
               <span v-if="row.validationStatus === 'error'" class="error-text">
@@ -143,7 +144,7 @@ import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuide
 import { contractAPI } from '@/api/contract'
 import { useContractStore } from '@/stores/contractStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
-import type { ContractCreateForm, ContractSettlementStatus } from '@/types/contract'
+import type { ContractCreateForm } from '@/types/contract'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { ContractExcelRow } from '@/types/batch-import'
 
@@ -155,7 +156,7 @@ const uploadRef = ref<UploadInstance>()
 const fileList = ref<UploadFile[]>([])
 const localIsSubmitting = ref(false)
 
-// ===== 预览表格分页状?=====
+// ===== 预览表格分页状态 =====
 const previewPageSize = 10
 const currentPreviewPage = ref(1)
 
@@ -167,30 +168,28 @@ const importConfig: BatchImportConfig<ContractExcelRow, ContractCreateForm> = {
   excelHeaderMap: {
     合同编码: 'contract_code',
     合同名称: 'contract_name',
-    供应商: 'contract_supplier',
-    合同价格: 'contract_price',
-    签订日期: 'contract_signing_date',
+    供应商: 'supplier_name',
+    合同金额: 'contract_amount',
+    签订日期: 'contract_start_date',
     合同类型: 'contract_type',
     保修期: 'contract_warranty_period',
-    初验日期: 'contract_preliminary_acceptance_date',
-    终验日期: 'contract_final_acceptance_date',
-    结算状态: 'contract_settledment_status',
-    结算价格: 'contract_settledment_price',
-    已付次数: 'contract_paid_count_number',
-    已付金额: 'contract_paid_price',
-    付款记录: 'contract_paid_record',
+    初验日期: 'initial_check_date',
+    终验日期: 'final_check_date',
+    合同状态: 'contract_status',
+    结算价格: 'settlemented_price',
+    已付金额: 'amount_paid',
   },
 
   // 必填字段
   requiredFields: [
     'contract_code',
     'contract_name',
-    'contract_supplier',
-    'contract_price',
-    'contract_signing_date',
+    'supplier_name',
+    'contract_amount',
+    'contract_start_date',
     'contract_type',
     'contract_warranty_period',
-    'contract_settledment_status',
+    'contract_status',
   ],
 
   // 单条数据验证
@@ -206,25 +205,24 @@ const importConfig: BatchImportConfig<ContractExcelRow, ContractCreateForm> = {
       errors.contract_name = '合同名称不能为空'
     }
 
-    if (!item.contract_supplier?.trim()) {
-      errors.contract_supplier = '供应商不能为空'
+    if (!item.supplier_name?.trim()) {
+      errors.supplier_name = '供应商不能为空'
     }
 
-    // 合同价格校验
-    const price = Number(item.contract_price)
+    // 合同金额校验
+    const price = Number(item.contract_amount)
     if (isNaN(price) || price < 0) {
-      errors.contract_price = '合同价格必须是有效数字且不小?'
+      errors.contract_amount = '合同金额必须是有效数字且不小于0'
     }
 
     // 签订日期格式校验
-    // Excel 解析后的日期可能为字符串，需要统一转换为字符串
-    const signingDateRaw = item.contract_signing_date
+    const signingDateRaw = item.contract_start_date
     const signingDate =
       typeof signingDateRaw === 'string' ? signingDateRaw.trim() : String(signingDateRaw ?? '')
     if (!signingDate) {
-      errors.contract_signing_date = '签订日期不能为空'
+      errors.contract_start_date = '签订日期不能为空'
     } else if (!/^\d{4}-\d{2}-\d{2}$/.test(signingDate)) {
-      errors.contract_signing_date = '签订日期格式应为 YYYY-MM-DD'
+      errors.contract_start_date = '签订日期格式应为 YYYY-MM-DD'
     }
 
     // 合同类型校验
@@ -247,7 +245,7 @@ const importConfig: BatchImportConfig<ContractExcelRow, ContractCreateForm> = {
       errors.contract_warranty_period = '保修期必须是有效数字且不小于0'
     }
 
-    // 结算状态校验
+    // 合同状态校验
     const validStatuses = [
       'purchasing',
       'purchase_finished',
@@ -258,49 +256,41 @@ const importConfig: BatchImportConfig<ContractExcelRow, ContractCreateForm> = {
       'final_check',
       'project_finished',
     ]
-    if (!item.contract_settledment_status?.trim()) {
-      errors.contract_settledment_status = '结算状态不能为空'
-    } else if (!validStatuses.includes(item.contract_settledment_status)) {
-      errors.contract_settledment_status =
-        '结算状态无效，可选：purchasing / purchase_finished / receive_check / initial_check / project_settlement / settlement_done / final_check / project_finished'
+    if (!item.contract_status?.trim()) {
+      errors.contract_status = '合同状态不能为空'
+    } else if (!validStatuses.includes(item.contract_status)) {
+      errors.contract_status =
+        '合同状态无效，可选：purchasing / purchase_finished / receive_check / initial_check / project_settlement / settlement_done / final_check / project_finished'
     }
 
-    // 可选字段校验（如果有值）
-    // Excel 解析后的日期可能?Date 对象，需要统一转换为字符串
-    if (item.contract_preliminary_acceptance_date) {
-      const dateRaw = item.contract_preliminary_acceptance_date
+    // 可选字段校验
+    if (item.initial_check_date) {
+      const dateRaw = item.initial_check_date
       const dateStr = typeof dateRaw === 'string' ? dateRaw.trim() : String(dateRaw)
       if (dateStr && !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        errors.contract_preliminary_acceptance_date = '初验日期格式应为 YYYY-MM-DD'
+        errors.initial_check_date = '初验日期格式应为 YYYY-MM-DD'
       }
     }
 
-    if (item.contract_final_acceptance_date) {
-      const dateRaw = item.contract_final_acceptance_date
+    if (item.final_check_date) {
+      const dateRaw = item.final_check_date
       const dateStr = typeof dateRaw === 'string' ? dateRaw.trim() : String(dateRaw)
       if (dateStr && !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        errors.contract_final_acceptance_date = '终验日期格式应为 YYYY-MM-DD'
+        errors.final_check_date = '终验日期格式应为 YYYY-MM-DD'
       }
     }
 
-    if (item.contract_settledment_price !== undefined && item.contract_settledment_price !== '') {
-      const settlementPrice = Number(item.contract_settledment_price)
+    if (item.settlemented_price !== undefined && item.settlemented_price !== '') {
+      const settlementPrice = Number(item.settlemented_price)
       if (isNaN(settlementPrice) || settlementPrice < 0) {
-        errors.contract_settledment_price = '结算价格必须是有效数字且不小于0'
+        errors.settlemented_price = '结算价格必须是有效数字且不小于0'
       }
     }
 
-    if (item.contract_paid_count_number !== undefined && item.contract_paid_count_number !== '') {
-      const paidCount = Number(item.contract_paid_count_number)
-      if (isNaN(paidCount) || paidCount < 0 || !Number.isInteger(paidCount)) {
-        errors.contract_paid_count_number = '已付次数必须是非负整数'
-      }
-    }
-
-    if (item.contract_paid_price !== undefined && item.contract_paid_price !== '') {
-      const paidPrice = Number(item.contract_paid_price)
+    if (item.amount_paid !== undefined && item.amount_paid !== '') {
+      const paidPrice = Number(item.amount_paid)
       if (isNaN(paidPrice) || paidPrice < 0) {
-        errors.contract_paid_price = '已付金额必须是有效数字且不小于0'
+        errors.amount_paid = '已付金额必须是有效数字且不小于0'
       }
     }
 
@@ -311,36 +301,29 @@ const importConfig: BatchImportConfig<ContractExcelRow, ContractCreateForm> = {
   transformToApiData: (row: ContractExcelRow): ContractCreateForm => ({
     contract_code: row.contract_code.trim(),
     contract_name: row.contract_name.trim(),
-    contract_supplier: row.contract_supplier.trim(),
-    contract_price: Number(row.contract_price),
-    // Excel 解析后的日期可能是字符串，需要转换为字符串
-    contract_signing_date:
-      typeof row.contract_signing_date === 'string'
-        ? row.contract_signing_date.trim()
-        : String(row.contract_signing_date),
+    supplier_name: row.supplier_name.trim(),
+    contract_amount: Number(row.contract_amount),
+    contract_start_date:
+      typeof row.contract_start_date === 'string'
+        ? row.contract_start_date.trim()
+        : String(row.contract_start_date),
     contract_type: row.contract_type.trim(),
     contract_warranty_period: Number(row.contract_warranty_period),
-    contract_preliminary_acceptance_date:
-      typeof row.contract_preliminary_acceptance_date === 'string'
-        ? row.contract_preliminary_acceptance_date.trim()
-        : row.contract_preliminary_acceptance_date
-          ? String(row.contract_preliminary_acceptance_date)
+    initial_check_date:
+      typeof row.initial_check_date === 'string'
+        ? row.initial_check_date.trim()
+        : row.initial_check_date
+          ? String(row.initial_check_date)
           : null,
-    contract_final_acceptance_date:
-      typeof row.contract_final_acceptance_date === 'string'
-        ? row.contract_final_acceptance_date.trim()
-        : row.contract_final_acceptance_date
-          ? String(row.contract_final_acceptance_date)
+    final_check_date:
+      typeof row.final_check_date === 'string'
+        ? row.final_check_date.trim()
+        : row.final_check_date
+          ? String(row.final_check_date)
           : null,
-    contract_settledment_status: row.contract_settledment_status.trim() as ContractSettlementStatus,
-    contract_settledment_price: row.contract_settledment_price
-      ? Number(row.contract_settledment_price)
-      : 0,
-    contract_paid_count_number: row.contract_paid_count_number
-      ? Number(row.contract_paid_count_number)
-      : 0,
-    contract_paid_price: row.contract_paid_price ? Number(row.contract_paid_price) : 0,
-    contract_paid_record: row.contract_paid_record?.trim() || '',
+    contract_status: row.contract_status?.trim() || null,
+    settlemented_price: row.settlemented_price ? Number(row.settlemented_price) : 0,
+    amount_paid: row.amount_paid ? Number(row.amount_paid) : 0,
   }),
 
   // placeholder: 实际提交逻辑调用 batchCreateContracts 函数
@@ -397,17 +380,15 @@ const handleExportTemplate = async () => {
       合同编码: 'CT-2025-001',
       合同名称: '服务器采购合同',
       供应商: 'XX科技有限公司',
-      合同价格: '100000',
+      合同金额: '100000',
       签订日期: '2025-01-15',
-      合同类型: 'purchase',
+      合同类型: 'tender_procurement',
       保修期: '3',
       初验日期: '2025-02-01',
       终验日期: '2025-06-30',
-      结算状态: 'pending',
+      合同状态: 'purchasing',
       结算价格: '50000',
-      已付次数: '1',
       已付金额: '50000',
-      付款记录: '2025-01-20支付首付 20%',
     }
 
     // 使用 ExcelJS 创建模板工作簿
@@ -460,21 +441,21 @@ const headerExamples: HeaderExample[] = [
   },
   {
     headerName: '供应商',
-    field: 'contract_supplier',
+    field: 'supplier_name',
     required: true,
     example: 'XX科技有限公司',
     remark: '供应商名称',
   },
   {
-    headerName: '合同价格',
-    field: 'contract_price',
+    headerName: '合同金额',
+    field: 'contract_amount',
     required: true,
     example: '100000',
     remark: '数字，≥0',
   },
   {
     headerName: '签订日期',
-    field: 'contract_signing_date',
+    field: 'contract_start_date',
     required: true,
     example: '2025-01-15',
     remark: 'YYYY-MM-DD',
@@ -483,64 +464,51 @@ const headerExamples: HeaderExample[] = [
     headerName: '合同类型',
     field: 'contract_type',
     required: true,
-    example: 'purchase',
-    remark: 'purchase/service/information_construction/direct_procurement',
+    example: 'tender_procurement',
+    remark: 'tender_procurement/service/information_construction/direct_procurement',
   },
   {
     headerName: '保修期',
     field: 'contract_warranty_period',
     required: true,
     example: '3',
-    remark: '年，数字?',
+    remark: '年，数字',
   },
   {
     headerName: '初验日期',
-    field: 'contract_preliminary_acceptance_date',
+    field: 'initial_check_date',
     required: false,
     example: '2025-02-01',
     remark: 'YYYY-MM-DD，可选',
   },
   {
     headerName: '终验日期',
-    field: 'contract_final_acceptance_date',
+    field: 'final_check_date',
     required: false,
     example: '2025-06-30',
     remark: 'YYYY-MM-DD，可选',
   },
   {
-    headerName: '结算状态',
-    field: 'contract_settledment_status',
+    headerName: '合同状态',
+    field: 'contract_status',
     required: true,
-    example: 'pending',
-    remark: 'pending/settled',
+    example: 'purchasing',
+    remark:
+      'purchasing/purchase_finished/receive_check/initial_check/project_settlement/settlement_done/final_check/project_finished',
   },
   {
     headerName: '结算价格',
-    field: 'contract_settledment_price',
+    field: 'settlemented_price',
     required: false,
     example: '50000',
     remark: '数字，≥0',
-  },
-  {
-    headerName: '已付次数',
-    field: 'contract_paid_count_number',
-    required: false,
-    example: '1',
-    remark: '非负整数',
   },
   {
     headerName: '已付金额',
-    field: 'contract_paid_price',
+    field: 'amount_paid',
     required: false,
     example: '50000',
     remark: '数字，≥0',
-  },
-  {
-    headerName: '付款记录',
-    field: 'contract_paid_record',
-    required: false,
-    example: '2025-01-20支付首付?0%',
-    remark: '文本说明',
   },
 ]
 
@@ -553,34 +521,30 @@ const exampleRows = [
   {
     contract_code: 'CT-2025-001',
     contract_name: '服务器采购合同',
-    contract_supplier: 'XX科技有限公司',
-    contract_price: 100000,
-    contract_signing_date: '2025-01-15',
-    contract_type: 'purchase',
+    supplier_name: 'XX科技有限公司',
+    contract_amount: 100000,
+    contract_start_date: '2025-01-15',
+    contract_type: 'tender_procurement',
     contract_warranty_period: 3,
-    contract_preliminary_acceptance_date: '2025-02-01',
-    contract_final_acceptance_date: '2025-06-30',
-    contract_settledment_status: 'pending',
-    contract_settledment_price: 50000,
-    contract_paid_count_number: 1,
-    contract_paid_price: 50000,
-    contract_paid_record: '2025-01-20支付首付?0%',
+    initial_check_date: '2025-02-01',
+    final_check_date: '2025-06-30',
+    contract_status: 'purchasing',
+    settlemented_price: 50000,
+    amount_paid: 50000,
   },
   {
     contract_code: 'CT-2025-002',
     contract_name: '软件服务合同',
-    contract_supplier: 'YY信息技术有限公司',
-    contract_price: 50000,
-    contract_signing_date: '2025-02-10',
+    supplier_name: 'YY信息技术有限公司',
+    contract_amount: 50000,
+    contract_start_date: '2025-02-10',
     contract_type: 'service',
     contract_warranty_period: 1,
-    contract_preliminary_acceptance_date: '',
-    contract_final_acceptance_date: '2025-12-31',
-    contract_settledment_status: 'settled',
-    contract_settledment_price: 50000,
-    contract_paid_count_number: 2,
-    contract_paid_price: 50000,
-    contract_paid_record: '2025-02-20支付30000?025-06-01支付20000',
+    initial_check_date: '',
+    final_check_date: '2025-12-31',
+    contract_status: 'settlement_done',
+    settlemented_price: 50000,
+    amount_paid: 50000,
   },
 ]
 
@@ -651,7 +615,7 @@ const handleClear = () => {
   ElMessage.info('已清空所有数据')
 }
 
-// ===== 返回上一?=====
+// ===== 返回上一页 =====
 const goBack = () => {
   router.go(-1)
 }

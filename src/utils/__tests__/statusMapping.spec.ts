@@ -135,9 +135,9 @@ describe('statusMapping', () => {
   describe('getStatusColor', () => {
     it('returns correct color for asset statuses', () => {
       expect(getStatusColor('in_store')).toBe('#52C41A')
-      expect(getStatusColor('in_use')).toBe('#409EFF')
-      expect(getStatusColor('broken')).toBe('#F56C6C')
-      expect(getStatusColor('repairing')).toBe('#E6A23C')
+      expect(getStatusColor('in_use')).toBe('#2B5FD7')
+      expect(getStatusColor('broken')).toBe('#FF4D4F')
+      expect(getStatusColor('repairing')).toBe('#FAAD14')
       expect(getStatusColor('recycled_pending')).toBe('#909399')
     })
 

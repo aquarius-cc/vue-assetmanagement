@@ -1,6 +1,18 @@
 /**
- * 仓库数据模型
- * 对应后端数据库表: am_storage
+ * @file 仓库数据模型定义，包括仓库类型、表单、详情等类型
+ * @module types/storage
+ * @exports
+ *   - StorageType: 仓库类型枚举
+ *   - StorageCreateForm/StorageUpdateForm: 仓库表单接口
+ *   - Storage: 仓库基础接口
+ *   - StorageLocation: 仓库位置接口
+ *   - StorageQueryParams: 仓库查询参数
+ *   - StorageResponse: 仓库列表响应接口
+ *   - StorageStats: 仓库统计接口
+ * @callers
+ *   - stores/storageStore（仓库状态管理）
+ *   - composables/*（组合式函数）
+ *   - components/*（组件）
  */
 
 // ==================== 枚举类型定义 ====================
@@ -55,11 +67,11 @@ export interface Storage extends StorageCreateForm {
   /** 主键 ID */
   id: number
   /** 创建时间 */
-  create_time: string
+  created_at: string
   /** 更新时间 */
-  update_time: string
+  updated_at: string
   /** 是否删除标记 */
-  is_delete: boolean
+  is_deleted: boolean
   /** 仓库地址 */
   storage_address: string | null
   /** 仓库类型 */
@@ -134,12 +146,6 @@ export interface StorageResponse {
  * 仓库简化接口
  * 用于在组件间引用
  */
-export interface StorageItem {
-  value: string
-  storage_name: string
-  storage_code: string
-  storage_address: string
-}
 
 // ==================== 兼容性接口（保留原有的兼容性定义以兼容现有代码） ====================
 

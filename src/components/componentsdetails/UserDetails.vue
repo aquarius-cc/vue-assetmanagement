@@ -1,23 +1,18 @@
-<!-- TECHNICAL_DEBT: >500 lines -->
 <!--
-  UserDetails.vue
-  员工列表页面（重构版）
-
-  架构调整：
-  1. 使用 SmartListContainer 封装数据管理逻辑（分页、搜索、加载）
-  2. CommonList 只负责 UI 展示，不管理数据
-  3. 搜索统一使用 userStore.getList({ search: keyword }) 进行后端搜索
-  4. 删除后使用 smartListRef.value?.refresh() 刷新列表
-
-  数据流：
-  SmartListContainer (数据管理) → slot props → CommonList (纯展示)
-
-  功能：
-  - 展示员工列表（支持后端分页和搜索）
-  - 新增员工、编辑员工、删除员工（带确认弹窗）
-  - 批量导入
-  - 导出 Excel
-  - 子路由：新增/编辑表单（浮层遮罩）
+@file 员工列表管理页面，展示所有员工信息并支持增删改查及批量操作
+@component UserDetails.vue
+@usedBy
+  - views/system/UserDetails.vue: 通过 router-view 渲染员工列表
+  - views/system/UserManagementPage.vue: 用户管理页面中渲染员工列表
+  - components/system/UserRoleAssignDialog.vue: 用户角色分配弹窗
+  - api/userAPI: getUserRoles/assignUserRoles 用户角色相关接口
+  - api/roleAPI: getRolePermissions 获取角色权限码列表接口
+  - api/permissionAPI: getPermissionList 获取权限列表接口
+@dependsOn
+  - composables/useSmartListConfig: 列表配置
+  - stores/userStore: 员工数据管理
+  - components/commoncomponents/SmartListContainer: 数据管理容器
+  - components/commoncomponents/CommonList: 列表展示组件
 -->
 <template>
   <div class="user-details-root">
@@ -104,7 +99,8 @@
     </div>
 
     <BindAuthUserDialog
-      v-model="bindDialogVisible"
+      v-model:visible="bindDialogVisible"
+      mode="from-employee"
       :employee-jobcode="bindEmployeeJobcode"
       :employee-name="bindEmployeeName"
       @success="smartListRef?.refresh()"
@@ -132,7 +128,7 @@ import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
 import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import type { SmartListContainerExpose } from '@/types/common'
-import type { EmployeeExtended } from '@/utils/User'
+import type { EmployeeExtended } from '@/types/user'
 import BindAuthUserDialog from '@/components/system/BindAuthUserDialog.vue'
 import { useUserStore } from '@/stores/userStore'
 import { useDepartmentStore } from '@/stores/departmentStore'
@@ -159,7 +155,7 @@ const bindEmployeeJobcode = ref('')
 const bindEmployeeName = ref('')
 
 const openBindDialog = (row: EmployeeExtended) => {
-  bindEmployeeJobcode.value = row.employee_jobcode || ''
+  bindEmployeeJobcode.value = row.employee_jobcode
   bindEmployeeName.value = row.employee_name || ''
   bindDialogVisible.value = true
 }

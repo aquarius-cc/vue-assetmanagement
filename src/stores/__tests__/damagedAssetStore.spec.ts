@@ -127,4 +127,43 @@ describe('DamagedAssetStore', () => {
       expect(damagedAssetAPI.deleteDamagedAsset).toHaveBeenCalledWith('DA-001')
     })
   })
+
+  describe('详情/更新/批量删除', () => {
+    it('应该调用API获取详情', async () => {
+      const { damagedAssetAPI } = await import('@/api/damagedAsset')
+      vi.mocked(damagedAssetAPI.getDamagedAsset).mockResolvedValue({
+        damaged_asset: 'DA-001',
+      } as never)
+
+      const result = await store.getById('DA-001')
+
+      expect(result).toBeDefined()
+    })
+
+    it('应该调用API更新记录', async () => {
+      const { damagedAssetAPI } = await import('@/api/damagedAsset')
+      vi.mocked(damagedAssetAPI.updateDamagedAsset).mockResolvedValue({
+        damaged_asset: 'DA-001',
+      } as never)
+
+      await store.update({ damaged_asset: 'DA-001' } as never)
+
+      expect(damagedAssetAPI.updateDamagedAsset).toHaveBeenCalled()
+    })
+
+    it('应该调用API批量删除', async () => {
+      const { damagedAssetAPI } = await import('@/api/damagedAsset')
+      vi.mocked(damagedAssetAPI.batchDeleteDamagedAssets).mockResolvedValue({
+        total: 1,
+        success_count: 1,
+        fail_count: 0,
+        success_ids: ['DA-001'],
+        fail_items: [],
+      })
+
+      await store.removeBatch(['DA-001'])
+
+      expect(damagedAssetAPI.batchDeleteDamagedAssets).toHaveBeenCalledWith(['DA-001'])
+    })
+  })
 })

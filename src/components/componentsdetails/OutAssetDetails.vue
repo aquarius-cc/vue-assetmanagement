@@ -1,20 +1,14 @@
 <!--
-  OutAssetDetails.vue
-  出库资产列表页面（重构版）
-
-  架构调整：
-  1. 使用 SmartListContainer 封装数据管理逻辑（分页、搜索、加载）
-  2. CommonList 只负责 UI 展示，不管理数据
-  3. 解决原架构中父组件和 CommonList 重复请求的问题
-
-  数据流：
-  SmartListContainer (数据管理) → slot props → CommonList (纯展示)
-
-  功能：
-  - 展示出库资产列表
-  - 新增出库、编辑出库、删除出库（带确认弹窗）
-  - 批量导入、导出 Excel
-  - 子路由：新增/编辑出库表单（浮层遮罩）
+@file 出库资产列表页面，展示出库资产记录并支持增删改查及批量操作
+@component OutAssetDetails
+@usedBy
+  - views/OutAssetDetails.vue: 通过 router-view 渲染出库资产列表
+@dependsOn
+  - composables/useOutAssetDetailCards: 出库资产详情卡片配置
+  - composables/useSmartListConfig: 列表配置
+  - stores/outAssetStore: 出库资产数据管理
+  - components/commoncomponents/SmartListContainer: 数据管理容器
+  - components/commoncomponents/CommonList: 列表展示组件
 -->
 <template>
   <div class="outasset-details-root">
@@ -124,7 +118,7 @@ import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
-import type { OutAsset, OutAssetDetail } from '@/utils/OutAsset'
+import type { OutAsset, OutAssetDetail } from '@/types/outasset'
 import { useOutAssetStore } from '@/stores/outAssetStore'
 import { formatDate, outassetTypeMapping } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'

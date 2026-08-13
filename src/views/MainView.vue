@@ -1,3 +1,12 @@
+<!--
+@file 主布局页面，包含侧边栏菜单和内容区域
+@component MainView
+@usedBy
+  - router/index.ts: 路由懒加载
+@dependsOn
+  - components/AsideMenu: 侧边导航菜单
+  - stores/app: 应用全局状态（侧边栏折叠等）
+-->
 <template>
   <div class="common-layout">
     <el-container class="common-container">
