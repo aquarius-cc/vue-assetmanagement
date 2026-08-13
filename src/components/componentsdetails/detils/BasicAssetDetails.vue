@@ -153,7 +153,7 @@ import HardDiskSNCard from '@/components/commoncomponents/HardDiskSNCard.vue'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import type { AssetDetail } from '@/types/asset'
 import type { ColumnConfig } from '@/utils/excelExporter'
-import { formatDate, assetCurrentStatusMapping } from '@/utils/Format'
+import { formatDate, getAssetStatusText } from '@/utils/Format'
 import { usePermission } from '@/composables/usePermission'
 import { useAssetStatusChecks } from '@/composables/useAssetStatus'
 // import { useOperationGuard } from '@/composables/useOperationGuard'
@@ -182,12 +182,12 @@ const {
 
 /**
  * 获取资产当前状态的中文文本
+ * 统一委托 Format.getAssetStatusText（C-1 决策: 未知状态回退原始值）
  * @param value - 状态枚举值
  * @returns 中文状态名称
  */
 const getCurrentStatusText = (value: string | null | undefined): string => {
-  if (!value) return '未知状态'
-  return assetCurrentStatusMapping[value] || '未知状态'
+  return getAssetStatusText(value)
 }
 
 // ===== 状态流转按钮可见性 =====

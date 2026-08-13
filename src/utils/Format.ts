@@ -37,8 +37,11 @@ import type { ContractCreateForm } from '@/types/contract'
 import { EmployeeStatus } from '@/types/user'
 import type { ExcelEmployeeData, ValidatedEmployeeData } from '@/types/user'
 import type { ExcelDepartmentData, ValidatedDepartmentData } from '@/types/department'
-import type { AssetCurrentStatus } from '@/types/asset'
 import type { OutAssetCurrentStatus } from '@/types/outasset'
+import {
+  ASSET_STATUS_MAP,
+  getAssetStatusText as getAssetStatusTextFromStatusMapping,
+} from './statusMapping'
 
 // 日期格式化函数（修复类型错误）
 const formatDate = (date: Date | number | string | null | undefined): string | null => {
@@ -185,25 +188,20 @@ const contractiInfoFormate = (
 //   waste: '已报废资人,
 // }
 
-const assetCurrentStatusMapping: Record<string, string> = {
-  in_store: '在库',
-  recycled_pending: '已回收待发放',
-  in_use: '在用',
-  broken: '已损坏',
-  repairing: '维修中',
-  lost: '已遗失',
-  damaged: '待报废',
-  scrapped: '已报废',
-}
+// 资产当前状态映射（单一来源：statusMapping.ASSET_STATUS_MAP，DR-1/DR-2 消除重复字面量定义）
+const assetCurrentStatusMapping: Record<string, string> = Object.fromEntries(
+  Object.entries(ASSET_STATUS_MAP).map(([status, info]) => [status, info.label]),
+)
 
 /**
  * 根据英文状态获取中文显示文本
+ * 未知状态回退返回原始值（C-1 决策，2026-08-13），与 statusMapping.getAssetStatusText 语义一致
  * @param status - 英文状态（可能为 undefined 或 null）
- * @returns 中文状态，若未匹配则返回 '
+ * @returns 中文状态，未知状态返回原始值，空值返回 '未知'
  */
 export function getAssetStatusText(status?: string | null): string {
   if (!status) return '未知'
-  return assetCurrentStatusMapping[status as AssetCurrentStatus] ?? '未知'
+  return getAssetStatusTextFromStatusMapping(status)
 }
 
 // 资产状态映射（作为assetCurrentStatusMapping的别名）

@@ -277,8 +277,8 @@ describe('Format', () => {
       expect(getAssetStatusText('broken')).toBe('已损坏')
     })
 
-    it('returns 未知 for invalid status', () => {
-      expect(getAssetStatusText('unknown')).toBe('未知')
+    it('returns raw value for unknown status (C-1 决策: 原始值回退)', () => {
+      expect(getAssetStatusText('unknown')).toBe('unknown')
     })
 
     it('returns 未知 for null or undefined', () => {
