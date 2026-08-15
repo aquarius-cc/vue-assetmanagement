@@ -30,6 +30,8 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { isAxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
 import { getDecryptedToken } from '@/utils/tokenCrypto'
+import { getInMemoryAccessToken } from '@/utils/tokenMemory'
+import { useAuthStore } from '@/stores/auth'
 import { notificationAPI } from '@/api/notification'
 import type { NotificationItem } from '@/types/notification'
 
@@ -57,16 +59,20 @@ export function useNotification() {
   const isConnectionExhausted = ref(false)
 
   /**
-   * 获取当前用户的工号（从 localStorage 中提取）
+   * 获取当前用户的工号（优先读 authStore，降级读 localStorage）
+   * cookie 通道 authInfo 已持久化，store 为单一事实来源（DR-1）
    */
   function getJobcode(): string | null {
     try {
-      const authInfo = getDecryptedToken('authInfo')
-      if (authInfo) {
-        const parsed = JSON.parse(authInfo)
-        // authInfo 存储的是 auth_username，用作 WebSocket 连接的 jobcode
-        return parsed.auth_username || parsed.employee_jobcode || parsed.jobcode || parsed.id
-      }
+      const authStore = useAuthStore()
+      const parsed = authStore.authInfo
+      const raw = parsed
+        ? { auth_username: parsed.auth_username }
+        : (() => {
+            const saved = getDecryptedToken('authInfo')
+            return saved ? (JSON.parse(saved) as { auth_username?: string }) : null
+          })()
+      return raw?.auth_username || null
     } catch {
       // ignore
     }
@@ -74,10 +80,12 @@ export function useNotification() {
   }
 
   /**
-   * 获取当前用户的 access token（从 localStorage 中提取）
+   * 获取当前用户的 access token
+   * 优先级：内存（cookie 通道）→ authStore（登录/刷新后）→ localStorage（bearer 通道）
    */
   function getAccessToken(): string | null {
-    return getDecryptedToken('access_token')
+    const authStore = useAuthStore()
+    return getInMemoryAccessToken() || authStore.access_token || getDecryptedToken('access_token')
   }
 
   /**
@@ -109,9 +117,15 @@ export function useNotification() {
       }
     }
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       isConnected.value = false
       stopHeartbeat()
+      // 4401 无效/过期 token、4403 无权限 → 认证失效，停止自动重连，提示重新登录
+      if (event.code === 4401 || event.code === 4403) {
+        isConnectionExhausted.value = true
+        ElMessage.warning('实时通知连接已断开，请重新登录')
+        return
+      }
       scheduleReconnect()
     }
 

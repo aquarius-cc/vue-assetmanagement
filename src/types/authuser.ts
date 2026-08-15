@@ -87,6 +87,12 @@ export interface AuthUser {
     employee_jobcode: string
     employee_name: string
   } | null
+  /** RBAC 角色（仅 /auth/profile/ 返回，来自后端 resolve_role_info，DR-1） */
+  role?: string
+  /** RBAC 部门编码（仅 /auth/profile/ 返回） */
+  department_code?: string | null
+  /** 是否超级管理员（仅 /auth/profile/ 返回） */
+  is_superuser?: boolean
 }
 
 // ======================== 登录相关接口 ========================

@@ -5,6 +5,7 @@ const mockAuthStore = {
   userRole: 'regular_user',
   userDepartmentCode: 'DEPT001' as string | null,
   access_token: null as string | null,
+  isSuperuser: false,
   permissions: [] as string[], // [新增] mock 权限码列表
 }
 
@@ -24,6 +25,7 @@ describe('usePermission', () => {
     mockAuthStore.userRole = 'regular_user'
     mockAuthStore.userDepartmentCode = 'DEPT001'
     mockAuthStore.access_token = null
+    mockAuthStore.isSuperuser = false
     mockAuthStore.permissions = [] // [新增] mock 权限码列表
 
     // Dynamic import to get fresh module with mocked dependencies
@@ -247,9 +249,8 @@ describe('usePermission', () => {
   // [新增] 测试 hasPermission 方法
   describe('hasPermission', () => {
     it('returns true for superuser regardless of permissions list', () => {
-      // 模拟 superuser：access_token 含 is_superuser=true
-      mockAuthStore.access_token =
-        'eyJhbGciOiJIUzI1NiJ9.' + btoa(JSON.stringify({ is_superuser: true })) + '.sig'
+      // 模拟 superuser：authStore.isSuperuser（cookie 通道来自 profile / bearer 来自 JWT）
+      mockAuthStore.isSuperuser = true
       const { hasPermission } = usePermission()
 
       expect(hasPermission('asset:create')).toBe(true)

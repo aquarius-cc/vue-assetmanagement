@@ -1,3 +1,4 @@
+// TECHNICAL_DEBT: >500 lines（存量文件，2026-07-07 基线前已超限；本次修改新增 <50 行，暂不拆分）
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getDecryptedToken } from '@/utils/tokenCrypto'
 import { ElMessage } from 'element-plus'
@@ -29,7 +30,10 @@ const mockAuthStore = {
   isLoggedIn: false,
   access_token: null as string | null,
   userRole: 'regular_user',
+  isSuperuser: false,
+  authInitialized: true,
   permissions: [] as string[],
+  permissionsLoaded: false, // N1: 权限加载完成标记
   initAuthState: mockInitAuthState,
   silentLogout: mockSilentLogout,
   getAuthInfo: mockGetAuthInfo,
@@ -57,11 +61,6 @@ describe('Router Guards', () => {
   let afterEachCallback: any
 
   // 构造模拟 JWT token（header.payload.signature 格式）
-  function makeMockToken(payload: Record<string, unknown>): string {
-    const header = btoa(JSON.stringify({ typ: 'JWT', alg: 'HS256' }))
-    const body = btoa(JSON.stringify(payload))
-    return `${header}.${body}.signature`
-  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -69,6 +68,10 @@ describe('Router Guards', () => {
     mockAuthStore.isLoggedIn = false
     mockAuthStore.access_token = null
     mockAuthStore.userRole = 'regular_user'
+    mockAuthStore.isSuperuser = false
+    mockAuthStore.authInitialized = true
+    mockAuthStore.permissions = []
+    mockAuthStore.permissionsLoaded = false
 
     mockRouter = {
       beforeEach: vi.fn((cb: any) => {
@@ -165,10 +168,11 @@ describe('Router Guards', () => {
       expect(result).toBe(true)
     })
 
-    it('should init auth state when authInfo is null', async () => {
+    it('should init auth state when authInitialized is false', async () => {
       ;(getDecryptedToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = false
       mockAuthStore.authInfo = null
+      mockAuthStore.authInitialized = false
 
       setupAndCapture()
 
@@ -194,6 +198,53 @@ describe('Router Guards', () => {
 
       expect(result).toBe('/login')
       expect(mockSilentLogout).toHaveBeenCalled()
+    })
+  })
+
+  describe('permissions loading (N1)', () => {
+    function loginAsValidUser() {
+      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = 'valid-token'
+      mockAuthStore.authInfo = { auth_id: 1, auth_username: 'test' }
+      mockAuthStore.userRole = 'regular_user'
+    }
+
+    it('should load permissions when permissionsLoaded is false', async () => {
+      loginAsValidUser()
+      mockAuthStore.permissionsLoaded = false
+      setupAndCapture()
+
+      const result = await beforeEachCallback({ path: '/main', meta: {} }, { path: '/' })
+
+      expect(result).toBe(true)
+      expect(mockLoadMyPermissions).toHaveBeenCalledTimes(1)
+    })
+
+    it('should NOT reload permissions when permissionsLoaded is true even if permissions are empty', async () => {
+      // 回归护栏：regular_user 无角色时后端返回 []，但已加载完成，
+      // 守卫不得把空权限误判为"未加载"而每次导航重复请求
+      loginAsValidUser()
+      mockAuthStore.permissionsLoaded = true
+      mockAuthStore.permissions = []
+      setupAndCapture()
+
+      const result = await beforeEachCallback({ path: '/main', meta: {} }, { path: '/' })
+
+      expect(result).toBe(true)
+      expect(mockLoadMyPermissions).not.toHaveBeenCalled()
+    })
+
+    it('should NOT reload permissions when already loaded with non-empty permissions', async () => {
+      loginAsValidUser()
+      mockAuthStore.permissionsLoaded = true
+      mockAuthStore.permissions = ['asset:read']
+      setupAndCapture()
+
+      const result = await beforeEachCallback({ path: '/main', meta: {} }, { path: '/' })
+
+      expect(result).toBe(true)
+      expect(mockLoadMyPermissions).not.toHaveBeenCalled()
     })
   })
 
@@ -492,13 +543,12 @@ describe('Router Guards', () => {
     })
   })
 
-  describe('superuser bypass — is_superuser in JWT', () => {
+  describe('superuser bypass — is_superuser in store', () => {
     it('should allow superuser access to system_admin-only routes even with role=regular_user', async () => {
-      const superuserToken = makeMockToken({ user_id: 1, is_superuser: true })
-      ;(getDecryptedToken as any).mockReturnValue(superuserToken)
       mockAuthStore.isLoggedIn = true
-      mockAuthStore.access_token = superuserToken
+      mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.isSuperuser = true
       mockAuthStore.authInfo = { auth_id: 1, auth_username: 'whdtadmin' }
 
       setupAndCapture()
@@ -511,11 +561,10 @@ describe('Router Guards', () => {
     })
 
     it('should allow superuser access to /main/system', async () => {
-      const superuserToken = makeMockToken({ user_id: 1, is_superuser: true })
-      ;(getDecryptedToken as any).mockReturnValue(superuserToken)
       mockAuthStore.isLoggedIn = true
-      mockAuthStore.access_token = superuserToken
+      mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.isSuperuser = true
       mockAuthStore.authInfo = { auth_id: 1, auth_username: 'whdtadmin' }
 
       setupAndCapture()
@@ -525,11 +574,10 @@ describe('Router Guards', () => {
     })
 
     it('should deny non-superuser with role=regular_user on admin routes', async () => {
-      const normalToken = makeMockToken({ user_id: 2, is_superuser: false })
-      ;(getDecryptedToken as any).mockReturnValue(normalToken)
       mockAuthStore.isLoggedIn = true
-      mockAuthStore.access_token = normalToken
+      mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.isSuperuser = false
       mockAuthStore.authInfo = { auth_id: 2, auth_username: 'normal' }
 
       setupAndCapture()

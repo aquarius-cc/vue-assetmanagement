@@ -1,6 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAuthStore } from '../auth'
+import { permissionsAPI } from '@/api/permissions'
+
+const device = vi.hoisted(() => ({
+  detectAuthChannel: vi.fn(),
+}))
+
+const tokenMemory = vi.hoisted(() => ({
+  setInMemoryAccessToken: vi.fn(),
+  clearInMemoryAccessToken: vi.fn(),
+  getInMemoryAccessToken: vi.fn(),
+}))
+
+const tokenRefresh = vi.hoisted(() => ({
+  refreshAccessToken: vi.fn(),
+}))
 
 // Mock依赖模块
 vi.mock('@/api/auth', () => ({
@@ -11,11 +26,24 @@ vi.mock('@/api/auth', () => ({
   },
 }))
 
+vi.mock('@/api/permissions', () => ({
+  permissionsAPI: {
+    getMyPermissions: vi.fn(),
+  },
+}))
+
 vi.mock('@/utils/tokenCrypto', () => ({
   setEncryptedToken: vi.fn(),
   getDecryptedToken: vi.fn(),
   clearAllAuthTokens: vi.fn(),
+  removeToken: vi.fn(),
 }))
+
+vi.mock('@/utils/device', () => device)
+
+vi.mock('@/utils/tokenMemory', () => tokenMemory)
+
+vi.mock('@/utils/tokenRefresh', () => tokenRefresh)
 
 vi.mock('element-plus', () => ({
   ElMessage: {
@@ -36,6 +64,19 @@ describe('AuthStore', () => {
 
     // 清除所有mock调用记录
     vi.clearAllMocks()
+
+    // 默认 bearer 通道（happy-dom 的 userAgent 非移动端，显式 mock 保证确定性）
+    device.detectAuthChannel.mockReturnValue('bearer')
+
+    // 默认权限加载成功（空权限集），各测试可按需覆盖
+    vi.mocked(permissionsAPI.getMyPermissions).mockResolvedValue({
+      permissions: [],
+      data_scope: {
+        scope_type: 'departments',
+        department_codes: [],
+        include_children: false,
+      },
+    })
   })
 
   describe('初始化状态', () => {
@@ -155,6 +196,19 @@ describe('AuthStore', () => {
       expect(authStore.access_token).toBeNull()
     })
 
+    it('cookie通道即使无token也应调用logout API（后端删除Cookie）', async () => {
+      device.detectAuthChannel.mockReturnValue('cookie')
+      const { authAPI } = await import('@/api/auth')
+
+      authStore.refresh_token = null
+      vi.mocked(authAPI.logout).mockResolvedValue(undefined)
+
+      await authStore.logout()
+
+      expect(authAPI.logout).toHaveBeenCalledWith(undefined)
+      expect(authStore.isLoggedIn).toBe(false)
+    })
+
     it('退出后应重置RBAC角色和部门编码', async () => {
       authStore.userRole = 'admin'
       authStore.userDepartmentCode = 'DEP001'
@@ -187,7 +241,7 @@ describe('AuthStore', () => {
         return map[key as string] || null
       })
 
-      const result = authStore.initAuthState()
+      const result = await authStore.initAuthState()
 
       expect(result).toBe(true)
       expect(authStore.isLoggedIn).toBe(true)
@@ -202,7 +256,7 @@ describe('AuthStore', () => {
       const { getDecryptedToken } = vi.mocked(await import('@/utils/tokenCrypto'))
       vi.mocked(getDecryptedToken).mockReturnValue(null)
 
-      const result = authStore.initAuthState()
+      const result = await authStore.initAuthState()
 
       expect(result).toBe(false)
       expect(authStore.isLoggedIn).toBe(false)
@@ -220,7 +274,44 @@ describe('AuthStore', () => {
         return map[key as string] || null
       })
 
-      const result = authStore.initAuthState()
+      const result = await authStore.initAuthState()
+
+      expect(result).toBe(false)
+      expect(authStore.isLoggedIn).toBe(false)
+    })
+
+    it('cookie通道应经refresh验证会话并同步profile RBAC', async () => {
+      device.detectAuthChannel.mockReturnValue('cookie')
+      const { refreshAccessToken } = vi.mocked(await import('@/utils/tokenRefresh'))
+      const { authAPI } = await import('@/api/auth')
+
+      vi.mocked(refreshAccessToken).mockResolvedValue('cookie-access-token')
+      vi.mocked(authAPI.getCurrentUserProfile).mockResolvedValue({
+        auth_id: 1,
+        auth_username: 'admin',
+        auth_is_active: true,
+        role: 'system_admin',
+        department_code: 'DEP001',
+        is_superuser: true,
+      } as any)
+
+      const result = await authStore.initAuthState()
+
+      expect(refreshAccessToken).toHaveBeenCalledWith('cookie')
+      expect(authStore.access_token).toBe('cookie-access-token')
+      expect(result).toBe(true)
+      expect(authStore.isLoggedIn).toBe(true)
+      expect(authStore.userRole).toBe('system_admin')
+      expect(authStore.userDepartmentCode).toBe('DEP001')
+      expect(authStore.isSuperuser).toBe(true)
+    })
+
+    it('cookie通道refresh失败时应silentLogout', async () => {
+      device.detectAuthChannel.mockReturnValue('cookie')
+      const { refreshAccessToken } = vi.mocked(await import('@/utils/tokenRefresh'))
+      vi.mocked(refreshAccessToken).mockRejectedValue(new Error('会话失效'))
+
+      const result = await authStore.initAuthState()
 
       expect(result).toBe(false)
       expect(authStore.isLoggedIn).toBe(false)
@@ -249,6 +340,26 @@ describe('AuthStore', () => {
         'authInfo',
         JSON.stringify({ auth_id: 1, auth_username: 'testuser', isactive: true }),
       )
+    })
+
+    it('profile返回RBAC字段时应同步角色与isSuperuser', async () => {
+      const { authAPI } = await import('@/api/auth')
+
+      vi.mocked(authAPI.getCurrentUserProfile).mockResolvedValue({
+        auth_id: 1,
+        auth_username: 'admin',
+        auth_is_active: true,
+        role: 'system_admin',
+        department_code: 'DEP001',
+        is_superuser: true,
+      } as any)
+
+      await authStore.getAuthInfo()
+
+      expect(authStore.userRole).toBe('system_admin')
+      expect(authStore.userDepartmentCode).toBe('DEP001')
+      expect(authStore.isSuperuser).toBe(true)
+      expect(authStore.isLoggedIn).toBe(true)
     })
 
     it('API失败时应调用silentLogout并抛出异常', async () => {
@@ -416,6 +527,39 @@ describe('AuthStore', () => {
 
       expect(authStore.userRole).toBe('regular_user')
       expect(authStore.userDepartmentCode).toBeNull()
+    })
+
+    it('cookie通道登录不应持久化token，仅存内存并清除历史bearer token', async () => {
+      device.detectAuthChannel.mockReturnValue('cookie')
+      const { authAPI } = await import('@/api/auth')
+      const { setEncryptedToken, removeToken } = vi.mocked(await import('@/utils/tokenCrypto'))
+      const { setInMemoryAccessToken } = vi.mocked(await import('@/utils/tokenMemory'))
+
+      vi.mocked(authAPI.login).mockResolvedValue({
+        code: 0,
+        message: 'success',
+        data: {
+          user: { auth_id: 1, auth_username: 'admin', auth_is_active: true },
+          access: 'cookie-access',
+          refresh: 'cookie-refresh',
+        },
+      } as any)
+
+      const result = await authStore.login({ auth_username: 'admin', password: '123456' })
+
+      expect(result.success).toBe(true)
+      expect(authStore.refresh_token).toBeNull()
+      expect(authStore.access_token).toBe('cookie-access')
+      expect(setInMemoryAccessToken).toHaveBeenCalledWith('cookie-access')
+      expect(removeToken).toHaveBeenCalledWith('access_token')
+      expect(removeToken).toHaveBeenCalledWith('refresh_token')
+      expect(setEncryptedToken).not.toHaveBeenCalledWith('access_token', 'cookie-access')
+      expect(setEncryptedToken).not.toHaveBeenCalledWith('refresh_token', 'cookie-refresh')
+      // 非敏感 authInfo 仍持久化
+      expect(setEncryptedToken).toHaveBeenCalledWith(
+        'authInfo',
+        JSON.stringify({ auth_id: 1, auth_username: 'admin', isactive: true }),
+      )
     })
   })
 })

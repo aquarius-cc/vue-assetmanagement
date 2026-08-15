@@ -15,8 +15,6 @@
 import type { Router, RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
-import { getDecryptedToken } from '@/utils/tokenCrypto'
-import { decodeJWTPayload } from '@/utils/decodeJwt'
 import { ElMessage } from 'element-plus'
 import { ROLE_CODES } from '@/constants/roles'
 
@@ -58,16 +56,8 @@ const roleWhitelist: Record<string, string[]> = {
 }
 
 /**
- * 从 JWT access_token 中解析是否超级管理员
- * 后端 Phase 7 清理后 JWT 不再包含 role 字段，超级管理员仅标记 is_superuser
- */
-function isSuperuserFromToken(token: string | null): boolean {
-  return decodeJWTPayload(token)?.is_superuser === true
-}
-
-/**
  * 检查用户角色是否允许访问目标路由
- * 超级管理员短路放行（JWT is_superuser=true）
+ * 超级管理员短路放行（authStore.isSuperuser，cookie 通道来自 profile、bearer 来自 JWT）
  */
 function checkRoleAccess(targetPath: string, userRole: string, isSuperuser: boolean): boolean {
   // 超级管理员拥有所有路由的访问权限
@@ -103,17 +93,16 @@ export const setupAuthGuard = (router: Router) => {
     appStore.setLoading(true)
 
     try {
-      // 初始化用户状态（从本地存储恢复）
-      // 注意：localStorage 中的 token 使用了 XOR 加密存储，
-      // 直接读取 localStorage.getItem('access_token') 得到的是加密后的值，
-      // 无法判断 token 是否有效。改用 getDecryptedToken 解密后判断。
-      if (!authStore.authInfo && getDecryptedToken('access_token')) {
-        authStore.initAuthState()
+      // 初始化用户状态（通道感知）：
+      //   bearer 通道从加密 localStorage 恢复
+      //   cookie 通道经 refresh 端点验证会话并获取 access，再拉 profile
+      if (!authStore.authInitialized) {
+        await authStore.initAuthState()
       }
 
       // 检查是否需要认证
       // 已登录用户访问 /login 时重定向到主页（必须在白名单检查之前）
-      if (authStore.isLoggedIn && authStore.access_token && to.path === '/login') {
+      if (authStore.isLoggedIn && to.path === '/login') {
         return '/main'
       }
 
@@ -127,7 +116,7 @@ export const setupAuthGuard = (router: Router) => {
         return true
       }
 
-      // 检查是否已登录
+      // 检查是否已登录（cookie 通道 access_token 仅内存，isLoggedIn 为唯一判定依据）
       if (authStore.isLoggedIn && authStore.access_token) {
         // 已登录，检查token是否有效
         try {
@@ -136,15 +125,16 @@ export const setupAuthGuard = (router: Router) => {
             await authStore.getAuthInfo()
           }
 
-          // [新增] 兜底加载权限：刷新页面走 initAuthState，权限可能未联网加载
-          // permissions 为空且非管理员时，必须联网拉取，否则 hasPermission 全 false
-          if (authStore.permissions.length === 0) {
+          // [N1] 权限未加载完成时必须联网拉取。
+          // 用 permissionsLoaded 而非 permissions.length，区分"已加载但为空"
+          // （如 regular_user 无角色，后端返回 []）与"未加载"（刷新后/登录后），
+          // 避免空权限用户每次导航都重复请求
+          if (!authStore.permissionsLoaded) {
             await authStore.loadMyPermissions()
           }
 
-          // RBAC: 检查角色是否有权访问目标路由
-          const isSuperuser = isSuperuserFromToken(authStore.access_token)
-          if (!checkRoleAccess(to.path, authStore.userRole, isSuperuser)) {
+          // RBAC: 检查角色是否有权访问目标路由（isSuperuser 来自 authStore）
+          if (!checkRoleAccess(to.path, authStore.userRole, authStore.isSuperuser)) {
             ElMessage.error('您没有权限访问该页面')
             return '/main' // 无权限则回首页
           }

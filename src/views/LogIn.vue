@@ -110,9 +110,10 @@ const loginForm = reactive<LoginForm>({
 })
 
 // 初始化时检查是否已登录
-onMounted(() => {
-  // 初始化用户状态（从加密存储恢复）
-  authStore.initAuthState()
+onMounted(async () => {
+  // 初始化用户状态（通道感知）：
+  //   bearer 通道从加密存储恢复；cookie 通道经 refresh 端点验证会话并取 access
+  await authStore.initAuthState()
 
   // 如果已登录（通过 token 验证），直接跳转到主页
   if (authStore.isLoggedIn && authStore.access_token) {

@@ -10,8 +10,25 @@ const mockToken = vi.hoisted(() => ({
   getDecryptedToken: vi.fn(),
 }))
 
+const mockStore = vi.hoisted(() => ({
+  authInfo: null as { auth_username: string } | null,
+  access_token: null as string | null,
+}))
+
+const mockTokenMemory = vi.hoisted(() => ({
+  getInMemoryAccessToken: vi.fn(),
+}))
+
 vi.mock('@/utils/tokenCrypto', () => ({
   getDecryptedToken: mockToken.getDecryptedToken,
+}))
+
+vi.mock('@/stores/auth', () => ({
+  useAuthStore: () => mockStore,
+}))
+
+vi.mock('@/utils/tokenMemory', () => ({
+  getInMemoryAccessToken: mockTokenMemory.getInMemoryAccessToken,
 }))
 
 vi.mock('@/api/notification', () => ({
@@ -33,7 +50,7 @@ class MockWebSocket {
   readyState = MockWebSocket.OPEN
   onopen: (() => void) | null = null
   onmessage: ((event: { data: string }) => void) | null = null
-  onclose: (() => void) | null = null
+  onclose: ((event: { code: number }) => void) | null = null
   onerror: (() => void) | null = null
 
   send = vi.fn()
@@ -63,6 +80,9 @@ describe('useNotification', () => {
     vi.clearAllMocks()
     wsInstances.length = 0
     wsIdCounter = 0
+    mockStore.authInfo = null
+    mockStore.access_token = null
+    mockTokenMemory.getInMemoryAccessToken.mockReturnValue(null)
     mockToken.getDecryptedToken.mockImplementation((key: string) =>
       key === 'authInfo'
         ? JSON.stringify({ auth_username: 'testuser' })
@@ -244,7 +264,7 @@ describe('useNotification', () => {
     ws.onopen()
     expect(isConnected.value).toBe(true)
 
-    ws.onclose()
+    ws.onclose({ code: 1000 })
     expect(isConnected.value).toBe(false)
   })
 
@@ -258,10 +278,24 @@ describe('useNotification', () => {
   })
 
   describe('branch coverage', () => {
-    it('falls back to employee_jobcode when auth_username missing', async () => {
+    it('reads jobcode from authStore when available (cookie channel)', async () => {
+      mockStore.authInfo = { auth_username: 'storeuser' }
+      mockToken.getDecryptedToken.mockImplementation((key: string) =>
+        key === 'access_token' ? 'test-token' : null,
+      )
+
+      const { connect } = useNotification()
+      connect()
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(wsInstances[0].url).toContain('storeuser')
+    })
+
+    it('falls back to localStorage authInfo when store authInfo missing', async () => {
       mockToken.getDecryptedToken.mockImplementation((key: string) =>
         key === 'authInfo'
-          ? JSON.stringify({ employee_jobcode: 'emp001' })
+          ? JSON.stringify({ auth_username: 'legacyuser' })
           : key === 'access_token'
             ? 'test-token'
             : null,
@@ -272,12 +306,13 @@ describe('useNotification', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(wsInstances[0].url).toContain('emp001')
+      expect(wsInstances[0].url).toContain('legacyuser')
     })
 
-    it('falls back to jobcode when both username fields missing', async () => {
+    it('prefers in-memory access token (cookie channel)', async () => {
+      mockTokenMemory.getInMemoryAccessToken.mockReturnValue('mem-token')
       mockToken.getDecryptedToken.mockImplementation((key: string) =>
-        key === 'authInfo' ? JSON.stringify({ jobcode: 'jc002' }) : 'test-token',
+        key === 'authInfo' ? JSON.stringify({ auth_username: 'testuser' }) : null,
       )
 
       const { connect } = useNotification()
@@ -285,12 +320,13 @@ describe('useNotification', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(wsInstances[0].url).toContain('jc002')
+      expect(wsInstances[0].url).toContain('mem-token')
     })
 
-    it('falls back to id field', async () => {
+    it('prefers authStore access token over localStorage', async () => {
+      mockStore.access_token = 'store-token'
       mockToken.getDecryptedToken.mockImplementation((key: string) =>
-        key === 'authInfo' ? JSON.stringify({ id: 7 }) : 'test-token',
+        key === 'authInfo' ? JSON.stringify({ auth_username: 'testuser' }) : 'local-token',
       )
 
       const { connect } = useNotification()
@@ -298,7 +334,7 @@ describe('useNotification', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(wsInstances[0].url).toContain('7')
+      expect(wsInstances[0].url).toContain('store-token')
     })
 
     it('returns null and skips connect when authInfo is invalid JSON', async () => {
@@ -507,10 +543,35 @@ describe('useNotification', () => {
       const { connect } = useNotification()
       connect()
 
-      wsInstances[0].onclose()
+      wsInstances[0].onclose({ code: 1000 })
       await vi.advanceTimersByTimeAsync(3000)
 
       expect(wsInstances).toHaveLength(2)
+    })
+
+    it('stops reconnect on 4401 (invalid token)', async () => {
+      const { connect, isConnectionExhausted } = useNotification()
+      connect()
+
+      wsInstances[0].onclose({ code: 4401 })
+      await vi.advanceTimersByTimeAsync(30000)
+
+      expect(wsInstances).toHaveLength(1)
+      expect(isConnectionExhausted.value).toBe(true)
+      expect((await import('element-plus')).ElMessage.warning).toHaveBeenCalledWith(
+        '实时通知连接已断开，请重新登录',
+      )
+    })
+
+    it('stops reconnect on 4403 (forbidden)', async () => {
+      const { connect, isConnectionExhausted } = useNotification()
+      connect()
+
+      wsInstances[0].onclose({ code: 4403 })
+      await vi.advanceTimersByTimeAsync(30000)
+
+      expect(wsInstances).toHaveLength(1)
+      expect(isConnectionExhausted.value).toBe(true)
     })
 
     it('marks connection exhausted after max attempts', async () => {
@@ -518,7 +579,7 @@ describe('useNotification', () => {
       connect()
 
       for (let i = 0; i < 11; i++) {
-        wsInstances[wsInstances.length - 1].onclose()
+        wsInstances[wsInstances.length - 1].onclose({ code: 1000 })
         await vi.advanceTimersByTimeAsync(15000)
       }
 
@@ -533,7 +594,7 @@ describe('useNotification', () => {
       connect()
 
       for (let i = 0; i < 11; i++) {
-        wsInstances[wsInstances.length - 1].onclose()
+        wsInstances[wsInstances.length - 1].onclose({ code: 1000 })
         await vi.advanceTimersByTimeAsync(15000)
       }
 

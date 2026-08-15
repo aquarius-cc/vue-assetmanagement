@@ -1,9 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 type ErrorHandler = (error: unknown) => unknown
+type RequestHandler = (config: { method?: string; headers: Record<string, string> }) => {
+  headers: Record<string, string>
+}
 
 const handlerRef = vi.hoisted(() => ({
   fn: null as ErrorHandler | null,
+}))
+
+const requestHandlerRef = vi.hoisted(() => ({
+  fn: null as RequestHandler | null,
 }))
 
 const mocks = vi.hoisted(() => ({
@@ -13,6 +20,14 @@ const mocks = vi.hoisted(() => ({
   instancePatch: vi.fn(),
   instanceDelete: vi.fn(),
   staticPost: vi.fn(),
+}))
+
+const device = vi.hoisted(() => ({
+  detectAuthChannel: vi.fn(),
+}))
+
+const csrf = vi.hoisted(() => ({
+  getCsrfToken: vi.fn(),
 }))
 
 vi.mock('axios', () => {
@@ -28,7 +43,12 @@ vi.mock('axios', () => {
     }),
     {
       interceptors: {
-        request: { use: vi.fn(), eject: vi.fn() },
+        request: {
+          use: vi.fn((onFulfilled: unknown) => {
+            requestHandlerRef.fn = onFulfilled as RequestHandler
+          }),
+          eject: vi.fn(),
+        },
         response: {
           use: vi.fn((_onFulfilled: unknown, onRejected: unknown) => {
             handlerRef.fn = onRejected as ErrorHandler
@@ -63,6 +83,10 @@ vi.mock('@/utils/tokenCrypto', () => ({
   getDecryptedToken: vi.fn().mockReturnValue(null),
   clearAllAuthTokens: vi.fn(),
 }))
+
+vi.mock('@/utils/device', () => device)
+
+vi.mock('@/utils/csrf', () => csrf)
 
 vi.mock('@/utils/traceId', () => ({
   generateTraceId: vi.fn(() => 'test-trace-id'),
@@ -129,6 +153,8 @@ describe('request', () => {
     vi.mocked(ElMessage.error).mockClear()
     vi.mocked(generateTraceId).mockClear()
     vi.mocked(getDecryptedToken).mockReturnValue(null)
+    device.detectAuthChannel.mockReturnValue('bearer')
+    csrf.getCsrfToken.mockReturnValue(null)
     vi.spyOn(global, 'setTimeout').mockImplementation((fn: () => void) => {
       fn()
       return 0 as unknown as ReturnType<typeof setTimeout>
@@ -137,6 +163,47 @@ describe('request', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  describe('request interceptor', () => {
+    it('bearer channel attaches Authorization header', () => {
+      device.detectAuthChannel.mockReturnValue('bearer')
+      vi.mocked(getDecryptedToken).mockReturnValue('access-tok')
+
+      const config = requestHandlerRef.fn?.({ method: 'get', headers: {} })
+
+      expect(config?.headers.Authorization).toBe('Bearer access-tok')
+      expect(config?.headers['X-Requested-With']).toBe('XMLHttpRequest')
+    })
+
+    it('cookie channel POST attaches X-CSRFToken, no Authorization', () => {
+      device.detectAuthChannel.mockReturnValue('cookie')
+      csrf.getCsrfToken.mockReturnValue('csrf-xyz')
+      vi.mocked(getDecryptedToken).mockReturnValue('access-tok')
+
+      const config = requestHandlerRef.fn?.({ method: 'post', headers: {} })
+
+      expect(config?.headers['X-CSRFToken']).toBe('csrf-xyz')
+      expect(config?.headers.Authorization).toBeUndefined()
+    })
+
+    it('cookie channel GET does not attach X-CSRFToken', () => {
+      device.detectAuthChannel.mockReturnValue('cookie')
+      csrf.getCsrfToken.mockReturnValue('csrf-xyz')
+
+      const config = requestHandlerRef.fn?.({ method: 'get', headers: {} })
+
+      expect(config?.headers['X-CSRFToken']).toBeUndefined()
+    })
+
+    it('cookie channel skips X-CSRFToken when csrf cookie missing', () => {
+      device.detectAuthChannel.mockReturnValue('cookie')
+      csrf.getCsrfToken.mockReturnValue(null)
+
+      const config = requestHandlerRef.fn?.({ method: 'put', headers: {} })
+
+      expect(config?.headers['X-CSRFToken']).toBeUndefined()
+    })
   })
 
   describe('unwrapResponse', () => {
@@ -284,7 +351,7 @@ describe('request', () => {
     })
   })
 
-  describe('401 token refresh interceptor', () => {
+  describe('401 token refresh interceptor (bearer channel)', () => {
     it('401 → refresh success → replay with new token', async () => {
       vi.mocked(getDecryptedToken).mockReturnValue('mock-refresh-token')
       const newAccessToken = 'new-access-token'
@@ -316,26 +383,27 @@ describe('request', () => {
       expect(replayCallArgs.headers.Authorization).toBe(`Bearer ${newAccessToken}`)
     })
 
-    it('refresh returns code ≠ 0 (business failure) → fatal logout', async () => {
+    it('401 → refresh business failure → tolerant replay success (rotation race)', async () => {
       vi.mocked(getDecryptedToken).mockReturnValue('mock-refresh-token')
 
-      mocks.staticPost.mockResolvedValueOnce({
-        data: {
-          code: 401,
-          message: 'Token 已过期',
-          data: null,
-        },
+      // 刷新返回业务失败（旧 refresh 已被他处轮换）
+      mocks.staticPost.mockResolvedValue({
+        data: { code: 401, message: 'Token 已过期', data: null },
+      })
+      // 宽容重放：原请求用当前 token 重放一次并成功
+      mocks.instanceGet.mockResolvedValue({
+        data: { code: 0, data: { success: true }, message: 'ok' },
       })
 
       const error = makeAxiosError(401, '/test/api')
-      await expect(getResponseHandler()?.(error)).rejects.toBeDefined()
+      await getResponseHandler()?.(error)
 
-      expect(setEncryptedToken).not.toHaveBeenCalled()
-      expect(clearAllAuthTokens).toHaveBeenCalled()
-      expect(ElMessage.error).toHaveBeenCalledWith('登录已过期，请重新登录')
+      expect(mocks.instanceGet).toHaveBeenCalled()
+      expect(clearAllAuthTokens).not.toHaveBeenCalled()
+      expect(ElMessage.error).not.toHaveBeenCalledWith('登录已过期，请重新登录')
     })
 
-    it('refresh returns 401 → fatal logout', async () => {
+    it('401 → refresh HTTP 401 → tolerant replay rejects without logout (replay not re-intercepted in mock)', async () => {
       vi.mocked(getDecryptedToken).mockReturnValue('mock-refresh-token')
 
       const refreshError = new Error('Request failed with status code 401') as Error & {
@@ -345,12 +413,15 @@ describe('request', () => {
       refreshError.isAxiosError = true
       refreshError.response = { status: 401, data: {} }
 
-      mocks.staticPost.mockRejectedValueOnce(refreshError)
+      mocks.staticPost.mockRejectedValue(refreshError)
+      mocks.instanceGet.mockRejectedValue(makeAxiosError(401, '/test/api'))
 
       const error = makeAxiosError(401, '/test/api')
       await expect(getResponseHandler()?.(error)).rejects.toBeDefined()
 
-      expect(clearAllAuthTokens).toHaveBeenCalled()
+      // 宽容重放已发生，未立即登出（真实 axios 下重放会再进拦截器最终登出）
+      expect(mocks.instanceGet).toHaveBeenCalled()
+      expect(clearAllAuthTokens).not.toHaveBeenCalled()
     })
 
     it('refresh network error → transient retry once, keep session', async () => {
@@ -488,6 +559,63 @@ describe('request', () => {
 
       expect(mocks.staticPost).not.toHaveBeenCalled()
       expect(clearAllAuthTokens).toHaveBeenCalled()
+    })
+  })
+
+  describe('401 token refresh interceptor (cookie channel)', () => {
+    it('401 → cookie refresh (empty body + CSRF) → replay without Authorization', async () => {
+      device.detectAuthChannel.mockReturnValue('cookie')
+      csrf.getCsrfToken.mockReturnValue('csrf-token')
+      vi.mocked(getDecryptedToken).mockReturnValue(null)
+
+      mocks.staticPost.mockResolvedValueOnce({
+        data: {
+          code: 0,
+          message: 'Token 刷新成功',
+          data: { access: 'cookie-new-access', refresh: 'cookie-new-refresh' },
+        },
+      })
+      mocks.instanceGet.mockResolvedValueOnce({
+        data: { code: 0, data: { ok: true }, message: 'ok' },
+      })
+
+      const error = makeAxiosError(401, '/test/api')
+      await getResponseHandler()?.(error)
+
+      expect(mocks.staticPost).toHaveBeenCalledTimes(1)
+      const [url, body, config] = mocks.staticPost.mock.calls[0] as [
+        string,
+        unknown,
+        { headers: Record<string, string>; withCredentials?: boolean },
+      ]
+      expect(url).toContain('/auth/token/refresh/')
+      expect(body).toBeUndefined()
+      expect(config.headers['X-CSRFToken']).toBe('csrf-token')
+      expect(config.withCredentials).toBe(true)
+
+      const replayArgs = mocks.instanceGet.mock.calls[0][0] as { headers: Record<string, string> }
+      expect(replayArgs.headers.Authorization).toBeUndefined()
+      // cookie 通道不写 localStorage
+      expect(setEncryptedToken).not.toHaveBeenCalled()
+    })
+
+    it('401 → cookie refresh business failure → tolerant replay', async () => {
+      device.detectAuthChannel.mockReturnValue('cookie')
+      csrf.getCsrfToken.mockReturnValue('csrf-token')
+      vi.mocked(getDecryptedToken).mockReturnValue(null)
+
+      mocks.staticPost.mockResolvedValue({
+        data: { code: 401, message: 'Token 无效或已过期', data: null },
+      })
+      mocks.instanceGet.mockResolvedValue({
+        data: { code: 0, data: { ok: true }, message: 'ok' },
+      })
+
+      const error = makeAxiosError(401, '/test/api')
+      await getResponseHandler()?.(error)
+
+      expect(mocks.instanceGet).toHaveBeenCalled()
+      expect(clearAllAuthTokens).not.toHaveBeenCalled()
     })
   })
 })

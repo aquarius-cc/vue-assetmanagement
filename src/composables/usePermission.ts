@@ -12,7 +12,6 @@
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { ROLE_HIERARCHY, ROLE_CODES } from '@/constants/roles'
-import { decodeJWTPayload } from '@/utils/decodeJwt'
 
 // 角色层级定义已统一提取到 constants/roles.ts中
 // 从高到低，系统管理员 > 部门经理 > 资产管理员 > 审计员 > 普通用户
@@ -32,17 +31,12 @@ export function usePermission() {
   const role = computed(() => authStore.userRole)
   const departmentCode = computed(() => authStore.userDepartmentCode)
 
-  /** 是否超级管理员（从 JWT payload 的 is_superuser 字段或 authInfo 判断） */
-  const isSuperuser = computed(() => {
-    // 方式1：从 JWT payload 检查
-    if (authStore.access_token) {
-      const payload = decodeJWTPayload(authStore.access_token)
-      if (payload?.is_superuser) return true
-    }
-    // 方式2：authInfo 中 auth_is_staff 且 is_superuser（兼容旧 token）
-    // 旧 token 没有 role 但用户是 superuser，需要 re-login 获取新 token
-    return false
-  })
+  /**
+   * 是否超级管理员（读 authStore，DR-1）
+   * bearer 通道：initAuthState/login 从 JWT is_superuser 解析
+   * cookie 通道：getAuthInfo 从 /auth/profile/ 的 is_superuser 字段解析
+   */
+  const isSuperuser = computed(() => authStore.isSuperuser)
 
   /** 角色层级值（越大权限越高），超级管理员视为最高层级 */
   const roleLevel = computed(() => {

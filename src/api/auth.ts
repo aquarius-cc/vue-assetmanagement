@@ -66,23 +66,24 @@ export const authAPI = {
   /**
    * 用户退出登录
    * @description 调用后端 POST /api/auth/logout/ 接口，通知服务端作废 Token
-   * @param refreshToken - 刷新令牌，传递给后端用于在黑名单中作废
+   * @param refreshToken - 可选刷新令牌（bearer 通道传入作废黑名单；cookie 通道省略，由后端读 HttpOnly Cookie）
    * @returns Promise<LogoutResponse> 后端返回的退出登录响应
    *
    * 后端接口规范:
    *   - 路径: POST /api/auth/logout/
-   *   - 认证: Bearer Token (access_token)
-   *   - 请求体: { "refresh": "<refresh_token>" }
+   *   - 认证: Bearer Token (access_token) 或 HttpOnly Cookie（cookie 通道）
+   *   - 请求体: { "refresh": "<refresh_token>" }（bearer）；cookie 通道传空对象
    *   - 成功响应 (200): { code: 0, message: "退出成功，Token 已作废", data: {} }
    *   - 错误响应 (400): { code: <业务错误码>, message: "Token 无效或已过期: ...", data: {} }
    */
-  async logout(refreshToken: string): Promise<LogoutResponse> {
+  async logout(refreshToken?: string): Promise<LogoutResponse> {
     try {
-      // 调用后端退出登录接口，携带 refresh_token 使服务端作废 Token
+      // 调用后端退出登录接口（cookie 通道必须调用，即使无 body token，后端据此删除 Cookie）
       const response: LogoutResponse = await unwrapResponse(
-        request.post<LogoutResponse>('/auth/logout/', {
-          refresh: refreshToken,
-        }),
+        request.post<LogoutResponse>(
+          '/auth/logout/',
+          refreshToken ? { refresh: refreshToken } : {},
+        ),
       )
       return response
     } catch (error: unknown) {
