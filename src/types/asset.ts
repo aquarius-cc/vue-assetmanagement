@@ -34,7 +34,7 @@ import type { HardDiskSN } from '@/types/harddisksn'
  * - recycled_pending → in_use: 回收资产重新发放
  * - in_use → damaged: 提交报废申请
  * - damaged → scrapped: 审批通过，完成报废
- * - damaged → recycled_pending: 审批拒绝，退回待发放
+ * - damaged → original_status: 审批拒绝，回退申请前状态
  * - repairing → recycled_pending: 维修完成，转入待发放
  * - lost → recycled_pending: 遗失资产找回，转入待发放
  */
