@@ -125,7 +125,7 @@
 | id | BigAutoField | 是 | ID | ⚠️ 需要调整 |
 | create_time | DateTimeField | 是 | 创建时间 | ⚠️ 需要添加 |
 | update_time | DateTimeField | 是 | 更新时间 | ⚠️ 需要添加 |
-| is_delete | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
+| is_deleted | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
 | asset_type_code | CharField(20) | 是 | 资产类型编码 | ✅ 已存在 |
 | asset_type_secondary | CharField(100) | 是 | 资产二级分类名称 | ✅ 已存在 |
 | asset_type_primary | CharField(100) | 是 | 资产一级分类名称 | ✅ 已存在 |
@@ -145,7 +145,7 @@
 | id | BigAutoField | 是 | ID | ⚠️ 需要调整 |
 | create_time | DateTimeField | 是 | 创建时间 | ⚠️ 需要添加 |
 | update_time | DateTimeField | 是 | 更新时间 | ⚠️ 需要添加 |
-| is_delete | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
+| is_deleted | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
 | contract_code | CharField(20) | 是 | 合同编码 | ✅ 已存在 |
 | contract_name | CharField(100) | 是 | 合同名称 | ✅ 已存在 |
 | contract_type | CharField(50) | 否 | 合同类型 | ✅ 已存在 |
@@ -174,7 +174,7 @@
 | id | BigAutoField | 是 | ID | ⚠️ 需要调整 |
 | create_time | DateTimeField | 是 | 创建时间 | ⚠️ 需要添加 |
 | update_time | DateTimeField | 是 | 更新时间 | ⚠️ 需要添加 |
-| is_delete | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
+| is_deleted | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
 | asset_recordcode | CharField(32) | 是 | 记录编码 | ✅ 已存在 |
 | asset_code | CharField(20) | 是 | 资产编码 | ✅ 已存在 |
 | asset_name | CharField(100) | 是 | 资产名称 | ✅ 已存在 |
@@ -211,7 +211,7 @@
 | id | BigAutoField | 是 | ID | ⚠️ 需要调整 |
 | create_time | DateTimeField | 是 | 创建时间 | ⚠️ 需要添加 |
 | update_time | DateTimeField | 是 | 更新时间 | ⚠️ 需要添加 |
-| is_delete | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
+| is_deleted | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
 | outasset_recordcode | CharField(36) | 是 | 出库记录编码 | ⚠️ 需要调整 |
 | outasset_code | ForeignKey | 否 | 出库资产编码 | ⚠️ 需要调整 |
 | outasset_number | IntegerField | 是 | 出库数量 | ⚠️ 需要调整 |
@@ -238,7 +238,7 @@
 | id | BigAutoField | 是 | ID | ⚠️ 需要调整 |
 | create_time | DateTimeField | 是 | 创建时间 | ⚠️ 需要添加 |
 | update_time | DateTimeField | 是 | 更新时间 | ⚠️ 需要添加 |
-| is_delete | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
+| is_deleted | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
 | outasset_recordcode | OneToOneField | 是 | 出库记录编码 | ⚠️ 需要调整 |
 | recycle_asset_code | ForeignKey | 是 | 回收资产编码 | ⚠️ 需要调整 |
 | recycle_asset_number | IntegerField | 是 | 回收数量 | ⚠️ 需要调整 |
@@ -261,7 +261,7 @@
 | id | BigAutoField | 是 | ID | ⚠️ 需要调整 |
 | create_time | DateTimeField | 是 | 创建时间 | ⚠️ 需要添加 |
 | update_time | DateTimeField | 是 | 更新时间 | ⚠️ 需要添加 |
-| is_delete | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
+| is_deleted | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
 | damaged_asset_code | OneToOneField | 否 | 待报废资产编码 | ⚠️ 需要调整 |
 | damaged_asset_contract_code | ForeignKey | 否 | 合同编码 | ⚠️ 需要调整 |
 | damaged_asset_number | IntegerField | 是 | 待报废数量 | ⚠️ 需要调整 |
@@ -284,7 +284,7 @@
 | id | BigAutoField | 是 | ID | ⚠️ 需要调整 |
 | create_time | DateTimeField | 是 | 创建时间 | ⚠️ 需要添加 |
 | update_time | DateTimeField | 是 | 更新时间 | ⚠️ 需要添加 |
-| is_delete | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
+| is_deleted | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
 | waste_asset_code | OneToOneField | 是 | 报废资产编码 | ⚠️ 需要调整 |
 | waste_asset_contract_code | ForeignKey | 是 | 合同编码 | ⚠️ 需要调整 |
 | waste_asset_number | IntegerField | 是 | 报废数量 | ⚠️ 需要调整 |
@@ -304,7 +304,7 @@
 | id | BigAutoField | 是 | ID | ⚠️ 需要调整 |
 | create_time | DateTimeField | 是 | 创建时间 | ⚠️ 需要添加 |
 | update_time | DateTimeField | 是 | 更新时间 | ⚠️ 需要添加 |
-| is_delete | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
+| is_deleted | BooleanField | 是 | 是否删除 | ⚠️ 需要添加 |
 | asset_code | ForeignKey | 是 | 资产编码 | ⚠️ 需要调整 |
 | harddisk_number | IntegerField | 是 | 硬盘数量 | ⚠️ 需要调整 |
 | harddisk_no | IntegerField | 是 | 硬盘编号 | ⚠️ 需要调整 |
