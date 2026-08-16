@@ -143,7 +143,7 @@
 | asset_code | VARCHAR(20) | INDEX | 资产编码 |
 | operation_type | VARCHAR(20) | INDEX | 操作类型 |
 | logging_id | VARCHAR(50) | UNIQUE, INDEX | 日志记录ID |
-| operation_time | DATETIME | INDEX | 操作时间 |
+| operation_time | TIMESTAMP | INDEX | 操作时间 |
 | operator_jobcode | VARCHAR(20) | | 操作人工号 |
 | operator_name | VARCHAR(100) | | 操作人姓名 |
 | before_data | JSON | | 变更前数据 |
@@ -599,7 +599,7 @@ DB_NAME=asset_management_backend
 DB_USER=your_db_user
 DB_PASSWORD=your_db_password
 DB_HOST=localhost
-DB_PORT=3306
+DB_PORT=5432
 
 # CORS 配置
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
@@ -666,20 +666,19 @@ CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
 
 ### 3.3 数据库配置
 
-使用 MySQL 数据库：
+使用 PostgreSQL 数据库：
 
 ```python
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': config('DB_NAME'),
         'USER': config('DB_USER'),
         'PASSWORD': config('DB_PASSWORD'),
         'HOST': config('DB_HOST'),
         'PORT': config('DB_PORT'),
         'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            'charset': 'utf8mb4',
+            'client_encoding': 'UTF8',
         },
     }
 }
@@ -703,10 +702,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DB_HOST=mysql
-      - DB_PORT=3306
+      - DB_HOST=postgres
+      - DB_PORT=5432
       - DB_NAME=${DB_NAME:-asset_management_backend}
-      - DB_USER=${DB_USER:-root}
+      - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-}
       - DJANGO_SETTINGS_MODULE=config.settings.production
       - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
@@ -715,30 +714,29 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
     networks:
       - asset-network
 
-  # MySQL 数据库服务
-  mysql:
-    image: mysql:8.0
-    container_name: asset-management-mysql
+  # PostgreSQL 数据库服务
+  postgres:
+    image: postgres:16
+    container_name: asset-management-postgres
     restart: unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
-      - MYSQL_DATABASE=${DB_NAME:-asset_management_backend}
-      - MYSQL_USER=${DB_USER:-asset_user}
-      - MYSQL_PASSWORD=${DB_PASSWORD:-assetpassword}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-assetpassword}
+      - POSTGRES_DB=${DB_NAME:-asset_management_backend}
+      - POSTGRES_USER=${DB_USER:-postgres}
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - asset-network
 
 volumes:
-  mysql_data:
+  postgres_data:
   static_volume:
   media_volume:
 
@@ -761,7 +759,7 @@ WORKDIR /app
 COPY requirements/base.txt /app/requirements/base.txt
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    default-libmysqlclient-dev \
+    libpq-dev \
     build-essential \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
@@ -810,13 +808,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     services:
-      mysql:
-        image: mysql:8.0
+      postgres:
+        image: postgres:16
         env:
-          MYSQL_ROOT_PASSWORD: rootpassword
-          MYSQL_DATABASE: asset_management_test
+          POSTGRES_PASSWORD: rootpassword
+          POSTGRES_DB: asset_management_test
         ports:
-          - 3306:3306
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -881,12 +879,12 @@ apps/
 # config/settings/test.py
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': config('DB_NAME', default='asset_management_test'),
-        'USER': config('DB_USER', default='root'),
+        'USER': config('DB_USER', default='postgres'),
         'PASSWORD': config('DB_PASSWORD', default=''),
         'HOST': config('DB_HOST', default='127.0.0.1'),
-        'PORT': config('DB_PORT', default='3306'),
+        'PORT': config('DB_PORT', default='5432'),
     }
 }
 
