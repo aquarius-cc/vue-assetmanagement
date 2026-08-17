@@ -121,7 +121,7 @@ const fetchAsset = async () => {
   loading.value = true
   loadError.value = false // [修复] 重置错误状态
   try {
-    const res = await get<AssetDetail>(`/public/scan/${recordcode.value}`)
+    const res = await get<AssetDetail>(`/public/scan/${recordcode.value}/`)
     // [修复] 手动校验业务 code（此接口未使用 unwrapResponse）
     if (res.code !== 0) {
       ElMessage.error(res.message || '查询失败')
