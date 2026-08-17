@@ -47,6 +47,7 @@ describe('DamagedAssetStore', () => {
         previous: null,
         results: [
           {
+            recordcode: 'DA-001',
             damaged_asset: 'DA-001',
             damaged_asset_name: '待报废电脑',
             damaged_date: '2026-07-09',
@@ -60,7 +61,7 @@ describe('DamagedAssetStore', () => {
       await store.getList()
 
       expect(store.list).toHaveLength(1)
-      expect(store.list[0].damaged_asset).toBe('DA-001')
+      expect(store.list[0].recordcode).toBe('DA-001')
       expect(store.list[0].damaged_asset_name).toBe('待报废电脑')
     })
 
@@ -90,6 +91,7 @@ describe('DamagedAssetStore', () => {
   describe('创建记录', () => {
     it('应该调用API创建待报废资产', async () => {
       const mockCreated = {
+        recordcode: 'DA-001',
         damaged_asset: 'DA-001',
         damaged_asset_name: '待报废电脑',
         damaged_date: '2026-07-09',
@@ -104,7 +106,7 @@ describe('DamagedAssetStore', () => {
       })
 
       expect(store.list).toHaveLength(1)
-      expect(store.list[0].damaged_asset).toBe('DA-001')
+      expect(store.list[0].recordcode).toBe('DA-001')
     })
 
     it('应该处理创建失败', async () => {
@@ -132,7 +134,7 @@ describe('DamagedAssetStore', () => {
     it('应该调用API获取详情', async () => {
       const { damagedAssetAPI } = await import('@/api/damagedAsset')
       vi.mocked(damagedAssetAPI.getDamagedAsset).mockResolvedValue({
-        damaged_asset: 'DA-001',
+        recordcode: 'DA-001',
       } as never)
 
       const result = await store.getById('DA-001')
@@ -143,10 +145,10 @@ describe('DamagedAssetStore', () => {
     it('应该调用API更新记录', async () => {
       const { damagedAssetAPI } = await import('@/api/damagedAsset')
       vi.mocked(damagedAssetAPI.updateDamagedAsset).mockResolvedValue({
-        damaged_asset: 'DA-001',
+        recordcode: 'DA-001',
       } as never)
 
-      await store.update({ damaged_asset: 'DA-001' } as never)
+      await store.update({ recordcode: 'DA-001' } as never)
 
       expect(damagedAssetAPI.updateDamagedAsset).toHaveBeenCalled()
     })

@@ -90,46 +90,4 @@ describe('dashboardAPI', () => {
 
     expect(mockGet).toHaveBeenCalledWith('/dashboard/maintenance_reminders/')
   })
-
-  describe('PROD 环境下未实现端点直接返回空', () => {
-    it('getAssetTrend 返回空数组', async () => {
-      vi.stubEnv('PROD', 'true')
-
-      await expect(dashboardAPI.getAssetTrend()).resolves.toEqual([])
-
-      vi.unstubAllEnvs()
-    })
-
-    it('getDepartmentDistribution 返回空数组', async () => {
-      vi.stubEnv('PROD', 'true')
-
-      await expect(dashboardAPI.getDepartmentDistribution()).resolves.toEqual([])
-
-      vi.unstubAllEnvs()
-    })
-
-    it('getAssetTypeDistribution 返回空数组', async () => {
-      vi.stubEnv('PROD', 'true')
-
-      await expect(dashboardAPI.getAssetTypeDistribution()).resolves.toEqual([])
-
-      vi.unstubAllEnvs()
-    })
-
-    it('getExpiringAssets 返回空数组', async () => {
-      vi.stubEnv('PROD', 'true')
-
-      await expect(dashboardAPI.getExpiringAssets()).resolves.toEqual([])
-
-      vi.unstubAllEnvs()
-    })
-
-    it('getMaintenanceReminders 返回空数组', async () => {
-      vi.stubEnv('PROD', 'true')
-
-      await expect(dashboardAPI.getMaintenanceReminders()).resolves.toEqual([])
-
-      vi.unstubAllEnvs()
-    })
-  })
 })

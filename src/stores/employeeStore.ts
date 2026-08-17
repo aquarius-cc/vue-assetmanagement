@@ -62,7 +62,7 @@ export const useEmployeeStore = defineStore('employee', () => {
     }
   }
 
-  async function createEmployee(employeeData: Partial<Employee>) {
+  async function createEmployee(_employeeData: Partial<Employee>) {
     loading.value = true
     error.value = null
     
