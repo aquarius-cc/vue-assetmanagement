@@ -49,20 +49,25 @@ const MAP_SELECTOR = {
 
 const statusInfo = computed(() => {
   const map = props.customMap || MAP_SELECTOR[props.mapType || 'asset']
-  
+
   // 验证状态值合法性
-  const isValidStatus = (status: string, map: Record<string, { label: string; type: string }>): boolean => {
+  const isValidStatus = (
+    status: string,
+    map: Record<string, { label: string; type: string }>,
+  ): boolean => {
     return Object.keys(map).includes(status)
   }
-  
+
   if (!isValidStatus(props.status, map)) {
-    console.warn(`[StatusTag] Invalid status "${props.status}" for mapType "${props.mapType || 'asset'}"`) 
+    console.warn(
+      `[StatusTag] Invalid status "${props.status}" for mapType "${props.mapType || 'asset'}"`,
+    )
     return {
       label: props.status, // 显示原始状态值
-      type: 'info'        // 使用info类型标记
+      type: 'info', // 使用info类型标记
     }
   }
-  
+
   return getStatusInfo(props.status, map)
 })
 

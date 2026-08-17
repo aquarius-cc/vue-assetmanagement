@@ -16,10 +16,8 @@ import {
   validateUserStatus,
   transformAndValidateExcelUser,
   transformAndValidateExcelDepartment,
-  outassetStatusMapping,
   outassetTypeMapping,
   getAssetStatusText,
-  getOutAssetStatusText,
   parseExcelDate,
   USER_STATUS_INPUT_MAPPING,
   USER_STATUS_DISPLAY_MAPPING,
@@ -284,33 +282,6 @@ describe('Format', () => {
     it('returns 未知 for null or undefined', () => {
       expect(getAssetStatusText(null)).toBe('未知')
       expect(getAssetStatusText(undefined)).toBe('未知')
-    })
-  })
-
-  describe('getOutAssetStatusText', () => {
-    it('returns correct text for valid out asset status', () => {
-      expect(getOutAssetStatusText('in_use')).toBe('在用')
-      expect(getOutAssetStatusText('recycled_pending')).toBe('已回收待发放')
-      expect(getOutAssetStatusText('damaged')).toBe('待报废')
-      expect(getOutAssetStatusText('scrapped')).toBe('已报废')
-    })
-
-    it('returns 未知 for invalid status', () => {
-      expect(getOutAssetStatusText('unknown')).toBe('未知')
-    })
-
-    it('returns 未知 for null or undefined', () => {
-      expect(getOutAssetStatusText(null)).toBe('未知')
-      expect(getOutAssetStatusText(undefined)).toBe('未知')
-    })
-  })
-
-  describe('outassetStatusMapping', () => {
-    it('contains all out asset status mappings', () => {
-      expect(outassetStatusMapping.recycled_pending).toBe('已回收待发放')
-      expect(outassetStatusMapping.in_use).toBe('在用')
-      expect(outassetStatusMapping.damaged).toBe('待报废')
-      expect(outassetStatusMapping.scrapped).toBe('已报废')
     })
   })
 

@@ -60,7 +60,8 @@ import { useRouter } from 'vue-router'
 import { Plus, Coin } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import type { HardDiskSN } from '@/types/harddisksn'
-import { HardDiskType, HardDiskStatus } from '@/types/harddisksn'
+import { HardDiskType } from '@/types/harddisksn'
+import { getHardDiskStatusText, getHardDiskStatusTagType } from '@/utils/statusMapping'
 
 // ===== Props 定义 =====
 interface Props {
@@ -100,54 +101,6 @@ const getHardDiskTypeText = (type: string | null | undefined): string => {
       return 'NVMe硬盘'
     case HardDiskType.OTHER:
       return '其他'
-    default:
-      return '未知'
-  }
-}
-
-/**
- * 获取硬盘状态标签样式
- *
- * @param status - 硬盘状态枚举值
- * @returns Element Plus Tag 组件的 type 属性值
- */
-const getHardDiskStatusTagType = (
-  status: string | null | undefined,
-): 'success' | 'warning' | 'danger' | 'info' => {
-  switch (status) {
-    case HardDiskStatus.ACTIVE:
-      return 'success'
-    case HardDiskStatus.REPAIR:
-      return 'warning'
-    case HardDiskStatus.SCRAP:
-      return 'danger'
-    case HardDiskStatus.LOST:
-      return 'danger'
-    case HardDiskStatus.DAMAGED:
-      return 'danger'
-    default:
-      return 'info'
-  }
-}
-
-/**
- * 获取硬盘状态中文文本
- *
- * @param status - 硬盘状态枚举值
- * @returns 中文状态名称
- */
-const getHardDiskStatusText = (status: string | null | undefined): string => {
-  switch (status) {
-    case HardDiskStatus.ACTIVE:
-      return '正常'
-    case HardDiskStatus.REPAIR:
-      return '维修'
-    case HardDiskStatus.SCRAP:
-      return '报废'
-    case HardDiskStatus.LOST:
-      return '丢失'
-    case HardDiskStatus.DAMAGED:
-      return '损坏'
     default:
       return '未知'
   }

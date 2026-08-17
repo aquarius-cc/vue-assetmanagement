@@ -590,4 +590,100 @@ describe('Router Guards', () => {
       expect(ElMessage.error).toHaveBeenCalledWith('您没有权限访问该页面')
     })
   })
+
+  describe('requiredMinRole — meta-based role check', () => {
+    it('should deny regular_user when requiredMinRole is asset_admin', async () => {
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = 'valid-token'
+      mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.authInfo = { auth_id: 1, auth_username: 'test' }
+
+      setupAndCapture()
+
+      const result = await beforeEachCallback(
+        { path: '/assets/A001/recycle', meta: { requiredMinRole: 'asset_admin' } },
+        { path: '/' },
+      )
+      expect(result).toBe('/main')
+      expect(ElMessage.error).toHaveBeenCalledWith('您没有权限访问该页面')
+    })
+
+    it('should allow asset_admin when requiredMinRole is asset_admin', async () => {
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = 'valid-token'
+      mockAuthStore.userRole = 'asset_admin'
+      mockAuthStore.authInfo = { auth_id: 1, auth_username: 'test' }
+
+      setupAndCapture()
+
+      const result = await beforeEachCallback(
+        { path: '/assets/A001/recycle', meta: { requiredMinRole: 'asset_admin' } },
+        { path: '/' },
+      )
+      expect(result).toBe(true)
+    })
+
+    it('should deny dept_manager when requiredMinRole is system_admin', async () => {
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = 'valid-token'
+      mockAuthStore.userRole = 'dept_manager'
+      mockAuthStore.authInfo = { auth_id: 1, auth_username: 'test' }
+
+      setupAndCapture()
+
+      const result = await beforeEachCallback(
+        { path: '/main/userdetails', meta: { requiredMinRole: 'system_admin' } },
+        { path: '/' },
+      )
+      expect(result).toBe('/main')
+      expect(ElMessage.error).toHaveBeenCalledWith('您没有权限访问该页面')
+    })
+
+    it('should deny regular_user when requiredMinRole is auditor', async () => {
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = 'valid-token'
+      mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.authInfo = { auth_id: 1, auth_username: 'test' }
+
+      setupAndCapture()
+
+      const result = await beforeEachCallback(
+        { path: '/main/auditlogdetails', meta: { requiredMinRole: 'auditor' } },
+        { path: '/' },
+      )
+      expect(result).toBe('/main')
+      expect(ElMessage.error).toHaveBeenCalledWith('您没有权限访问该页面')
+    })
+
+    it('should allow auditor when requiredMinRole is auditor', async () => {
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = 'valid-token'
+      mockAuthStore.userRole = 'auditor'
+      mockAuthStore.authInfo = { auth_id: 1, auth_username: 'test' }
+
+      setupAndCapture()
+
+      const result = await beforeEachCallback(
+        { path: '/main/auditlogdetails', meta: { requiredMinRole: 'auditor' } },
+        { path: '/' },
+      )
+      expect(result).toBe(true)
+    })
+
+    it('should allow superuser to bypass requiredMinRole check', async () => {
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = 'valid-token'
+      mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.isSuperuser = true
+      mockAuthStore.authInfo = { auth_id: 1, auth_username: 'whdtadmin' }
+
+      setupAndCapture()
+
+      const result = await beforeEachCallback(
+        { path: '/main/userdetails', meta: { requiredMinRole: 'system_admin' } },
+        { path: '/' },
+      )
+      expect(result).toBe(true)
+    })
+  })
 })

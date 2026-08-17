@@ -58,8 +58,8 @@
 
             <!-- 审批状态列自定义渲染（使用 el-tag） -->
             <template #approval_status="{ row }">
-              <el-tag :type="getApprovalStatusTagType(row.approval_status)">
-                {{ getApprovalStatusText(row.approval_status) }}
+              <el-tag :type="getApprovalStatusTagType(row.approval_status ?? '')">
+                {{ getApprovalStatusText(row.approval_status ?? '') }}
               </el-tag>
             </template>
           </CommonList>
@@ -113,9 +113,9 @@ import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { DamagedAsset } from '@/types/damagedasset'
-import { ApprovalStatus } from '@/types/damagedasset'
 import { useDamagedAssetStore } from '@/stores/damagedAssetStore'
 import { formatDate } from '@/utils/Format'
+import { getApprovalStatusText, getApprovalStatusTagType } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
 
 // ===== 状态与实例 =====
@@ -135,45 +135,6 @@ const smartListRef = ref<SmartListContainerExpose | null>(null)
  * 用于控制子路由遮罩层的显示
  */
 const isChildRouteActive = ref(false)
-
-// ===== 审批状态辅助函数 =====
-/**
- * 获取审批状态对应的 Element Plus 标签类型
- * @param status 审批状态值
- * @returns 标签类型：success | warning | danger | info
- */
-const getApprovalStatusTagType = (
-  status: string | null | undefined,
-): 'success' | 'warning' | 'danger' | 'info' => {
-  switch (status) {
-    case ApprovalStatus.APPROVED:
-      return 'success'
-    case ApprovalStatus.REJECTED:
-      return 'danger'
-    case ApprovalStatus.PENDING:
-      return 'warning'
-    default:
-      return 'info'
-  }
-}
-
-/**
- * 获取审批状态的显示文本
- * @param status 审批状态值
- * @returns 状态文本
- */
-const getApprovalStatusText = (status: string | null | undefined): string => {
-  switch (status) {
-    case ApprovalStatus.APPROVED:
-      return '已批准'
-    case ApprovalStatus.REJECTED:
-      return '已拒绝'
-    case ApprovalStatus.PENDING:
-      return '待审批'
-    default:
-      return '未知'
-  }
-}
 
 // ===== 表格列配置 =====
 /**
@@ -420,7 +381,7 @@ const handleExportExcel = async () => {
       title: '审批状态',
       key: 'approval_status',
       default: '',
-      formatter: (val) => getApprovalStatusText(val as string),
+      formatter: (val) => getApprovalStatusText((val as string) ?? ''),
     },
     { title: '审批人', key: 'approver', default: '' },
     { title: '描述', key: 'damaged_asset_description', default: '' },

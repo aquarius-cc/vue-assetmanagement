@@ -41,16 +41,6 @@ export enum OutAssetCurrentStatus {
   SCRAPPED = 'scrapped',
 }
 
-/**
- * 出库资产状态枚举文本映射 */
-
-export const outassetStatusMapping = {
-  recycled_pending: '已回收待发放',
-  in_use: '在用',
-  damaged: '待报废',
-  scrapped: '已报废',
-}
-
 // ==================== 基础接口定义 ====================
 
 /**

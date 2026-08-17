@@ -69,8 +69,8 @@
 
             <!-- 审批状态列自定义渲染（使用 el-tag） -->
             <template #approval_status="{ row }">
-              <el-tag :type="getApprovalStatusTagType(row.approval_status)">
-                {{ getApprovalStatusText(row.approval_status) }}
+              <el-tag :type="getApprovalStatusTagType(row.approval_status ?? '')">
+                {{ getApprovalStatusText(row.approval_status ?? '') }}
               </el-tag>
             </template>
           </CommonList>
@@ -124,14 +124,10 @@ import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { UnregisteredAsset } from '@/types/unregisteredasset'
-import {
-  scenarioTypeTextMap,
-  scenarioTypeTagMap,
-  unregisteredAssetStatusTextMap,
-  unregisteredAssetStatusTagMap,
-} from '@/types/unregisteredasset'
+import { scenarioTypeTextMap, scenarioTypeTagMap } from '@/types/unregisteredasset'
 import { useUnregisteredAssetStore } from '@/stores/unregisteredAssetStore'
 import { formatDate } from '@/utils/Format'
+import { getApprovalStatusText, getApprovalStatusTagType } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
 
 // ===== 状态与实例 =====
@@ -176,32 +172,6 @@ const getScenarioTypeTagType = (
 ): '' | 'success' | 'warning' | 'danger' | 'info' => {
   if (!type) return 'info'
   return (scenarioTypeTagMap[type] as '' | 'success' | 'warning' | 'danger' | 'info') || 'info'
-}
-
-// ===== 审批状态辅助函数 =====
-
-/**
- * 根据审批状态返回 el-tag 的类型
- * @param status 审批状态字符串
- * @returns Element Plus Tag 类型
- */
-const getApprovalStatusTagType = (
-  status: string | null | undefined,
-): 'success' | 'warning' | 'danger' | 'info' => {
-  if (!status) return 'info'
-  return (
-    (unregisteredAssetStatusTagMap[status] as 'success' | 'warning' | 'danger' | 'info') || 'info'
-  )
-}
-
-/**
- * 根据审批状态返回中文显示文本
- * @param status 审批状态字符串
- * @returns 中文描述
- */
-const getApprovalStatusText = (status: string | null | undefined): string => {
-  if (!status) return '未知'
-  return unregisteredAssetStatusTextMap[status] || '未知'
 }
 
 // ===== 表格列配置 =====
@@ -379,7 +349,7 @@ const handleExportExcel = async () => {
       title: '审批状态',
       key: 'approval_status',
       default: '',
-      formatter: (val) => getApprovalStatusText(val as string),
+      formatter: (val) => getApprovalStatusText((val as string) ?? ''),
     },
     { title: '审批人', key: 'approver_name', default: '' },
     { title: '处理类型', key: 'handle_type', default: '' },

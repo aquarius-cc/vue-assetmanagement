@@ -6,16 +6,22 @@ vi.mock('@/utils/Format', () => ({
     if (!v) return null
     return `formatted_${v}`
   }),
-  outassetStatusMapping: {
-    recycled_pending: '已回收待发放',
-    in_use: '在用',
-    damaged: '待报废',
-    scrapped: '已报废',
-  },
   outassetTypeMapping: {
     receive: '领用',
     borrow: '借用',
   },
+}))
+
+vi.mock('@/utils/statusMapping', () => ({
+  getAssetStatusText: vi.fn((status: string) => {
+    const map: Record<string, string> = {
+      recycled_pending: '已回收待发放',
+      in_use: '在用',
+      damaged: '待报废',
+      scrapped: '已报废',
+    }
+    return map[status] || status
+  }),
 }))
 
 import { useOutAssetDetailCards } from '../useOutAssetDetailCards'

@@ -18,7 +18,8 @@ import type { InfoCardConfig } from '@/types/info-card'
 import type { OutAssetDetail } from '@/types/outasset'
 import type { EmployeeExtended } from '@/types/user'
 import type { AssetDetail } from '@/types/asset'
-import { formatDate, outassetStatusMapping, outassetTypeMapping } from '@/utils/Format'
+import { formatDate, outassetTypeMapping } from '@/utils/Format'
+import { getAssetStatusText } from '@/utils/statusMapping'
 
 /**
  * 出库资产详情卡片数据源 *
@@ -33,16 +34,6 @@ export interface OutAssetDetailCardData {
   managerUser: EmployeeExtended | null
   /** 关联资产（含合同信息）*/
   assetContract: AssetDetail | null
-}
-
-/**
- * 获取资产状态文本 *
- * @param value 状态值（如 'in_use', 'returned' 等）
- * @returns 可读的中文状态，空值返回 '未知'
- */
-const getOutAssetStatusText = (value: string | null | undefined): string => {
-  if (!value) return '未知'
-  return outassetStatusMapping[value] || value
 }
 
 /**
@@ -107,7 +98,7 @@ export function useOutAssetDetailCards(data: Ref<OutAssetDetailCardData>) {
           {
             label: '资产状态',
             value: d?.outasset_current_status,
-            formatter: (v) => getOutAssetStatusText(v as string),
+            formatter: (v) => getAssetStatusText((v as string) ?? ''),
           },
           { label: '使用地点', value: d?.using_location, defaultValue: 'N/A' },
         ],

@@ -246,21 +246,3 @@ export const handleTypeTextMap: Record<string, string> = {
   [HandleType.CORRECT_AND_RECYCLE]: '纠正并回收',
   [HandleType.REJECT]: '驳回',
 }
-
-/**
- * 审批状态中文映射
- */
-export const unregisteredAssetStatusTextMap: Record<string, string> = {
-  [UnregisteredAssetStatus.PENDING]: '待审批',
-  [UnregisteredAssetStatus.APPROVED]: '已批准',
-  [UnregisteredAssetStatus.REJECTED]: '已拒绝',
-}
-
-/**
- * 审批状态标签颜色映射
- */
-export const unregisteredAssetStatusTagMap: Record<string, string> = {
-  [UnregisteredAssetStatus.PENDING]: 'warning',
-  [UnregisteredAssetStatus.APPROVED]: 'success',
-  [UnregisteredAssetStatus.REJECTED]: 'danger',
-}

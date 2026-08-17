@@ -54,8 +54,8 @@
             <div class="info-item">
               <span class="info-label">硬盘状态：</span>
               <span class="info-value">
-                <el-tag :type="getHardDiskStatusTagType(detailData.harddisk_status)">
-                  {{ getHardDiskStatusText(detailData.harddisk_status) }}
+                <el-tag :type="getHardDiskStatusTagType(detailData.harddisk_status ?? '')">
+                  {{ getHardDiskStatusText(detailData.harddisk_status ?? '') }}
                 </el-tag>
               </span>
             </div>
@@ -108,7 +108,8 @@ import { useHardDiskSnStore } from '@/stores/harddiskSnStore'
 import { useExcelExport } from '@/composables/useExcelExport'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import type { HardDiskSN } from '@/types/harddisksn'
-import { HardDiskType, HardDiskStatus } from '@/types/harddisksn'
+import { HardDiskType } from '@/types/harddisksn'
+import { getHardDiskStatusText, getHardDiskStatusTagType } from '@/utils/statusMapping'
 // import { formatDate } from '@/utils/Format'
 
 // ===== 硬盘类型辅助函数 =====
@@ -137,43 +138,6 @@ const getHardDiskTypeText = (type: string | null | undefined): string => {
       return 'NVMe硬盘'
     case HardDiskType.OTHER:
       return '其他'
-    default:
-      return '未知'
-  }
-}
-
-// ===== 硬盘状态辅助函数 =====
-const getHardDiskStatusTagType = (
-  status: string | null | undefined,
-): 'success' | 'warning' | 'danger' | 'info' => {
-  switch (status) {
-    case HardDiskStatus.ACTIVE:
-      return 'success'
-    case HardDiskStatus.REPAIR:
-      return 'warning'
-    case HardDiskStatus.SCRAP:
-      return 'danger'
-    case HardDiskStatus.LOST:
-      return 'danger'
-    case HardDiskStatus.DAMAGED:
-      return 'danger'
-    default:
-      return 'info'
-  }
-}
-
-const getHardDiskStatusText = (status: string | null | undefined): string => {
-  switch (status) {
-    case HardDiskStatus.ACTIVE:
-      return '正常'
-    case HardDiskStatus.REPAIR:
-      return '维修'
-    case HardDiskStatus.SCRAP:
-      return '报废'
-    case HardDiskStatus.LOST:
-      return '丢失'
-    case HardDiskStatus.DAMAGED:
-      return '损坏'
     default:
       return '未知'
   }

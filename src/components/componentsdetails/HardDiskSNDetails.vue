@@ -115,8 +115,9 @@ import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { HardDiskSN } from '@/types/harddisksn'
-import { HardDiskType, HardDiskStatus } from '@/types/harddisksn'
+import { HardDiskType } from '@/types/harddisksn'
 import { useHardDiskSnStore } from '@/stores/harddiskSnStore'
+import { getHardDiskStatusText, getHardDiskStatusTagType } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
 
 // ===== 状态与实例 =====
@@ -176,54 +177,6 @@ const getHardDiskTypeText = (type: string | null | undefined): string => {
       return 'NVMe硬盘'
     case HardDiskType.OTHER:
       return '其他'
-    default:
-      return '未知'
-  }
-}
-
-// ===== 硬盘状态辅助函数 =====
-
-/**
- * 根据硬盘状态返回 el-tag 的类型
- * @param status 硬盘状态字符串
- * @returns Element Plus Tag 类型
- */
-const getHardDiskStatusTagType = (
-  status: string | null | undefined,
-): 'success' | 'warning' | 'danger' | 'info' => {
-  switch (status) {
-    case HardDiskStatus.ACTIVE:
-      return 'success'
-    case HardDiskStatus.REPAIR:
-      return 'warning'
-    case HardDiskStatus.SCRAP:
-      return 'danger'
-    case HardDiskStatus.LOST:
-      return 'danger'
-    case HardDiskStatus.DAMAGED:
-      return 'danger'
-    default:
-      return 'info'
-  }
-}
-
-/**
- * 根据硬盘状态返回中文显示文本
- * @param status 硬盘状态字符串
- * @returns 中文描述
- */
-const getHardDiskStatusText = (status: string | null | undefined): string => {
-  switch (status) {
-    case HardDiskStatus.ACTIVE:
-      return '正常'
-    case HardDiskStatus.REPAIR:
-      return '维修'
-    case HardDiskStatus.SCRAP:
-      return '报废'
-    case HardDiskStatus.LOST:
-      return '丢失'
-    case HardDiskStatus.DAMAGED:
-      return '损坏'
     default:
       return '未知'
   }

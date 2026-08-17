@@ -16,7 +16,7 @@ import type { Router, RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { ElMessage } from 'element-plus'
-import { ROLE_CODES } from '@/constants/roles'
+import { ROLE_CODES, ROLE_HIERARCHY } from '@/constants/roles'
 
 // 不需要认证的页面白名单
 const whiteList = ['/login']
@@ -24,6 +24,7 @@ const whiteList = ['/login']
 // RBAC 路由-角色白名单
 // key: 路由路径前缀, value: 允许访问的角色列表
 // 未列出的路由默认所有已认证角色可访问
+// 注意：静态路由的权限由 roleWhitelist 前缀匹配 + meta.requiredMinRole 双重保护
 const roleWhitelist: Record<string, string[]> = {
   // 系统配置：仅系统管理员
   '/main/assettypedetails': [ROLE_CODES.SYSTEM_ADMIN],
@@ -40,30 +41,31 @@ const roleWhitelist: Record<string, string[]> = {
   '/main/unregisteredassetbasicdetails': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER],
   // 审计日志：审计员或管理员
   '/main/auditlogdetails': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.AUDITOR],
-  // ====== 资产操作路由（资产管理员及以上） ======
-  '/assets/recycle': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER, ROLE_CODES.ASSET_ADMIN],
-  '/assets/repair': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER, ROLE_CODES.ASSET_ADMIN],
-  '/assets/scrap': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER, ROLE_CODES.ASSET_ADMIN],
-  '/assets/lost': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER, ROLE_CODES.ASSET_ADMIN],
-  '/assets/found': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER, ROLE_CODES.ASSET_ADMIN],
-  '/assets/repair-done': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER, ROLE_CODES.ASSET_ADMIN],
-  '/assets/repair-failed': [
-    ROLE_CODES.SYSTEM_ADMIN,
-    ROLE_CODES.DEPT_MANAGER,
-    ROLE_CODES.ASSET_ADMIN,
-  ],
-  '/assets/mark-broken': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER, ROLE_CODES.ASSET_ADMIN],
 }
 
 /**
  * 检查用户角色是否允许访问目标路由
  * 超级管理员短路放行（authStore.isSuperuser，cookie 通道来自 profile、bearer 来自 JWT）
+ *
+ * 优先读取 to.meta.requiredMinRole（静态声明），fallback 到 roleWhitelist 前缀匹配
  */
-function checkRoleAccess(targetPath: string, userRole: string, isSuperuser: boolean): boolean {
+function checkRoleAccess(
+  targetPath: string,
+  userRole: string,
+  isSuperuser: boolean,
+  requiredMinRole?: string,
+): boolean {
   // 超级管理员拥有所有路由的访问权限
   if (isSuperuser) return true
 
-  // 精确匹配：从最长前缀开始
+  // 优先使用 meta 声明（适用于含 :code 动态段的路由）
+  if (requiredMinRole) {
+    const userLevel = ROLE_HIERARCHY[userRole] ?? 0
+    const requiredLevel = ROLE_HIERARCHY[requiredMinRole] ?? 0
+    return userLevel >= requiredLevel
+  }
+
+  // fallback: 静态路径前缀匹配（适用于系统配置等无动态段的路由）
   const sortedPrefixes = Object.keys(roleWhitelist).sort((a, b) => b.length - a.length)
   for (const prefix of sortedPrefixes) {
     if (targetPath.startsWith(prefix)) {
@@ -134,7 +136,14 @@ export const setupAuthGuard = (router: Router) => {
           }
 
           // RBAC: 检查角色是否有权访问目标路由（isSuperuser 来自 authStore）
-          if (!checkRoleAccess(to.path, authStore.userRole, authStore.isSuperuser)) {
+          if (
+            !checkRoleAccess(
+              to.path,
+              authStore.userRole,
+              authStore.isSuperuser,
+              to.meta.requiredMinRole as string,
+            )
+          ) {
             ElMessage.error('您没有权限访问该页面')
             return '/main' // 无权限则回首页
           }

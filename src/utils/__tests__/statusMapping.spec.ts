@@ -88,33 +88,35 @@ describe('statusMapping', () => {
 
   describe('Hard disk status functions', () => {
     it('getHardDiskStatusTagType returns correct type', () => {
-      expect(getHardDiskStatusTagType('normal')).toBe('success')
-      expect(getHardDiskStatusTagType('bad_sector')).toBe('warning')
+      expect(getHardDiskStatusTagType('active')).toBe('success')
+      expect(getHardDiskStatusTagType('repair')).toBe('warning')
+      expect(getHardDiskStatusTagType('scrap')).toBe('danger')
+      expect(getHardDiskStatusTagType('lost')).toBe('danger')
       expect(getHardDiskStatusTagType('damaged')).toBe('danger')
-      expect(getHardDiskStatusTagType('replaced')).toBe('info')
-      expect(getHardDiskStatusTagType('recycled')).toBe('info')
     })
 
     it('getHardDiskStatusText returns correct label', () => {
-      expect(getHardDiskStatusText('normal')).toBe('正常')
-      expect(getHardDiskStatusText('bad_sector')).toBe('坏道')
-      expect(getHardDiskStatusText('damaged')).toBe('损坏')
-      expect(getHardDiskStatusText('replaced')).toBe('已更换')
-      expect(getHardDiskStatusText('recycled')).toBe('已回收')
+      expect(getHardDiskStatusText('active')).toBe('正常')
+      expect(getHardDiskStatusText('repair')).toBe('维修中')
+      expect(getHardDiskStatusText('scrap')).toBe('已报废')
+      expect(getHardDiskStatusText('lost')).toBe('已遗失')
+      expect(getHardDiskStatusText('damaged')).toBe('已损坏')
     })
   })
 
   describe('Out asset status functions', () => {
     it('getOutAssetStatusTagType returns correct type', () => {
-      expect(getOutAssetStatusTagType('active')).toBe('primary')
-      expect(getOutAssetStatusTagType('returned')).toBe('success')
-      expect(getOutAssetStatusTagType('overdue')).toBe('danger')
+      expect(getOutAssetStatusTagType('in_use')).toBe('primary')
+      expect(getOutAssetStatusTagType('recycled_pending')).toBe('info')
+      expect(getOutAssetStatusTagType('damaged')).toBe('warning')
+      expect(getOutAssetStatusTagType('scrapped')).toBe('info')
     })
 
     it('getOutAssetStatusText returns correct label', () => {
-      expect(getOutAssetStatusText('active')).toBe('在用')
-      expect(getOutAssetStatusText('returned')).toBe('已归还')
-      expect(getOutAssetStatusText('overdue')).toBe('逾期')
+      expect(getOutAssetStatusText('in_use')).toBe('在用')
+      expect(getOutAssetStatusText('recycled_pending')).toBe('已回收待发放')
+      expect(getOutAssetStatusText('damaged')).toBe('待报废')
+      expect(getOutAssetStatusText('scrapped')).toBe('已报废')
     })
   })
 
@@ -160,10 +162,11 @@ describe('statusMapping', () => {
     })
 
     it('OUTASSET_STATUS_MAP has all required statuses', () => {
-      expect(Object.keys(OUTASSET_STATUS_MAP)).toHaveLength(3)
-      expect(OUTASSET_STATUS_MAP).toHaveProperty('active')
-      expect(OUTASSET_STATUS_MAP).toHaveProperty('returned')
-      expect(OUTASSET_STATUS_MAP).toHaveProperty('overdue')
+      expect(Object.keys(OUTASSET_STATUS_MAP)).toHaveLength(4)
+      expect(OUTASSET_STATUS_MAP).toHaveProperty('in_use')
+      expect(OUTASSET_STATUS_MAP).toHaveProperty('recycled_pending')
+      expect(OUTASSET_STATUS_MAP).toHaveProperty('damaged')
+      expect(OUTASSET_STATUS_MAP).toHaveProperty('scrapped')
     })
 
     it('APPROVAL_STATUS_MAP has all required statuses', () => {
@@ -182,11 +185,11 @@ describe('statusMapping', () => {
 
     it('HARD_DISK_STATUS_MAP has all required statuses', () => {
       expect(Object.keys(HARD_DISK_STATUS_MAP)).toHaveLength(5)
-      expect(HARD_DISK_STATUS_MAP).toHaveProperty('normal')
-      expect(HARD_DISK_STATUS_MAP).toHaveProperty('bad_sector')
+      expect(HARD_DISK_STATUS_MAP).toHaveProperty('active')
+      expect(HARD_DISK_STATUS_MAP).toHaveProperty('repair')
+      expect(HARD_DISK_STATUS_MAP).toHaveProperty('scrap')
+      expect(HARD_DISK_STATUS_MAP).toHaveProperty('lost')
       expect(HARD_DISK_STATUS_MAP).toHaveProperty('damaged')
-      expect(HARD_DISK_STATUS_MAP).toHaveProperty('replaced')
-      expect(HARD_DISK_STATUS_MAP).toHaveProperty('recycled')
     })
 
     it('EMPLOYEE_STATUS_MAP has all required statuses', () => {

@@ -104,8 +104,8 @@
             <div class="info-item">
               <span class="info-label">审批状态：</span>
               <span class="info-value">
-                <el-tag :type="getApprovalStatusTagType(detailData.approval_status)">
-                  {{ getApprovalStatusText(detailData.approval_status) }}
+                <el-tag :type="getApprovalStatusTagType(detailData.approval_status ?? '')">
+                  {{ getApprovalStatusText(detailData.approval_status ?? '') }}
                 </el-tag>
               </span>
             </div>
@@ -188,11 +188,10 @@ import {
   HandleType,
   scenarioTypeTextMap,
   scenarioTypeTagMap,
-  unregisteredAssetStatusTextMap,
-  unregisteredAssetStatusTagMap,
   handleTypeTextMap,
 } from '@/types/unregisteredasset'
 import { formatDate } from '@/utils/Format'
+import { getApprovalStatusText, getApprovalStatusTagType } from '@/utils/statusMapping'
 
 // ===== 场景类型辅助函数 =====
 const getScenarioTypeText = (type: string | null | undefined): string => {
@@ -205,21 +204,6 @@ const getScenarioTypeTagType = (
 ): '' | 'success' | 'warning' | 'danger' | 'info' => {
   if (!type) return 'info'
   return (scenarioTypeTagMap[type] as '' | 'success' | 'warning' | 'danger' | 'info') || 'info'
-}
-
-// ===== 审批状态辅助函数 =====
-const getApprovalStatusTagType = (
-  status: string | null | undefined,
-): 'success' | 'warning' | 'danger' | 'info' => {
-  if (!status) return 'info'
-  return (
-    (unregisteredAssetStatusTagMap[status] as 'success' | 'warning' | 'danger' | 'info') || 'info'
-  )
-}
-
-const getApprovalStatusText = (status: string | null | undefined): string => {
-  if (!status) return '未知'
-  return unregisteredAssetStatusTextMap[status] || '未知'
 }
 
 // ===== 处理类型辅助函数 =====
@@ -273,7 +257,7 @@ const exportColumns: ColumnConfig<UnregisteredAsset>[] = [
     title: '审批状态',
     key: 'approval_status',
     default: '',
-    formatter: (v) => getApprovalStatusText(v as string),
+    formatter: (v) => getApprovalStatusText((v as string) ?? ''),
   },
   {
     title: '审批人',

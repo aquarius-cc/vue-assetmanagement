@@ -40,14 +40,15 @@ export const ASSET_STATUS_MAP: Record<
   scrapped: { label: '已报废', type: 'info' },
 }
 
-// ===== 出库状态映射 =====
+// ===== 出库状态映射（出库资产的当前状态，对齐 OutAssetCurrentStatus 枚举） =====
 export const OUTASSET_STATUS_MAP: Record<
   string,
   { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
 > = {
-  active: { label: '在用', type: 'primary' },
-  returned: { label: '已归还', type: 'success' },
-  overdue: { label: '逾期', type: 'danger' },
+  in_use: { label: '在用', type: 'primary' },
+  recycled_pending: { label: '已回收待发放', type: 'info' },
+  damaged: { label: '待报废', type: 'warning' },
+  scrapped: { label: '已报废', type: 'info' },
 }
 
 // ===== 审批状态映射 =====
@@ -70,16 +71,16 @@ export const REPAIR_STATUS_MAP: Record<
   failed: { label: '维修失败', type: 'danger' },
 }
 
-// ===== 硬盘状态映射 =====
+// ===== 硬盘状态映射（对齐 HardDiskStatus 枚举） =====
 export const HARD_DISK_STATUS_MAP: Record<
   string,
   { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
 > = {
-  normal: { label: '正常', type: 'success' },
-  bad_sector: { label: '坏道', type: 'warning' },
-  damaged: { label: '损坏', type: 'danger' },
-  replaced: { label: '已更换', type: 'info' },
-  recycled: { label: '已回收', type: 'info' },
+  active: { label: '正常', type: 'success' },
+  repair: { label: '维修中', type: 'warning' },
+  scrap: { label: '已报废', type: 'danger' },
+  lost: { label: '已遗失', type: 'danger' },
+  damaged: { label: '已损坏', type: 'danger' },
 }
 
 // ===== 员工状态映射 =====

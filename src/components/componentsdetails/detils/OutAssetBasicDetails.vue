@@ -21,9 +21,7 @@
         size="large"
         class="status-tag"
       >
-        {{
-          '资产状态：' + getOutAssetStatusText(showOutAssetDetails?.outasset_current_status || '')
-        }}
+        {{ '资产状态：' + getAssetStatusText(showOutAssetDetails?.outasset_current_status || '') }}
       </StatusTag>
     </div>
     <!-- 内容区：使用 InfoCard 组件展示 4 个语义卡片 -->
@@ -65,17 +63,10 @@ import type { ColumnConfig } from '@/utils/excelExporter'
 import type { OutAssetDetail } from '@/types/outasset'
 import type { EmployeeExtended } from '@/types/user'
 import type { AssetDetail } from '@/types/asset'
-import { formatDate, outassetStatusMapping, outassetTypeMapping } from '@/utils/Format'
+import { formatDate, outassetTypeMapping } from '@/utils/Format'
+import { getAssetStatusText } from '@/utils/statusMapping'
 
 // ========== 辅助函数：枚举转文本（安全处理 null/undefined）==========
-/**
- * 获取资产状态文本 * @param value 状态值（如 'in_use', 'returned' 等）
- * @returns 可读的中文状态 */
-const getOutAssetStatusText = (value: string | null | undefined): string => {
-  if (!value) return '未知'
-  return outassetStatusMapping[value] || value
-}
-
 /**
  * 获取出库类型文本
  * @param value 类型值（如 'normal', 'scrap' 等）
@@ -174,7 +165,7 @@ const exportColumns: ColumnConfig<OutAssetDetail>[] = [
     title: '资产状态',
     key: 'outasset_current_status',
     default: '',
-    formatter: (v) => getOutAssetStatusText(v as string),
+    formatter: (v) => getAssetStatusText((v as string) ?? ''),
   },
   {
     title: '出库类型',

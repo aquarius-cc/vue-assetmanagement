@@ -37,7 +37,6 @@ import type { ContractCreateForm } from '@/types/contract'
 import { EmployeeStatus } from '@/types/user'
 import type { ExcelEmployeeData, ValidatedEmployeeData } from '@/types/user'
 import type { ExcelDepartmentData, ValidatedDepartmentData } from '@/types/department'
-import type { OutAssetCurrentStatus } from '@/types/outasset'
 import {
   ASSET_STATUS_MAP,
   getAssetStatusText as getAssetStatusTextFromStatusMapping,
@@ -359,22 +358,6 @@ const transformAndValidateExcelDepartment = (
   return result
 }
 
-const outassetStatusMapping: Record<string, string> = {
-  recycled_pending: '已回收待发放',
-  in_use: '在用',
-  damaged: '待报废',
-  scrapped: '已报废',
-}
-/**
- * 根据英文状态获取中文显示文本
- * @param status - 英文状态（可能为 undefined 或 null）
- * @returns 中文状态，若未匹配则返回 '
- */
-export function getOutAssetStatusText(status?: string | null): string {
-  if (!status) return '未知'
-  return outassetStatusMapping[status as OutAssetCurrentStatus] ?? '未知'
-}
-
 const outassetTypeMapping: Record<string, string> = {
   receive: '领用',
   borrow: '借用',
@@ -475,7 +458,6 @@ export {
   validateUserStatus,
   transformAndValidateExcelUser,
   transformAndValidateExcelDepartment,
-  outassetStatusMapping,
   outassetTypeMapping,
   // reverseUserStatusMapping,
   parseExcelDate,

@@ -125,6 +125,7 @@ const router = createRouter({
           meta: {
             title: '合同管理',
             requiresAuth: true,
+            requiredMinRole: 'system_admin',
             keepAlive: true, // 添加缓存标识（统一使用小写 keepAlive，与 MainView.vue 中的 filter 一致）
             componentName: 'ContractDetails', // 组件名称（需与组件定义的name一致）
           },
@@ -170,6 +171,7 @@ const router = createRouter({
           meta: {
             title: '资产分类类型管理',
             requiresAuth: true,
+            requiredMinRole: 'system_admin',
             keepAlive: true, // 添加缓存标识（统一使用小写 keepAlive）
             componentName: 'AssetTypeDetails', // 组件名称（需与组件定义的name一致）
           },
@@ -202,6 +204,7 @@ const router = createRouter({
           meta: {
             title: '仓库管理',
             requiresAuth: true,
+            requiredMinRole: 'system_admin',
             keepAlive: true,
             componentName: 'StorageDetails', // 组件名称（需与组件定义的name一致）
           },
@@ -234,6 +237,7 @@ const router = createRouter({
           meta: {
             title: '用户管理',
             requiresAuth: true,
+            requiredMinRole: 'system_admin',
             keepAlive: true, // 添加缓存标识（统一使用小写 keepAlive）
             componentName: 'UserDetails', // 组件名称（需与组件定义的name一致）
           },
@@ -450,7 +454,7 @@ const router = createRouter({
           path: 'operationlogdetails',
           name: 'OperationLogDetails',
           component: () => import('@/components/componentsdetails/OperationLogDetails.vue'),
-          meta: { title: '资产操作日志', requiresAuth: true },
+          meta: { title: '资产操作日志', requiresAuth: true, requiredMinRole: 'auditor' },
           children: [
             {
               path: 'operationlogdetail',
@@ -551,6 +555,7 @@ const router = createRouter({
           meta: {
             title: '部门管理',
             requiresAuth: true,
+            requiredMinRole: 'system_admin',
             keepAlive: true, // 添加缓存标识（统一使用小写 keepAlive）
             componentName: 'DepartmentDetails', // 组件名称（需与组件定义的name一致）
           },

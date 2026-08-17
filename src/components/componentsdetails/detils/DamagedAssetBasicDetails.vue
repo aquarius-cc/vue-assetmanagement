@@ -52,8 +52,8 @@
             <div class="info-item">
               <span class="info-label">审批状态：</span>
               <span class="info-value">
-                <el-tag :type="getApprovalStatusTagType(detailData.approval_status)">
-                  {{ getApprovalStatusText(detailData.approval_status) }}
+                <el-tag :type="getApprovalStatusTagType(detailData.approval_status ?? '')">
+                  {{ getApprovalStatusText(detailData.approval_status ?? '') }}
                 </el-tag>
               </span>
             </div>
@@ -116,37 +116,8 @@ import { useDamagedAssetStore } from '@/stores/damagedAssetStore'
 import { useExcelExport } from '@/composables/useExcelExport'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import type { DamagedAsset } from '@/types/damagedasset'
-import { ApprovalStatus } from '@/types/damagedasset'
 import { formatDate } from '@/utils/Format'
-
-// ===== 审批状态辅助函数 =====
-const getApprovalStatusTagType = (
-  status: string | null | undefined,
-): 'success' | 'warning' | 'danger' | 'info' => {
-  switch (status) {
-    case ApprovalStatus.APPROVED:
-      return 'success'
-    case ApprovalStatus.REJECTED:
-      return 'danger'
-    case ApprovalStatus.PENDING:
-      return 'warning'
-    default:
-      return 'info'
-  }
-}
-
-const getApprovalStatusText = (status: string | null | undefined): string => {
-  switch (status) {
-    case ApprovalStatus.APPROVED:
-      return '已批准'
-    case ApprovalStatus.REJECTED:
-      return '已拒绝'
-    case ApprovalStatus.PENDING:
-      return '待审批'
-    default:
-      return '未知'
-  }
-}
+import { getApprovalStatusText, getApprovalStatusTagType } from '@/utils/statusMapping'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -174,7 +145,7 @@ const exportColumns: ColumnConfig<DamagedAsset>[] = [
     title: '审批状态',
     key: 'approval_status',
     default: '',
-    formatter: (v) => getApprovalStatusText(v as string),
+    formatter: (v) => getApprovalStatusText((v as string) ?? ''),
   },
   { title: '审批人', key: 'approver', default: '' },
   { title: '合同编码', key: 'damaged_asset_contract_code', default: '' },

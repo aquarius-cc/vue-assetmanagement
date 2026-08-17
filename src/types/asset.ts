@@ -49,18 +49,6 @@ export enum AssetCurrentStatus {
   SCRAPPED = 'scrapped',
 }
 
-/** 资产状态中文显示映射 */
-export const ASSET_STATUS_DISPLAY_MAPPING: Record<string, string> = {
-  in_store: '在库',
-  recycled_pending: '已回收待发放',
-  in_use: '在用',
-  broken: '已损坏',
-  repairing: '维修中',
-  lost: '已遗失',
-  damaged: '待报废',
-  scrapped: '已报废',
-}
-
 // ==================== 基础接口定义 ====================
 
 /**
