@@ -112,14 +112,4 @@ describe('departmentAPI', () => {
       items: [{ department_code: 'DEP001', sort_order: 1 }],
     })
   })
-
-  it('getParentDepartment calls GET /users/departments/{code}/parent/', async () => {
-    await departmentAPI.getParentDepartment('DEP001')
-    expect(mockRequest.get).toHaveBeenCalledWith(
-      '/users/departments/DEP001/parent/',
-      undefined,
-      true,
-      300000,
-    )
-  })
 })

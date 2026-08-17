@@ -72,19 +72,4 @@ describe('outAssetAPI', () => {
       items: [{ outasset_code: 'A001' }],
     })
   })
-
-  it('getOutAssetsByAsset calls GET /assets/out-assets/by-asset/{code}/', async () => {
-    await outAssetAPI.getOutAssetsByAsset('A001')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/out-assets/by-asset/A001/')
-  })
-
-  it('getOutAssetStatistics calls GET /assets/out-assets/statistics/', async () => {
-    await outAssetAPI.getOutAssetStatistics()
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/out-assets/statistics/')
-  })
-
-  it('getOutAssetsByApplicant calls GET /assets/out-assets/by-applicant/{code}/', async () => {
-    await outAssetAPI.getOutAssetsByApplicant('E001')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/out-assets/by-applicant/E001/')
-  })
 })

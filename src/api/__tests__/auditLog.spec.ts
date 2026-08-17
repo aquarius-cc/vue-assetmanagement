@@ -34,33 +34,8 @@ describe('auditLogAPI', () => {
     expect(mockRequest.get).toHaveBeenCalledWith('/audit-logs/', { page: 1 })
   })
 
-  it('getAuditLogDetail calls GET /audit-logs/{pk}/', async () => {
-    await auditLogAPI.getAuditLogDetail(1)
-    expect(mockRequest.get).toHaveBeenCalledWith('/audit-logs/1/', undefined, true, 300000)
-  })
-
   it('getAuditLogByLoggingId calls GET /audit-logs/by-logging-id/{id}/', async () => {
     await auditLogAPI.getAuditLogByLoggingId('log-456')
     expect(mockRequest.get).toHaveBeenCalledWith('/audit-logs/by-logging-id/log-456/')
-  })
-
-  it('getRecentAuditLogs calls GET /audit-logs/recent/', async () => {
-    await auditLogAPI.getRecentAuditLogs(14)
-    expect(mockRequest.get).toHaveBeenCalledWith('/audit-logs/recent/', { days: 14 })
-  })
-
-  it('getRecentAuditLogs defaults days to 7', async () => {
-    await auditLogAPI.getRecentAuditLogs()
-    expect(mockRequest.get).toHaveBeenCalledWith('/audit-logs/recent/', { days: 7 })
-  })
-
-  it('getAuditLogsByApp calls GET /audit-logs/by-app/{app}/', async () => {
-    await auditLogAPI.getAuditLogsByApp('assetmanagement', { page: 1 })
-    expect(mockRequest.get).toHaveBeenCalledWith('/audit-logs/by-app/assetmanagement/', { page: 1 })
-  })
-
-  it('getAuditLogsByOperator calls GET /audit-logs/by-operator/{jobcode}/', async () => {
-    await auditLogAPI.getAuditLogsByOperator('E001', { page: 1 })
-    expect(mockRequest.get).toHaveBeenCalledWith('/audit-logs/by-operator/E001/', { page: 1 })
   })
 })

@@ -111,35 +111,4 @@ export const authAPI = {
   getCurrentUserProfile: (): Promise<AuthUser> => {
     return unwrapResponse(request.get<AuthUser>('/auth/profile/'))
   },
-
-  /**
-   * 更新当前用户信息
-   * @description 调用 PUT /api/auth/profile/ 接口
-   * @param data 用户信息（可选字段）
-   * @returns Promise<AuthUser>
-   */
-  updateCurrentUserProfile: (data: Partial<AuthUser>): Promise<AuthUser> => {
-    return unwrapResponse(request.put<AuthUser>('/auth/profile/', data))
-  },
-
-  /**
-   * 用户注册
-   * @description 调用 POST /api/auth/register/ 接口
-   * @param data 注册请求参数
-   *   - auth_username: 用户名
-   *   - email: 邮箱
-   *   - password: 密码
-   *   - auth_nickname?: 昵称（可选）
-   *   - auth_phone?: 手机号（可选）
-   * @returns Promise<LoginResponse>
-   */
-  register: (data: {
-    auth_username: string
-    email: string
-    password: string
-    auth_nickname?: string
-    auth_phone?: string
-  }): Promise<LoginResponse> => {
-    return request.post('/auth/register/', data)
-  },
 }

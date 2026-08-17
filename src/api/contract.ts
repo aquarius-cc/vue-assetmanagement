@@ -18,7 +18,6 @@ import type {
   ContractCreateForm,
   ContractUpdateForm,
   ContractListResponse,
-  ContractStats,
   ContractQueryParams,
   PaidRecord,
 } from '@/types/contract'
@@ -90,19 +89,6 @@ export const contractAPI = {
   },
 
   /**
-   * 全局模糊搜索合同
-   * @param params 搜索参数
-   * @returns 合同列表响应
-   */
-  getFuzzySearch: (params: {
-    keyword: string
-    page?: number
-    page_size?: number
-  }): Promise<ContractListResponse> => {
-    return unwrapResponse(request.get<ContractListResponse>('/assets/contracts/search/', params))
-  },
-
-  /**
    * 创建合同
    * @param data 合同创建表单数据
    * @returns 创建的合同
@@ -127,21 +113,6 @@ export const contractAPI = {
   },
 
   /**
-   * 局部更新合同信息
-   * @param data 合同更新表单数据（需包含 contract_code）
-   * @returns 更新后的合同
-   */
-  partialUpdateContract: (
-    data: Partial<ContractUpdateForm> & { recordcode?: string },
-  ): Promise<Contract> => {
-    const recordcode = data.recordcode
-    if (!recordcode) {
-      throw new Error('recordcode is required for update')
-    }
-    return unwrapResponse(request.patch<Contract>(`/assets/contracts/${recordcode}/`, data))
-  },
-
-  /**
    * 删除合同
    * @param recordcode 合同 recordcode
    */
@@ -160,14 +131,6 @@ export const contractAPI = {
         ids: contract_codes,
       }),
     )
-  },
-
-  /**
-   * 获取合同统计信息
-   * @returns 合同统计数据
-   */
-  getContractStatistics: (): Promise<ContractStats> => {
-    return unwrapResponse(request.get<ContractStats>('/assets/contracts/statistics/'))
   },
 
   /**
@@ -216,22 +179,6 @@ export const contractAPI = {
       request.post<PaymentRecordResponse>(
         `/assets/contracts/${recordcode}/payment_record/${paymentId}/approve/`,
       ),
-    )
-  },
-
-  /**
-   * 更新合同结算状态
-   * POST /api/assets/contracts/{recordcode}/update_settlement_status/
-   * 对应后端 ContractViewSet.update_settlement_status action
-   */
-  updateSettlementStatus: (
-    recordcode: string,
-    status: 'pending' | 'settled',
-  ): Promise<Contract> => {
-    return unwrapResponse(
-      request.post<Contract>(`/assets/contracts/${recordcode}/update_settlement_status/`, {
-        status,
-      }),
     )
   },
 

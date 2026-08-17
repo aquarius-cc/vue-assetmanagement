@@ -114,28 +114,4 @@ export const recycleAssetAPI = {
       request.post<RecycleAssetBatchCreateResult>('/assets/recycle-assets/batch-create/', data),
     )
   },
-
-  /**
-   * 根据资产编码获取回收记录
-   * @param asset_code 资产编码
-   * @returns 回收记录列表响应
-   */
-  getRecycleAssetsByAsset: (asset_code: string): Promise<RecycleAssetListResponse> => {
-    return unwrapResponse(
-      request.get<RecycleAssetListResponse>(`/assets/recycle-assets/by-asset/${asset_code}/`),
-    )
-  },
-
-  /**
-   * [MR-08] 按出库记录编码查询回收记录
-   * @param outasset_recordcode 出库记录编码
-   * @returns 回收记录列表响应
-   */
-  getRecycleAssetByOutAsset: (outasset_recordcode: string): Promise<RecycleAssetListResponse> => {
-    return unwrapResponse(
-      request.get<RecycleAssetListResponse>(
-        `/assets/recycle-assets/by-outasset/${outasset_recordcode}/`,
-      ),
-    )
-  },
 }

@@ -49,11 +49,6 @@ describe('userAPI', () => {
     expect(mockRequest.get).toHaveBeenCalledWith('/users/employees/search/', { keyword: '张三' })
   })
 
-  it('getUserActivity calls GET /users/employees/active_employees/', async () => {
-    await userAPI.getUserActivity()
-    expect(mockRequest.get).toHaveBeenCalledWith('/users/employees/active_employees/')
-  })
-
   it('createUser calls POST /users/employees/', async () => {
     await userAPI.createUser({ employee_name: 'New' } as never)
     expect(mockRequest.post).toHaveBeenCalledWith('/users/employees/', { employee_name: 'New' })
@@ -89,13 +84,6 @@ describe('userAPI', () => {
     await userAPI.batchCreateUsers([{ employee_name: 'X' } as never])
     expect(mockRequest.post).toHaveBeenCalledWith('/users/employees/batch-create/', {
       items: [{ employee_name: 'X' }],
-    })
-  })
-
-  it('changeUserStatus calls POST /users/employees/{code}/change_status/', async () => {
-    await userAPI.changeUserStatus('E001', 'active')
-    expect(mockRequest.post).toHaveBeenCalledWith('/users/employees/E001/change_status/', {
-      status: 'active',
     })
   })
 

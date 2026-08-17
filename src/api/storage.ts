@@ -18,7 +18,6 @@ import type {
   StorageQueryParams,
   StorageCreateForm,
   StorageUpdateForm,
-  StorageStats,
   StorageResponse,
 } from '@/types/storage'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
@@ -67,15 +66,6 @@ export const storageAPI = {
   },
 
   /**
-   * 搜索仓库
-   * @param keyword 搜索关键词
-   * @returns 仓库列表响应
-   */
-  searchStorages: (keyword: string): Promise<StorageResponse> => {
-    return unwrapResponse(request.get<StorageResponse>('/assets/storages/', { keyword }))
-  },
-
-  /**
    * 创建仓库
    * @param storageInfo 仓库创建表单数据
    * @returns 创建的仓库信息
@@ -98,21 +88,6 @@ export const storageAPI = {
   },
 
   /**
-   * 局部更新仓库信息
-   * @param data 仓库更新表单数据（需包含 recordcode）
-   * @returns 更新后的仓库信息
-   */
-  partialUpdateStorage: (
-    data: Partial<StorageUpdateForm> & { recordcode?: string },
-  ): Promise<Storage> => {
-    const recordcode = data.recordcode
-    if (!recordcode) {
-      throw new Error('recordcode is required for update')
-    }
-    return unwrapResponse(request.patch<Storage>(`/assets/storages/${recordcode}/`, data))
-  },
-
-  /**
    * 删除仓库（软删除）
    * @param recordcode 仓库 recordcode
    */
@@ -131,15 +106,6 @@ export const storageAPI = {
         ids: storage_codes,
       }),
     )
-  },
-
-  /**
-   * 获取仓库统计信息
-   * GET /api/assets/storages/statistics/
-   * 对应后端 StorageViewSet.statistics action
-   */
-  getStorageStatistics: (): Promise<StorageStats> => {
-    return unwrapResponse(request.get<StorageStats>('/assets/storages/statistics/'))
   },
 
   /**

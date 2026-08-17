@@ -63,14 +63,6 @@ describe('assetTypeAPI', () => {
     )
   })
 
-  it('partialUpdateAssetType calls PATCH /assets/asset-types/{code}/', async () => {
-    await assetTypeAPI.partialUpdateAssetType({ recordcode: 'AT001', type_name: 'Patched' })
-    expect(mockRequest.patch).toHaveBeenCalledWith('/assets/asset-types/AT001/', {
-      recordcode: 'AT001',
-      type_name: 'Patched',
-    })
-  })
-
   it('deleteAssetType calls DELETE /assets/asset-types/{code}/', async () => {
     await assetTypeAPI.deleteAssetType('AT001')
     expect(mockRequest.delete).toHaveBeenCalledWith('/assets/asset-types/AT001/')

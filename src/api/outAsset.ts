@@ -166,37 +166,4 @@ export const outAssetAPI = {
       }),
     )
   },
-
-  /**
-   * 根据资产编码获取出库记录
-   * @param asset_code 资产编码
-   * @returns 出库记录列表响应
-   */
-  getOutAssetsByAsset: (asset_code: string): Promise<OutAssetResponse> => {
-    return unwrapResponse(
-      request.get<OutAssetResponse>(`/assets/out-assets/by-asset/${asset_code}/`),
-    )
-  },
-
-  /**
-   * 获取出库统计信息
-   * @returns 出库统计数据
-   */
-  getOutAssetStatistics: (): Promise<{
-    total_out_assets: number
-    by_type: Record<string, { name: string; count: number }>
-  }> => {
-    return unwrapResponse(request.get('/assets/out-assets/statistics/'))
-  },
-
-  /**
-   * [MR-07] 按申请人工号查询出库记录
-   * @param applicant_jobcode 申请人工号
-   * @returns 出库记录列表响应
-   */
-  getOutAssetsByApplicant: (applicant_jobcode: string): Promise<OutAssetResponse> => {
-    return unwrapResponse(
-      request.get<OutAssetResponse>(`/assets/out-assets/by-applicant/${applicant_jobcode}/`),
-    )
-  },
 }

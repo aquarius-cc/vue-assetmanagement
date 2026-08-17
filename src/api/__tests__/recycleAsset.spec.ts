@@ -84,14 +84,4 @@ describe('recycleAssetAPI', () => {
       items: [{ asset_code: 'A001' }],
     })
   })
-
-  it('getRecycleAssetsByAsset calls GET /assets/recycle-assets/by-asset/{code}/', async () => {
-    await recycleAssetAPI.getRecycleAssetsByAsset('A001')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/recycle-assets/by-asset/A001/')
-  })
-
-  it('getRecycleAssetByOutAsset calls GET /assets/recycle-assets/by-outasset/{code}/', async () => {
-    await recycleAssetAPI.getRecycleAssetByOutAsset('OA001')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/recycle-assets/by-outasset/OA001/')
-  })
 })

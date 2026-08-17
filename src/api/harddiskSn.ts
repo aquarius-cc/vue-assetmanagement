@@ -58,19 +58,6 @@ export const harddiskSnAPI = {
   },
 
   /**
-   * 获取硬盘序列号详情（启用缓存）
-   * @param harddisk_sn_code 硬盘序列号
-   * @returns 硬盘序列号详情
-   */
-  getHardDiskSNByCode: (harddisk_sn_code: string): Promise<HardDiskSN> => {
-    return unwrapResponse(
-      request.post('/assets/harddisk-sn/search_by_serial_number/', {
-        harddisk_sn_code: harddisk_sn_code,
-      }),
-    )
-  },
-
-  /**
    * 创建硬盘序列号记录
    * @param data 硬盘序列号创建表单数据
    * @returns 创建的硬盘序列号记录
@@ -98,14 +85,6 @@ export const harddiskSnAPI = {
   deleteHardDiskSN: (recordcode: string): Promise<void> => {
     return unwrapResponse(request.delete<void>(`/assets/harddisk-sn/${recordcode}/`))
   },
-  /**
-   * 删除硬盘序列号记录
-   * @param id 硬盘序列号主键 ID
-   */
-  deleteHardDiskSNByCode: (harddisk_sn_code: string): Promise<void> => {
-    return unwrapResponse(request.delete<void>(`/assets/harddisk-sn/${harddisk_sn_code}/`))
-  },
-
   /**
    * 批量保存硬盘序列号记录（新增和编辑统一）
    * 提交 { asset_recordcode, disks } 数组

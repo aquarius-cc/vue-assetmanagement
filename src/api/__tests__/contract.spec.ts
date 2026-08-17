@@ -46,11 +46,6 @@ describe('contractAPI', () => {
     )
   })
 
-  it('getFuzzySearch calls GET /assets/contracts/search/', async () => {
-    await contractAPI.getFuzzySearch({ keyword: 'test' })
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/contracts/search/', { keyword: 'test' })
-  })
-
   it('createContract calls POST /assets/contracts/', async () => {
     await contractAPI.createContract({ contract_name: 'New' } as never)
     expect(mockRequest.post).toHaveBeenCalledWith('/assets/contracts/', { contract_name: 'New' })
@@ -70,23 +65,6 @@ describe('contractAPI', () => {
     )
   })
 
-  it('partialUpdateContract calls PATCH /assets/contracts/{code}/', async () => {
-    await contractAPI.partialUpdateContract({
-      recordcode: 'C001',
-      contract_name: 'Patched',
-    } as never)
-    expect(mockRequest.patch).toHaveBeenCalledWith('/assets/contracts/C001/', {
-      recordcode: 'C001',
-      contract_name: 'Patched',
-    })
-  })
-
-  it('partialUpdateContract throws when recordcode is missing', () => {
-    expect(() => contractAPI.partialUpdateContract({ contract_name: 'Test' } as never)).toThrow(
-      'recordcode is required',
-    )
-  })
-
   it('deleteContract calls DELETE /assets/contracts/{code}/', async () => {
     await contractAPI.deleteContract('C001')
     expect(mockRequest.delete).toHaveBeenCalledWith('/assets/contracts/C001/')
@@ -99,25 +77,12 @@ describe('contractAPI', () => {
     })
   })
 
-  it('getContractStatistics calls GET /assets/contracts/statistics/', async () => {
-    await contractAPI.getContractStatistics()
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/contracts/statistics/')
-  })
-
   it('addPaymentRecord calls POST /assets/contracts/{code}/payment_record/', async () => {
     await contractAPI.addPaymentRecord('C001', { amount: 1000, description: 'payment' })
     expect(mockRequest.post).toHaveBeenCalledWith('/assets/contracts/C001/payment_record/', {
       amount: 1000,
       description: 'payment',
     })
-  })
-
-  it('updateSettlementStatus calls POST /assets/contracts/{code}/update_settlement_status/', async () => {
-    await contractAPI.updateSettlementStatus('C001', 'settled')
-    expect(mockRequest.post).toHaveBeenCalledWith(
-      '/assets/contracts/C001/update_settlement_status/',
-      { status: 'settled' },
-    )
   })
 
   it('batchCreateContracts calls POST /assets/contracts/batch-create/', async () => {

@@ -116,14 +116,6 @@ export const userAPI = {
   },
 
   /**
-   * 获取在职员工列表
-   * @returns 在职员工列表
-   */
-  getUserActivity: (): Promise<EmployeeExtended[]> => {
-    return unwrapResponse(request.get<EmployeeExtended[]>('/users/employees/active_employees/'))
-  },
-
-  /**
    * 创建员工
    * @param data 员工创建表单数据
    * @returns 创建的员工信息
@@ -177,20 +169,6 @@ export const userAPI = {
     return unwrapResponse(
       request.post<EmployeeBatchCreateResult>('/users/employees/batch-create/', {
         items,
-      }),
-    )
-  },
-
-  /**
-   * 更改员工状态
-   * @param employee_jobcode 员工工号
-   * @param status 新状态（active/left/retirement）
-   * @returns 更新后的员工信息
-   */
-  changeUserStatus: (employee_jobcode: string, status: string): Promise<EmployeeExtended> => {
-    return unwrapResponse(
-      request.post<EmployeeExtended>(`/users/employees/${employee_jobcode}/change_status/`, {
-        status,
       }),
     )
   },

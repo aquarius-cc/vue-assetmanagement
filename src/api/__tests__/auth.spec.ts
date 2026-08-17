@@ -66,22 +66,4 @@ describe('authAPI', () => {
       expect(mockRequest.get).toHaveBeenCalledWith('/auth/profile/')
     })
   })
-
-  describe('updateCurrentUserProfile', () => {
-    it('calls PUT /auth/profile/ with data', async () => {
-      await authAPI.updateCurrentUserProfile({ auth_nickname: 'Test' })
-      expect(mockRequest.put).toHaveBeenCalledWith('/auth/profile/', { auth_nickname: 'Test' })
-    })
-  })
-
-  describe('register', () => {
-    it('calls POST /auth/register/ with data', async () => {
-      await authAPI.register({ auth_username: 'new', email: 'a@b.com', password: 'pass' })
-      expect(mockRequest.post).toHaveBeenCalledWith('/auth/register/', {
-        auth_username: 'new',
-        email: 'a@b.com',
-        password: 'pass',
-      })
-    })
-  })
 })

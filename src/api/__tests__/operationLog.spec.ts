@@ -43,24 +43,4 @@ describe('operationLogAPI', () => {
       300000,
     )
   })
-
-  it('getOperationLogByLoggingId calls GET /assets/operation-logs/by-logging-id/{id}/', async () => {
-    await operationLogAPI.getOperationLogByLoggingId('log-123')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/operation-logs/by-logging-id/log-123/')
-  })
-
-  it('getRecentOperationLogs calls GET /assets/operation-logs/recent/', async () => {
-    await operationLogAPI.getRecentOperationLogs(14)
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/operation-logs/recent/', { days: 14 })
-  })
-
-  it('getRecentOperationLogs defaults days to 7', async () => {
-    await operationLogAPI.getRecentOperationLogs()
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/operation-logs/recent/', { days: 7 })
-  })
-
-  it('getUserOperationLogs calls GET /assets/operation-logs/user/{jobcode}/', async () => {
-    await operationLogAPI.getUserOperationLogs('E001', { page: 1 })
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/operation-logs/user/E001/', { page: 1 })
-  })
 })

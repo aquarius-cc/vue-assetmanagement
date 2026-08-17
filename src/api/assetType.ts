@@ -87,17 +87,6 @@ export const assetTypeAPI = {
   },
 
   /**
-   * 局部更新资产类型
-   * @param data 资产类型更新表单数据（需包含 recordcode）
-   * @returns 更新后的资产类型
-   */
-  partialUpdateAssetType: (
-    data: Partial<AssetTypeUpdateForm> & { recordcode: string },
-  ): Promise<AssetType> => {
-    return unwrapResponse(request.patch<AssetType>(`/assets/asset-types/${data.recordcode}/`, data))
-  },
-
-  /**
    * 删除资产类型
    * @param recordcode 资产类型 recordcode
    */

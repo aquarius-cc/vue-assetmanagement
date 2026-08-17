@@ -39,11 +39,6 @@ describe('storageAPI', () => {
     expect(mockRequest.get).toHaveBeenCalledWith('/assets/storages/ST001/', undefined, true, 300000)
   })
 
-  it('searchStorages calls GET /assets/storages/ with keyword', async () => {
-    await storageAPI.searchStorages('warehouse')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/storages/', { keyword: 'warehouse' })
-  })
-
   it('createStorage calls POST /assets/storages/', async () => {
     await storageAPI.createStorage({ storage_name: 'New' } as never)
     expect(mockRequest.post).toHaveBeenCalledWith('/assets/storages/', { storage_name: 'New' })
@@ -63,20 +58,6 @@ describe('storageAPI', () => {
     )
   })
 
-  it('partialUpdateStorage calls PATCH /assets/storages/{code}/', async () => {
-    await storageAPI.partialUpdateStorage({ recordcode: 'ST001', storage_name: 'Patched' })
-    expect(mockRequest.patch).toHaveBeenCalledWith('/assets/storages/ST001/', {
-      recordcode: 'ST001',
-      storage_name: 'Patched',
-    })
-  })
-
-  it('partialUpdateStorage throws when recordcode is missing', () => {
-    expect(() => storageAPI.partialUpdateStorage({ storage_name: 'Test' })).toThrow(
-      'recordcode is required',
-    )
-  })
-
   it('deleteStorage calls DELETE /assets/storages/{code}/', async () => {
     await storageAPI.deleteStorage('ST001')
     expect(mockRequest.delete).toHaveBeenCalledWith('/assets/storages/ST001/')
@@ -87,11 +68,6 @@ describe('storageAPI', () => {
     expect(mockRequest.post).toHaveBeenCalledWith('/assets/storages/batch-delete/', {
       ids: ['ST001', 'ST002'],
     })
-  })
-
-  it('getStorageStatistics calls GET /assets/storages/statistics/', async () => {
-    await storageAPI.getStorageStatistics()
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/storages/statistics/')
   })
 
   it('batchCreateStorages calls POST /assets/storages/batch-create/', async () => {
