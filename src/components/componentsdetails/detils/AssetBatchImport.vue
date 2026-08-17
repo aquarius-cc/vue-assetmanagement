@@ -108,7 +108,7 @@
           '规格型号、单价、采购数量、入库日期、资产分类编码为必填',
           '单价和采购数量必须为有效数字，采购日期和入库日期格式为：YYYY-MM-DD',
           '新旧状态可选值：newly / used / damaged / waste',
-          '当前状态可选值：in_store / in_use / in_scrapped',
+          '当前状态可选值：in_store / recycled_pending / in_use / damaged / scrapped',
           'Excel 首行必须与「表头说明」中的中文列名完全一致',
           '导入前建议先「导出模板」，在模板基础上填写数据',
         ]"
