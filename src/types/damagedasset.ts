@@ -55,8 +55,8 @@ export interface DamagedAssetCreateForm {
   approver?: string | null
   /** [HR-03] read_only 合同编码 (外键关联 am_contract.contract_code, 可选) */
   damaged_asset_contract_code?: string | null
-  /** [HR-03] read_only 待报废仓库编码 (外键关联 am_storage.storage_code) */
-  damaged_asset_storage_code: string
+  /** [HR-03] read_only 待报废仓库编码 (关联资产自动带出, 前端无需传) */
+  damaged_asset_storage_code?: string | null
   /** 待报废描述 (可选) */
   damaged_asset_description?: string | null
 }
@@ -77,9 +77,9 @@ export interface DamagedAssetUpdateForm extends Partial<DamagedAssetCreateForm> 
 export interface DamagedAsset extends DamagedAssetCreateForm {
   /** 主键 ID */
   id: number
-  /** 后端记录编码 */
+  /** 后端记录编码（DAMAGED-xxx，lookup/update/delete 用此字段） */
   recordcode: string
-  /** 关联资产编码 (后端字段名 damaged_asset, OneToOne → Asset.recordcode, 用于 lookup/delete) */
+  /** 关联资产编码（后端字段名 damaged_asset 语义 = Asset.recordcode，后端序列化器不输出此字段，勿用于 lookup） */
   damaged_asset: string
   /** 创建时间 */
   created_at: string

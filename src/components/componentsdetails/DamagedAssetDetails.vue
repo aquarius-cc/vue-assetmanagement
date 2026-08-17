@@ -182,7 +182,7 @@ const getApprovalStatusText = (status: string | null | undefined): string => {
  */
 const columns: TableColumn[] = [
   { type: 'index', label: '序号', width: 60, align: 'center' },
-  { prop: 'asset_recordcode', label: '待报废资产编码', width: 150, align: 'center' },
+  { prop: 'asset_recordcode', label: '资产编码', width: 150, align: 'center' },
   { prop: 'damaged_asset_name', label: '资产名称', width: 150, align: 'left' },
   { prop: 'damaged_asset_specification', label: '规格型号', width: 100, align: 'center' },
   { prop: 'damaged_asset_contract_name', label: '合同名称', width: 150, align: 'left' },
@@ -331,12 +331,13 @@ watch(
  * @param row 待编辑的行数据
  */
 const handleEdit = (row: DamagedAsset) => {
-  // [HALT] FE-C2修复：字段名从 damaged_asset_code 改为 asset_recordcode，与后端Serializer对齐
-  if (!row.asset_recordcode) {
+  // [HALT] FE-C2修复：编辑/删除/详情走 DamagedAsset 自身 recordcode（DAMAGED-xxx），
+  // 后端 lookup_field="recordcode"；asset_recordcode 是关联资产编码（仅批删用）
+  if (!row.recordcode) {
     ElMessage.error('资产编码不存在，无法编辑')
     return
   }
-  router.push({ name: 'DamagedAssetForm', query: { code: row.asset_recordcode } }).catch((err) => {
+  router.push({ name: 'DamagedAssetForm', query: { code: row.recordcode } }).catch((err) => {
     console.error('编辑跳转失败:', err)
     ElMessage.error('跳转编辑页失败，请重试')
   })
@@ -347,8 +348,7 @@ const handleEdit = (row: DamagedAsset) => {
  * @param row 待删除的行数据
  */
 const handleDelete = (row: DamagedAsset) => {
-  // [HALT] FE-C2修复：字段名从 damaged_asset_code 改为 asset_recordcode，与后端Serializer对齐
-  if (!row.asset_recordcode) {
+  if (!row.recordcode) {
     ElMessage.error('记录 ID 不存在，无法删除')
     return
   }
@@ -358,7 +358,7 @@ const handleDelete = (row: DamagedAsset) => {
     type: 'warning',
   })
     .then(() => {
-      return damagedAssetStore.remove(row.asset_recordcode || '')
+      return damagedAssetStore.remove(row.recordcode || '')
     })
     .then(() => {
       ElMessage.success('删除成功')
@@ -400,7 +400,7 @@ const handleBatchImport = () => {
 const handleExportExcel = async () => {
   const exportColumns: ColumnConfig<DamagedAsset>[] = [
     // [HALT] FE-C2修复：字段名从 damaged_asset_code 改为 asset_recordcode，与后端Serializer对齐
-    { title: '待报废资产编码', key: 'asset_recordcode', default: '' },
+    { title: '资产编码', key: 'asset_recordcode', default: '' },
     { title: '资产名称', key: 'damaged_asset_name', default: '' },
     { title: '合同名称', key: 'damaged_asset_contract_name', default: '' },
     { title: '仓库名称', key: 'damaged_asset_storage_name', default: '' },
@@ -500,8 +500,8 @@ const handleBatchDelete = async (rows: DamagedAsset[] | undefined) => {
     return
   }
 
-  // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows.map((row) => row.damaged_asset).filter((code): code is string => !!code)
+  // 提取选中的唯一标识字段：批删走后端 batch_delete，Service 按资产 recordcode 查询（asset_recordcode__recordcode）
+  const codes = rows.map((row) => row.asset_recordcode).filter((code): code is string => !!code)
 
   if (codes.length === 0) {
     ElMessage.error('无法删除：选中的数据缺少唯一标识')

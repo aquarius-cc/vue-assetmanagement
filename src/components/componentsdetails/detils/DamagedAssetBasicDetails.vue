@@ -31,11 +31,11 @@
             </div>
             <div class="info-item">
               <span class="info-label">待报废资产编码：</span>
-              <span class="info-value">{{ detailData.damaged_asset || 'N/A' }}</span>
+              <span class="info-value">{{ detailData.recordcode || 'N/A' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">资产编码：</span>
-              <span class="info-value">{{ detailData.damaged_asset || 'N/A' }}</span>
+              <span class="info-value">{{ detailData.asset_recordcode || 'N/A' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">资产名称：</span>
@@ -160,8 +160,8 @@ const { exportDetail } = useExcelExport()
 
 const exportColumns: ColumnConfig<DamagedAsset>[] = [
   { title: 'ID', key: 'id', default: '' },
-  { title: '待报废资产编码', key: 'damaged_asset', default: '' },
-  { title: '资产编码', key: 'damaged_asset', default: '' },
+  { title: '待报废资产编码', key: 'recordcode', default: '' },
+  { title: '资产编码', key: 'asset_recordcode', default: '' },
   { title: '资产名称', key: 'damaged_asset_name', default: '' },
   { title: '待报废数量', key: 'damaged_asset_number', default: '' },
   {
@@ -259,7 +259,7 @@ const handleExport = async () => {
   await exportDetail(
     detailData.value,
     exportColumns,
-    `待报废资产_${detailData.value.damaged_asset || detailData.value.id}`,
+    `待报废资产_${detailData.value.recordcode || detailData.value.id}`,
     '待报废资产详情',
   )
 }

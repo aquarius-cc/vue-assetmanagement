@@ -50,7 +50,7 @@ import { Delete } from '@element-plus/icons-vue'
 import type { FormRules } from 'element-plus'
 import AssetOperationLayout from '@/components/AssetOperationLayout.vue'
 import { useAssetOperationForm } from '@/composables/useAssetOperationForm'
-import { assetAPI } from '@/api/asset'
+import { damagedAssetAPI } from '@/api/damagedAsset'
 import { AssetCurrentStatus } from '@/types/asset' // [修复] 新增状态枚举导入
 
 const router = useRouter()
@@ -65,10 +65,12 @@ const {
   formRef,
   handleSubmit: baseHandleSubmit,
 } = useAssetOperationForm<{ reason: string }>({
-  // [修复] 切换为专用报废 API，不再直接调用 changeAssetStatus 绕过状态机校验
+  // [修复] 切换为专用报废 API（createDamagedAsset），不再调用已废弃的 applyDamaged 绕过状态机校验
   submitFn: async (data) => {
-    await assetAPI.applyDamaged(assetCode.value, {
-      reason: data.reason,
+    await damagedAssetAPI.createDamagedAsset({
+      asset_recordcode: assetCode.value,
+      damaged_asset_description: data.reason,
+      damaged_asset_number: 1,
     })
   },
   successMessage: '报废申请已提交',
@@ -80,12 +82,12 @@ const {
 // vue-tsc 不将模板 ref 绑定计为变量使用，此处显式消费以消除 TS6133
 void formRef
 // [修复] 前端状态校验：仅允许以下状态的资产提交报废申请
-// 与后端 FSM 允许的前置状态（in_use|recycled_pending|broken|lost）严格对齐
+// 【业务决策】in_use 不允许直接申请报废（须先回收），与后端 FSM 允许的前置状态
+// （recycled_pending|broken|repairing|lost）对齐；repairing 仅走维修失败路径，不在此列
 const canSubmit = computed(
   () =>
     asset.value?.asset_current_status &&
     [
-      AssetCurrentStatus.IN_USE,
       AssetCurrentStatus.RECYCLED_PENDING,
       AssetCurrentStatus.BROKEN,
       AssetCurrentStatus.LOST,

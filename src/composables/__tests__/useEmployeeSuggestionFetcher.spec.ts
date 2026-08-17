@@ -77,7 +77,7 @@ describe('useEmployeeSuggestionFetcher', () => {
         {
           employee_name: 'Inactive',
           employee_jobcode: 'EMP-002',
-          employee_status: 'inactive',
+          employee_status: 'left',
           employee_department_name: 'HR',
         },
       ]

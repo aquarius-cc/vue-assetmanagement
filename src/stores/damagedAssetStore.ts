@@ -29,7 +29,7 @@ import type { PaginationQuery } from '@/stores/createEntityStore'
 export const useDamagedAssetStore = createEntityStore<DamagedAsset, PaginationQuery>(
   'damagedAsset',
   {
-    idKey: 'damaged_asset',
+    idKey: 'recordcode',
     nameField: 'damaged_asset_name',
     displayName: '待报废资产',
     api: {
@@ -49,7 +49,7 @@ export const useDamagedAssetStore = createEntityStore<DamagedAsset, PaginationQu
       getById: (code) => damagedAssetAPI.getDamagedAsset(code),
       create: (data) => damagedAssetAPI.createDamagedAsset(data as DamagedAssetCreateForm),
       update: (data) =>
-        damagedAssetAPI.updateDamagedAsset(data.damaged_asset!, data as DamagedAssetUpdateForm),
+        damagedAssetAPI.updateDamagedAsset(data.recordcode!, data as DamagedAssetUpdateForm),
       delete: (code) => damagedAssetAPI.deleteDamagedAsset(code),
       batchDelete: (codes) => damagedAssetAPI.batchDeleteDamagedAssets(codes),
     },

@@ -688,7 +688,6 @@ const router = createRouter({
       meta: {
         title: '资产报废申请',
         requiresAuth: true,
-        requiredMinRole: 'asset_admin',
       },
     },
     {

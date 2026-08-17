@@ -294,7 +294,7 @@ onMounted(async () => {
   // CRIT-6: 生成二维码 URL
   if (assetDetail.value?.recordcode) {
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
-    qrCodeUrl.value = `${baseUrl}/api/v1/assets/${assetDetail.value.recordcode}/qr-code-image/`
+    qrCodeUrl.value = `${baseUrl}/assets/${assetDetail.value.recordcode}/qr-code-image/`
   }
 })
 

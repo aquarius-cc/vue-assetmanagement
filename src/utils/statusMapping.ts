@@ -88,8 +88,8 @@ export const EMPLOYEE_STATUS_MAP: Record<
   { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
 > = {
   active: { label: '在职', type: 'success' },
-  inactive: { label: '离职', type: 'danger' },
-  probation: { label: '试用期', type: 'warning' },
+  left: { label: '离职', type: 'warning' },
+  retirement: { label: '退休', type: 'info' },
 }
 
 // ===== 资产分类映射 =====

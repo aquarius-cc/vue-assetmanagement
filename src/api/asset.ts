@@ -33,7 +33,6 @@ import type {
   AssetQueryParams,
   AssetListSimpleResponse,
 } from '@/types/asset'
-import type { DamagedAsset } from '@/types/damagedasset'
 import type { Contract } from '@/types/contract'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
 
@@ -344,18 +343,6 @@ export const assetAPI = {
       request.post<AssetBatchCreateResult>('/assets/assets/batch-create/', {
         items,
       }),
-    )
-  },
-
-  /**
-   * [修复] 申请资产报废
-   * POST /api/assets/assets/{recordcode}/apply-damaged/
-   * 对应后端 AssetViewSet.apply_damaged action
-   * 将资产状态流转至 damaged（待报废），并创建 DamagedAsset 记录
-   */
-  applyDamaged: (recordcode: string, data: { reason?: string }): Promise<DamagedAsset> => {
-    return unwrapResponse(
-      request.post<DamagedAsset>(`/assets/assets/${recordcode}/apply-damaged/`, data),
     )
   },
 }

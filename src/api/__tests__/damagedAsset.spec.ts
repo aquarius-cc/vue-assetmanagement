@@ -45,8 +45,14 @@ describe('damagedAssetAPI', () => {
   })
 
   it('createDamagedAsset calls POST /assets/damaged-assets/', async () => {
-    await damagedAssetAPI.createDamagedAsset({ asset_code: 'A001' } as never)
-    expect(mockRequest.post).toHaveBeenCalledWith('/assets/damaged-assets/', { asset_code: 'A001' })
+    await damagedAssetAPI.createDamagedAsset({
+      asset_recordcode: 'ASSET-001',
+      damaged_asset_number: 1,
+    })
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/damaged-assets/', {
+      asset_recordcode: 'ASSET-001',
+      damaged_asset_number: 1,
+    })
   })
 
   it('updateDamagedAsset calls PUT /assets/damaged-assets/{code}/', async () => {

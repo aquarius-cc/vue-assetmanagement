@@ -282,6 +282,7 @@ interface AssetSuggestion {
   value: string
   asset_name: string
   asset_code: string
+  recordcode: string
   asset_specification: string | null
 }
 
@@ -291,13 +292,15 @@ const fetchAssetSuggestions = createSuggestionFetcher<AssetDetail, AssetSuggesti
     value: asset.asset_name,
     asset_name: asset.asset_name,
     asset_code: asset.asset_code,
+    recordcode: asset.recordcode,
     asset_specification: asset.asset_specification,
   }),
 })
 
 const handleAssetSelect = (item: AssetSuggestion) => {
   formData.asset_name_display = item.asset_name
-  formData.damaged_asset_code = item.asset_code
+  // [修复] asset_recordcode 提交的是资产 recordcode（ASSET-xxx），不是业务码 asset_code
+  formData.damaged_asset_code = item.recordcode
 }
 
 /**
@@ -306,7 +309,8 @@ const handleAssetSelect = (item: AssetSuggestion) => {
  * @param asset - 选中的资产详惀 */
 const handleAssetSearchSelect = (asset: AssetDetail) => {
   formData.asset_name_display = asset.asset_name
-  formData.damaged_asset_code = asset.asset_code
+  // [修复] asset_recordcode 提交的是资产 recordcode（ASSET-xxx），不是业务码 asset_code
+  formData.damaged_asset_code = asset.recordcode
   // 如果资产有关联的仓库信息，也自动回填
   if (asset.asset_storage) {
     formData.storage_name_display = asset.asset_storage.storage_name || ''
@@ -338,7 +342,8 @@ const handleAssetNameBlur = async (event: FocusEvent) => {
     const assets = await assetStore.getByName(currentValue.trim())
     if (assets && assets.length > 0) {
       formData.asset_name_display = assets[0].asset_name
-      formData.damaged_asset_code = assets[0].asset_code
+      // [修复] asset_recordcode 提交的是资产 recordcode（ASSET-xxx），不是业务码 asset_code
+      formData.damaged_asset_code = assets[0].recordcode
     } else {
       formData.damaged_asset_code = ''
       ElMessage.warning('未找到匹配的资产')
@@ -464,7 +469,8 @@ const loadEditData = async (code: string) => {
       return
     }
     // 回填表单数据
-    formData.damaged_asset_code = detail.damaged_asset || ''
+    // [修复] damaged_asset_code 承载的是资产 recordcode（ASSET-xxx），后端序列化器输出字段为 asset_recordcode
+    formData.damaged_asset_code = detail.asset_recordcode || ''
     formData.asset_name_display = detail.damaged_asset_name || ''
     formData.damaged_asset_contract_code = detail.damaged_asset_contract_code || ''
     formData.contract_name_display = detail.damaged_asset_contract_name || ''
@@ -475,9 +481,9 @@ const loadEditData = async (code: string) => {
     formData.damaged_asset_description = detail.damaged_asset_description || ''
 
     // 如果后端未返回名称，尝试通过 Store 联动查询
-    if (!detail.damaged_asset_name && detail.damaged_asset) {
+    if (!detail.damaged_asset_name && detail.asset_recordcode) {
       try {
-        const asset = await assetStore.getById(detail.damaged_asset)
+        const asset = await assetStore.getById(detail.asset_recordcode)
         if (asset) formData.asset_name_display = asset.asset_name
       } catch {
         // 查询失败不阻塞

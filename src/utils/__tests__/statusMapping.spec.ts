@@ -121,14 +121,14 @@ describe('statusMapping', () => {
   describe('Employee status functions', () => {
     it('getEmployeeStatusTagType returns correct type', () => {
       expect(getEmployeeStatusTagType('active')).toBe('success')
-      expect(getEmployeeStatusTagType('inactive')).toBe('danger')
-      expect(getEmployeeStatusTagType('probation')).toBe('warning')
+      expect(getEmployeeStatusTagType('left')).toBe('warning')
+      expect(getEmployeeStatusTagType('retirement')).toBe('info')
     })
 
     it('getEmployeeStatusText returns correct label', () => {
       expect(getEmployeeStatusText('active')).toBe('在职')
-      expect(getEmployeeStatusText('inactive')).toBe('离职')
-      expect(getEmployeeStatusText('probation')).toBe('试用期')
+      expect(getEmployeeStatusText('left')).toBe('离职')
+      expect(getEmployeeStatusText('retirement')).toBe('退休')
     })
   })
 
@@ -192,8 +192,8 @@ describe('statusMapping', () => {
     it('EMPLOYEE_STATUS_MAP has all required statuses', () => {
       expect(Object.keys(EMPLOYEE_STATUS_MAP)).toHaveLength(3)
       expect(EMPLOYEE_STATUS_MAP).toHaveProperty('active')
-      expect(EMPLOYEE_STATUS_MAP).toHaveProperty('inactive')
-      expect(EMPLOYEE_STATUS_MAP).toHaveProperty('probation')
+      expect(EMPLOYEE_STATUS_MAP).toHaveProperty('left')
+      expect(EMPLOYEE_STATUS_MAP).toHaveProperty('retirement')
     })
 
     it('STATUS_COLOR_MAP has all required colors', () => {
