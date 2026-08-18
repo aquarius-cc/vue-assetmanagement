@@ -37,7 +37,7 @@ export interface OutAssetRecord {
   id: number
   asset_name: string
   asset_code: string
-  distribute_time: string
+  outasset_date: string
   recipient_name: string
   department_name: string
 }
@@ -47,7 +47,7 @@ export interface RecycleAssetRecord {
   id: number
   asset_name: string
   asset_code: string
-  recycle_time: string
+  recycle_asset_date: string
   returner_name: string
   department_name: string
 }
@@ -83,4 +83,25 @@ export interface MaintenanceReminder {
 export interface StatusDistributionItem {
   name: string
   count: number
+}
+
+/** 部门资产分布项 */
+export interface DepartmentDistributionItem {
+  department_name: string
+  asset_count: number
+  percentage: number
+}
+
+/** 资产类型分布项 */
+export interface AssetTypeDistributionItem {
+  type_name: string
+  count: number
+  percentage: number
+}
+
+/** 仪表盘告警列表项（即将到期 / 维护提醒共用） */
+export interface DashboardAlertItem {
+  asset_code: string
+  asset_name: string
+  [key: string]: unknown
 }

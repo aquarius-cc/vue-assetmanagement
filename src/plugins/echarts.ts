@@ -21,6 +21,7 @@ import {
   TooltipComponent,
   LegendComponent,
   TitleComponent,
+  GraphicComponent,
 } from 'echarts/components'
 import VChart from 'vue-echarts'
 
@@ -32,6 +33,7 @@ use([
   TooltipComponent,
   LegendComponent,
   TitleComponent,
+  GraphicComponent,
 ])
 
 export { VChart }

@@ -7,6 +7,11 @@ vi.mock('@/api/dashboard', () => ({
     getDashboardOverview: vi.fn(),
     getRecentOutAssets: vi.fn(),
     getRecentRecycleAssets: vi.fn(),
+    getAssetTrend: vi.fn(),
+    getDepartmentDistribution: vi.fn(),
+    getAssetTypeDistribution: vi.fn(),
+    getExpiringAssets: vi.fn(),
+    getMaintenanceReminders: vi.fn(),
   },
 }))
 
@@ -146,6 +151,8 @@ describe('DashboardStore', () => {
       const { dashboardAPI } = await import('@/api/dashboard')
       vi.mocked(dashboardAPI.getDashboardOverview).mockResolvedValue({
         total_assets: 50,
+        total_value: 0,
+        total_contracts: 0,
         active_assets: 40,
         in_stock_assets: 10,
         monthly_distributed: 5,
@@ -154,16 +161,27 @@ describe('DashboardStore', () => {
         wasted_assets: 0,
         total_recycled: 20,
         total_distributed: 30,
+        status_distribution: {},
         timestamp: '2026-01-01T00:00:00Z',
       })
       vi.mocked(dashboardAPI.getRecentOutAssets).mockResolvedValue([])
       vi.mocked(dashboardAPI.getRecentRecycleAssets).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getAssetTrend).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getDepartmentDistribution).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getAssetTypeDistribution).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getExpiringAssets).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getMaintenanceReminders).mockResolvedValue([])
 
       await store.refreshStats()
 
       expect(dashboardAPI.getDashboardOverview).toHaveBeenCalled()
       expect(dashboardAPI.getRecentOutAssets).toHaveBeenCalled()
       expect(dashboardAPI.getRecentRecycleAssets).toHaveBeenCalled()
+      expect(dashboardAPI.getAssetTrend).toHaveBeenCalled()
+      expect(dashboardAPI.getDepartmentDistribution).toHaveBeenCalled()
+      expect(dashboardAPI.getAssetTypeDistribution).toHaveBeenCalled()
+      expect(dashboardAPI.getExpiringAssets).toHaveBeenCalled()
+      expect(dashboardAPI.getMaintenanceReminders).toHaveBeenCalled()
     })
   })
 
@@ -172,6 +190,8 @@ describe('DashboardStore', () => {
       const { dashboardAPI } = await import('@/api/dashboard')
       vi.mocked(dashboardAPI.getDashboardOverview).mockResolvedValue({
         total_assets: 100,
+        total_value: 0,
+        total_contracts: 0,
         active_assets: 80,
         in_stock_assets: 20,
         monthly_distributed: 10,
@@ -180,6 +200,7 @@ describe('DashboardStore', () => {
         wasted_assets: 2,
         total_recycled: 50,
         total_distributed: 60,
+        status_distribution: {},
         timestamp: '2026-01-01T00:00:00Z',
       })
       vi.mocked(dashboardAPI.getRecentOutAssets).mockResolvedValue([
@@ -187,7 +208,7 @@ describe('DashboardStore', () => {
           id: 1,
           asset_name: '电脑',
           asset_code: 'A001',
-          distribute_time: '',
+          outasset_date: '',
           recipient_name: '',
           department_name: '',
         },
@@ -220,6 +241,8 @@ describe('DashboardStore', () => {
       const { dashboardAPI } = await import('@/api/dashboard')
       vi.mocked(dashboardAPI.getDashboardOverview).mockResolvedValue({
         total_assets: 100,
+        total_value: 0,
+        total_contracts: 0,
         active_assets: 80,
         in_stock_assets: 20,
         monthly_distributed: 10,
@@ -228,6 +251,7 @@ describe('DashboardStore', () => {
         wasted_assets: 2,
         total_recycled: 50,
         total_distributed: 60,
+        status_distribution: {},
         timestamp: '2026-01-01T00:00:00Z',
       })
 
@@ -242,6 +266,8 @@ describe('DashboardStore', () => {
       const { dashboardAPI } = await import('@/api/dashboard')
       vi.mocked(dashboardAPI.getDashboardOverview).mockResolvedValue({
         total_assets: 100,
+        total_value: 0,
+        total_contracts: 0,
         active_assets: 80,
         in_stock_assets: 20,
         monthly_distributed: 10,
@@ -250,6 +276,7 @@ describe('DashboardStore', () => {
         wasted_assets: 2,
         total_recycled: 50,
         total_distributed: 60,
+        status_distribution: {},
         timestamp: '2026-01-01T00:00:00Z',
       })
 
@@ -264,6 +291,8 @@ describe('DashboardStore', () => {
       const { dashboardAPI } = await import('@/api/dashboard')
       vi.mocked(dashboardAPI.getDashboardOverview).mockResolvedValue({
         total_assets: 100,
+        total_value: 0,
+        total_contracts: 0,
         active_assets: 80,
         in_stock_assets: 20,
         monthly_distributed: 10,
@@ -272,6 +301,7 @@ describe('DashboardStore', () => {
         wasted_assets: 2,
         total_recycled: 50,
         total_distributed: 60,
+        status_distribution: {},
         timestamp: '2026-01-01T00:00:00Z',
       })
 
@@ -341,7 +371,7 @@ describe('DashboardStore', () => {
           id: 1,
           asset_name: '电脑',
           asset_code: 'A001',
-          distribute_time: '2026-01-01',
+          outasset_date: '2026-01-01',
           recipient_name: '张三',
           department_name: '技术部',
         },
@@ -383,8 +413,8 @@ describe('DashboardStore', () => {
           id: 1,
           asset_name: '显示器',
           asset_code: 'B001',
-          recycle_time: '2026-01-01',
-          operator_name: '李四',
+          recycle_asset_date: '2026-01-01',
+          returner_name: '李四',
         },
       ]
       const { dashboardAPI } = await import('@/api/dashboard')
@@ -417,11 +447,168 @@ describe('DashboardStore', () => {
     })
   })
 
+  describe('fetchAssetTrend', () => {
+    it('应该获取趋势数据', async () => {
+      const { dashboardAPI } = await import('@/api/dashboard')
+      const mockTrend = [
+        { date: '2026-01-01', new_assets: 5, distributed: 0, recovered: 0, scrapped: 0 },
+      ]
+      vi.mocked(dashboardAPI.getAssetTrend).mockResolvedValue(mockTrend)
+
+      const result = await store.fetchAssetTrend()
+
+      expect(result).toEqual(mockTrend)
+      expect(store.assetTrend).toEqual(mockTrend)
+      expect(store.trendLoading).toBe(false)
+    })
+
+    it('应支持日期范围参数', async () => {
+      const { dashboardAPI } = await import('@/api/dashboard')
+      vi.mocked(dashboardAPI.getAssetTrend).mockResolvedValue([])
+
+      await store.fetchAssetTrend({ start_date: '2026-01-01', end_date: '2026-01-31' })
+
+      expect(dashboardAPI.getAssetTrend).toHaveBeenCalledWith({
+        start_date: '2026-01-01',
+        end_date: '2026-01-31',
+      })
+    })
+
+    it('API失败时应显示错误消息', async () => {
+      const { dashboardAPI } = await import('@/api/dashboard')
+      const { ElMessage } = await import('element-plus')
+      vi.mocked(dashboardAPI.getAssetTrend).mockRejectedValue(new Error('失败'))
+
+      await expect(store.fetchAssetTrend()).rejects.toThrow('失败')
+      expect(ElMessage.error).toHaveBeenCalledWith('失败')
+      expect(store.trendLoading).toBe(false)
+    })
+  })
+
+  describe('fetchDepartmentDistribution', () => {
+    it('应该获取部门分布', async () => {
+      const { dashboardAPI } = await import('@/api/dashboard')
+      const mockData = [{ department_name: '技术部', asset_count: 50, percentage: 50 }]
+      vi.mocked(dashboardAPI.getDepartmentDistribution).mockResolvedValue(mockData)
+
+      const result = await store.fetchDepartmentDistribution()
+
+      expect(result).toEqual(mockData)
+      expect(store.departmentDistribution).toEqual(mockData)
+      expect(store.deptDistLoading).toBe(false)
+    })
+
+    it('API失败时应显示错误消息', async () => {
+      const { dashboardAPI } = await import('@/api/dashboard')
+      const { ElMessage } = await import('element-plus')
+      vi.mocked(dashboardAPI.getDepartmentDistribution).mockRejectedValue(new Error('失败'))
+
+      await expect(store.fetchDepartmentDistribution()).rejects.toThrow('失败')
+      expect(ElMessage.error).toHaveBeenCalledWith('失败')
+    })
+  })
+
+  describe('fetchAssetTypeDistribution', () => {
+    it('应该获取类型分布', async () => {
+      const { dashboardAPI } = await import('@/api/dashboard')
+      const mockData = [{ type_name: '笔记本', count: 30, percentage: 30 }]
+      vi.mocked(dashboardAPI.getAssetTypeDistribution).mockResolvedValue(mockData)
+
+      const result = await store.fetchAssetTypeDistribution()
+
+      expect(result).toEqual(mockData)
+      expect(store.assetTypeDistribution).toEqual(mockData)
+      expect(store.typeDistLoading).toBe(false)
+    })
+
+    it('API失败时应显示错误消息', async () => {
+      const { dashboardAPI } = await import('@/api/dashboard')
+      const { ElMessage } = await import('element-plus')
+      vi.mocked(dashboardAPI.getAssetTypeDistribution).mockRejectedValue(new Error('失败'))
+
+      await expect(store.fetchAssetTypeDistribution()).rejects.toThrow('失败')
+      expect(ElMessage.error).toHaveBeenCalledWith('失败')
+    })
+  })
+
+  describe('fetchExpiringAssets', () => {
+    it('应该获取即将到期资产', async () => {
+      const { dashboardAPI } = await import('@/api/dashboard')
+      const mockData = [
+        {
+          id: 1,
+          asset_name: '电脑',
+          asset_code: 'A001',
+          expire_date: '2026-02-01',
+          days_until_expire: 14,
+        },
+      ]
+      vi.mocked(dashboardAPI.getExpiringAssets).mockResolvedValue(mockData as any)
+
+      const result = await store.fetchExpiringAssets()
+
+      expect(result).toEqual(mockData)
+      expect(store.expiringAssets).toEqual(mockData)
+      expect(store.expiringLoading).toBe(false)
+    })
+
+    it('应支持days参数', async () => {
+      const { dashboardAPI } = await import('@/api/dashboard')
+      vi.mocked(dashboardAPI.getExpiringAssets).mockResolvedValue([])
+
+      await store.fetchExpiringAssets(7)
+
+      expect(dashboardAPI.getExpiringAssets).toHaveBeenCalledWith(7)
+    })
+
+    it('API失败时应显示错误消息', async () => {
+      const { dashboardAPI } = await import('@/api/dashboard')
+      const { ElMessage } = await import('element-plus')
+      vi.mocked(dashboardAPI.getExpiringAssets).mockRejectedValue(new Error('失败'))
+
+      await expect(store.fetchExpiringAssets()).rejects.toThrow('失败')
+      expect(ElMessage.error).toHaveBeenCalledWith('失败')
+    })
+  })
+
+  describe('fetchMaintenanceReminders', () => {
+    it('应该获取维护提醒', async () => {
+      const { dashboardAPI } = await import('@/api/dashboard')
+      const mockData = [
+        {
+          id: 1,
+          asset_name: '打印机',
+          asset_code: 'C001',
+          maintenance_date: '2026-02-01',
+          type: '定期维护',
+        },
+      ]
+      vi.mocked(dashboardAPI.getMaintenanceReminders).mockResolvedValue(mockData as any)
+
+      const result = await store.fetchMaintenanceReminders()
+
+      expect(result).toEqual(mockData)
+      expect(store.maintenanceReminders).toEqual(mockData)
+      expect(store.maintenanceLoading).toBe(false)
+    })
+
+    it('API失败时应显示错误消息', async () => {
+      const { dashboardAPI } = await import('@/api/dashboard')
+      const { ElMessage } = await import('element-plus')
+      vi.mocked(dashboardAPI.getMaintenanceReminders).mockRejectedValue(new Error('失败'))
+
+      await expect(store.fetchMaintenanceReminders()).rejects.toThrow('失败')
+      expect(ElMessage.error).toHaveBeenCalledWith('失败')
+    })
+  })
+
   describe('initDashboardData', () => {
     it('应该同时初始化所有数据', async () => {
       const { dashboardAPI } = await import('@/api/dashboard')
       vi.mocked(dashboardAPI.getDashboardOverview).mockResolvedValue({
         total_assets: 50,
+        total_value: 0,
+        total_contracts: 0,
         active_assets: 40,
         in_stock_assets: 10,
         monthly_distributed: 5,
@@ -430,21 +617,39 @@ describe('DashboardStore', () => {
         wasted_assets: 0,
         total_recycled: 20,
         total_distributed: 30,
+        status_distribution: {},
         timestamp: '2026-01-01T00:00:00Z',
       })
       vi.mocked(dashboardAPI.getRecentOutAssets).mockResolvedValue([])
       vi.mocked(dashboardAPI.getRecentRecycleAssets).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getAssetTrend).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getDepartmentDistribution).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getAssetTypeDistribution).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getExpiringAssets).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getMaintenanceReminders).mockResolvedValue([])
 
       await store.initDashboardData()
 
       expect(dashboardAPI.getDashboardOverview).toHaveBeenCalled()
       expect(dashboardAPI.getRecentOutAssets).toHaveBeenCalledWith(5)
       expect(dashboardAPI.getRecentRecycleAssets).toHaveBeenCalledWith(5)
+      expect(dashboardAPI.getAssetTrend).toHaveBeenCalled()
+      expect(dashboardAPI.getDepartmentDistribution).toHaveBeenCalled()
+      expect(dashboardAPI.getAssetTypeDistribution).toHaveBeenCalled()
+      expect(dashboardAPI.getExpiringAssets).toHaveBeenCalled()
+      expect(dashboardAPI.getMaintenanceReminders).toHaveBeenCalled()
     })
 
     it('API失败时不应抛出异常', async () => {
       const { dashboardAPI } = await import('@/api/dashboard')
       vi.mocked(dashboardAPI.getDashboardOverview).mockRejectedValue(new Error('网络错误'))
+      vi.mocked(dashboardAPI.getRecentOutAssets).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getRecentRecycleAssets).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getAssetTrend).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getDepartmentDistribution).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getAssetTypeDistribution).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getExpiringAssets).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getMaintenanceReminders).mockResolvedValue([])
 
       await expect(store.initDashboardData()).rejects.toThrow('网络错误')
     })
@@ -456,6 +661,11 @@ describe('DashboardStore', () => {
       vi.mocked(dashboardAPI.getDashboardOverview).mockRejectedValue(new Error('失败'))
       vi.mocked(dashboardAPI.getRecentOutAssets).mockResolvedValue([])
       vi.mocked(dashboardAPI.getRecentRecycleAssets).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getAssetTrend).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getDepartmentDistribution).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getAssetTypeDistribution).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getExpiringAssets).mockResolvedValue([])
+      vi.mocked(dashboardAPI.getMaintenanceReminders).mockResolvedValue([])
 
       await expect(store.refreshStats()).rejects.toThrow('失败')
     })

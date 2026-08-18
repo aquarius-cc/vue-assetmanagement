@@ -23,6 +23,8 @@ import type {
   AssetTrendData,
   ExpiringAsset,
   MaintenanceReminder,
+  DepartmentDistributionItem,
+  AssetTypeDistributionItem,
 } from '@/types/dashboard'
 
 export type {
@@ -32,6 +34,8 @@ export type {
   AssetTrendData,
   ExpiringAsset,
   MaintenanceReminder,
+  DepartmentDistributionItem,
+  AssetTypeDistributionItem,
 }
 
 /**
@@ -75,84 +79,39 @@ export const dashboardAPI = {
   /**
    * 获取资产趋势数据
    * GET /api/dashboard/trend/
-   * 注意：后端暂未实现此端点，调用会返回 404
+   * @param params 可选 start_date/end_date (YYYY-MM-DD)，不传时回退到最近30天
    */
   getAssetTrend: async (params?: {
     start_date?: string
     end_date?: string
-    period?: 'daily' | 'weekly' | 'monthly'
   }): Promise<AssetTrendData[]> => {
-    if (import.meta.env.PROD) {
-      console.warn('[dashboardAPI] getAssetTrend: 后端暂未实现此端点')
-      return []
-    }
     return unwrapResponse(request.get<AssetTrendData[]>('/dashboard/trend/', params))
   },
 
   /**
    * 获取部门资产分布
    * GET /api/dashboard/department_distribution/
-   * 注意：后端暂未实现此端点，调用会返回 404
    */
-  getDepartmentDistribution: async (): Promise<
-    Array<{
-      department_name: string
-      asset_count: number
-      percentage: number
-    }>
-  > => {
-    if (import.meta.env.PROD) {
-      console.warn('[dashboardAPI] getDepartmentDistribution: 后端暂未实现此端点')
-      return []
-    }
+  getDepartmentDistribution: async (): Promise<DepartmentDistributionItem[]> => {
     return unwrapResponse(
-      request.get<
-        Array<{
-          department_name: string
-          asset_count: number
-          percentage: number
-        }>
-      >('/dashboard/department_distribution/'),
+      request.get<DepartmentDistributionItem[]>('/dashboard/department_distribution/'),
     )
   },
 
   /**
    * 获取资产类型分布
    * GET /api/dashboard/type_distribution/
-   * 注意：后端暂未实现此端点，调用会返回 404
    */
-  getAssetTypeDistribution: (): Promise<
-    Array<{
-      type_name: string
-      count: number
-      percentage: number
-    }>
-  > => {
-    if (import.meta.env.PROD) {
-      console.warn('[dashboardAPI] getAssetTypeDistribution: 后端暂未实现此端点')
-      return Promise.resolve([])
-    }
-    return unwrapResponse(
-      request.get<
-        Array<{
-          type_name: string
-          count: number
-          percentage: number
-        }>
-      >('/dashboard/type_distribution/'),
-    )
+  getAssetTypeDistribution: async (): Promise<AssetTypeDistributionItem[]> => {
+    return unwrapResponse(request.get<AssetTypeDistributionItem[]>('/dashboard/type_distribution/'))
   },
 
   /**
    * 获取即将到期的资产
    * GET /api/dashboard/expiring_assets/
-   * 注意：后端暂未实现此端点，调用会返回 404
+   * @param days 查询天数范围，默认30天
    */
   getExpiringAssets: async (days?: number): Promise<ExpiringAsset[]> => {
-    if (import.meta.env.PROD) {
-      console.warn('[dashboardAPI] getExpiringAssets: 后端暂未实现此端点')
-      return []
-    }
     return unwrapResponse(
       request.get<ExpiringAsset[]>('/dashboard/expiring_assets/', { days: days || 30 }),
     )
@@ -161,13 +120,8 @@ export const dashboardAPI = {
   /**
    * 获取维护提醒
    * GET /api/dashboard/maintenance_reminders/
-   * 注意：后端暂未实现此端点，调用会返回 404
    */
-  getMaintenanceReminders: (): Promise<MaintenanceReminder[]> => {
-    if (import.meta.env.PROD) {
-      console.warn('[dashboardAPI] getMaintenanceReminders: 后端暂未实现此端点')
-      return Promise.resolve([])
-    }
+  getMaintenanceReminders: async (): Promise<MaintenanceReminder[]> => {
     return unwrapResponse(request.get<MaintenanceReminder[]>('/dashboard/maintenance_reminders/'))
   },
 }

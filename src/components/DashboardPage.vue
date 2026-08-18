@@ -1,6 +1,5 @@
-<!-- TECHNICAL_DEBT: >500 lines -->
 <!--
-@file 仪表盘主页，展示资产统计、最近操作记录和用户信息
+@file 仪表盘主页，4×2 网格布局
 @component DashboardPage
 @usedBy
   - router/index.ts: 首页路由组件
@@ -9,22 +8,13 @@
   - components/DashboardStatCard: 统计卡片
   - components/DashboardUserInfo: 用户信息卡片
   - components/DashboardRecentList: 最近操作列表
-  - utils/Format: 日期格式化
+  - components/DashboardStatusOverview: 状态全景
+  - components/DashboardTrendSection: 趋势折线图
+  - components/DashboardDistributionSection: 双饼图
+  - components/DashboardAlertsSection: 双列表
 -->
 <template>
   <div class="dashboard-page-content">
-    <!--
-      仪表盘布局设计
-
-      响应式策略：
-      - xs (<768px): 单列布局，每个卡片占满整行
-      - sm (≥768px): 单列布局，保持可读性
-      - md (≥992px): 双列布局，两个卡片并排
-      - lg/xl (≥1200px): 双列布局，最优显示
-
-      使用 Element Plus 的响应式栅格系统实现
-    -->
-    <!-- [修复] 加载失败提示 -->
     <el-alert
       v-if="loadError"
       type="error"
@@ -37,9 +27,9 @@
         <el-button type="primary" size="small" @click="retryFetchDashboard">重试</el-button>
       </template>
     </el-alert>
-    <!-- 第一行：资产发放信息 + 用户信息 -->
-    <el-row class="top-row" :gutter="16">
-      <!-- 资产发放信息卡片 -->
+
+    <!-- Row 1: 发放 + 回收 -->
+    <el-row class="grid-row" :gutter="16">
       <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
         <DashboardStatCard
           title="资产发放信息"
@@ -59,27 +49,11 @@
             :items="recentOutAssets"
             name-key="asset_name"
             operator-key="recipient_name"
-            date-key="distribute_time"
+            date-key="outasset_date"
             empty-text="暂无发放记录"
           />
         </DashboardStatCard>
       </el-col>
-
-      <!-- 用户信息卡片 -->
-      <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
-        <DashboardUserInfo
-          :auth-info="authInfo"
-          :login-duration="loginDuration"
-          :current-time="currentTime"
-          :current-date="currentDate"
-          @logout="logout"
-        />
-      </el-col>
-    </el-row>
-
-    <!-- 第二行：资产回收信息 + 其他资产信息 -->
-    <el-row class="bottom-row" :gutter="16">
-      <!-- 资产回收信息卡片 -->
       <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
         <DashboardStatCard
           title="资产回收信息"
@@ -99,13 +73,15 @@
             :items="recentRecycleAssets"
             name-key="asset_name"
             operator-key="returner_name"
-            date-key="recycle_time"
+            date-key="recycle_asset_date"
             empty-text="暂无回收记录"
           />
         </DashboardStatCard>
       </el-col>
+    </el-row>
 
-      <!-- 资产状态全景卡片 -->
+    <!-- Row 2: 状态全景 + 趋势图 -->
+    <el-row class="grid-row" :gutter="16">
       <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
         <DashboardStatCard
           title="资产状态全景"
@@ -116,16 +92,55 @@
           <DashboardStatusOverview :status-overview="statusOverview" :chart-option="chartOption" />
         </DashboardStatCard>
       </el-col>
+      <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+        <DashboardTrendSection
+          :chart-option="trendChartOption"
+          :loading="trendLoading"
+          @month-change="handleMonthChange"
+        />
+      </el-col>
     </el-row>
+
+    <!-- Row 3: 部门分布 + 类型分布饼图 -->
+    <DashboardDistributionSection
+      :dept-pie-option="deptPieOption"
+      :type-pie-option="typePieOption"
+      :dept-loading="deptDistLoading"
+      :type-loading="typeDistLoading"
+    />
+
+    <!-- Row 4: 即将到期 + 维护提醒 -->
+    <DashboardAlertsSection
+      :expiring-assets="expiringAssets"
+      :maintenance-reminders="maintenanceReminders"
+      :expiring-loading="expiringLoading"
+      :maintenance-loading="maintenanceLoading"
+      @select-asset="handleSelectAsset"
+    />
+
+    <!-- 用户信息 -->
+    <DashboardUserInfo
+      :auth-info="authInfo"
+      :login-duration="loginDuration"
+      :current-time="currentTime"
+      :current-date="currentDate"
+      @logout="logout"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { useRouter } from 'vue-router'
 import DashboardStatCard from '@/components/commoncomponents/DashboardStatCard.vue'
 import DashboardUserInfo from '@/components/commoncomponents/DashboardUserInfo.vue'
 import DashboardRecentList from '@/components/commoncomponents/DashboardRecentList.vue'
-import { useDashboardPage } from '@/composables/useDashboardPage'
 import DashboardStatusOverview from '@/components/commoncomponents/DashboardStatusOverview.vue'
+import DashboardTrendSection from '@/components/DashboardTrendSection.vue'
+import DashboardDistributionSection from '@/components/DashboardDistributionSection.vue'
+import DashboardAlertsSection from '@/components/DashboardAlertsSection.vue'
+import { useDashboardPage } from '@/composables/useDashboardPage'
+
+const router = useRouter()
 
 const {
   authInfo,
@@ -134,18 +149,39 @@ const {
   loginDuration,
   distributeStats,
   recycleStats,
-  // wasteStats,
   recentOutAssets,
   recentRecycleAssets,
   refreshData,
   refreshRecycleData,
   logout,
   dashboardStore,
-  statusOverview, // [修复] 补充解构
-  chartOption, // [修复] 补充解构
-  loadError, // [修复] 新增
-  retryFetchDashboard, // [修复] 新增
+  statusOverview,
+  chartOption,
+  loadError,
+  retryFetchDashboard,
+  assetTrend: _assetTrend,
+  departmentDistribution: _departmentDistribution,
+  assetTypeDistribution: _assetTypeDistribution,
+  expiringAssets,
+  maintenanceReminders,
+  trendLoading,
+  deptDistLoading,
+  typeDistLoading,
+  expiringLoading,
+  maintenanceLoading,
+  trendChartOption,
+  deptPieOption,
+  typePieOption,
 } = useDashboardPage()
+
+const handleMonthChange = (dateRange: string) => {
+  const [start_date, end_date] = dateRange.split('|')
+  dashboardStore.fetchAssetTrend({ start_date, end_date })
+}
+
+const handleSelectAsset = (assetCode: string) => {
+  router.push(`/main/assetdetails/${assetCode}`)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -158,9 +194,7 @@ const {
   box-sizing: border-box;
   background: $background-color;
 
-  .top-row,
-  .bottom-row {
-    height: calc(50% - 8px);
+  .grid-row {
     margin-bottom: 16px;
   }
 
@@ -174,35 +208,8 @@ const {
     &:hover {
       box-shadow: $card-hover-shadow;
     }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      font-weight: 600;
-      color: $white;
-      padding: 16px 20px;
-      border-radius: 12px 12px 0 0;
-
-      .user-info-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .el-icon {
-        font-size: 18px;
-      }
-
-      .refresh-btn {
-        margin-left: auto;
-        color: $white;
-      }
-    }
   }
 
-  // 资产发放卡片样式
   .distribute-card {
     background: var(--gradient-purple);
 
@@ -212,7 +219,6 @@ const {
     }
   }
 
-  // 资产回收卡片样式
   .recycle-card {
     background: var(--gradient-cyan);
 
@@ -222,8 +228,7 @@ const {
     }
   }
 
-  // 其他资产信息卡片样式
-  .other-info-card {
+  .status-overview-card {
     background: var(--gradient-green);
 
     :deep(.el-card__header) {
@@ -232,64 +237,6 @@ const {
     }
   }
 
-  .waste-overview {
-    h4 {
-      margin: 0 0 16px 0;
-      font-size: 14px;
-      opacity: 0.9;
-      font-weight: 500;
-    }
-
-    .waste-chart {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-
-      .waste-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-
-        .waste-bar {
-          flex: 1;
-          height: 24px;
-          border-radius: 4px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: $white;
-          font-size: 13px;
-          font-weight: 600;
-          min-width: 40px;
-
-          &.pending {
-            background: rgba(230, 162, 60, 0.8);
-          }
-
-          &.wasted {
-            background: rgba(245, 108, 108, 0.8);
-          }
-        }
-
-        .waste-label {
-          width: 45px;
-          font-size: 13px;
-          opacity: 0.9;
-        }
-      }
-    }
-
-    .waste-summary {
-      margin-top: 16px;
-      padding-top: 8px;
-      border-top: 1px solid var(--overlay-white-medium);
-      text-align: center;
-      font-size: 13px;
-      opacity: 0.9;
-    }
-  }
-
-  // 将原本泄漏到 .dashboard-page-content 外的 ::deep() 规则移入
   :deep(.el-card__header) {
     padding: 16px 20px;
     border-bottom: 1px solid var(--overlay-white-medium);
@@ -301,36 +248,21 @@ const {
     overflow-y: auto;
   }
 
-  /**
-   * 响应式布局优化
-   *
-   * 断点说明：
-   * - < 768px (xs/sm): 移动端，单列布局，调整字体和间距
-   * - 768px - 991px (md): 平板端，保持单列但增加间距
-   * - ≥ 992px (lg/xl): 桌面端，双列布局
-   */
-
-  /* 平板端适配 (768px - 991px) */
   @media (max-width: 991px) {
-    .top-row,
-    .bottom-row {
-      height: auto; // 取消固定高度，允许内容自适应
-      min-height: calc(50% - 8px);
+    .grid-row {
+      margin-bottom: 16px;
     }
 
     .info-card {
-      margin-bottom: 16px; // 增加卡片间距
+      margin-bottom: 16px;
     }
   }
 
-  /* 移动端适配 (< 768px) */
   @media (max-width: 767px) {
     padding: 12px;
 
-    .top-row,
-    .bottom-row {
-      height: auto;
-      margin-bottom: 0;
+    .grid-row {
+      margin-bottom: 12px;
     }
 
     .info-card {
@@ -340,66 +272,12 @@ const {
       .card-header {
         padding: 12px 16px;
         border-radius: 8px 8px 0 0;
-
-        .el-icon {
-          font-size: 16px;
-        }
-      }
-    }
-
-    // 统计区域响应式调整
-    .statistics {
-      flex-wrap: wrap;
-      gap: 16px;
-      margin-bottom: 16px;
-
-      .stat-item {
-        flex: 1;
-        min-width: 80px;
-
-        .stat-number {
-          font-size: 24px; // 缩小字体
-        }
-
-        .stat-label {
-          font-size: 12px;
-        }
-      }
-    }
-
-    // 报废概览响应式调整
-    .waste-overview {
-      .waste-chart {
-        .waste-item {
-          .waste-bar {
-            height: 20px;
-            font-size: 12px;
-          }
-        }
       }
     }
   }
 
-  /* 小屏移动端适配 (< 480px) */
   @media (max-width: 479px) {
     padding: 8px;
-
-    .statistics {
-      .stat-item {
-        .stat-number {
-          font-size: 20px;
-        }
-      }
-    }
-  }
-}
-// 资产状态全景卡片样式
-.status-overview-card {
-  background: var(--gradient-green);
-
-  :deep(.el-card__header) {
-    background: var(--overlay-white-light);
-    border-bottom: 1px solid var(--overlay-white-medium);
   }
 }
 </style>

@@ -28,7 +28,8 @@ import { ElMessage } from 'element-plus'
 import { useDashboardStore } from '@/stores/dashboard'
 import { useAuthStore } from '@/stores/auth'
 import type { AuthInfo } from '@/types/authuser'
-import type { EChartsOption } from 'echarts' // [新增] ECharts 图表配置类型
+import type { EChartsOption } from 'echarts'
+import { useDashboardCharts } from '@/composables/useDashboardCharts'
 
 export function useDashboardPage() {
   const dashboardStore = useDashboardStore()
@@ -77,6 +78,25 @@ export function useDashboardPage() {
   const statusOverview = computed(() => dashboardStore.statusOverview)
   const recentOutAssets = computed(() => dashboardStore.recentOutAssets)
   const recentRecycleAssets = computed(() => dashboardStore.recentRecycleAssets)
+
+  // [M-10] 新增仪表盘数据透传
+  const assetTrend = computed(() => dashboardStore.assetTrend)
+  const departmentDistribution = computed(() => dashboardStore.departmentDistribution)
+  const assetTypeDistribution = computed(() => dashboardStore.assetTypeDistribution)
+  const expiringAssets = computed(() => dashboardStore.expiringAssets)
+  const maintenanceReminders = computed(() => dashboardStore.maintenanceReminders)
+  const trendLoading = computed(() => dashboardStore.trendLoading)
+  const deptDistLoading = computed(() => dashboardStore.deptDistLoading)
+  const typeDistLoading = computed(() => dashboardStore.typeDistLoading)
+  const expiringLoading = computed(() => dashboardStore.expiringLoading)
+  const maintenanceLoading = computed(() => dashboardStore.maintenanceLoading)
+
+  // [M-10] 图表配置 Composable
+  const { trendChartOption, deptPieOption, typePieOption } = useDashboardCharts(
+    assetTrend,
+    departmentDistribution,
+    assetTypeDistribution,
+  )
 
   /**
    * [新增] 环形图配置
@@ -237,7 +257,22 @@ export function useDashboardPage() {
     dashboardStore,
     statusOverview,
     chartOption,
-    loadError, // [修复] 新增
-    retryFetchDashboard, // [修复] 新增
+    loadError,
+    retryFetchDashboard,
+    // [M-10] 新增仪表盘数据 + loading
+    assetTrend,
+    departmentDistribution,
+    assetTypeDistribution,
+    expiringAssets,
+    maintenanceReminders,
+    trendLoading,
+    deptDistLoading,
+    typeDistLoading,
+    expiringLoading,
+    maintenanceLoading,
+    // [M-10] 图表配置
+    trendChartOption,
+    deptPieOption,
+    typePieOption,
   }
 }

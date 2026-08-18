@@ -1,21 +1,21 @@
 /**
- * @file 仪表盘 Store，管理概览数据、发放/回收记录、统计计算与缓存
+ * @file 仪表盘 Store — 概览、记录、趋势、分布、告警
  * @module stores/dashboard
- * @exports
- *   - useDashboardStore: 仪表盘数据状态 Store
- * @callers
- *   - composables/useDashboardPage.ts
- *   - components/DashboardPage.vue
- * @dependsOn
- *   - api/dashboard: 仪表盘 API 接口
- *   - types/dashboard: 仪表盘相关类型定义
- *   - utils/statusMapping: 状态颜色映射工具
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { isAxiosError } from 'axios'
 import { dashboardAPI } from '@/api/dashboard'
-import type { DashboardOverview, OutAssetRecord, RecycleAssetRecord } from '@/types/dashboard'
+import type {
+  DashboardOverview,
+  OutAssetRecord,
+  RecycleAssetRecord,
+  AssetTrendData,
+  ExpiringAsset,
+  MaintenanceReminder,
+  DepartmentDistributionItem,
+  AssetTypeDistributionItem,
+} from '@/types/dashboard'
 import { ElMessage } from 'element-plus'
 import {
   getStatusColor as getStatusColorFromMapping,
@@ -37,11 +37,26 @@ export const useDashboardStore = defineStore('dashboard', () => {
   // 状态 - 最近回收记录
   const recentRecycleAssets = ref<RecycleAssetRecord[]>([])
 
+  // [M-10] 新增5个仪表盘数据状态
+  const assetTrend = ref<AssetTrendData[]>([])
+  const departmentDistribution = ref<DepartmentDistributionItem[]>([])
+  const assetTypeDistribution = ref<AssetTypeDistributionItem[]>([])
+  const expiringAssets = ref<ExpiringAsset[]>([])
+  const maintenanceReminders = ref<MaintenanceReminder[]>([])
+
   // 状态 - 加载状态
   // [MR-10] loading 已删除 — 仅与旧 stats 关联
   const overviewLoading = ref(false)
   const outAssetsLoading = ref(false)
   const recycleAssetsLoading = ref(false)
+  const trendLoading = ref(false)
+  const deptDistLoading = ref(false)
+  const typeDistLoading = ref(false)
+  const expiringLoading = ref(false)
+  const maintenanceLoading = ref(false)
+
+  // [M-10] 竞态保护：trend 请求计数器，仅最后一次请求结果生效
+  let trendRequestId = 0
 
   // 状态 - 最后更新时间
   // [MR-10] lastUpdateTime 已删除 — 仅与旧 stats 关联，overviewLastUpdateTime 独立保留
@@ -267,6 +282,118 @@ export const useDashboardStore = defineStore('dashboard', () => {
   }
 
   /**
+   * [M-10] 获取资产趋势数据（带竞态保护）
+   * @param params 可选 start_date/end_date，不传时回退到最近30天
+   */
+  const fetchAssetTrend = async (params?: { start_date?: string; end_date?: string }) => {
+    trendLoading.value = true
+    const requestId = ++trendRequestId
+    try {
+      const data = await dashboardAPI.getAssetTrend(params)
+      // 仅最后一次请求的结果生效，丢弃过期响应
+      if (requestId === trendRequestId) {
+        assetTrend.value = data
+      }
+      return data
+    } catch (error) {
+      // 仅最新请求的错误才展示，过期请求的错误静默丢弃
+      if (requestId === trendRequestId) {
+        console.error('获取资产趋势数据失败:', error)
+        if (!isAxiosError(error)) {
+          ElMessage.error((error as Error).message || '获取资产趋势数据失败')
+        }
+      }
+      throw error
+    } finally {
+      // 仅最新请求才清除 loading，避免中间态闪烁
+      if (requestId === trendRequestId) {
+        trendLoading.value = false
+      }
+    }
+  }
+
+  /**
+   * [M-10] 获取部门资产分布
+   */
+  const fetchDepartmentDistribution = async () => {
+    deptDistLoading.value = true
+    try {
+      const data = await dashboardAPI.getDepartmentDistribution()
+      departmentDistribution.value = data
+      return data
+    } catch (error) {
+      console.error('获取部门分布数据失败:', error)
+      if (!isAxiosError(error)) {
+        ElMessage.error((error as Error).message || '获取部门分布数据失败')
+      }
+      throw error
+    } finally {
+      deptDistLoading.value = false
+    }
+  }
+
+  /**
+   * [M-10] 获取资产类型分布
+   */
+  const fetchAssetTypeDistribution = async () => {
+    typeDistLoading.value = true
+    try {
+      const data = await dashboardAPI.getAssetTypeDistribution()
+      assetTypeDistribution.value = data
+      return data
+    } catch (error) {
+      console.error('获取类型分布数据失败:', error)
+      if (!isAxiosError(error)) {
+        ElMessage.error((error as Error).message || '获取类型分布数据失败')
+      }
+      throw error
+    } finally {
+      typeDistLoading.value = false
+    }
+  }
+
+  /**
+   * [M-10] 获取即将到期资产
+   * @param days 查询天数范围，默认30天
+   */
+  const fetchExpiringAssets = async (days?: number) => {
+    expiringLoading.value = true
+    try {
+      const data = await dashboardAPI.getExpiringAssets(days)
+      expiringAssets.value = data
+      return data
+    } catch (error) {
+      console.error('获取即将到期资产失败:', error)
+      if (!isAxiosError(error)) {
+        ElMessage.error((error as Error).message || '获取即将到期资产失败')
+      }
+      throw error
+    } finally {
+      expiringLoading.value = false
+    }
+  }
+
+  /**
+   * [M-10] 获取维护提醒
+   */
+  const fetchMaintenanceReminders = async () => {
+    maintenanceLoading.value = true
+    try {
+      const data = await dashboardAPI.getMaintenanceReminders()
+      maintenanceReminders.value = data
+      return data
+    } catch (error) {
+      console.error('获取维护提醒失败:', error)
+      if (!isAxiosError(error)) {
+        ElMessage.error((error as Error).message || '获取维护提醒失败')
+      }
+      throw error
+    } finally {
+      maintenanceLoading.value = false
+    }
+  }
+
+  /**
    * 刷新所有数据
    * @returns Promise 数组
    */
@@ -275,19 +402,27 @@ export const useDashboardStore = defineStore('dashboard', () => {
       fetchDashboardOverview(true),
       fetchRecentOutAssets(),
       fetchRecentRecycleAssets(),
+      fetchAssetTrend(),
+      fetchDepartmentDistribution(),
+      fetchAssetTypeDistribution(),
+      fetchExpiringAssets(),
+      fetchMaintenanceReminders(),
     ])
   }
 
   /**
    * 初始化所有数据
    */
-  // initDashboardData catch 块重构
   const initDashboardData = async () => {
-    // [修复] 移除 catch 吞错，让错误冒泡到 composable 层
     await Promise.all([
       fetchDashboardOverview(),
       fetchRecentOutAssets(5),
       fetchRecentRecycleAssets(5),
+      fetchAssetTrend(),
+      fetchDepartmentDistribution(),
+      fetchAssetTypeDistribution(),
+      fetchExpiringAssets(),
+      fetchMaintenanceReminders(),
     ])
   }
 
@@ -325,30 +460,40 @@ export const useDashboardStore = defineStore('dashboard', () => {
    * 工具方法 - 清除缓存
    */
   const clearCache = () => {
-    // [MR-10] stats.value 和 lastUpdateTime 已删除
     overview.value = null
     recentOutAssets.value = []
     recentRecycleAssets.value = []
+    assetTrend.value = []
+    departmentDistribution.value = []
+    assetTypeDistribution.value = []
+    expiringAssets.value = []
+    maintenanceReminders.value = []
     overviewLastUpdateTime.value = null
   }
 
   return {
     // 状态
-    // [MR-10] stats 已删除 — DashboardStats 类型废弃
     overview,
     recentOutAssets,
     recentRecycleAssets,
-    // [新增] 状态全景
+    assetTrend,
+    departmentDistribution,
+    assetTypeDistribution,
+    expiringAssets,
+    maintenanceReminders,
     statusOverview,
-    // [MR-10] loading 已删除 — 仅与旧 stats 关联
+    // 加载状态
     overviewLoading,
     outAssetsLoading,
     recycleAssetsLoading,
-    // [MR-10] lastUpdateTime 已删除 — 仅与旧 stats 关联
+    trendLoading,
+    deptDistLoading,
+    typeDistLoading,
+    expiringLoading,
+    maintenanceLoading,
     overviewLastUpdateTime,
 
     // 计算属性
-    // [MR-10] assetSummary / monthlyActivity / departmentDistribution / statusDistribution / valueStats 已删除
     distributeStats,
     recycleStats,
     wasteStats,
@@ -357,6 +502,11 @@ export const useDashboardStore = defineStore('dashboard', () => {
     fetchDashboardOverview,
     fetchRecentOutAssets,
     fetchRecentRecycleAssets,
+    fetchAssetTrend,
+    fetchDepartmentDistribution,
+    fetchAssetTypeDistribution,
+    fetchExpiringAssets,
+    fetchMaintenanceReminders,
     refreshStats,
     initDashboardData,
     clearCache,

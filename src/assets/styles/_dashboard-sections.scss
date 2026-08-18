@@ -1,0 +1,25 @@
+// 仪表盘 Section 卡片共享样式
+// 用于 DashboardTrendSection / DashboardDistributionSection / DashboardAlertsSection
+
+$section-card-bg: #fff;
+$section-card-radius: 12px;
+$section-card-padding-x: 20px;
+$section-card-padding-y: 16px;
+$section-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+$section-title-color: #1f2937;
+$section-title-size: 14px;
+
+@mixin section-card {
+  background: $section-card-bg;
+  border-radius: $section-card-radius;
+  padding: $section-card-padding-y $section-card-padding-x;
+  box-shadow: $section-card-shadow;
+  height: 100%;
+}
+
+@mixin section-title {
+  margin: 0 0 12px;
+  font-size: $section-title-size;
+  font-weight: 600;
+  color: $section-title-color;
+}
