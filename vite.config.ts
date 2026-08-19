@@ -125,7 +125,7 @@ export default defineConfig(({ mode }) => {
     // Build optimizations
     build: {
       target: 'es2020',
-      cssCodeSplit: false,
+      cssCodeSplit: true,
       sourcemap: false,
       minify: 'terser',
       terserOptions: {
