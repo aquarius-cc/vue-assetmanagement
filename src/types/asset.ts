@@ -22,6 +22,7 @@ import type { EmployeeExtended } from '@/types/user'
 import type { Contract } from '@/types/contract'
 import type { Storage } from '@/types/storage'
 import type { HardDiskSN } from '@/types/harddisksn'
+import type { PaginatedResponse } from '@/types/common'
 
 // ==================== 枚举类型定义 ====================
 
@@ -294,28 +295,15 @@ export interface AssetQueryParams {
 
 /**
  * 资产列表响应接口
+ * 对齐后端 CustomPageNumberPagination 返回的完整分页字段
  */
-export interface AssetListResponse {
-  /** 总记录数 */
-  count: number
-  /** 下一页链接 */
-  next: string | null
-  /** 上一页链接 */
-  previous: string | null
-  /** 资产列表数据 */
-  results: AssetDetail[]
-}
+export type AssetListResponse = PaginatedResponse<AssetDetail>
 
-export interface AssetListSimpleResponse {
-  /** 总记录数 */
-  count: number
-  /** 下一页链接 */
-  next: string | null
-  /** 上一页链接 */
-  previous: string | null
-  /** 资产列表数据 */
-  results: AssetSimpleReturn[]
-}
+/**
+ * 资产简要列表响应接口
+ * 对齐后端 CustomPageNumberPagination 返回的完整分页字段
+ */
+export type AssetListSimpleResponse = PaginatedResponse<AssetSimpleReturn>
 
 /**
  * 资产统计接口

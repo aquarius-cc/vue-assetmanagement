@@ -18,6 +18,7 @@
 
 import type { Employee } from '@/types/user'
 import type { Contract } from '@/types/contract'
+import type { PaginatedResponse } from '@/types/common'
 
 // ==================== 枚举类型定义 ====================
 
@@ -161,17 +162,10 @@ export interface RecyclableOutAsset extends OutAsset {
   } | null
 }
 /**
- * 可回收出库资产列表响应接口 */
-export interface RecyclableOutAssetResponse {
-  /** 总记录数 */
-  count: number
-  /** 下一页链接*/
-  next: string | null
-  /** 上一页链接*/
-  previous: string | null
-  /** 可回收出库资产列表数据*/
-  results: RecyclableOutAsset[]
-}
+ * 可回收出库资产列表响应接口
+ * 对齐后端 CustomPageNumberPagination 返回的完整分页字段
+ */
+export type RecyclableOutAssetResponse = PaginatedResponse<RecyclableOutAsset>
 
 /**
  * 员工自动完成项接口 * 用于 el-autocomplete 下拉建议展示
@@ -243,17 +237,9 @@ export interface OutAssetQueryParams {
 
 /**
  * 出库资产列表响应接口
+ * 对齐后端 CustomPageNumberPagination 返回的完整分页字段
  */
-export interface OutAssetResponse {
-  /** 总记录数 */
-  count: number
-  /** 下一页链接*/
-  next: string | null
-  /** 上一页链接*/
-  previous: string | null
-  /** 出库资产列表数据 */
-  results: OutAssetDetail[]
-}
+export type OutAssetResponse = PaginatedResponse<OutAssetDetail>
 
 /**
  * 资产自动完成接口
