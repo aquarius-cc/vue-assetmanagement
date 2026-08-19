@@ -8,7 +8,7 @@
  *   - REFRESH_TIMEOUT / REFRESH_NETWORK_RETRY / REFRESH_RETRY_DELAY: 刷新参数
  */
 
-export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1'
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
 
 export const TIMEOUT = 15_000
 
