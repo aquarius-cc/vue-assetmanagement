@@ -156,6 +156,7 @@ import type { ColumnConfig } from '@/utils/excelExporter'
 import { formatDate, getAssetStatusText } from '@/utils/Format'
 import { usePermission } from '@/composables/usePermission'
 import { useAssetStatusChecks } from '@/composables/useAssetStatus'
+import { BASE_URL } from '@/api/config'
 // import { useOperationGuard } from '@/composables/useOperationGuard'
 
 // ===== 路由与状态管理 =====
@@ -293,8 +294,7 @@ onMounted(async () => {
 
   // CRIT-6: 生成二维码 URL
   if (assetDetail.value?.recordcode) {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
-    qrCodeUrl.value = `${baseUrl}/assets/${assetDetail.value.recordcode}/qr-code-image/`
+    qrCodeUrl.value = `${BASE_URL}/assets/${assetDetail.value.recordcode}/qr-code-image/`
   }
 })
 
