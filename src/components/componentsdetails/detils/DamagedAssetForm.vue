@@ -46,13 +46,13 @@
             <el-form-item label="资产名称" prop="asset_name_display">
               <el-autocomplete
                 v-model="formData.asset_name_display"
-                :fetch-suggestions="fetchAssetSuggestions"
+                :fetch-suggestions="assetLinkage.fetchSuggestions"
                 placeholder="请输入资产名称"
                 clearable
                 :disabled="isEditMode"
-                @select="handleAssetSelect"
-                @change="handleAssetNameChange"
-                @blur="handleAssetNameBlur"
+                @select="assetLinkage.handleSelect"
+                @change="assetLinkage.handleNameChange"
+                @blur="assetLinkage.handleNameBlur"
               >
                 <template #default="{ item }">
                   <div>
@@ -81,12 +81,12 @@
             <el-form-item label="合同名称" prop="contract_name_display">
               <el-autocomplete
                 v-model="formData.contract_name_display"
-                :fetch-suggestions="fetchContractSuggestions"
+                :fetch-suggestions="contractLinkage.fetchSuggestions"
                 placeholder="请输入合同名称"
                 clearable
-                @select="handleContractSelect"
-                @change="handleContractNameChange"
-                @blur="handleContractNameBlur"
+                @select="contractLinkage.handleSelect"
+                @change="contractLinkage.handleNameChange"
+                @blur="contractLinkage.handleNameBlur"
               >
                 <template #default="{ item }">
                   <div>合同名称：{{ item.contract_name }} / 合同编码：{{ item.contract_code }}</div>
@@ -111,12 +111,12 @@
             <el-form-item label="仓库名称" prop="storage_name_display">
               <el-autocomplete
                 v-model="formData.storage_name_display"
-                :fetch-suggestions="fetchStorageSuggestions"
+                :fetch-suggestions="storageLinkage.fetchSuggestions"
                 placeholder="请输入仓库名称"
                 clearable
-                @select="handleStorageSelect"
-                @change="handleStorageNameChange"
-                @blur="handleStorageNameBlur"
+                @select="storageLinkage.handleSelect"
+                @change="storageLinkage.handleNameChange"
+                @blur="storageLinkage.handleNameBlur"
               >
                 <template #default="{ item }">
                   <div>
@@ -212,7 +212,7 @@ import type { DamagedAssetCreateForm } from '@/types/damagedasset'
 import type { AssetDetail } from '@/types/asset'
 import type { Contract } from '@/types/contract'
 import type { Storage } from '@/types/storage'
-import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
+import { useFormLinkage } from '@/composables/useFormLinkage'
 import ScrapableAssetsSearch from '@/components/componentsdetails/detils/detilschildcomponents/ScrapableAssetsSearch.vue'
 
 // ===== 状态与实例 =====
@@ -277,185 +277,50 @@ const rules = {
   ],
 }
 
-// ===== 资产名称联动 =====
-interface AssetSuggestion {
-  value: string
-  asset_name: string
-  asset_code: string
-  recordcode: string
-  asset_specification: string | null
-}
-
-const fetchAssetSuggestions = createSuggestionFetcher<AssetDetail, AssetSuggestion>({
-  fetchData: (query: string) => assetStore.getByName(query),
-  transform: (asset: AssetDetail): AssetSuggestion => ({
-    value: asset.asset_name,
-    asset_name: asset.asset_name,
-    asset_code: asset.asset_code,
-    recordcode: asset.recordcode,
-    asset_specification: asset.asset_specification,
-  }),
+// ===== 字段联动（DR-1: 消除 3 组重复的 select/change/blur 模式）=====
+const assetLinkage = useFormLinkage<AssetDetail>({
+  formData,
+  displayField: 'asset_name_display',
+  codeField: 'damaged_asset_code',
+  fetcher: (q) => assetStore.getByName(q),
+  getDisplayValue: (item) => String(item.asset_name ?? ''),
+  getCodeValue: (item) => String(item.recordcode ?? ''),
 })
 
-const handleAssetSelect = (item: AssetSuggestion) => {
-  formData.asset_name_display = item.asset_name
-  // [修复] asset_recordcode 提交的是资产 recordcode（ASSET-xxx），不是业务码 asset_code
-  formData.damaged_asset_code = item.recordcode
-}
+const contractLinkage = useFormLinkage<Contract>({
+  formData,
+  displayField: 'contract_name_display',
+  codeField: 'damaged_asset_contract_code',
+  fetcher: (q) => contractStore.getByName(q),
+  getDisplayValue: (item) => String(item.contract_name ?? ''),
+  getCodeValue: (item) => String(item.contract_code ?? ''),
+})
 
-/**
- * 处理资产搜索组件的选择事件
- * 将选中的资产数据回填到表单
- * @param asset - 选中的资产详惀 */
+const storageLinkage = useFormLinkage<Storage>({
+  formData,
+  displayField: 'storage_name_display',
+  codeField: 'damaged_asset_storage_code',
+  fetcher: async (q) => {
+    const r = await storageStore.getList({ search: q, page: 1, page_size: 20 })
+    return r.results
+  },
+  getDisplayValue: (item) => String(item.storage_name ?? ''),
+  getCodeValue: (item) => String(item.storage_code ?? ''),
+})
+
+// 资产搜索组件回调（专属 ScrapableAssetsSearch，绕过 linkage composable 直接写 formData）
 const handleAssetSearchSelect = (asset: AssetDetail) => {
   formData.asset_name_display = asset.asset_name
-  // [修复] asset_recordcode 提交的是资产 recordcode（ASSET-xxx），不是业务码 asset_code
   formData.damaged_asset_code = asset.recordcode
-  // 如果资产有关联的仓库信息，也自动回填
   if (asset.asset_storage) {
     formData.storage_name_display = asset.asset_storage.storage_name || ''
     formData.damaged_asset_storage_code = asset.asset_storage.storage_code || ''
   }
-  // 如果资产有关联的合同信息，也自动回填
   if (asset.asset_contract) {
     formData.contract_name_display = asset.asset_contract.contract_name || ''
     formData.damaged_asset_contract_code = asset.asset_contract.contract_code || ''
   }
   ElMessage.success(`已选择资产${asset.asset_name}`)
-}
-
-const handleAssetNameChange = (value: string) => {
-  if (!value.trim()) {
-    formData.damaged_asset_code = ''
-  }
-}
-
-const handleAssetNameBlur = async (event: FocusEvent) => {
-  const currentValue = (event.target as HTMLInputElement).value
-  if (!currentValue.trim()) {
-    formData.damaged_asset_code = ''
-    return
-  }
-  // 如果编码已匹配，无需再次查询
-  if (formData.damaged_asset_code) return
-  try {
-    const assets = await assetStore.getByName(currentValue.trim())
-    if (assets && assets.length > 0) {
-      formData.asset_name_display = assets[0].asset_name
-      // [修复] asset_recordcode 提交的是资产 recordcode（ASSET-xxx），不是业务码 asset_code
-      formData.damaged_asset_code = assets[0].recordcode
-    } else {
-      formData.damaged_asset_code = ''
-      ElMessage.warning('未找到匹配的资产')
-    }
-  } catch {
-    formData.damaged_asset_code = ''
-  }
-}
-
-// ===== 合同名称联动 =====
-interface ContractSuggestion {
-  value: string
-  contract_name: string
-  contract_code: string
-}
-
-const fetchContractSuggestions = createSuggestionFetcher<Contract, ContractSuggestion>({
-  fetchData: (query: string) => contractStore.getByName(query),
-  transform: (contract: Contract): ContractSuggestion => ({
-    value: contract.contract_name,
-    contract_name: contract.contract_name,
-    contract_code: contract.contract_code,
-  }),
-})
-
-const handleContractSelect = (item: ContractSuggestion) => {
-  formData.contract_name_display = item.contract_name
-  formData.damaged_asset_contract_code = item.contract_code
-}
-
-const handleContractNameChange = (value: string) => {
-  if (!value.trim()) {
-    formData.damaged_asset_contract_code = ''
-  }
-}
-
-const handleContractNameBlur = async (event: FocusEvent) => {
-  const currentValue = (event.target as HTMLInputElement).value
-  if (!currentValue.trim()) {
-    formData.damaged_asset_contract_code = ''
-    return
-  }
-  if (formData.damaged_asset_contract_code) return
-  try {
-    const contracts = await contractStore.getByName(currentValue.trim())
-    if (contracts && contracts.length > 0) {
-      formData.contract_name_display = contracts[0].contract_name
-      formData.damaged_asset_contract_code = contracts[0].contract_code
-    } else {
-      formData.damaged_asset_contract_code = ''
-      ElMessage.warning('未找到匹配的合同')
-    }
-  } catch {
-    formData.damaged_asset_contract_code = ''
-  }
-}
-
-// ===== 仓库名称联动 =====
-interface StorageSuggestion {
-  value: string
-  storage_name: string
-  storage_code: string
-  storage_address: string | null
-}
-
-const fetchStorageSuggestions = createSuggestionFetcher<Storage, StorageSuggestion>({
-  fetchData: async (query: string) => {
-    const response = await storageStore.getList({ search: query, page: 1, page_size: 20 })
-    return response
-  },
-  transform: (storage: Storage): StorageSuggestion => ({
-    value: storage.storage_name,
-    storage_name: storage.storage_name,
-    storage_code: storage.storage_code,
-    storage_address: storage.storage_address,
-  }),
-})
-
-const handleStorageSelect = (item: StorageSuggestion) => {
-  formData.storage_name_display = item.storage_name
-  formData.damaged_asset_storage_code = item.storage_code
-}
-
-const handleStorageNameChange = (value: string) => {
-  if (!value.trim()) {
-    formData.damaged_asset_storage_code = ''
-  }
-}
-
-const handleStorageNameBlur = async (event: FocusEvent) => {
-  const currentValue = (event.target as HTMLInputElement).value
-  if (!currentValue.trim()) {
-    formData.damaged_asset_storage_code = ''
-    return
-  }
-  if (formData.damaged_asset_storage_code) return
-  try {
-    const storages = await storageStore.getList({
-      search: currentValue.trim(),
-      page: 1,
-      page_size: 20,
-    })
-    if (storages && storages.length > 0) {
-      formData.storage_name_display = storages[0].storage_name
-      formData.damaged_asset_storage_code = storages[0].storage_code
-    } else {
-      formData.damaged_asset_storage_code = ''
-      ElMessage.warning('未找到匹配的仓库')
-    }
-  } catch {
-    formData.damaged_asset_storage_code = ''
-  }
 }
 
 // ===== 编辑模式：加载现有数捀=====
