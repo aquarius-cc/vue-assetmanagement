@@ -95,6 +95,7 @@
               >
                 <el-option label="领用" value="receive" />
                 <el-option label="借用" value="borrow" />
+                <el-option label="重新发放" value="reissue" />
               </el-select>
             </el-form-item>
           </el-col>

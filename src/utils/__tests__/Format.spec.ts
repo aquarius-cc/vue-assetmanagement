@@ -289,6 +289,7 @@ describe('Format', () => {
     it('maps out asset types', () => {
       expect(outassetTypeMapping.receive).toBe('领用')
       expect(outassetTypeMapping.borrow).toBe('借用')
+      expect(outassetTypeMapping.reissue).toBe('重新发放')
     })
   })
 

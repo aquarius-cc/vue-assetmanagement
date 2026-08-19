@@ -29,6 +29,7 @@ import type { Contract } from '@/types/contract'
 export enum OutAssetType {
   RECEIVE = 'receive',
   BORROW = 'borrow',
+  REISSUE = 'reissue',
 }
 
 /**

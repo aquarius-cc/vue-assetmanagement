@@ -361,6 +361,7 @@ const transformAndValidateExcelDepartment = (
 const outassetTypeMapping: Record<string, string> = {
   receive: '领用',
   borrow: '借用',
+  reissue: '重新发放',
 }
 // 创建反向映射，将中文状态值转换为英文状态候// const reverseStatusMapping: Record<string, string> = {
 //   在职员工: 'active',
