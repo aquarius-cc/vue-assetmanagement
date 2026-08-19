@@ -123,6 +123,7 @@ import { outAssetAPI } from '@/api/outAsset'
 import { useOutAssetStore } from '@/stores/outAssetStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import type { OutAssetCreateForm } from '@/types/outasset'
+import { OutAssetType, OutAssetCurrentStatus } from '@/types/outasset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { OutAssetExcelRow } from '@/types/batch-import'
 
@@ -190,14 +191,14 @@ const importConfig: BatchImportConfig<OutAssetExcelRow, OutAssetCreateForm> = {
     }
 
     // 可选字段校验（如果有值）
-    const validStatuses = ['in_use', 'returned', 'lost', 'damaged']
-    if (item.outasset_current_status && !validStatuses.includes(item.outasset_current_status)) {
-      errors.outasset_current_status = '资产状态非法，可选：in_use / returned / lost / damaged'
+    const validStatuses = Object.values(OutAssetCurrentStatus)
+    if (item.outasset_current_status && !validStatuses.includes(item.outasset_current_status as OutAssetCurrentStatus)) {
+      errors.outasset_current_status = `资产状态非法，可选：${validStatuses.join(' / ')}`
     }
 
-    const validTypes = ['normal', 'scrap', 'transfer']
-    if (item.outasset_type && !validTypes.includes(item.outasset_type)) {
-      errors.outasset_type = '出库类型非法，可选：normal / scrap / transfer'
+    const validTypes = Object.values(OutAssetType)
+    if (item.outasset_type && !validTypes.includes(item.outasset_type as OutAssetType)) {
+      errors.outasset_type = `出库类型非法，可选：${validTypes.join(' / ')}`
     }
 
     if (item.return_date && !/^\d{4}-\d{2}-\d{2}$/.test(item.return_date.trim())) {
@@ -215,7 +216,7 @@ const importConfig: BatchImportConfig<OutAssetExcelRow, OutAssetCreateForm> = {
     // [HR-01] 后端 v1.1.0 改为 read_only，移除 outasset_manager_jobcode
     outasset_date: row.outasset_date.trim(),
     return_date: row.return_date?.trim() || '', // 改为空字符串
-    outasset_type: row.outasset_type?.trim() || 'normal',
+    outasset_type: row.outasset_type?.trim() || OutAssetType.RECEIVE,
     // [HR-01] 后端 v1.1.0 改为 read_only，移除 outasset_using_location
     outasset_description: row.outasset_description?.trim() || '', // 改为空字符串
   }),
@@ -260,7 +261,7 @@ const handleExportTemplate = async () => {
       资产状态: 'in_use',
       出库日期: '2025-06-01',
       预计返回日期: '2025-12-31',
-      出库类型: 'normal',
+      出库类型: 'receive',
       // [HR-01] 后端 v1.1.0 改为 read_only，移除使用位置示例
       资产描述: '用于项目测试',
       // 可选辅助列（推荐填写以便参考）
@@ -344,8 +345,8 @@ const headerExamples: HeaderExample[] = [
     headerName: '出库类型',
     field: 'outasset_type',
     required: false,
-    example: 'normal',
-    remark: 'normal/scrap/transfer',
+    example: 'receive',
+    remark: 'receive/borrow/reissue',
   },
   // [HR-01] 后端 v1.1.0 改为 read_only，移除使用位置表头说明
   {
@@ -377,7 +378,7 @@ const exampleRows = [
     // [HR-01] 后端 v1.1.0 改为 read_only，移除保管人工号
     outasset_date: '2025-06-01',
     outasset_status: 'in_use',
-    outasset_type: 'normal',
+    outasset_type: 'receive',
     // [HR-01] 后端 v1.1.0 改为 read_only，移除使用位置
     outasset_description: '用于项目测试',
   },
@@ -387,8 +388,8 @@ const exampleRows = [
     // [HR-01] 后端 v1.1.0 改为 read_only，移除申请人工号
     // [HR-01] 后端 v1.1.0 改为 read_only，移除保管人工号
     outasset_date: '2025-05-15',
-    outasset_status: 'returned',
-    outasset_type: 'transfer',
+    outasset_status: 'in_use',
+    outasset_type: 'borrow',
     // [HR-01] 后端 v1.1.0 改为 read_only，移除使用位置
     outasset_description: '临时调拨',
   },
