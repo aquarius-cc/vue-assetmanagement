@@ -74,13 +74,13 @@ describe('statusMapping', () => {
 
   describe('Repair status functions', () => {
     it('getRepairStatusTagType returns correct type', () => {
-      expect(getRepairStatusTagType('repairing')).toBe('warning')
+      expect(getRepairStatusTagType('in_progress')).toBe('warning')
       expect(getRepairStatusTagType('completed')).toBe('success')
       expect(getRepairStatusTagType('failed')).toBe('danger')
     })
 
     it('getRepairStatusText returns correct label', () => {
-      expect(getRepairStatusText('repairing')).toBe('维修中')
+      expect(getRepairStatusText('in_progress')).toBe('维修中')
       expect(getRepairStatusText('completed')).toBe('已完成')
       expect(getRepairStatusText('failed')).toBe('维修失败')
     })
@@ -178,7 +178,7 @@ describe('statusMapping', () => {
 
     it('REPAIR_STATUS_MAP has all required statuses', () => {
       expect(Object.keys(REPAIR_STATUS_MAP)).toHaveLength(3)
-      expect(REPAIR_STATUS_MAP).toHaveProperty('repairing')
+      expect(REPAIR_STATUS_MAP).toHaveProperty('in_progress')
       expect(REPAIR_STATUS_MAP).toHaveProperty('completed')
       expect(REPAIR_STATUS_MAP).toHaveProperty('failed')
     })

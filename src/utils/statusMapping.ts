@@ -61,12 +61,12 @@ export const APPROVAL_STATUS_MAP: Record<
   rejected: { label: '已拒绝', type: 'danger' },
 }
 
-// ===== 维修状态映射 =====
+// ===== 维修状态映射（对齐 RepairAsset.RepairStatus 枚举） =====
 export const REPAIR_STATUS_MAP: Record<
   string,
   { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
 > = {
-  repairing: { label: '维修中', type: 'warning' },
+  in_progress: { label: '维修中', type: 'warning' },
   completed: { label: '已完成', type: 'success' },
   failed: { label: '维修失败', type: 'danger' },
 }
