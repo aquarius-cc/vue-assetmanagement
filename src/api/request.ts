@@ -182,6 +182,21 @@ async function handleUnauthorized(error: unknown): Promise<unknown> {
 function pickErrorMessage(data: unknown): string {
   const obj = data as Record<string, unknown> | null
   const msg = obj?.detail ?? obj?.message ?? obj?.error
+  if (typeof msg === 'string' && msg !== '参数验证失败') return msg
+
+  const fieldErrors = obj?.data
+  if (fieldErrors && typeof fieldErrors === 'object' && !Array.isArray(fieldErrors)) {
+    const entries = Object.entries(fieldErrors as Record<string, unknown>)
+    if (entries.length > 0) {
+      return entries
+        .map(([field, msgs]) => {
+          const text = Array.isArray(msgs) ? msgs[0] : String(msgs)
+          return `${field}: ${text}`
+        })
+        .join(' | ')
+    }
+  }
+
   return typeof msg === 'string' ? msg : '请求失败'
 }
 
