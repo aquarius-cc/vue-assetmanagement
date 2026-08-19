@@ -1,11 +1,16 @@
 /**
- * @file Token 加密/解密工具，对 localStorage 中的 Token 进行 XOR 加密存储
+ * @file Token 混淆存储工具（非加密）
  * @module src/utils/tokenCrypto
- * @exports
- *   - setEncryptedToken: 存储加密后的 Token
- *   - getDecryptedToken: 获取解密后的 Token（含旧密钥兼容检测）
- *   - removeToken: 清除指定 Token
- *   - clearAllAuthTokens: 清除所有认证相关 Token
+ * @description
+ *   对 localStorage 中的 Token 进行 XOR + Base64 混淆。
+ *
+ *   ⚠️ 安全声明（H-2）：
+ *   - XOR 是可逆的，这不是加密，是混淆（obfuscation）。
+ *   - 密钥通过 import.meta.env 在构建时内联，可从 JS 包中提取。
+ *   - 真正的安全依赖：httpOnly cookie（PC 通道已实现）+ CSP 头 + 短生命周期 JWT。
+ *   - 移动端 bearer 通道的 token 暴露是 SPA 的固有限制。
+ *   - 本模块的作用：防止 casual inspection（如共用设备时的简单 localStorage 查看）。
+ *
  * @callers
  *   - stores/auth
  *   - composables/useNotification
@@ -30,11 +35,8 @@ if (CRYPTO_KEY.length < 16) {
   console.warn('[tokenCrypto] 加密密钥长度不足16字符，建议使用更长的密钥以提高安全性')
 }
 
-// 旧版本默认密钥（仅用于兼容性检测，不用于加密）
-const OLD_DEFAULT_KEY = 'asset_management_default_key_2024'
-
 /**
- * 简单的 XOR 加密
+ * XOR + Base64 混淆（非加密，见模块文档安全声明）
  * @param text - 要加密的文本
  * @param key - 加密密钥
  * @returns 加密后的文本（Base64 编码）
@@ -82,7 +84,7 @@ export function setEncryptedToken(key: string, value: string): void {
 }
 
 /**
- * 获取解密后的 Token
+ * 获取混淆后的 Token
  * @param key - localStorage 键名
  * @returns Token 值，如果解密失败返回 null（触发重新登录）
  */
@@ -96,22 +98,6 @@ export function getDecryptedToken(key: string): string | null {
     // 验证解密结果是否有效（JWT Token 应包含 . 分隔符，或长度足够）
     if (decrypted.includes('.') || decrypted.length > 20) {
       return decrypted
-    }
-
-    // 尝试使用旧默认密钥解密（兼容旧数据）
-    // 如果旧密钥能解密出有效token，说明是密钥变更前的数据
-    // 此时返回null，触发用户重新登录（更安全）
-    try {
-      const oldDecrypted = xorDecrypt(encrypted, OLD_DEFAULT_KEY)
-      if (oldDecrypted.includes('.') || oldDecrypted.length > 20) {
-        // 旧密钥解密成功，说明数据使用了不安全的旧密钥
-        // 返回null触发重新登录，确保使用新密钥加密
-        console.warn(`[tokenCrypto] 检测到使用旧密钥加密的 ${key}，将清除并要求重新登录`)
-        localStorage.removeItem(key)
-        return null
-      }
-    } catch {
-      // 旧密钥解密失败，忽略
     }
 
     // 解密结果无效，返回null触发重新登录

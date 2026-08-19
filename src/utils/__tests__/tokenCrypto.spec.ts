@@ -140,28 +140,6 @@ describe('tokenCrypto', () => {
       // Should return null because decrypted value is too short and doesn't contain '.'
       expect(result).toBeNull()
     })
-
-    it('handles old default key encryption and returns null', () => {
-      const key = 'test_token'
-      const oldKey = 'asset_management_default_key_2024'
-
-      // Encrypt with old key
-      const value = 'token_with_dot.valid'
-      let result = ''
-      for (let i = 0; i < value.length; i++) {
-        result += String.fromCharCode(value.charCodeAt(i) ^ oldKey.charCodeAt(i % oldKey.length))
-      }
-      const encryptedWithOldKey = btoa(encodeURIComponent(result))
-
-      localStorageMock.getItem.mockReturnValueOnce(encryptedWithOldKey)
-
-      const decrypted = getDecryptedToken(key)
-
-      // Should return null because old key was used
-      expect(decrypted).toBeNull()
-      // Should remove the token
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith(key)
-    })
   })
 
   describe('removeToken', () => {

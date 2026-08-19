@@ -15,6 +15,9 @@ coverage
 *.local
 .env.local
 .env.*.local
+.env.development
+.env.production
+.env.production.test
 
 # Legacy scaffold generated dir (start_django.py, since removed)
 asset_backend/

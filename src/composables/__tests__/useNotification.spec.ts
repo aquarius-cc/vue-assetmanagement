@@ -47,6 +47,7 @@ class MockWebSocket {
   static CLOSED = 3
 
   url = ''
+  protocol = ''
   readyState = MockWebSocket.OPEN
   onopen: (() => void) | null = null
   onmessage: ((event: { data: string }) => void) | null = null
@@ -57,8 +58,9 @@ class MockWebSocket {
   close = vi.fn()
   _id: number
 
-  constructor(url: string) {
+  constructor(url: string, protocols?: string | string[]) {
     this.url = url
+    this.protocol = Array.isArray(protocols) ? protocols[0] : protocols || ''
     this._id = wsIdCounter++
     wsInstances.push(this)
   }
@@ -320,7 +322,7 @@ describe('useNotification', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(wsInstances[0].url).toContain('mem-token')
+      expect(wsInstances[0].protocol).toBe('mem-token')
     })
 
     it('prefers authStore access token over localStorage', async () => {
@@ -334,7 +336,7 @@ describe('useNotification', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(wsInstances[0].url).toContain('store-token')
+      expect(wsInstances[0].protocol).toBe('store-token')
     })
 
     it('returns null and skips connect when authInfo is invalid JSON', async () => {

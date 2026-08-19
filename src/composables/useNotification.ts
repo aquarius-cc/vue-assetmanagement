@@ -98,9 +98,9 @@ export function useNotification() {
     const token = getAccessToken()
     if (!token) return
 
-    const url = `${WS_BASE_URL}/ws/notifications/${jobcode}/?token=${encodeURIComponent(token)}`
+    const url = `${WS_BASE_URL}/ws/notifications/${jobcode}/`
 
-    ws = new WebSocket(url)
+    ws = new WebSocket(url, [token])
 
     ws.onopen = () => {
       isConnected.value = true
