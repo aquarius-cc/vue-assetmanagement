@@ -16,6 +16,9 @@ coverage
 .env.local
 .env.*.local
 
+# Legacy scaffold generated dir (start_django.py, since removed)
+asset_backend/
+
 /cypress/videos/
 /cypress/screenshots/
 everything-claude-code/
