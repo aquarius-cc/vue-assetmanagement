@@ -19,6 +19,9 @@ coverage
 # Legacy scaffold generated dir (start_django.py, since removed)
 asset_backend/
 
+# Graphify analysis output (auto-generated, do not track)
+graphify-out/
+
 /cypress/videos/
 /cypress/screenshots/
 everything-claude-code/
