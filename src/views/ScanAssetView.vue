@@ -44,6 +44,13 @@
           <el-descriptions-item label="存放仓库">{{ storageName }}</el-descriptions-item>
           <el-descriptions-item label="资产分类">{{ typeName }}</el-descriptions-item>
           <el-descriptions-item label="使用人">{{ managerName }}</el-descriptions-item>
+          <el-descriptions-item label="使用地点">{{
+            asset.asset_using_location || '-'
+          }}</el-descriptions-item>
+          <el-descriptions-item label="入库日期">{{
+            asset.asset_entry_date || '-'
+          }}</el-descriptions-item>
+          <el-descriptions-item label="成色">{{ physicalGradeLabel }}</el-descriptions-item>
         </el-descriptions>
 
         <div class="action-buttons">
@@ -92,6 +99,7 @@ import { get } from '@/api/request'
 import { isAxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
 import type { AssetDetail } from '@/types/asset'
+import { getPhysicalGradeDisplay } from '@/utils/Format'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 
 const route = useRoute()
@@ -103,16 +111,16 @@ const recordcode = computed(() => route.params.recordcode as string)
 const loadError = ref(false)
 
 const storageName = computed(() => {
-  const storage = asset.value?.asset_storage as Record<string, unknown> | undefined
-  return (storage?.storage_name as string) || '-'
+  return (asset.value?.asset_storage_name as string) || '-'
 })
 const typeName = computed(() => {
-  const type = asset.value?.asset_type as Record<string, unknown> | undefined
-  return (type?.type_name as string) || '-'
+  return (asset.value?.asset_type_name as string) || '-'
 })
 const managerName = computed(() => {
-  const manager = asset.value?.asset_manager as Record<string, unknown> | undefined
-  return (manager?.employee_name as string) || '-'
+  return (asset.value?.asset_manager_name as string) || '-'
+})
+const physicalGradeLabel = computed(() => {
+  return getPhysicalGradeDisplay(asset.value?.physical_grade)
 })
 
 // 新增 retry 函数

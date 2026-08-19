@@ -3,6 +3,7 @@
  * @module types/asset
  * @exports
  *   - AssetCurrentStatus: 资产状态枚举
+ *   - PhysicalGrade: 资产物理成色枚举
  *   - ASSET_STATUS_DISPLAY_MAPPING: 资产状态中文映射
  *   - AssetCreateForm/AssetCreateFormExtended/AssetUpdateForm: 资产表单接口
  *   - AssetSimpleReturn/Asset/AssetDetail/AssetListItem: 资产数据接口
@@ -47,6 +48,17 @@ export enum AssetCurrentStatus {
   LOST = 'lost',
   DAMAGED = 'damaged',
   SCRAPPED = 'scrapped',
+}
+
+/**
+ * 资产物理成色枚举
+ * 与后端 Asset.PhysicalGrade 一致
+ */
+export enum PhysicalGrade {
+  EXCELLENT = 'excellent',
+  GOOD = 'good',
+  FAIR = 'fair',
+  POOR = 'poor',
 }
 
 // ==================== 基础接口定义 ====================
@@ -210,6 +222,8 @@ export interface Asset {
   asset_manager_jobcode: string | null
   /** 资产当前状态 */
   asset_current_status: AssetCurrentStatus
+  /** 物理成色 */
+  physical_grade: PhysicalGrade
   /** 资产描述 */
   asset_description: string | null
 }

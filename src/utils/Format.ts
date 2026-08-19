@@ -12,6 +12,7 @@
  *   - assetStatusMapping: 资产状态映射别名
  *   - contractTypeMapping / contractSettlementStatusMapping / assetTypeMapping / storageMapping / userStatusMapping: 各类业务枚举映射
  *   - getStatusDisplay: 用户状态中文显示
+ *   - physicalGradeMapping / getPhysicalGradeDisplay: 资产物理成色映射与显示
  *   - USER_STATUS_INPUT_MAPPING / USER_STATUS_DISPLAY_MAPPING: 用户状态双向映射
  *   - validateUserStatus: 校验用户状态合法性
  *   - transformAndValidateExcelUser: Excel 用户数据转换与校验
@@ -254,6 +255,17 @@ const getStatusDisplay = (status: string | undefined): string => {
   return userStatusMapping[status] ?? status
 }
 
+const physicalGradeMapping: Record<string, string> = {
+  excellent: '全新',
+  good: '良好',
+  fair: '一般',
+  poor: '较差',
+}
+const getPhysicalGradeDisplay = (grade: string | undefined): string => {
+  if (!grade) return '-'
+  return physicalGradeMapping[grade] ?? grade
+}
+
 // ✓中文/别名 后端需要的 key
 // 🌟 新增：用户状态映射（中文→枚举）
 const USER_STATUS_INPUT_MAPPING: Record<string, EmployeeStatus> = {
@@ -453,6 +465,8 @@ export {
   storageMapping,
   userStatusMapping,
   getStatusDisplay,
+  physicalGradeMapping,
+  getPhysicalGradeDisplay,
   USER_STATUS_INPUT_MAPPING,
   // 🌟 新增导出
   USER_STATUS_DISPLAY_MAPPING,
