@@ -58,6 +58,7 @@ export const userAPI = {
     page: number
     page_size: number
     department_code?: string
+    employee_status?: string
   }): Promise<EmployeeListResponse> => {
     return unwrapResponse(request.get<EmployeeListResponse>('/users/employees/', params))
   },

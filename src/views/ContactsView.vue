@@ -30,6 +30,9 @@
           <div class="sidebar-header">
             <el-icon><OfficeBuilding /></el-icon>
             <span>部门</span>
+            <el-button link size="small" @click="refreshDepartmentTree" class="refresh-btn">
+              <el-icon><Refresh /></el-icon>
+            </el-button>
           </div>
         </template>
         <DepartmentTree
@@ -59,6 +62,17 @@
               </el-tag>
             </div>
             <div class="header-right">
+              <el-select
+                v-model="statusFilter"
+                placeholder="全部状态"
+                clearable
+                style="width: 130px"
+                @change="handleStatusChange"
+              >
+                <el-option label="在职" value="active" />
+                <el-option label="离职" value="left" />
+                <el-option label="退休" value="retirement" />
+              </el-select>
               <el-input
                 v-model="searchKeyword"
                 placeholder="搜索姓名、工号..."
@@ -102,7 +116,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { User, Search, OfficeBuilding } from '@element-plus/icons-vue'
+import { User, Search, OfficeBuilding, Refresh } from '@element-plus/icons-vue'
 import { userAPI } from '@/api/user'
 import { departmentAPI } from '@/api/department'
 import type { EmployeeExtended } from '@/types/user'
@@ -116,6 +130,7 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(20)
 const searchKeyword = ref('')
+const statusFilter = ref('')
 const selectedDepartmentCode = ref<string | null>(null)
 const selectedDepartmentName = ref('')
 const departmentData = ref<DepartmentTreeNode[]>([])
@@ -134,6 +149,15 @@ const fetchDepartmentTree = async () => {
   }
 }
 
+const refreshDepartmentTree = () => {
+  fetchDepartmentTree()
+}
+
+const handleStatusChange = () => {
+  currentPage.value = 1
+  fetchContacts()
+}
+
 const fetchContacts = async () => {
   loading.value = true
   try {
@@ -149,6 +173,7 @@ const fetchContacts = async () => {
     } else {
       const response = await userAPI.getUserList({
         department_code: selectedDepartmentCode.value || undefined,
+        employee_status: statusFilter.value || undefined,
         page: currentPage.value,
         page_size: pageSize.value,
       })
@@ -209,6 +234,10 @@ onMounted(() => {
   gap: 8px;
   font-size: 14px;
   font-weight: 600;
+
+  .refresh-btn {
+    margin-left: auto;
+  }
 }
 
 .contacts-main {
