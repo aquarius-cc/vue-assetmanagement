@@ -78,200 +78,217 @@
   </div>
 </template>
 
-<script lang="ts" setup generic="T extends Record<string, unknown>">
-defineOptions({ name: 'CommonList' })
-
-import { computed, ref } from 'vue'
-import type { PropType } from 'vue'
+<script lang="ts">
+import { computed, defineComponent, ref, type PropType } from 'vue'
 import type { ElTable } from 'element-plus'
 import CommonListColumn from './CommonListColumn.vue'
 import CommonListActions from './CommonListActions.vue'
 import type { TableColumn } from '@/types/list'
 
-// ===== Props 定义 =====
-const props = defineProps({
-  data: {
-    type: Array as PropType<T[]>,
-    required: true,
+export default defineComponent({
+  name: 'CommonList',
+  props: {
+    data: {
+      type: Array as PropType<object[]>,
+      required: true,
+    },
+    columns: {
+      type: Array as PropType<TableColumn[]>,
+      required: true,
+    },
+    currentPage: {
+      type: Number,
+      default: 1,
+    },
+    pageSize: {
+      type: Number,
+      default: 20,
+    },
+    total: {
+      type: Number,
+      default: 0,
+    },
+    pageSizeOptions: {
+      type: Array as PropType<number[]>,
+      default: () => [20, 50, 100, 200, 500],
+    },
+    loading: {
+      type: Boolean,
+      default: false,
+    },
+    search: {
+      type: String,
+      default: '',
+    },
+    enableSearch: {
+      type: Boolean,
+      default: true,
+    },
+    enableEdit: {
+      type: Boolean,
+      default: true,
+    },
+    enableDelete: {
+      type: Boolean,
+      default: true,
+    },
+    showPagination: {
+      type: Boolean,
+      default: true,
+    },
+    showActions: {
+      type: Boolean,
+      default: true,
+    },
+    showDetailButton: {
+      type: Boolean,
+      default: false,
+    },
+    detailRouteName: {
+      type: String,
+      default: null,
+    },
+    editRouteName: {
+      type: String,
+      default: null,
+    },
+    searchPlaceholder: {
+      type: String,
+      default: '搜索',
+    },
+    actionColumnWidth: {
+      type: [Number, String],
+      default: 'auto',
+    },
+    enableSelection: {
+      type: Boolean,
+      default: false,
+    },
+    rowKey: {
+      type: String,
+      default: 'id',
+    },
   },
-  columns: {
-    type: Array as PropType<TableColumn[]>,
-    required: true,
+  emits: {
+    'update:currentPage': (_page: number) => true,
+    'update:pageSize': (_size: number) => true,
+    'update:search': (_keyword: string) => true,
+    sizeChange: (_size: number) => true,
+    currentChange: (_page: number) => true,
+    search: (_keyword: string) => true,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    edit: (_row: any, _index: number) => true,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete: (_row: any, _index: number) => true,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    detail: (_row: any, _index: number) => true,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    selectionChange: (_rows: any[]) => true,
   },
-  currentPage: {
-    type: Number,
-    default: 1,
-  },
-  pageSize: {
-    type: Number,
-    default: 20,
-  },
-  total: {
-    type: Number,
-    default: 0,
-  },
-  pageSizeOptions: {
-    type: Array as PropType<number[]>,
-    default: () => [20, 50, 100, 200, 500],
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-  search: {
-    type: String,
-    default: '',
-  },
-  enableSearch: {
-    type: Boolean,
-    default: true,
-  },
-  enableEdit: {
-    type: Boolean,
-    default: true,
-  },
-  enableDelete: {
-    type: Boolean,
-    default: true,
-  },
-  showPagination: {
-    type: Boolean,
-    default: true,
-  },
-  showActions: {
-    type: Boolean,
-    default: true,
-  },
-  showDetailButton: {
-    type: Boolean,
-    default: false,
-  },
-  detailRouteName: {
-    type: String,
-    default: null,
-  },
-  editRouteName: {
-    type: String,
-    default: null,
-  },
-  searchPlaceholder: {
-    type: String,
-    default: '搜索',
-  },
-  actionColumnWidth: {
-    type: [Number, String],
-    default: 'auto',
-  },
-  enableSelection: {
-    type: Boolean,
-    default: false,
-  },
-  rowKey: {
-    type: String,
-    default: 'id',
-  },
-})
+  setup(props, { emit, expose }) {
+    // ===== 表格实例引用 =====
+    const tableRef = ref<InstanceType<typeof ElTable> | null>(null)
+    const actionsRef = ref<InstanceType<typeof CommonListActions> | null>(null)
 
-// ===== Events 定义 =====
-const emit = defineEmits<{
-  'update:currentPage': [page: number]
-  'update:pageSize': [size: number]
-  'update:search': [keyword: string]
-  sizeChange: [size: number]
-  currentChange: [page: number]
-  search: [keyword: string]
-  edit: [row: T, index: number]
-  delete: [row: T, index: number]
-  detail: [row: T, index: number]
-  selectionChange: [rows: T[]]
-}>()
+    // ===== 本地状态（用于 v-model） =====
+    const localCurrentPage = computed({
+      get: () => props.currentPage,
+      set: (val: number) => emit('update:currentPage', val),
+    })
 
-// ===== 表格实例引用 =====
-const tableRef = ref<InstanceType<typeof ElTable> | null>(null)
-const actionsRef = ref<InstanceType<typeof CommonListActions> | null>(null)
+    const localPageSize = computed({
+      get: () => props.pageSize,
+      set: (val: number) => emit('update:pageSize', val),
+    })
 
-// ===== 本地状态（用于 v-model） =====
-const localCurrentPage = computed({
-  get: () => props.currentPage,
-  set: (val: number) => emit('update:currentPage', val),
-})
-
-const localPageSize = computed({
-  get: () => props.pageSize,
-  set: (val: number) => emit('update:pageSize', val),
-})
-
-// ===== 方法 =====
-const getRowKey = (row: T): string | number | undefined => {
-  const obj = row as unknown as Record<string, unknown>
-  if (props.rowKey) {
-    const val = obj[props.rowKey]
-    if (val !== undefined && val !== null) {
-      if (typeof val === 'string' || typeof val === 'number') {
-        return val
+    // ===== 方法 =====
+    const getRowKey = (row: object): string | number | undefined => {
+      const obj = row as Record<string, unknown>
+      if (props.rowKey) {
+        const val = obj[props.rowKey]
+        if (val !== undefined && val !== null) {
+          if (typeof val === 'string' || typeof val === 'number') {
+            return val
+          }
+        }
       }
-    }
-  }
-  const fields = [
-    'id',
-    'code',
-    'asset_code',
-    'asset_type_code',
-    'contract_code',
-    'damaged_asset_code',
-    'department_code',
-    'employee_jobcode',
-    'harddisk_sn_code',
-    'logging_id',
-    'outasset_recordcode',
-    'storage_code',
-    'user_jobcode',
-    'waste_asset_code',
-  ]
-  for (const field of fields) {
-    const val = obj[field]
-    if (val !== undefined && val !== null) {
-      if (typeof val === 'string' || typeof val === 'number') {
-        return val
+      const fields = [
+        'id',
+        'code',
+        'asset_code',
+        'asset_type_code',
+        'contract_code',
+        'damaged_asset_code',
+        'department_code',
+        'employee_jobcode',
+        'harddisk_sn_code',
+        'logging_id',
+        'outasset_recordcode',
+        'storage_code',
+        'user_jobcode',
+        'waste_asset_code',
+      ]
+      for (const field of fields) {
+        const val = obj[field]
+        if (val !== undefined && val !== null) {
+          if (typeof val === 'string' || typeof val === 'number') {
+            return val
+          }
+        }
       }
+      return undefined
     }
-  }
-  return undefined
-}
 
-const handleSizeChange = (size: number) => {
-  emit('sizeChange', size)
-}
+    const handleSizeChange = (size: number) => {
+      emit('sizeChange', size)
+    }
 
-const handleCurrentChange = (page: number) => {
-  emit('currentChange', page)
-}
+    const handleCurrentChange = (page: number) => {
+      emit('currentChange', page)
+    }
 
-const handleSelectionChange = (rows: T[]) => {
-  emit('selectionChange', rows)
-}
+    const handleSelectionChange = (rows: object[]) => {
+      emit('selectionChange', rows)
+    }
 
-// ===== 行操作处理器（从模板内联函数提取，解决 TS7006 implicit any） =====
-const handleRowEdit = (row: Record<string, unknown>, index: number) => {
-  emit('edit', row as T, index)
-}
-const handleRowDelete = (row: Record<string, unknown>, index: number) => {
-  emit('delete', row as T, index)
-}
-const handleRowDetail = (row: Record<string, unknown>, index: number) => {
-  emit('detail', row as T, index)
-}
+    const handleRowEdit = (row: object, index: number) => {
+      emit('edit', row, index)
+    }
+    const handleRowDelete = (row: object, index: number) => {
+      emit('delete', row, index)
+    }
+    const handleRowDetail = (row: object, index: number) => {
+      emit('detail', row, index)
+    }
 
-// ===== 暴露方法 =====
-defineExpose({
-  search: () => {
-    actionsRef.value?.search()
-  },
-  clearSearch: () => {
-    actionsRef.value?.clearSearch()
-  },
-  clearSelection: () => {
-    tableRef.value?.clearSelection()
+    // ===== 暴露方法 =====
+    expose({
+      search: () => {
+        actionsRef.value?.search()
+      },
+      clearSearch: () => {
+        actionsRef.value?.clearSearch()
+      },
+      clearSelection: () => {
+        tableRef.value?.clearSelection()
+      },
+    })
+
+    return {
+      CommonListColumn,
+      CommonListActions,
+      tableRef,
+      actionsRef,
+      localCurrentPage,
+      localPageSize,
+      getRowKey,
+      handleSizeChange,
+      handleCurrentChange,
+      handleSelectionChange,
+      handleRowEdit,
+      handleRowDelete,
+      handleRowDetail,
+    }
   },
 })
 </script>

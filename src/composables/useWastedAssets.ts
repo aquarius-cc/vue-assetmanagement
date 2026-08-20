@@ -26,6 +26,6 @@ export function useWastedAssets(): UseWastedAssetsReturn {
     errorMessage: '加载已报废资产列表失败',
     fixedParams: { asset_current_status: 'scrapped' },
     fetcher: (params) =>
-      assetStore.searchAssets(params as unknown as Record<string, string | number>),
+      assetStore.searchAssets(params as unknown as Parameters<typeof assetStore.searchAssets>[0]),
   })
 }

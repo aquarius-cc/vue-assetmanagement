@@ -43,12 +43,8 @@
   </div>
 </template>
 
-<script lang="ts" setup generic="T extends Record<string, unknown>">
-defineOptions({ name: 'SmartListContainer' })
-
-// ===== 导入顺序：Vue 核心 → 第三方库 → @/ 内部模块 =====
-import { computed, onMounted, ref } from 'vue'
-import type { PropType } from 'vue'
+<script lang="ts">
+import { computed, defineComponent, onMounted, ref, type PropType } from 'vue'
 import { ElMessage } from 'element-plus'
 import { usePaginationSearch, type PaginationSearchConfig } from '@/composables/usePaginationSearch'
 
@@ -97,213 +93,122 @@ import { usePaginationSearch, type PaginationSearchConfig } from '@/composables/
 //   → performSearch() 或 loadList() → 列表自动刷新
 // ======================================================================
 
-// ===== Props 定义 =====
-/**
- * Props 接口定义
- * 使用 Vue 的 PropType 进行运行时类型检查
- */
-const props = defineProps({
-  /**
-   * Store 配置对象
-   * 包含数据获取方法、分页状态、搜索配置等
-   * 必需参数，由父组件传入
-   */
-  storeConfig: {
-    type: Object as PropType<PaginationSearchConfig<T>>,
-    required: true,
+export default defineComponent({
+  name: 'SmartListContainer',
+  props: {
+    storeConfig: {
+      type: Object as PropType<PaginationSearchConfig<object>>,
+      required: true,
+    },
+    autoLoad: {
+      type: Boolean,
+      default: true,
+    },
+    initialPage: {
+      type: Number,
+      default: 1,
+    },
+    initialPageSize: {
+      type: Number,
+      default: undefined,
+    },
   },
+  setup(props, { slots, expose }) {
+    const {
+      currentPage,
+      pageSize,
+      search,
+      searchParams,
+      total,
+      isSearching,
+      tableData,
+      storeLoading,
+      handleSizeChange,
+      handleCurrentChange,
+      performSearch,
+      performSearchWithParams,
+      refreshCurrentPage,
+      resetToFirstPage,
+      pageSizeOptions,
+    } = usePaginationSearch<object>(props.storeConfig as PaginationSearchConfig<object>)
 
-  /**
-   * 是否自动加载数据
-   * 默认为 true，组件挂载时自动发起首次请求
-   * 设为 false 时，需父组件手动调用 refresh 方法
-   */
-  autoLoad: {
-    type: Boolean,
-    default: true,
-  },
+    // ===== 选中行状态 =====
+    const selectedRows = ref<object[]>([])
 
-  /**
-   * 初始页码
-   * 首次加载时的默认页码，默认为 1
-   */
-  initialPage: {
-    type: Number,
-    default: 1,
-  },
+    const handleSelectionChange = (rows: object[]) => {
+      selectedRows.value = rows
+    }
 
-  /**
-   * 初始每页条数
-   * 首次加载时的默认分页大小
-   * 如未指定，使用 storeConfig.defaultPageSize 或 20
-   */
-  initialPageSize: {
-    type: Number,
-    default: undefined,
-  },
-})
+    const clearSelection = () => {
+      selectedRows.value = []
+    }
 
-// ===== 使用 Composable 管理分页和搜索状态 =====
-/**
- * usePaginationSearch 是核心的分页搜索逻辑复用函数
- * 它内部管理了 currentPage、pageSize、search、loading 等响应式状态
- * 并提供了 handleSizeChange、handleCurrentChange、performSearch 等方法
- */
-const {
-  // 状态
-  currentPage,
-  pageSize,
-  search,
-  searchParams,
-  total,
-  isSearching,
-  tableData,
-  storeLoading,
-
-  // 方法
-  handleSizeChange,
-  handleCurrentChange,
-  performSearch,
-  performSearchWithParams,
-  refreshCurrentPage,
-  resetToFirstPage,
-
-  // 配置
-  pageSizeOptions,
-} = usePaginationSearch<T>(props.storeConfig)
-
-// ===== 选中行状态 =====
-/**
- * 当前选中的行数据
- * 由 CommonList 的 selection-change 事件更新
- * 用于批量删除等批量操作场景
- */
-const selectedRows = ref<T[]>([])
-
-/**
- * 处理多选行变化
- * 当 CommonList 触发 selection-change 时更新选中状态
- * @param rows 当前选中的所有行数据
- */
-const handleSelectionChange = (rows: T[]) => {
-  selectedRows.value = rows
-}
-
-/**
- * 清空选中状态
- * 批量删除成功后调用，重置选中行
- * 同时通知子组件（如 CommonList）清空表格勾选状态
- */
-const clearSelection = () => {
-  selectedRows.value = []
-}
-
-// ===== 计算属性 =====
-/**
- * 加载状态计算属性
- * 合并 store 的 loading 状态和搜索中的状态
- * 任一状态为 true 时，显示加载中
- */
-const isLoading = computed(() => {
-  return storeLoading.value || isSearching.value
-})
-
-// ===== 生命周期：自动加载数据 =====
-/**
- * 组件挂载时自动加载数据
- * 根据 autoLoad prop 决定是否自动发起请求
- * 使用 initialPage 和 initialPageSize 作为初始参数
- *
- * 【修复】添加 hasLoaded 标志防止重复请求
- * 由于某些路由配置（如可选参数路由 :asset_code?）可能导致组件多次挂载，
- * 需要确保数据只加载一次
- */
-const hasLoaded = ref(false)
-
-onMounted(async () => {
-  if (!props.autoLoad) {
-    return
-  }
-
-  // 防止重复加载
-  if (hasLoaded.value) {
-    console.warn('[SmartListContainer] 数据已加载，跳过重复请求')
-    return
-  }
-  hasLoaded.value = true
-
-  try {
-    const pageSizeValue = props.initialPageSize ?? props.storeConfig.defaultPageSize ?? 20
-    await props.storeConfig.store.getList({
-      page: props.initialPage,
-      page_size: pageSizeValue,
+    // ===== 计算属性 =====
+    const isLoading = computed(() => {
+      return storeLoading.value || isSearching.value
     })
-  } catch (error) {
-    console.error('[SmartListContainer] 初始加载失败:', error)
-    ElMessage.error(props.storeConfig.messages?.loadFailed ?? '加载数据失败')
-    // 重置标志，允许下次尝试
-    hasLoaded.value = false
-  }
-})
 
-// ===== 暴露方法给父组件 =====
-/**
- * 通过 defineExpose 暴露内部方法
- * 父组件可通过 ref 获取这些方法来手动控制数据加载
- *
- * 暴露的方法：
- * - refresh: 刷新当前页数据
- * - reset: 重置到第一页并清空搜索
- * - performSearch: 执行搜索
- */
-defineExpose({
-  /**
-   * 刷新当前页数据
-   * 根据当前是否有搜索词，决定是重新搜索还是重新加载列表
-   */
-  refresh: refreshCurrentPage,
+    // ===== 生命周期：自动加载数据 =====
+    const hasLoaded = ref(false)
 
-  /**
-   * 重置到第一页
-   * 清空搜索词、搜索状态，回到初始状态
-   */
-  reset: resetToFirstPage,
+    onMounted(async () => {
+      if (!props.autoLoad) {
+        return
+      }
 
-  /**
-   * 执行搜索
-   * @param keyword 搜索关键词
-   */
-  search: performSearch,
+      if (hasLoaded.value) {
+        console.warn('[SmartListContainer] 数据已加载，跳过重复请求')
+        return
+      }
+      hasLoaded.value = true
 
-  /**
-   * 执行多参数搜索
-   * @param params 搜索参数对象（key-value 对）
-   */
-  searchWithParams: performSearchWithParams,
+      try {
+        const pageSizeValue = props.initialPageSize ?? props.storeConfig.defaultPageSize ?? 20
+        await props.storeConfig.store.getList({
+          page: props.initialPage,
+          page_size: pageSizeValue,
+        })
+      } catch (error) {
+        console.error('[SmartListContainer] 初始加载失败:', error)
+        ElMessage.error(props.storeConfig.messages?.loadFailed ?? '加载数据失败')
+        hasLoaded.value = false
+      }
+    })
 
-  /**
-   * 当前页码（响应式）
-   * 父组件可通过 ref 读取当前页码
-   */
-  currentPage,
+    // ===== 暴露方法给父组件 =====
+    expose({
+      refresh: refreshCurrentPage,
+      reset: resetToFirstPage,
+      search: performSearch,
+      searchWithParams: performSearchWithParams,
+      currentPage,
+      pageSize,
+      data: tableData,
+      clearSelection,
+    })
 
-  /**
-   * 每页条数（响应式）
-   * 父组件可通过 ref 读取当前分页大小
-   */
-  pageSize,
-
-  /**
-   * 表格数据（响应式）
-   * 父组件可通过 ref 读取当前数据
-   */
-  data: tableData,
-
-  /**
-   * 清空选中状态
-   * 批量删除成功后调用，重置选中行
-   */
-  clearSelection,
+    return {
+      currentPage,
+      pageSize,
+      search,
+      searchParams,
+      total,
+      isSearching,
+      tableData,
+      isLoading,
+      selectedRows,
+      pageSizeOptions,
+      handleSizeChange,
+      handleCurrentChange,
+      performSearch,
+      performSearchWithParams,
+      refreshCurrentPage,
+      resetToFirstPage,
+      handleSelectionChange,
+      clearSelection,
+      slots,
+    }
+  },
 })
 </script>
 

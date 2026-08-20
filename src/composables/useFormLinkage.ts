@@ -68,15 +68,15 @@ export interface FormLinkageReturn {
  * // @blur="assetLinkage.handleNameBlur"
  * ```
  */
-export function useFormLinkage<T extends Record<string, unknown>>(
-  options: FormLinkageOptions<T>,
-): FormLinkageReturn {
+export function useFormLinkage<T>(options: FormLinkageOptions<T>): FormLinkageReturn {
   const { formData, displayField, codeField, fetcher, getDisplayValue, getCodeValue } = options
 
   /** 建议获取（适配 createSuggestionFetcher 签名） */
   const fetchSuggestions = createSuggestionFetcher<T, { value: string }>({
     fetchData: fetcher,
-    transform: (item: T) => ({ value: getDisplayValue(item) }),
+    transform: (item: T) => ({
+      value: getDisplayValue(item as unknown as Record<string, unknown>),
+    }),
   })
 
   /** 选择建议项：回填显示值 + 编码值 */
