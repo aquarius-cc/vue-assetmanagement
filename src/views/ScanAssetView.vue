@@ -111,10 +111,10 @@ const recordcode = computed(() => route.params.recordcode as string)
 const loadError = ref(false)
 
 const storageName = computed(() => {
-  return (asset.value?.asset_storage_name as string) || '-'
+  return (asset.value?.asset_storage?.storage_name as string) || '-'
 })
 const typeName = computed(() => {
-  return (asset.value?.asset_type_name as string) || '-'
+  return (asset.value?.asset_type?.type_name as string) || '-'
 })
 const managerName = computed(() => {
   return (asset.value?.asset_manager_name as string) || '-'

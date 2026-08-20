@@ -28,7 +28,7 @@ function aggregateTopN<T extends { percentage: number }>(
   nameKey: keyof T,
   countKey: keyof T,
 ): Array<{ name: string; value: number }> {
-  const sorted = [...items].sort((a, b) => b[countKey] - a[countKey])
+  const sorted = [...items].sort((a, b) => Number(b[countKey]) - Number(a[countKey]))
   const top = sorted.slice(0, topN)
   const rest = sorted.slice(topN)
   const result = top.map((item) => ({
