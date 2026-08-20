@@ -68,7 +68,9 @@ export interface FormLinkageReturn {
  * // @blur="assetLinkage.handleNameBlur"
  * ```
  */
-export function useFormLinkage<T>(options: FormLinkageOptions<T>): FormLinkageReturn {
+export function useFormLinkage<T extends Record<string, unknown>>(
+  options: FormLinkageOptions<T>,
+): FormLinkageReturn {
   const { formData, displayField, codeField, fetcher, getDisplayValue, getCodeValue } = options
 
   /** 建议获取（适配 createSuggestionFetcher 签名） */

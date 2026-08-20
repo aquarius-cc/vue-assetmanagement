@@ -92,8 +92,6 @@
   </div>
 </template>
 
-
-
 <script lang="ts" setup>
 defineOptions({ name: 'DamagedAssetDetails' })
 
@@ -102,8 +100,8 @@ import { ref, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
-import CommonList from '@/components/commoncomponents/CommonList.vue'
-import type { TableColumn } from '@/components/commoncomponents/CommonList.vue'
+import CommonList from '@/types/list'
+import type { TableColumn } from '@/types/list'
 import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'

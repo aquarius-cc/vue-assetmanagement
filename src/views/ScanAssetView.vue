@@ -117,7 +117,7 @@ const typeName = computed(() => {
   return (asset.value?.asset_type?.type_name as string) || '-'
 })
 const managerName = computed(() => {
-  return (asset.value?.asset_manager_name as string) || '-'
+  return (asset.value?.asset_manager?.employee_name as string) || '-'
 })
 const physicalGradeLabel = computed(() => {
   return getPhysicalGradeDisplay(asset.value?.physical_grade)

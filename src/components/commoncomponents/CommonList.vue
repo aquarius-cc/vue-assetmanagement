@@ -51,9 +51,9 @@
           :edit-route-name="editRouteName"
           @update:search="$emit('update:search', $event)"
           @search="$emit('search', $event)"
-          @edit="(row, index) => $emit('edit', row as T, index)"
-          @delete="(row, index) => $emit('delete', row as T, index)"
-          @detail="(row, index) => $emit('detail', row as T, index)"
+          @edit="handleRowEdit"
+          @delete="handleRowDelete"
+          @detail="handleRowDetail"
         >
           <!-- 透传 actions 插槽 -->
           <template #actions="slotProps">
@@ -78,9 +78,7 @@
   </div>
 </template>
 
-
-
-<script lang="ts" setup generic="T extends object">
+<script lang="ts" setup generic="T extends Record<string, unknown>">
 defineOptions({ name: 'CommonList' })
 
 import { computed, ref } from 'vue'
@@ -88,16 +86,7 @@ import type { PropType } from 'vue'
 import type { ElTable } from 'element-plus'
 import CommonListColumn from './CommonListColumn.vue'
 import CommonListActions from './CommonListActions.vue'
-
-// ===== 类型定义 =====
-export interface TableColumn {
-  type?: 'index' | 'custom' | 'default'
-  prop?: string
-  label: string
-  width?: number | string
-  align?: 'left' | 'center' | 'right'
-  slotName?: string
-}
+import type { TableColumn } from '@/types/list'
 
 // ===== Props 定义 =====
 const props = defineProps({
@@ -260,6 +249,17 @@ const handleCurrentChange = (page: number) => {
 
 const handleSelectionChange = (rows: T[]) => {
   emit('selectionChange', rows)
+}
+
+// ===== 行操作处理器（从模板内联函数提取，解决 TS7006 implicit any） =====
+const handleRowEdit = (row: Record<string, unknown>, index: number) => {
+  emit('edit', row as T, index)
+}
+const handleRowDelete = (row: Record<string, unknown>, index: number) => {
+  emit('delete', row as T, index)
+}
+const handleRowDetail = (row: Record<string, unknown>, index: number) => {
+  emit('detail', row as T, index)
 }
 
 // ===== 暴露方法 =====

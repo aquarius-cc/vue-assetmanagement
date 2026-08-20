@@ -9,7 +9,6 @@
  */
 import { useAssetStore } from '@/stores/assetStore'
 import type { AssetDetail } from '@/types/asset'
-import type { PaginationQuery } from '@/stores/createEntityStore'
 import { usePagedList, type PagedListReturn } from './usePagedList'
 
 /** 保留类型别名以兼容外部引用 */
@@ -26,6 +25,7 @@ export function useWastedAssets(): UseWastedAssetsReturn {
     tag: 'useWastedAssets',
     errorMessage: '加载已报废资产列表失败',
     fixedParams: { asset_current_status: 'scrapped' },
-    fetcher: (params) => assetStore.searchAssets(params as PaginationQuery),
+    fetcher: (params) =>
+      assetStore.searchAssets(params as unknown as Record<string, string | number>),
   })
 }

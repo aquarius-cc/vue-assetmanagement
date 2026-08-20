@@ -9,7 +9,6 @@
  */
 import { useAssetStore } from '@/stores/assetStore'
 import type { AssetDetail } from '@/types/asset'
-import type { PaginationQuery } from '@/stores/createEntityStore'
 import { usePagedList, type PagedListReturn } from './usePagedList'
 
 /** 保留类型别名以兼容外部引用 */
@@ -26,6 +25,7 @@ export function useScrapableAssets(): UseScrapableAssetsReturn {
     tag: 'useScrapableAssets',
     errorMessage: '加载可报废资产列表失败',
     fixedParams: { asset_current_status__in: 'in_use,recycled_pending,broken,lost' },
-    fetcher: (params) => assetStore.combineSearch(params as PaginationQuery),
+    fetcher: (params) =>
+      assetStore.combineSearch(params as unknown as Record<string, string | number>),
   })
 }

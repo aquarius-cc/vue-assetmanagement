@@ -50,7 +50,7 @@
 
 <script lang="ts" setup>
 import type { PropType } from 'vue'
-import type { TableColumn } from './CommonList.vue'
+import type { TableColumn } from '@/types/list'
 
 defineProps({
   column: {

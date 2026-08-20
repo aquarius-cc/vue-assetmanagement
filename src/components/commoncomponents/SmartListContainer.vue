@@ -43,8 +43,7 @@
   </div>
 </template>
 
-
-<script lang="ts" setup generic="T extends object">
+<script lang="ts" setup generic="T extends Record<string, unknown>">
 defineOptions({ name: 'SmartListContainer' })
 
 // ===== 导入顺序：Vue 核心 → 第三方库 → @/ 内部模块 =====
