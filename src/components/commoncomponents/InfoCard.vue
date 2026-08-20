@@ -37,17 +37,9 @@
   </el-card>
 </template>
 
-<script lang="ts">
-/**
- * 组件名称定义
- * 用于在 Vue DevTools 中识别组件
- */
-export default {
-  name: 'InfoCard',
-}
-</script>
-
 <script lang="ts" setup>
+defineOptions({ name: 'InfoCard' })
+
 // ===== 导入 =====
 import { computed } from 'vue'
 import {

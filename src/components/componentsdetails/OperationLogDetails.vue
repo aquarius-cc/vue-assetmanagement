@@ -148,16 +148,11 @@
   </div>
 </template>
 
-<script lang="ts">
-/**
- * 组件名称定义
- */
-export default {
-  name: 'OperationLogDetails',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'OperationLogDetails' })
+
 // ===== 导入顺序：Vue 核心 → 第三方库 → @/ 内部模块 =====
 import { ref, reactive, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

@@ -129,11 +129,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'WastedAssetsSearch' }
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'WastedAssetsSearch' })
+
 import { reactive, ref } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import type { AssetDetail } from '@/types/asset'

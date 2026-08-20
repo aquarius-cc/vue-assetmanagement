@@ -131,11 +131,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'AssetBatchImport' }
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'AssetBatchImport' })
+
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile, UploadInstance } from 'element-plus'

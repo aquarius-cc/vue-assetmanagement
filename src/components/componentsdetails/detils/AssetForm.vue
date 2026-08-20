@@ -62,11 +62,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'AssetForm' }
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'AssetForm' })
+
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Edit, Plus } from '@element-plus/icons-vue'

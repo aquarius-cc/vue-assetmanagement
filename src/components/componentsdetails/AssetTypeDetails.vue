@@ -138,11 +138,7 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'AssetTypeManagement',
-}
-</script>
+
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'

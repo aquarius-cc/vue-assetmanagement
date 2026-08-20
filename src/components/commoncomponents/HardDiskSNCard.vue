@@ -44,17 +44,10 @@
   </el-card>
 </template>
 
-<script lang="ts">
-/**
- * 组件名称定义
- * 用于在 Vue DevTools 中识别组件
- */
-export default {
-  name: 'HardDiskSNCard',
-}
-</script>
 
 <script lang="ts" setup>
+defineOptions({ name: 'HardDiskSNCard' })
+
 // ===== 导入 =====
 import { useRouter } from 'vue-router'
 import { Plus, Coin } from '@element-plus/icons-vue'

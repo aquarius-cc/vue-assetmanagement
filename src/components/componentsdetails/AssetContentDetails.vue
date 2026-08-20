@@ -92,13 +92,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'AssetContentDetails',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'AssetContentDetails' })
+
 import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'

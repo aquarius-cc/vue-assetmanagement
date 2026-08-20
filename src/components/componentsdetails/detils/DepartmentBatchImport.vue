@@ -129,11 +129,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'DepartmentBatchImport' }
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'DepartmentBatchImport' })
+
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Upload, InfoFilled } from '@element-plus/icons-vue'

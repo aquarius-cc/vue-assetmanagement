@@ -43,17 +43,10 @@
   </div>
 </template>
 
-<script lang="ts">
-/**
- * 组件名称定义
- * 用于在 Vue DevTools 中识别组件
- */
-export default {
-  name: 'SmartListContainer',
-}
-</script>
 
 <script lang="ts" setup generic="T extends object">
+defineOptions({ name: 'SmartListContainer' })
+
 // ===== 导入顺序：Vue 核心 → 第三方库 → @/ 内部模块 =====
 import { computed, onMounted, ref } from 'vue'
 import type { PropType } from 'vue'

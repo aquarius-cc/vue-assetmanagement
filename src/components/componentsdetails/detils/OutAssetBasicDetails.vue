@@ -41,11 +41,7 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'OutAssetBasicDetails', // 必须与路由 meta.componentName 一致
-}
-</script>
+defineOptions({ name: 'OutAssetBasicDetails' })
 
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue'

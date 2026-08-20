@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   WasteAssetBasicDetails.vue
   已报废资产详情页面
   功能：展示已报废资产的完整信息，支持导出 Excel
@@ -79,13 +79,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'WasteAssetBasicDetails',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'WasteAssetBasicDetails' })
+
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

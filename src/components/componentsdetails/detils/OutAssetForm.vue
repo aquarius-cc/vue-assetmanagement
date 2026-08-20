@@ -225,13 +225,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'OutAssetForm',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'OutAssetForm' })
+
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

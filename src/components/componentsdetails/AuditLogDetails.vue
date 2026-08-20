@@ -152,9 +152,7 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'AuditLogDetails' }
-</script>
+
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'

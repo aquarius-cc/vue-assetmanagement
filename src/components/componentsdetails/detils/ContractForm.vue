@@ -217,11 +217,7 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'ContractForm', // 多词组件名称
-}
-</script>
+defineOptions({ name: 'ContractForm' })
 
 <script lang="ts" setup>
 import { onMounted, reactive, ref } from 'vue'

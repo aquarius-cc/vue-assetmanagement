@@ -122,11 +122,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'ContractBatchImport' }
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'ContractBatchImport' })
+
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile, UploadInstance } from 'element-plus'

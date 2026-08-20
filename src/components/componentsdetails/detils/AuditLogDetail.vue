@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   AuditLogDetail.vue
   通用审计日志详情页面（只读）
 -->
@@ -77,9 +77,7 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'AuditLogDetail' }
-</script>
+
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'

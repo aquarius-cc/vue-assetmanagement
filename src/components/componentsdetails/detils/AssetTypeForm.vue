@@ -91,13 +91,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'AssetTypeForm',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'AssetTypeForm' })
+
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'

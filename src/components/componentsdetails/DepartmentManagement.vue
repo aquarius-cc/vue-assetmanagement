@@ -118,11 +118,7 @@
     />
   </div>
 </template>
-<script lang="ts">
-export default {
-  name: 'DepartmentManagement',
-}
-</script>
+
 <script setup lang="ts">
 /**
  * 部门-人员综合管理页面

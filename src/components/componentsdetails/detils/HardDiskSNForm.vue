@@ -143,13 +143,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'HardDiskSNForm',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'HardDiskSNForm' })
+
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

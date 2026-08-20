@@ -207,13 +207,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'UnregisteredAssetForm',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'UnregisteredAssetForm' })
+
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

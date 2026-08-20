@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   RecycleAssetForm.vue
   回收资产表单（新增 / 编辑）
   新增模式：多条回收（selectedRecords + batch_create）
@@ -151,11 +151,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'RecycleAssetForm' }
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'RecycleAssetForm' })
+
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'

@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   ScrapableAssetsSearch.vue
   可报废资产搜索组?
   功能：  - 根据资产编码、名称、型号规格、品牌、仓库搜索可报废资产
@@ -135,11 +135,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'ScrapableAssetsSearch' }
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'ScrapableAssetsSearch' })
+
 import { reactive, ref } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import type { AssetDetail } from '@/types/asset'

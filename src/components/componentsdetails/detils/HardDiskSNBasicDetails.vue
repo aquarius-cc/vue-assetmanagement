@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   HardDiskSNBasicDetails.vue
   硬盘序列号详情页面
   功能：展示硬盘序列号的完整信息，支持导出 Excel
@@ -93,13 +93,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'HardDiskSNBasicDetails',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'HardDiskSNBasicDetails' })
+
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

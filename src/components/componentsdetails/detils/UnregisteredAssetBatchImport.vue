@@ -98,11 +98,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'UnregisteredAssetBatchImport' }
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'UnregisteredAssetBatchImport' })
+
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'

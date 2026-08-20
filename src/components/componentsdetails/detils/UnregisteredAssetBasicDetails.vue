@@ -167,13 +167,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'UnregisteredAssetBasicDetails',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'UnregisteredAssetBasicDetails' })
+
 import { ref, onMounted, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'

@@ -78,16 +78,11 @@
   </div>
 </template>
 
-<script lang="ts">
-/**
- * 组件名称定义
- */
-export default {
-  name: 'CommonList',
-}
-</script>
+
 
 <script lang="ts" setup generic="T extends object">
+defineOptions({ name: 'CommonList' })
+
 import { computed, ref } from 'vue'
 import type { PropType } from 'vue'
 import type { ElTable } from 'element-plus'

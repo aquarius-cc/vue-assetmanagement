@@ -61,13 +61,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'LostAssetDetails',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'LostAssetDetails' })
+
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'

@@ -117,11 +117,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'ContractOfDetails' }
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'ContractOfDetails' })
+
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

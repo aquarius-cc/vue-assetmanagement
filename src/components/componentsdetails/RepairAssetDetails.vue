@@ -67,13 +67,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'RepairAssetDetails',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'RepairAssetDetails' })
+
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'

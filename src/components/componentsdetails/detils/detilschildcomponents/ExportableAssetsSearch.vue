@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="exportable-assets-search">
     <!-- 搜索表单（与原来基本相同 -->
     <div class="search-section">
@@ -101,11 +101,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'ExportableAssetsSearch' }
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'ExportableAssetsSearch' })
+
 import { ref, reactive } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import type { AssetDetail } from '@/types/asset'

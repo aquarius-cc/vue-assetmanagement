@@ -86,11 +86,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'StorageForm' }
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'StorageForm' })
+
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'

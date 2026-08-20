@@ -104,13 +104,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'WasteAssetForm',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'WasteAssetForm' })
+
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

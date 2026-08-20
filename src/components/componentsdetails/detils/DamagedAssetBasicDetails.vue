@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   DamagedAssetBasicDetails.vue
   待报废资产详情页面
   功能：展示待报废资产的完整信息，支持导出 Excel
@@ -101,13 +101,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'DamagedAssetBasicDetails',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'DamagedAssetBasicDetails' })
+
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

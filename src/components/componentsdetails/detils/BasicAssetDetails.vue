@@ -129,17 +129,10 @@
   </div>
 </template>
 
-<script lang="ts">
-/**
- * 组件名称定义
- * 用于在 Vue DevTools 中识别组
- */
-export default {
-  name: 'BasicAssetDetails',
-}
-</script>
 
 <script lang="ts" setup>
+defineOptions({ name: 'BasicAssetDetails' })
+
 // ===== 导入 =====
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'

@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   RecyclableOutAssetsSearch.vue
   可回收出库资产搜索组件
 
@@ -148,11 +148,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'RecyclableOutAssetsSearch' }
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'RecyclableOutAssetsSearch' })
+
 import { ref, reactive } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import type { OutAssetDetail } from '@/types/outasset'

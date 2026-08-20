@@ -85,13 +85,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'DepartmentForm',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'DepartmentForm' })
+
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'

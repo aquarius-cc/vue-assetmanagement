@@ -29,13 +29,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'RecycleAssetBasicDetails',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'RecycleAssetBasicDetails' })
+
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

@@ -135,13 +135,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'UserBatchImport',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'UserBatchImport' })
+
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Upload, Download } from '@element-plus/icons-vue'

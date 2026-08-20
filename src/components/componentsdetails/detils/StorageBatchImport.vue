@@ -93,11 +93,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default { name: 'StorageBatchImport' }
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'StorageBatchImport' })
+
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'

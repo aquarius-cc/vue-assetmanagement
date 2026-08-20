@@ -114,16 +114,10 @@
   </div>
 </template>
 
-<script lang="ts">
-/**
- * 组件名称定义
- * 用于在Vue DevTools 中识别组什 */
-export default {
-  name: 'ContractDetails',
-}
-</script>
 
 <script lang="ts" setup>
+defineOptions({ name: 'ContractDetails' })
+
 // ===== 导入顺序：Vue 核心模块、第三方库、内部模块 =====
 import { ref, watch, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

@@ -120,13 +120,11 @@
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  name: 'OperationLogDetail',
-}
-</script>
+
 
 <script lang="ts" setup>
+defineOptions({ name: 'OperationLogDetail' })
+
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
