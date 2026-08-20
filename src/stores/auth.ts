@@ -322,6 +322,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
         const res = await permissionsAPI.getMyPermissions()
         permissions.value = res.permissions
         dataScope.value = res.data_scope
+        // 安全边界:此处为 XOR 混淆(非加密),真正安全依赖 httpOnly cookie + CSP + 短生命周期 JWT
         setEncryptedToken('myPermissions', JSON.stringify(res))
         permissionsLoaded.value = true
       } catch (error) {
