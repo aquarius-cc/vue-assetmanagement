@@ -6,13 +6,11 @@ import DarkModeToggle from './DarkModeToggle.vue'
 // Mock useDarkMode composable
 const mockIsDark = ref(false)
 const mockToggleDark = vi.fn()
-const mockSetDark = vi.fn()
 
 vi.mock('@/composables/useDarkMode', () => ({
   useDarkMode: () => ({
     isDark: mockIsDark,
     toggleDark: mockToggleDark,
-    setDark: mockSetDark,
   }),
 }))
 
@@ -21,6 +19,9 @@ describe('DarkModeToggle', () => {
     // Reset DOM
     document.documentElement.classList.remove('dark')
     localStorage.clear()
+    // Reset shared mutable state to deterministic baseline
+    mockIsDark.value = false
+    mockToggleDark.mockClear()
   })
 
   afterEach(() => {
