@@ -469,4 +469,4 @@ onMounted(() => {
 })
 </script>
 
-<style lang="scss" scoped src="AssetTypeDetails.scss"></style>
+<style lang="scss" scoped src="./AssetTypeDetails.scss"></style>

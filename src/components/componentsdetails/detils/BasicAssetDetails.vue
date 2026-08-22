@@ -396,4 +396,4 @@ const handleEdit = () => {
 }
 </script>
 
-<style lang="scss" scoped src="BasicAssetDetails.scss"></style>
+<style lang="scss" scoped src="./BasicAssetDetails.scss"></style>

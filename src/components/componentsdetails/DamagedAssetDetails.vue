@@ -492,4 +492,4 @@ const handleMaskBack = () => {
 }
 </script>
 
-<style lang="scss" scoped src="DamagedAssetDetails.scss"></style>
+<style lang="scss" scoped src="./DamagedAssetDetails.scss"></style>

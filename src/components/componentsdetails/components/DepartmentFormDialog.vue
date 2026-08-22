@@ -460,4 +460,4 @@ watch(
 )
 </script>
 
-<style lang="scss" scoped src="DepartmentFormDialog.scss"></style>
+<style lang="scss" scoped src="./DepartmentFormDialog.scss"></style>

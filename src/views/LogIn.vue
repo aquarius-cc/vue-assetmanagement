@@ -278,7 +278,9 @@ const testNetwork = async () => {
   // 显示诊断结果
   let message = '🔍 网络诊断报告:\n\n'
   message += `📡 Django服务器连接: ${results.connection.status === 'success' ? '✅ 正常' : '❌ 失败'}\n`
-  message += `🔐 登录接口: ${results.login.status === 'success' ? '✅ 正常' : '❌ 失败'}\n\n`
+  const loginIcon = results.login.status === 'success' ? '✅ 正常'
+    : results.login.status === 'skipped' ? '⏭️ 已跳过' : '❌ 失败'
+  message += `🔐 登录接口: ${loginIcon}\n\n`
 
   if (results.login.status === 'error') {
     message += '❗ 登录接口不存在，解决建议:\n'
@@ -290,7 +292,8 @@ const testNetwork = async () => {
 
   ElMessage({
     message,
-    type: results.login.status === 'success' ? 'success' : 'warning',
+    type: results.login.status === 'success' ? 'success'
+      : results.login.status === 'skipped' ? 'info' : 'warning',
     duration: 8000,
     showClose: true,
   })

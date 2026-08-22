@@ -30,10 +30,12 @@ describe('networkAPI', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubGlobal('fetch', vi.fn())
+    vi.stubEnv('VITE_SERVER_URL', 'http://localhost:8000')
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
   })
 
   it('testConnection returns success when GET / succeeds', async () => {
@@ -64,7 +66,7 @@ describe('networkAPI', () => {
     expect(result.status).toBe('success')
   })
 
-  it('testLoginAPI calls fetch with OPTIONS method', async () => {
+  it('testLoginAPI calls fetch with OPTIONS method when SERVER_URL is set', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -81,5 +83,14 @@ describe('networkAPI', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')))
     const result = await networkAPI.testLoginAPI()
     expect(result.status).toBe('error')
+  })
+
+  it('testLoginAPI returns skipped when SERVER_URL is empty', async () => {
+    vi.stubEnv('VITE_SERVER_URL', '')
+    const mockFetch = vi.fn()
+    vi.stubGlobal('fetch', mockFetch)
+    const result = await networkAPI.testLoginAPI()
+    expect(result.status).toBe('skipped')
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 })

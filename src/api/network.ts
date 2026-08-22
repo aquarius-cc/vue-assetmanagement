@@ -12,8 +12,8 @@
 import { request } from '@/api/index'
 import { isAxiosError } from 'axios'
 
-// 从环境变量获取后端地址（与request.ts保持一致）
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://127.0.0.1:8000'
+// 从环境变量获取后端地址（生产环境不设置,由 Nginx 代理）
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || ''
 
 /** HTML 实体转义，防止 XSS 注入 */
 function escapeHtml(str: string): string {
@@ -68,6 +68,13 @@ export const networkAPI = {
    * 使用OPTIONS方法测试登录端点是否可达
    */
   testLoginAPI: async (): Promise<{ status: string; message: string; details?: unknown }> => {
+    // 生产环境不支持直连测试（通过 Nginx 代理,无直连地址）
+    if (!SERVER_URL) {
+      return {
+        status: 'skipped',
+        message: '生产环境不支持直连测试,请通过 Nginx 代理访问',
+      }
+    }
     try {
       // 使用环境变量中的服务器地址，而非硬编码
       const response = await fetch(`${SERVER_URL}/api/v1/auth/login/`, {
