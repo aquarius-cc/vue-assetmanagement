@@ -18,6 +18,9 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
+    // 子路径部署支持（如 /admin/），默认根路径 '/'
+    // router/index.ts 的 createWebHistory 已自动读取 import.meta.env.BASE_URL
+    base: env.VITE_BASE_URL || '/',
     plugins: [
       vue(),
       vueJsx(),
