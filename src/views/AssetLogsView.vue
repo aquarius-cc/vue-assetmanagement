@@ -67,6 +67,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Document } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { assetAPI } from '@/api/asset'
 import type { AssetDetail } from '@/types/asset'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
@@ -96,6 +97,7 @@ onMounted(async () => {
     timeline.value = timelineResult || []
   } catch (err) {
     console.error('获取资产状态日志失败:', err)
+    ElMessage.error('获取资产信息失败，请稍后重试')
   } finally {
     loading.value = false
   }

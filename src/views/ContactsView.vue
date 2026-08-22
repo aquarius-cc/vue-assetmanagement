@@ -117,6 +117,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { User, Search, OfficeBuilding, Refresh } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { userAPI } from '@/api/user'
 import { departmentAPI } from '@/api/department'
 import type { EmployeeExtended } from '@/types/user'
@@ -146,6 +147,7 @@ const fetchDepartmentTree = async () => {
     departmentData.value = await departmentAPI.getDepartmentTree()
   } catch (err) {
     console.error('获取部门树失败:', err)
+    ElMessage.error('获取部门数据失败')
   }
 }
 
@@ -182,6 +184,7 @@ const fetchContacts = async () => {
     }
   } catch (err) {
     console.error('获取通讯录失败:', err)
+    ElMessage.error('获取通讯录失败，请稍后重试')
   } finally {
     loading.value = false
   }
