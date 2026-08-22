@@ -123,7 +123,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
-import type { TableColumn } from '@/types/list'
+import { contractDetailColumns as columns } from './contractDetails.columns'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
@@ -148,56 +148,7 @@ const smartListRef = ref<SmartListContainerExpose | null>(null)
  * 子路由激活状态 * 用于控制子路由遮罩层的显礀 */
 const isChildRouteActive = ref(false)
 
-// ===== 表格列配置=====
-/**
- * 表格列定义
- * 每一列的渲染方式、标题、宽度等属态 */
-const columns: TableColumn[] = [
-  { type: 'index', label: '序号', width: 80, align: 'center' },
-  { prop: 'contract_code', label: '合同编码', width: 150, align: 'center' },
-  { prop: 'contract_name', label: '合同名称', width: 200, align: 'left' },
-  {
-    type: 'custom',
-    prop: 'contract_type',
-    label: '合同类型',
-    width: 120,
-    align: 'center',
-    slotName: 'contract_type',
-  },
-  {
-    type: 'custom',
-    prop: 'contract_amount',
-    label: '合同金额',
-    width: 150,
-    align: 'right',
-    slotName: 'contract_amount',
-  },
-  { prop: 'supplier_name', label: '供应商', width: 150, align: 'left' },
-  {
-    type: 'custom',
-    prop: 'contract_start_date',
-    label: '签订日期',
-    width: 150,
-    align: 'center',
-    slotName: 'contract_start_date',
-  },
-  {
-    type: 'custom',
-    prop: 'contract_status',
-    label: '合同状态',
-    width: 120,
-    align: 'center',
-    slotName: 'contract_status',
-  },
-  {
-    type: 'custom',
-    prop: 'settlemented_price',
-    label: '结算价格',
-    width: 150,
-    align: 'right',
-    slotName: 'settlemented_price',
-  },
-]
+
 
 // ===== SmartListContainer 配置 =====
 /**

@@ -469,44 +469,4 @@ onMounted(() => {
 })
 </script>
 
-<style lang="scss" scoped>
-.asset-type-management {
-  display: flex;
-  height: 100%;
-  overflow: hidden;
-
-  .tree-panel {
-    width: 280px;
-    min-width: 280px;
-    border-right: 1px solid var(--border-color-light);
-    display: flex;
-    flex-direction: column;
-    background: var(--background-color);
-
-    .tree-actions {
-      padding: 8px 12px;
-      border-top: 1px solid var(--border-color-light);
-      display: flex;
-      gap: 8px;
-    }
-  }
-
-  .content-panel {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-    background: var(--background-color);
-  }
-}
-
-.batch-add-list {
-  width: 100%;
-
-  .batch-add-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-}
-</style>
+<style lang="scss" scoped src="AssetTypeDetails.scss"></style>

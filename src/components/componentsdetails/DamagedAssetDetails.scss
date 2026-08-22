@@ -1,0 +1,41 @@
+@use '@/assets/styles/common-forms.scss' as *;
+
+.damaged-asset-details-root {
+  @include list-container;
+}
+
+.table-container {
+  @include table-container;
+
+  :deep(.el-table__header th.el-table__cell) {
+    text-align: center !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    padding: 16px 12px !important;
+  }
+
+  :deep(.el-table__body td.el-table__cell) {
+    text-align: center !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    padding: 12px 8px !important;
+  }
+}
+
+.bottom-buttons {
+  @include bottom-buttons;
+}
+
+.router-mask-container {
+  @include router-mask-container;
+}
+
+.mask {
+  @include mask;
+}
+
+.child-router-container {
+  @include child-router-container;
+}
+
+@include responsive-design;

@@ -1,0 +1,49 @@
+// 统一使用与资产导入相同的样式（完全复用，自 OutAssetBatchImport.vue 物理提取）
+.batch-import {
+  padding: 24px;
+  .box-card {
+    height: 100%;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    color: var(--color-primary-light);
+  }
+  .upload-actions {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 24px;
+    .upload-section {
+      flex: 1;
+    }
+  }
+  .upload-tip {
+    margin-top: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  .preview-table {
+    margin-bottom: 24px;
+    .section-title {
+      color: var(--text-primary);
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--color-primary-light);
+    }
+  }
+  .error-text {
+    color: var(--color-danger-light);
+    font-size: 13px;
+  }
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+}

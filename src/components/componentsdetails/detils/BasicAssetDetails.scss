@@ -1,0 +1,135 @@
+@use '@/assets/styles/common-forms.scss' as *;
+
+.asset-detail-container {
+  padding: 24px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--background-color);
+}
+
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color-light);
+}
+
+.title-area {
+  flex: 1;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+.asset-basic-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.asset-code,
+.asset-brand {
+  font-size: 14px;
+  color: var(--text-secondary);
+  background-color: var(--card-background-subtle);
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.status-badges {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.status-tag {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 4px;
+}
+
+.loading-container,
+.empty-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.loading-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+  color: var(--text-secondary);
+  font-size: 14px;
+
+  .el-icon {
+    font-size: 16px;
+  }
+}
+
+/* CRIT-6: 二维码样式 */
+.qr-code-section {
+  margin-bottom: 24px;
+}
+
+.qr-card {
+  border-radius: 8px;
+  max-width: 240px;
+}
+
+.qr-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.qr-image-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.qr-image {
+  width: 160px;
+  height: 160px;
+  border: 1px solid var(--border-color-light);
+  border-radius: 4px;
+}
+
+.qr-loading {
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}

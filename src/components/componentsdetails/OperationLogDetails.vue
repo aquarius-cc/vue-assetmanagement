@@ -154,14 +154,12 @@ defineOptions({ name: 'OperationLogDetails' })
 // ===== 导入顺序：Vue 核心 → 第三方库 → @/ 内部模块 =====
 import { ref, reactive, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
-import type { TableColumn } from '@/types/list'
 import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import type { PaginationQuery } from '@/stores/createEntityStore'
-import type { ColumnConfig } from '@/utils/excelExporter'
-import { exportToExcel } from '@/utils/excelExporter'
+import { operationLogColumns as columns } from './operationLog.columns'
+import { createOperationLogExcelExport } from '@/composables/useOperationLogExcelExport'
 import type { OperationLog } from '@/types/operationlog'
 import { operationTypeMapping, operationTypeTagMapping } from '@/types/operationlog'
 import { useOperationLogStore } from '@/stores/operationLogStore'
@@ -228,37 +226,6 @@ const getOperationTypeText = (type: string | null | undefined): string => {
   if (!type) return '未知'
   return operationTypeMapping[type] || type
 }
-
-// ===== 表格列配置 =====
-/**
- * 表格列定义
- * 每一列的渲染方式、标题、宽度等属性
- */
-const columns: TableColumn[] = [
-  { type: 'index', label: '序号', width: 60, align: 'center' },
-  {
-    type: 'custom',
-    prop: 'operation_type',
-    label: '操作类型',
-    width: 110,
-    align: 'center',
-    slotName: 'operation_type',
-  },
-  { prop: 'asset_code', label: '资产编码', width: 150, align: 'center' },
-  { prop: 'asset_name', label: '资产名称', width: 150, align: 'left' },
-  { prop: 'asset_specification', label: '资产规格', width: 150, align: 'left' },
-  { prop: 'operator_name', label: '操作人', width: 100, align: 'center' },
-  {
-    type: 'custom',
-    prop: 'operation_time',
-    label: '操作时间',
-    width: 170,
-    align: 'center',
-    slotName: 'operation_time',
-  },
-  { prop: 'description', label: '描述', width: 200, align: 'left' },
-  { prop: 'ip_address', label: 'IP地址', width: 130, align: 'center' },
-]
 
 // ===== SmartListContainer 配置 =====
 /**
@@ -434,94 +401,8 @@ watch(
   { immediate: true },
 )
 
-// ===== 导出 Excel =====
-/**
- * 导出 Excel
- * 支持导出当前页或全部数据
- */
-const handleExportExcel = async () => {
-  const exportColumns: ColumnConfig<OperationLog>[] = [
-    {
-      title: '操作类型',
-      key: 'operation_type',
-      default: '',
-      formatter: (val) => getOperationTypeText(val as string),
-    },
-    { title: '资产编码', key: 'asset_code', default: '' },
-    { title: '资产名称', key: 'asset_name', default: '' },
-    { title: '资产规格', key: 'asset_specification', default: '' },
-    { title: '操作人', key: 'operator_name', default: '' },
-    { title: '操作人工号', key: 'operator_jobcode', default: '' },
-    {
-      title: '操作时间',
-      key: 'operation_time',
-      default: '',
-      formatter: (val) => formatDate(val as string | Date | null) || '',
-    },
-    { title: '描述', key: 'description', default: '' },
-    { title: 'IP地址', key: 'ip_address', default: '' },
-  ]
-
-  let range: 'current' | 'all' | null = null
-  try {
-    await ElMessageBox.confirm(
-      `当前页面 ${operationLogStore.list.length} 条，总共 ${operationLogStore.pagination.total} 条。请选择：`,
-      '导出范围',
-      {
-        confirmButtonText: '导出当前页',
-        cancelButtonText: '导出全部',
-        distinguishCancelAndClose: true,
-      },
-    )
-    range = 'current'
-  } catch (err) {
-    if (err === 'cancel') range = 'all'
-    else return
-  }
-
-  let exportData: OperationLog[] = []
-  let fileName = ''
-
-  if (range === 'current') {
-    exportData = operationLogStore.list
-    fileName = `操作日志列表_当前页面_${operationLogStore.list.length}条.xlsx`
-  } else if (range === 'all') {
-    ElMessage.info('正在准备全部数据，请稍候...')
-    if (operationLogStore.pagination.total > 1000) {
-      const confirm = await ElMessageBox.confirm(
-        '数据量较大，导出可能需要一些时间，是否继续？',
-        '导出确认',
-        { confirmButtonText: '继续', cancelButtonText: '取消', type: 'warning' },
-      ).catch(() => false)
-      if (!confirm) return
-    }
-    try {
-      const allData = await operationLogStore.getList({
-        page: 1,
-        page_size: operationLogStore.pagination.total,
-      })
-      exportData = allData
-      fileName = `操作日志列表_全部_${allData.length}条.xlsx`
-    } catch (error) {
-      console.error('导出全部数据失败:', error)
-      ElMessage.error('获取全部数据失败，请重试')
-      return
-    }
-  } else {
-    return
-  }
-
-  await exportToExcel({
-    data: exportData,
-    columns: exportColumns,
-    fileName,
-    sheetName: '操作日志列表',
-    confirmMessage: `确定要导出 ${exportData.length} 条操作日志数据吗？`,
-    emptyMessage: '暂无操作日志数据可导出',
-    successMessage: '操作日志数据导出成功',
-    errorMessage: '操作日志数据导出失败，请重试',
-  })
-}
+// ===== 导出 Excel（组合式函数，DR-5 物理提取）=====
+const handleExportExcel = createOperationLogExcelExport(operationLogStore, getOperationTypeText)
 
 /**
  * 遮罩层点击返回
@@ -532,66 +413,4 @@ const handleMaskBack = () => {
 }
 </script>
 
-<style lang="scss" scoped>
-@use '@/assets/styles/common-forms.scss' as *;
-
-.operation-log-details-root {
-  @include list-container;
-}
-
-.filter-container {
-  padding: 16px 20px;
-  background-color: var(--card-background);
-  border-radius: 8px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-}
-
-.filter-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0;
-
-  :deep(.el-form-item) {
-    margin-bottom: 0;
-    margin-right: 16px;
-  }
-}
-
-.table-container {
-  @include table-container;
-
-  :deep(.el-table__header th.el-table__cell) {
-    text-align: center !important;
-    white-space: normal !important;
-    word-break: break-word !important;
-    padding: 16px 12px !important;
-  }
-
-  :deep(.el-table__body td.el-table__cell) {
-    text-align: center !important;
-    white-space: normal !important;
-    word-break: break-word !important;
-    padding: 12px 8px !important;
-  }
-}
-
-.bottom-buttons {
-  @include bottom-buttons;
-}
-
-.router-mask-container {
-  @include router-mask-container;
-}
-
-.mask {
-  @include mask;
-}
-
-.child-router-container {
-  @include child-router-container;
-}
-
-@include responsive-design;
-</style>
+<style lang="scss" scoped src="./OperationLogDetails.scss"></style>

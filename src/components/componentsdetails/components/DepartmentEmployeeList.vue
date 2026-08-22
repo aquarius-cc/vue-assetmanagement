@@ -208,7 +208,7 @@
  */
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { User, Plus, Upload, Sort, Delete } from '@element-plus/icons-vue'
 import { getDepartmentEmployees } from '@/stores/departmentStore'
 import { userAPI } from '@/api/user'
@@ -216,6 +216,7 @@ import type { EmployeeExtended, EmployeeStatus } from '@/types/user'
 import type { DepartmentTreeNode, DepartmentEmployeeListQueryParams } from '@/types/department'
 import { useUserStore } from '@/stores/userStore'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
+import { useDepartmentEmployeeActions } from '@/composables/useDepartmentEmployeeActions'
 
 // ==================== Props ====================
 
@@ -243,20 +244,8 @@ const userStore = useUserStore()
 /** 人员列表（全量，按 sort_order 排序） */
 const employeeList = ref<EmployeeExtended[]>([])
 
-/** 原始排序（用于取消排序时恢复） */
-const originalList = ref<EmployeeExtended[]>([])
-
 /** 加载状态 */
 const isLoading = ref(false)
-
-/** 排序编辑模式 */
-const isSortMode = ref(false)
-
-/** 保存排序中 */
-const isSavingSort = ref(false)
-
-/** 批量删除中 */
-const isBatchDeleting = ref(false)
 
 /** 表格组件引用，用于调用 clearSelection 等方法 */
 const tableRef = ref<InstanceType<(typeof import('element-plus'))['ElTable']> | null>(null)
@@ -398,72 +387,6 @@ const handleSelectionChange = (rows: EmployeeExtended[]) => {
 }
 
 /**
- * 切换排序编辑模式
- * 进入排序模式时清空选择状态（排序模式下不允许批量删除）
- */
-const toggleSortMode = () => {
-  if (!isSortMode.value) {
-    // 进入排序模式：保存原始列表副本，清空选择状态
-    originalList.value = [...employeeList.value]
-    tableRef.value?.clearSelection()
-    selectedRows.value = []
-  }
-  isSortMode.value = !isSortMode.value
-}
-
-/**
- * 取消排序模式，恢复原始排序
- */
-const cancelSortMode = () => {
-  employeeList.value = [...originalList.value]
-  isSortMode.value = false
-}
-
-/**
- * 移动人员排序（上移/下移）
- * @param index 当前索引
- * @param direction 移动方向（-1=上移，1=下移）
- */
-const moveEmployee = (index: number, direction: number) => {
-  const newIndex = index + direction
-  if (newIndex < 0 || newIndex >= employeeList.value.length) return
-
-  // 交换数组元素
-  const temp = employeeList.value[index]
-  employeeList.value[index] = employeeList.value[newIndex]
-  employeeList.value[newIndex] = temp
-
-  // 同步更新 sort_order 值
-  employeeList.value.forEach((item, idx) => {
-    item.sort_order = idx
-  })
-}
-
-/**
- * 保存排序到后端
- */
-const saveSortOrder = async () => {
-  try {
-    isSavingSort.value = true
-    const sortData = employeeList.value.map((item, index) => ({
-      employee_jobcode: item.employee_jobcode,
-      sort_order: index,
-    }))
-
-    await userAPI.batchUpdateSort(sortData)
-    ElMessage.success('排序保存成功')
-    isSortMode.value = false
-    // 重新加载以获取后端确认后的数据
-    await loadEmployeeList()
-  } catch (error) {
-    console.error('保存排序失败:', error)
-    ElMessage.error('保存排序失败')
-  } finally {
-    isSavingSort.value = false
-  }
-}
-
-/**
  * 跳转到新增人员页面（携带当前部门编码）
  */
 const handleAddEmployee = () => {
@@ -489,61 +412,24 @@ const handleDeleteEmployee = async (row: EmployeeExtended) => {
   }
 }
 
-/**
- * 批量删除人员
- * 弹出确认框，确认后调用 userStore.removeBatch 执行批量删除
- * 删除成功后清空选择状态并刷新列表
- */
-const handleBatchDelete = async () => {
-  if (selectedRows.value.length === 0) {
-    ElMessage.warning('请先选择要删除的数据')
-    return
-  }
-
-  // 提取选中的工号（唯一标识）
-  const jobcodes = selectedRows.value
-    .map((row) => row.employee_jobcode)
-    .filter((code): code is string => !!code)
-
-  if (jobcodes.length === 0) {
-    ElMessage.error('无法删除：选中的数据缺少唯一标识')
-    return
-  }
-
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除选中的 ${jobcodes.length} 条数据吗？删除后数据不可恢复！`,
-      '批量删除确认',
-      {
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
-
-    isBatchDeleting.value = true
-    const result = await userStore.removeBatch(jobcodes)
-
-    // 处理部分失败情况
-    if (result && 'fail_count' in result && result.fail_count > 0) {
-      ElMessage.warning(`成功删除 ${result.success_count} 条，失败 ${result.fail_count} 条`)
-    } else {
-      ElMessage.success(`成功删除 ${jobcodes.length} 条数据`)
-    }
-
-    // 清空选择状态
-    tableRef.value?.clearSelection()
-    selectedRows.value = []
-    // 刷新列表
-    await loadEmployeeList()
-  } catch (error) {
-    if (error === 'cancel') return // 用户取消删除
-    console.error('批量删除失败:', error)
-    ElMessage.error('批量删除失败，请重试')
-  } finally {
-    isBatchDeleting.value = false
-  }
-}
+// ===== 排序编辑与批量删除操作（组合式函数，DR-5 物理提取）=====
+const {
+  isSortMode,
+  isSavingSort,
+  isBatchDeleting,
+  toggleSortMode,
+  cancelSortMode,
+  moveEmployee,
+  saveSortOrder,
+  handleBatchDelete,
+} = useDepartmentEmployeeActions({
+  employeeList,
+  selectedRows,
+  tableRef,
+  userStore,
+  userAPI,
+  loadEmployeeList,
+})
 
 /**
  * 跳转到批量导入页面（携带当前部门编码）
@@ -603,90 +489,4 @@ watch(
 )
 </script>
 
-<style lang="scss" scoped>
-.department-employee-list {
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-
-    .header-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      font-size: 16px;
-
-      .el-icon {
-        color: var(--color-primary-light);
-      }
-
-      .count-tag {
-        margin-left: 4px;
-      }
-    }
-
-    /**
-     * 筛选区域样式
-     * 使用 flex 布局，与操作按钮保持同行
-     * 添加间距和对齐，确保视觉协调
-     */
-    .header-filters {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: auto; // 将筛选器推到右侧
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    /**
-     * 响应式适配
-     * 小屏幕时筛选器和操作按钮换行显示
-     * 确保在移动设备上也能正常操作
-     */
-    @media (max-width: 768px) {
-      .header-filters,
-      .header-actions {
-        width: 100%;
-        justify-content: flex-start;
-        margin-left: 0;
-      }
-    }
-  }
-
-  .employee-table {
-    cursor: pointer;
-  }
-
-  .sort-index {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    background-color: var(--color-primary-light);
-    color: var(--card-background);
-    border-radius: 50%;
-    font-size: 12px;
-  }
-
-  .sort-actions {
-    margin-top: 16px;
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-  }
-
-  .pagination-wrapper {
-    margin-top: 16px;
-    display: flex;
-    justify-content: flex-end;
-  }
-}
-</style>
+<style lang="scss" scoped src="./DepartmentEmployeeList.scss"></style>

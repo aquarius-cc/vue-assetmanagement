@@ -1,0 +1,7 @@
+// 使用公共样式 mixin（符合规范）
+@use '@/assets/styles/common-forms.scss' as *;
+
+.outasset-form {
+  // 继承公共表单容器样式（如不存在则忽略）
+  @extend .form-container !optional;
+}

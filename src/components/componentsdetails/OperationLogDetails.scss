@@ -1,0 +1,61 @@
+@use '@/assets/styles/common-forms.scss' as *;
+
+.operation-log-details-root {
+  @include list-container;
+}
+
+.filter-container {
+  padding: 16px 20px;
+  background-color: var(--card-background);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+
+  :deep(.el-form-item) {
+    margin-bottom: 0;
+    margin-right: 16px;
+  }
+}
+
+.table-container {
+  @include table-container;
+
+  :deep(.el-table__header th.el-table__cell) {
+    text-align: center !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    padding: 16px 12px !important;
+  }
+
+  :deep(.el-table__body td.el-table__cell) {
+    text-align: center !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    padding: 12px 8px !important;
+  }
+}
+
+.bottom-buttons {
+  @include bottom-buttons;
+}
+
+.router-mask-container {
+  @include router-mask-container;
+}
+
+.mask {
+  @include mask;
+}
+
+.child-router-container {
+  @include child-router-container;
+}
+
+@include responsive-design;

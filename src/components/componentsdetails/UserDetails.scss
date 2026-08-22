@@ -1,0 +1,34 @@
+// 导入公共样式 mixin 库（使用现代 @use 语法）
+@use '@/assets/styles/common-forms.scss' as *;
+@use '@/assets/styles/global-scroll.scss' as *;
+
+// 根容器：使用统一列表容器样式
+.user-details-root {
+  @include list-container;
+}
+
+// 表格容器：复用全局表格容器样式
+.table-container {
+  @include table-container;
+}
+
+// 底部按钮：复用全局底部按钮样式
+.bottom-buttons {
+  @include bottom-buttons;
+}
+
+// 子路由遮罩容器：复用全局样式
+.router-mask-container {
+  @include router-mask-container;
+
+  .mask {
+    @include mask;
+  }
+
+  .child-router-container {
+    @include child-router-container;
+  }
+}
+
+// 响应式设计
+@include responsive-design;

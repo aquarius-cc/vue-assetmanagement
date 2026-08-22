@@ -151,13 +151,13 @@ defineOptions({ name: 'HardDiskSNForm' })
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import type { FormRules } from 'element-plus'
 import { EditPen } from '@element-plus/icons-vue'
 import { isAxiosError } from 'axios'
 import { useAssetStore } from '@/stores/assetStore'
 import { useHardDiskSnStore } from '@/stores/harddiskSnStore'
 import type { DiskItem, HardDiskSNBatchSaveForm, HardDiskSN } from '@/types/harddisksn'
-import { HardDiskType, HardDiskStatus } from '@/types/harddisksn'
+import { hardDiskTypeOptions, hardDiskStatusOptions, rules } from './hardDiskSNFormConfig'
+import { HardDiskStatus } from '@/types/harddisksn'
 import { harddiskSnAPI } from '@/api/harddiskSn'
 import type { AssetDetail } from '@/types/asset'
 import type { AssetSuggestion } from '@/types/form-helpers'
@@ -175,23 +175,6 @@ const isLoading = ref(false)
 const isEditMode = ref(!!route.query.code || !!route.query.id)
 const assetCode = ref((route.query.assetCode as string) || '')
 const harddiskSnCode = ref((route.query.harddiskSnCode as string) || '')
-
-// ===== 硬盘类型选项 =====
-const hardDiskTypeOptions = [
-  { value: HardDiskType.HDD, label: '机械硬盘 (HDD)' },
-  { value: HardDiskType.SSD, label: '固态硬盀(SSD)' },
-  { value: HardDiskType.NVMe, label: 'NVMe硬盘' },
-  { value: HardDiskType.OTHER, label: '其他' },
-]
-
-// ===== 硬盘状态选项 =====
-const hardDiskStatusOptions = [
-  { value: HardDiskStatus.ACTIVE, label: '正常' },
-  { value: HardDiskStatus.REPAIR, label: '维修' },
-  { value: HardDiskStatus.SCRAP, label: '报废' },
-  { value: HardDiskStatus.LOST, label: '丢失' },
-  { value: HardDiskStatus.DAMAGED, label: '损坏' },
-]
 
 // ===== 表单数据（数组结构，每组硬盘独立） =====
 interface FormDataType {
@@ -269,21 +252,6 @@ const handleNumberChange = (newVal: number, oldVal: number) => {
       }
     }
   }
-}
-
-// ===== 表单验证规则 =====
-const rules: FormRules = {
-  asset_code: [{ required: true, message: '请输入或选择资产编码', trigger: 'blur' }],
-  asset_recordcode: [{ required: true, message: '请选择有效资产', trigger: 'blur' }],
-  harddisk_sn_code: [{ required: true, message: '请输入硬盘序列号', trigger: 'blur' }],
-  harddisk_number: [
-    { required: true, message: '请输入硬盘数量', trigger: 'blur' },
-    { type: 'number', min: 1, message: '范围1-999', trigger: 'blur' },
-  ],
-  harddisk_no: [
-    { required: true, message: '请输入硬盘编号', trigger: 'blur' },
-    { type: 'number', min: 1, message: '编号必须大于0', trigger: 'blur' },
-  ],
 }
 
 // ===== 资产编码联动 =====

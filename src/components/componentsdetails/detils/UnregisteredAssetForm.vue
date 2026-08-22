@@ -223,11 +223,7 @@ import { useStorageStore } from '@/stores/storageStore'
 import { useUnregisteredAssetStore } from '@/stores/unregisteredAssetStore'
 import type { UnregisteredAssetCreateForm } from '@/types/unregisteredasset'
 import { ScenarioType } from '@/types/unregisteredasset'
-import type { AssetDetail } from '@/types/asset'
-import type { AssetType } from '@/types/assettype'
-import type { Storage } from '@/types/storage'
-import type { AssetTypeSuggestion } from '@/types/form-helpers'
-import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
+import { useUnregisteredFormLinkage } from '@/composables/useUnregisteredFormLinkage'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -332,90 +328,18 @@ const handleScenarioTypeChange = (value: string) => {
   }
 }
 
-// ===== 资产类型编码联动 =====
-const fetchAssetTypeSuggestions = createSuggestionFetcher<AssetType, AssetTypeSuggestion>({
-  fetchData: async (query: string) => {
-    const response = await assetTypeStore.getList({ search: query, page: 1, page_size: 20 })
-    return response
-  },
-  transform: (assetType: AssetType): AssetTypeSuggestion => ({
-    value: assetType.type_code,
-    type_code: assetType.type_code,
-    type_name: assetType.type_name,
-  }),
-})
-
-const handleAssetTypeSelect = (item: AssetTypeSuggestion) => {
-  formData.asset_type_code_display = item.type_code
-  formData.asset_type_code = item.type_code
-}
-
-const handleAssetTypeCodeChange = (value: string) => {
-  if (!value.trim()) {
-    formData.asset_type_code = ''
-  }
-}
-
-// ===== 关联资产编码联动 =====
-interface AssetSuggestion {
-  value: string
-  asset_name: string
-  asset_code: string
-  asset_specification: string | null
-}
-
-const fetchAssetSuggestions = createSuggestionFetcher<AssetDetail, AssetSuggestion>({
-  fetchData: (query: string) => assetStore.getByName(query),
-  transform: (asset: AssetDetail): AssetSuggestion => ({
-    value: asset.asset_code,
-    asset_name: asset.asset_name,
-    asset_code: asset.asset_code,
-    asset_specification: asset.asset_specification,
-  }),
-})
-
-const handleRelatedAssetSelect = (item: AssetSuggestion) => {
-  formData.related_asset_code_display = item.asset_code
-  formData.related_asset_code = item.asset_code
-}
-
-const handleRelatedAssetCodeChange = (value: string) => {
-  if (!value.trim()) {
-    formData.related_asset_code = ''
-  }
-}
-
-// ===== 目标仓库编码联动 =====
-interface StorageSuggestion {
-  value: string
-  storage_name: string
-  storage_code: string
-  storage_address: string | null
-}
-
-const fetchStorageSuggestions = createSuggestionFetcher<Storage, StorageSuggestion>({
-  fetchData: async (query: string) => {
-    const response = await storageStore.getList({ search: query, page: 1, page_size: 20 })
-    return response
-  },
-  transform: (storage: Storage): StorageSuggestion => ({
-    value: storage.storage_code,
-    storage_name: storage.storage_name,
-    storage_code: storage.storage_code,
-    storage_address: storage.storage_address,
-  }),
-})
-
-const handleStorageSelect = (item: StorageSuggestion) => {
-  formData.target_storage_code_display = item.storage_code
-  formData.target_storage_code = item.storage_code
-}
-
-const handleStorageCodeChange = (value: string) => {
-  if (!value.trim()) {
-    formData.target_storage_code = ''
-  }
-}
+// ===== 三向联动（资产类型/关联资产/目标仓库，组合式函数 DR-5 物理提取）=====
+const {
+  fetchAssetTypeSuggestions,
+  handleAssetTypeSelect,
+  handleAssetTypeCodeChange,
+  fetchAssetSuggestions,
+  handleRelatedAssetSelect,
+  handleRelatedAssetCodeChange,
+  fetchStorageSuggestions,
+  handleStorageSelect,
+  handleStorageCodeChange,
+} = useUnregisteredFormLinkage(formData, { assetStore, assetTypeStore, storageStore })
 
 // ===== 编辑模式：加载现有数据 =====
 const loadEditData = async (code: string) => {
@@ -549,17 +473,4 @@ onMounted(async () => {
 })
 </script>
 
-<style lang="scss" scoped>
-@use '@/assets/styles/common-forms.scss' as *;
-
-.unregistered-asset-form {
-  @include form-container;
-}
-
-.field-hint {
-  font-size: 12px;
-  color: var(--color-warning-light);
-  margin-top: 4px;
-  line-height: 1.4;
-}
-</style>
+<style lang="scss" scoped src="./UnregisteredAssetForm.scss"></style>

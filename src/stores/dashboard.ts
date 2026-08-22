@@ -3,6 +3,7 @@
  * @module stores/dashboard
  */
 import { defineStore } from 'pinia'
+import { STATUS_GROUPS } from './dashboardStatusGroups'
 import { ref, computed } from 'vue'
 import { isAxiosError } from 'axios'
 import { dashboardAPI } from '@/api/dashboard'
@@ -117,27 +118,6 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
   })
 
-  /**
-   * [新增] 状态分组定义：正常资产 / 异常资产 / 报废流程
-   * 每项包含：状态码、中文标签、颜色、所属分组
-   */
-  const STATUS_GROUPS = {
-    normal: {
-      label: '正常资产',
-      color: '#52C41A',
-      items: ['in_store', 'in_use', 'recycled_pending'] as string[],
-    },
-    abnormal: {
-      label: '异常资产',
-      color: '#FAAD14',
-      items: ['broken', 'repairing', 'lost'] as string[],
-    },
-    scrap: {
-      label: '报废流程',
-      color: '#909399',
-      items: ['damaged', 'scrapped'] as string[],
-    },
-  } as const
 
   /**
    * [新增] 计算属性 - 资产状态全景数据

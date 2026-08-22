@@ -120,6 +120,8 @@ import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { departmentAPI } from '@/api/department'
 import type { Department, DepartmentCreateForm, DepartmentTreeNode } from '@/types/department'
+import { departmentFormStaticRules } from './departmentFormDialogRules'
+import { isDescendant, isDescendantByCode } from '@/utils/departmentTree'
 
 // ==================== Props & Emits ====================
 
@@ -289,28 +291,8 @@ const validateParentCode = (
 }
 
 const formRules: FormRules = {
-  department_code: [
-    { required: true, message: '请输入部门编码', trigger: 'blur' },
-    { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' },
-    {
-      pattern: /^[a-zA-Z0-9_-]+$/,
-      message: '只能包含字母、数字、下划线和横线',
-      trigger: 'blur',
-    },
-  ],
-  department_name: [
-    { required: true, message: '请输入部门名称', trigger: 'blur' },
-    { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' },
-  ],
-  department_information: [
-    { required: true, message: '请输入部门信息员', trigger: 'blur' },
-    { max: 50, message: '最多 50 个字符', trigger: 'blur' },
-  ],
+  ...departmentFormStaticRules,
   parent_department_code: [{ validator: validateParentCode, trigger: 'change' }],
-  sort_order: [
-    { required: true, message: '请输入排序顺序', trigger: 'blur' },
-    { type: 'number', min: 0, max: 9999, message: '范围 0-9999', trigger: 'blur' },
-  ],
 }
 
 // ==================== 方法定义 ====================
@@ -339,46 +321,6 @@ const calculateNewLevel = (parentCode: string | null): number => {
 
   const parentLevel = findLevel(props.departmentTree, parentCode)
   return parentLevel >= 0 ? parentLevel + 1 : 0
-}
-
-/**
- * 判断节点是否是指定编码的子部门
- * @param node 节点
- * @param parentCode 父部门编码
- */
-const isDescendant = (node: DepartmentTreeNode, parentCode: string): boolean => {
-  if (node.parent_department_code === parentCode) return true
-  if (node.children?.length) {
-    return node.children.some((child) => isDescendant(child, parentCode))
-  }
-  return false
-}
-
-/**
- * 判断指定编码的节点是否是另一个节点的子部门
- * @param code 要检查的编码
- * @param ancestorCode 祖先编码
- * @param tree 部门树
- */
-const isDescendantByCode = (
-  code: string,
-  ancestorCode: string,
-  tree: DepartmentTreeNode[],
-): boolean => {
-  const findNode = (nodes: DepartmentTreeNode[], targetCode: string): DepartmentTreeNode | null => {
-    for (const node of nodes) {
-      if (node.department_code === targetCode) return node
-      if (node.children?.length) {
-        const found = findNode(node.children, targetCode)
-        if (found) return found
-      }
-    }
-    return null
-  }
-
-  const node = findNode(tree, code)
-  if (!node) return false
-  return isDescendant(node, ancestorCode)
 }
 
 /**
@@ -518,23 +460,4 @@ watch(
 )
 </script>
 
-<style lang="scss" scoped>
-.department-form {
-  .form-tip {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-top: 4px;
-
-    .level-warning {
-      color: var(--color-warning-light);
-      margin-left: 8px;
-    }
-  }
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-</style>
+<style lang="scss" scoped src="DepartmentFormDialog.scss"></style>

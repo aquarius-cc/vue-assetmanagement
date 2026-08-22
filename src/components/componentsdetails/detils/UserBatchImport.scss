@@ -1,0 +1,63 @@
+// UserBatchImport.vue 样式（自组件物理提取，零变更）
+// 使用公共样式 mixin（与 OutAssetForm 保持一致）
+@use '@/assets/styles/common-forms.scss' as *;
+
+.batch-import-container {
+  // 继承公共表单容器样式
+  @include form-container;
+
+  // 卡片头部返回按钮
+  .back-btn {
+    margin-left: auto;
+  }
+
+  // 导入卡片（继承 box-card 样式）
+  .import-card {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  // 上传区域
+  .upload-section {
+    margin-bottom: 24px;
+
+    .template-btn {
+      margin-left: 20px;
+    }
+  }
+
+  // 数据预览区域
+  .preview-section {
+    margin-top: 24px;
+
+    .section-title {
+      color: $text-primary;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--color-primary-light);
+    }
+
+    // 分页
+    .pagination-wrapper {
+      margin-top: 16px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    // 操作按钮
+    .action-buttons {
+      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+  }
+
+  // 错误文本
+  .error-text {
+    color: var(--color-danger-light);
+    font-size: 13px;
+  }
+}

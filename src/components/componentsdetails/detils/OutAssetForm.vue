@@ -250,6 +250,9 @@ import type { EmployeeAutocompleteItem } from '@/types/outasset'
 import { formatDate } from '@/utils/Format'
 import ExportableAssetsSearch from '@/components/componentsdetails/detils/detilschildcomponents/ExportableAssetsSearch.vue'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
+import { useOutAssetAssetSelection } from '@/composables/useOutAssetAssetSelection'
+import { createOutAssetRules } from './outAssetFormRules'
+import { createOutAssetEditLoader } from './outAssetFormEditLoader'
 import { useEmployeeSuggestionFetcher } from '@/composables/useEmployeeSuggestionFetcher'
 import { useAutocompleteField } from '@/composables/useAutocompleteField'
 import { AssetCurrentStatus } from '@/types/asset'
@@ -313,37 +316,8 @@ const outAssetForm = computed<OutAssetCreateForm>(() => ({
   outasset_description: outAssetCreateExtendedForm.outasset_description || null,
 }))
 
-// ========== 表单验证规则 ==========
-const rules = {
-  outasset_code: [
-    { required: true, message: '请输入出库资产编码', trigger: 'blur' },
-    { min: 1, max: 50, message: '编码长度 1-50 字符', trigger: 'blur' },
-  ],
-  outasset_number: [
-    { required: true, message: '请输入出库数量', trigger: 'blur' },
-    { type: 'number', min: 1, message: '数量必须大于0', trigger: 'blur' },
-  ],
-  outasset_applicant_name: [{ required: true, message: '请选择申请人', trigger: 'change' }],
-  outasset_manager_name: [{ required: true, message: '请选择保管人', trigger: 'change' }],
-  outasset_using_location: [
-    { required: true, message: '请输入使用地点', trigger: 'blur' },
-    { min: 1, max: 200, message: '使用地点长度 1-200 字符', trigger: 'blur' },
-  ],
-  outasset_type: [{ required: true, message: '请选择出库类型', trigger: 'change' }],
-  outasset_date: [{ required: true, message: '请选择出库日期', trigger: 'change' }],
-  return_date: [
-    {
-      validator: (_rule: unknown, value: string, callback: (error?: Error | string) => void) => {
-        if (outAssetCreateExtendedForm.outasset_type === 'borrow' && !value) {
-          callback(new Error('借用类型必须填写归还日期'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'change',
-    },
-  ],
-}
+// ========== 表单验证规则（工厂函数创建，validator 引用 reactive 表单）==========
+const rules = createOutAssetRules(outAssetCreateExtendedForm)
 
 // ========== 建议获取器（使用公共函数）=========
 // [HR-01] 后端 v1.1.0 改为 read_only，移除 UserSuggestion 接口（用户搜索联动已移除了
@@ -387,98 +361,15 @@ const managerField = useAutocompleteField({
   codeKey: 'employee_jobcode',
 })
 
-// ========== 资产选择相关逻辑（用于自动完成） ==========
-const selectedAsset = ref<AssetAutocompleteItem | null>(null)
-
-/** 从下拉选择资产 */
-const handleAssetNameSelect = (item: AssetAutocompleteItem) => {
-  selectedAsset.value = item
-  outAssetCreateExtendedForm.outasset_name = item.asset_name
-  outAssetCreateExtendedForm.outasset_code = item.asset_code
-}
-
-/** 手动输入资产名称变化时，清空已选资人*/
-const handleAssetNameChange = (value: string) => {
-  if (selectedAsset.value?.asset_name !== value) selectedAsset.value = null
-}
-
-/** 资产名称失焦验证（确保输入的有效性） */
-const handleAssetNameBlur = async (event: FocusEvent) => {
-  const currentValue = (event.target as HTMLInputElement).value
-  if (selectedAsset.value?.asset_name === currentValue) return
-  if (!currentValue) {
-    clearAssetInfo()
-    return
-  }
-  await validateAssetByName(currentValue)
-}
-
-/** 资产编码手动输入验证 */
-const handleAssetCodeChange = async (code: string) => {
-  if (!code.trim()) {
-    clearAssetInfo()
-    return
-  }
-  try {
-    const asset = await assetStore.getById(code)
-    if (asset) {
-      outAssetCreateExtendedForm.outasset_name = asset.asset_name
-      selectedAsset.value = {
-        value: asset.asset_name,
-        asset_name: asset.asset_name,
-        asset_code: asset.asset_code,
-        asset_current_status: asset.asset_current_status ?? '',
-      }
-    } else {
-      outAssetCreateExtendedForm.outasset_code = '编码错误，无此资产'
-      outAssetCreateExtendedForm.outasset_name = ''
-      selectedAsset.value = null
-    }
-  } catch (error) {
-    console.error('资产编码校验失败:', error)
-    ElMessage.error('系统错误，请稍后再试')
-    clearAssetInfo()
-  }
-}
-
-/** 根据资产名称校验并自动补入*/
-const validateAssetByName = async (name: string) => {
-  if (!name.trim()) {
-    clearAssetInfo()
-    return
-  }
-  try {
-    const assets = await assetStore.getByName(name.trim())
-    if (!assets || assets.length === 0) {
-      outAssetCreateExtendedForm.outasset_code = '名称错误，请重新输入'
-      selectedAsset.value = null
-    } else if (assets.length === 1) {
-      const asset = assets[0]
-      outAssetCreateExtendedForm.outasset_name = asset.asset_name
-      outAssetCreateExtendedForm.outasset_code = asset.asset_code
-      selectedAsset.value = {
-        value: asset.asset_name,
-        asset_name: asset.asset_name,
-        asset_code: asset.asset_code,
-        asset_current_status: asset.asset_current_status ?? '',
-      }
-    } else {
-      outAssetCreateExtendedForm.outasset_code = '(请从下拉列表中选择正确的资人'
-      selectedAsset.value = null
-    }
-  } catch (error) {
-    console.error('资产名称校验失败:', error)
-    outAssetCreateExtendedForm.outasset_code = '验证失败'
-    selectedAsset.value = null
-  }
-}
-
-/** 清空资产信息 */
-const clearAssetInfo = () => {
-  outAssetCreateExtendedForm.outasset_name = ''
-  outAssetCreateExtendedForm.outasset_code = ''
-  selectedAsset.value = null
-}
+// ========== 资产选择相关逻辑（组合式函数，DR-5 物理提取）==========
+const {
+  selectedAsset,
+  handleAssetNameSelect,
+  handleAssetNameChange,
+  handleAssetNameBlur,
+  handleAssetCodeChange,
+  handleAssetSelect,
+} = useOutAssetAssetSelection(outAssetCreateExtendedForm, assetStore)
 
 // ========== 申请人相关逻辑 ==========
 const selectedApplicant = ref<EmployeeAutocompleteItem | null>(null)
@@ -486,81 +377,16 @@ const selectedApplicant = ref<EmployeeAutocompleteItem | null>(null)
 // ========== 保管人相关逻辑 ==========
 const selectedManager = ref<EmployeeAutocompleteItem | null>(null)
 
-// ========== 资产选择组件回调 ==========
-const handleAssetSelect = (asset: AssetDetail) => {
-  outAssetCreateExtendedForm.outasset_code = asset.asset_code
-  outAssetCreateExtendedForm.outasset_name = asset.asset_name
-  selectedAsset.value = {
-    value: asset.asset_name,
-    asset_name: asset.asset_name,
-    asset_code: asset.asset_code,
-    asset_current_status: asset.asset_current_status || '',
-  }
-  ElMessage.success('资产已选择')
-}
-
-// ========== 加载编辑数据 ==========
-const loadEditData = async (recordcode: string) => {
-  isLoading.value = true
-  try {
-    const detail = await outAssetStore.getById(recordcode)
-    if (!detail) {
-      ElMessage.error('未找到该出库记录，请返回列表重新选择')
-      router.back()
-      return
-    }
-    // 填充表单
-    outAssetCreateExtendedForm.outasset_code = detail.outasset_code || ''
-    outAssetCreateExtendedForm.outasset_number = detail.outasset_number
-    // [HR-02] 回填申请人保管人信息（从后端返回的关联对象或字段获取）
-    outAssetCreateExtendedForm.outasset_applicant_jobcode = detail.outasset_applicant_jobcode || ''
-    outAssetCreateExtendedForm.outasset_manager_jobcode = detail.outasset_manager_jobcode || ''
-    outAssetCreateExtendedForm.outasset_applicant_name =
-      detail.outasset_applicant?.employee_name || ''
-    outAssetCreateExtendedForm.outasset_manager_name = detail.outasset_manager?.employee_name || ''
-    outAssetCreateExtendedForm.outasset_date = detail.outasset_date
-      ? formatDate(detail.outasset_date) || ''
-      : ''
-    outAssetCreateExtendedForm.return_date = detail.return_date
-      ? formatDate(detail.return_date) || ''
-      : ''
-    outAssetCreateExtendedForm.outasset_type = detail.outasset_type || ''
-    outAssetCreateExtendedForm.outasset_using_location = detail.outasset_using_location || ''
-    outAssetCreateExtendedForm.outasset_description = detail.outasset_description || ''
-    outAssetCreateExtendedForm.outasset_name = detail.asset_name || ''
-    // [HR-02] 回填后同步选中状态（用于变更检测）
-    // 注意：detail.outasset_applicant/outasset_manager 为 EmployeeExtended 类型
-    // 包含 employee_department 关联对象；使用类型断言绕过 TypeScript 推断限制
-    if (outAssetCreateExtendedForm.outasset_applicant_name) {
-      const applicant = detail.outasset_applicant as Record<string, unknown> | undefined
-      const applicantDept = applicant?.employee_department as Record<string, string> | undefined
-      selectedApplicant.value = {
-        value: outAssetCreateExtendedForm.outasset_applicant_name,
-        employee_name: outAssetCreateExtendedForm.outasset_applicant_name,
-        employee_jobcode: outAssetCreateExtendedForm.outasset_applicant_jobcode || '',
-        employee_department_name: applicantDept?.department_name || '',
-      }
-    }
-    if (outAssetCreateExtendedForm.outasset_manager_name) {
-      const manager = detail.outasset_manager as Record<string, unknown> | undefined
-      const managerDept = manager?.employee_department as Record<string, string> | undefined
-      selectedManager.value = {
-        value: outAssetCreateExtendedForm.outasset_manager_name,
-        employee_name: outAssetCreateExtendedForm.outasset_manager_name,
-        employee_jobcode: outAssetCreateExtendedForm.outasset_manager_jobcode || '',
-        employee_department_name: managerDept?.department_name || '',
-      }
-    }
-    // 保存原始数据快照
-    originalFormData.value = JSON.parse(JSON.stringify(outAssetCreateExtendedForm))
-  } catch (error) {
-    console.error('加载出库资产详情失败:', error)
-    ElMessage.error('加载出库记录失败，请刷新页面重试')
-    router.back()
-  } finally {
-    isLoading.value = false
-  }
-}
+// ========== 加载编辑数据（编辑加载器，DR-5 物理提取）==========
+const loadEditData = createOutAssetEditLoader({
+  form: outAssetCreateExtendedForm,
+  selectedApplicant,
+  selectedManager,
+  originalFormData,
+  isLoading,
+  store: outAssetStore,
+  router,
+})
 
 // ========== 提交表单 ==========
 const submitForm = () => {
@@ -657,12 +483,4 @@ onMounted(async () => {
 })
 </script>
 
-<style lang="scss" scoped>
-// 使用公共样式 mixin（符合规范）
-@use '@/assets/styles/common-forms.scss' as *;
-
-.outasset-form {
-  // 继承公共表单容器样式（如不存在则忽略）
-  @extend .form-container !optional;
-}
-</style>
+<style lang="scss" scoped src="./OutAssetForm.scss"></style>

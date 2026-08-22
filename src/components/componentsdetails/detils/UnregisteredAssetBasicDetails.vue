@@ -172,43 +172,23 @@
 <script lang="ts" setup>
 defineOptions({ name: 'UnregisteredAssetBasicDetails' })
 
-import { ref, onMounted, h } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { Back, Download, Document } from '@element-plus/icons-vue'
 import { useUnregisteredAssetStore } from '@/stores/unregisteredAssetStore'
 import { unregisteredAssetAPI } from '@/api/unregisteredAsset'
 import { useExcelExport } from '@/composables/useExcelExport'
-import type { ColumnConfig } from '@/utils/excelExporter'
 import type { UnregisteredAsset } from '@/types/unregisteredasset'
 import {
-  // UnregisteredAssetStatus,
-  HandleType,
-  scenarioTypeTextMap,
-  scenarioTypeTagMap,
-  handleTypeTextMap,
-} from '@/types/unregisteredasset'
+  getScenarioTypeText,
+  getScenarioTypeTagType,
+  getHandleTypeText,
+  unregisteredAssetExportColumns as exportColumns,
+} from './unregisteredAssetDetailExport'
+import { useUnregisteredApproval } from '@/composables/useUnregisteredApproval'
 import { formatDate } from '@/utils/Format'
 import { getApprovalStatusText, getApprovalStatusTagType } from '@/utils/statusMapping'
-
-// ===== 场景类型辅助函数 =====
-const getScenarioTypeText = (type: string | null | undefined): string => {
-  if (!type) return '未知'
-  return scenarioTypeTextMap[type] || '未知'
-}
-
-const getScenarioTypeTagType = (
-  type: string | null | undefined,
-): '' | 'success' | 'warning' | 'danger' | 'info' => {
-  if (!type) return 'info'
-  return (scenarioTypeTagMap[type] as '' | 'success' | 'warning' | 'danger' | 'info') || 'info'
-}
-
-// ===== 处理类型辅助函数 =====
-const getHandleTypeText = (type: string | null | undefined): string => {
-  if (!type) return '未处理'
-  return handleTypeTextMap[type] || type
-}
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -217,82 +197,8 @@ const unregisteredAssetStore = useUnregisteredAssetStore()
 const isLoading = ref(true)
 const detailData = ref<UnregisteredAsset | null>(null)
 
-// ===== Excel 导出配置 =====
+// ===== Excel 导出配置（列配置已物理提取）=====
 const { exportDetail } = useExcelExport()
-
-const exportColumns: ColumnConfig<UnregisteredAsset>[] = [
-  { title: 'ID', key: 'id', default: '' },
-  { title: '编码', key: 'unregistered_code', default: '' },
-  { title: '资产名称', key: 'asset_name', default: '' },
-  {
-    title: '场景类型',
-    key: 'scenario_type',
-    default: '',
-    formatter: (v) => getScenarioTypeText(v as string),
-  },
-  {
-    title: '发现日期',
-    key: 'discovery_date',
-    default: '',
-    formatter: (v) => formatDate(v as string) || '',
-  },
-  { title: '发现地点', key: 'discovery_location', default: '' },
-  { title: '资产品牌', key: 'asset_brand', default: '' },
-  { title: '资产规格型号', key: 'asset_specification', default: '' },
-  { title: '资产类型编码', key: 'unregistered_asset_type', default: '' },
-  { title: '预估价值', key: 'estimated_value', default: '' },
-  {
-    title: '关联资产编码',
-    key: 'related_asset',
-    default: '',
-    formatter: (v) => {
-      if (typeof v === 'object' && v !== null) return (v as { code?: string }).code ?? ''
-      return (v as string) || ''
-    },
-  },
-  { title: '目标仓库编码', key: 'unregistered_asset_storage', default: '' },
-  {
-    title: '审批状态',
-    key: 'approval_status',
-    default: '',
-    formatter: (v) => getApprovalStatusText((v as string) ?? ''),
-  },
-  {
-    title: '审批人',
-    key: 'approver',
-    default: '',
-    formatter: (v) => {
-      if (typeof v === 'object' && v !== null) return (v as { name?: string }).name ?? ''
-      return (v as string) || ''
-    },
-  },
-  { title: '审批备注', key: 'approval_remark', default: '' },
-  {
-    title: '处理类型',
-    key: 'handle_type',
-    default: '',
-    formatter: (v) => getHandleTypeText(v as string),
-  },
-  { title: '处理描述', key: 'handle_description', default: '' },
-  {
-    title: '创建时间',
-    key: 'created_at',
-    default: '',
-    formatter: (v) => formatDate(v as string) || '',
-  },
-  {
-    title: '更新时间',
-    key: 'updated_at',
-    default: '',
-    formatter: (v) => formatDate(v as string) || '',
-  },
-  {
-    title: '处理时间',
-    key: 'approval_date',
-    default: '',
-    formatter: (v) => formatDate(v as string) || '',
-  },
-]
 
 // ===== 加载详情数据 =====
 const loadDetail = async (code: string) => {
@@ -310,108 +216,13 @@ const loadDetail = async (code: string) => {
   }
 }
 
-// ===== 审批操作 =====
-
-/** 通过审批 */
-const handleApprove = async () => {
-  if (!detailData.value) return
-  try {
-    const selectedHandleType = await selectHandleType()
-    if (!selectedHandleType) return
-
-    await unregisteredAssetAPI.approveUnregisteredAsset(detailData.value.unregistered_code, {
-      handle_type: selectedHandleType,
-      approval_remark: '审批通过',
-    })
-    ElMessage.success('审批通过')
-    // 重新加载详情
-    await loadDetail(detailData.value.unregistered_code)
-    unregisteredAssetStore.setRefreshFlag(true)
-  } catch (error) {
-    console.error('审批操作失败:', error)
-    ElMessage.error('审批操作失败，请重试')
-  }
-}
-
-/** 拒绝审批 */
-const handleReject = async () => {
-  if (!detailData.value) return
-  try {
-    const { value: remark } = await ElMessageBox.prompt('请输入拒绝原因（可选）：', '拒绝审批', {
-      confirmButtonText: '确定拒绝',
-      cancelButtonText: '取消',
-      inputPlaceholder: '请输入拒绝原因',
-      inputType: 'textarea',
-    })
-    await unregisteredAssetAPI.approveUnregisteredAsset(detailData.value.unregistered_code, {
-      handle_type: HandleType.REJECT,
-      approval_remark: remark || '审批拒绝',
-    })
-    ElMessage.success('已拒绝')
-    // 重新加载详情
-    await loadDetail(detailData.value.unregistered_code)
-    unregisteredAssetStore.setRefreshFlag(true)
-  } catch (error) {
-    // 用户取消操作不提示错误
-    if (error === 'cancel' || error === 'close') return
-    console.error('拒绝操作失败:', error)
-    ElMessage.error('拒绝操作失败，请重试')
-  }
-}
-
-/**
- * 选择处理类型弹窗
- * 使用 beforeClose 回调将用户选中的值通过 done() 传递出来，
- * 避免 ElMessageBox.close() 无法传值的 Bug
- */
-const selectHandleType = async (): Promise<string | null> => {
-  const handleTypes = [
-    { value: HandleType.CREATE_AND_RECYCLE, label: '新建并回收' },
-    { value: HandleType.CREATE_AND_DAMAGED, label: '新建并报废' },
-    { value: HandleType.SUPPLEMENT_AND_RECYCLE, label: '补录并回收' },
-    { value: HandleType.CORRECT_AND_RECYCLE, label: '纠正并回收' },
-  ]
-
-  return new Promise<string | null>((resolve) => {
-    ElMessageBox({
-      title: '选择处理类型',
-      message: h('div', null, [
-        h(
-          'p',
-          { style: 'margin-bottom: 12px; color: var(--text-regular);' },
-          '请选择审批通过后的处理方式：',
-        ),
-        h(
-          'div',
-          { style: 'display: flex; flex-direction: column; gap: 8px;' },
-          handleTypes.map((item) =>
-            h(
-              'div',
-              {
-                key: item.value,
-                style:
-                  'padding: 8px 12px; border: 1px solid var(--border-color-light); border-radius: 4px; cursor: pointer; transition: all 0.2s;',
-                onClick: () => resolve(item.value),
-              },
-              `${item.label}（${item.value}）`,
-            ),
-          ),
-        ),
-      ]),
-      showConfirmButton: false,
-      showCancelButton: true,
-      cancelButtonText: '取消',
-      closeOnClickModal: false,
-      beforeClose: (_: string, __: unknown, done: () => void) => {
-        done()
-        resolve(null)
-      },
-    }).catch(() => {
-      // 用户点击取消或关闭，resolve null
-      resolve(null)
-    })
-  })
-}
+// ===== 审批操作（组合式函数，DR-5 物理提取）=====
+const { handleApprove, handleReject } = useUnregisteredApproval({
+  detailData,
+  store: unregisteredAssetStore,
+  api: unregisteredAssetAPI,
+  loadDetail: loadDetail,
+})
 
 // ===== 生命周期 =====
 onMounted(async () => {
@@ -445,121 +256,4 @@ const handleExport = async () => {
 }
 </script>
 
-<style lang="scss" scoped>
-@use '@/assets/styles/common-forms.scss' as *;
-
-.unregistered-asset-detail-page {
-  @include detail-container();
-  padding: 24px;
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 100vh;
-  background-color: var(--background-color);
-}
-
-.child-page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border-color-light);
-}
-.page-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-}
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-.child-page-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.main-info-card {
-  @include info-card();
-  width: 100%;
-  margin-bottom: 0;
-}
-.section-header {
-  @include card-header();
-}
-.section-title {
-  margin-left: 4px;
-}
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-top: 16px;
-}
-.info-column {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.info-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border-color-lightest);
-}
-.info-label {
-  min-width: 110px;
-  font-weight: 600;
-  color: var(--text-primary);
-  flex-shrink: 0;
-}
-.info-value {
-  flex: 1;
-  color: var(--text-regular);
-  word-break: break-word;
-}
-.info-section {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border-color-light);
-}
-.section-sub-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 12px;
-  padding-left: 8px;
-  border-left: 3px solid var(--color-primary-light);
-}
-.description-content {
-  padding: 12px 16px;
-  background-color: var(--card-background-page);
-  border-radius: 6px;
-  color: var(--text-regular);
-  line-height: 1.6;
-  min-height: 60px;
-}
-
-@media (max-width: 768px) {
-  .unregistered-asset-detail-page {
-    padding: 16px;
-  }
-  .child-page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  .action-buttons {
-    width: 100%;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
+<style lang="scss" scoped src="./UnregisteredAssetBasicDetails.scss"></style>
