@@ -108,7 +108,7 @@ export function usePermission() {
   const canHandleUnregistered = computed(() => isDeptManagerOrAbove.value)
 
   /** 系统配置（类型/仓库/合同/员工/部门/用户） */
-  const canManageSystem = computed(() => isAdmin.value)
+  const canManageSystem = computed(() => isAdmin.value || hasPermission('system_config:manage'))
 
   /** 审计日志查看 */
   const canViewAuditLog = computed(() => isAdmin.value || isAuditor.value)
