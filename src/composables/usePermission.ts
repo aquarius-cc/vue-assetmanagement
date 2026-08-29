@@ -12,6 +12,7 @@
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { ROLE_HIERARCHY, ROLE_CODES } from '@/constants/roles'
+import { PERMISSION_CODES } from '@/constants/permissionCodes'
 
 // 角色层级定义已统一提取到 constants/roles.ts中
 // 从高到低，系统管理员 > 部门经理 > 资产管理员 > 审计员 > 普通用户
@@ -108,7 +109,7 @@ export function usePermission() {
   const canHandleUnregistered = computed(() => isDeptManagerOrAbove.value)
 
   /** 系统配置（类型/仓库/合同/员工/部门/用户） */
-  const canManageSystem = computed(() => isAdmin.value || hasPermission('system_config:manage'))
+  const canManageSystem = computed(() => isAdmin.value || hasPermission(PERMISSION_CODES.SYSTEM_CONFIG_MANAGE))
 
   /** 审计日志查看 */
   const canViewAuditLog = computed(() => isAdmin.value || isAuditor.value)

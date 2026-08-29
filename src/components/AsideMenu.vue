@@ -141,10 +141,10 @@ const appStore = useAppStore()
 const { hasPermission } = usePermission()
 
 // 基于细粒度权限码的菜单可见性判断
-const canManageSystem = computed(() => hasPermission(PERMISSION_CODES.SYSTEM_CONFIG_MANAGE || 'system_config:manage'))
-const canApproveDamaged = computed(() => hasPermission('damaged:approve'))
-const canHandleUnregistered = computed(() => hasPermission('unregistered:approve'))
-const canViewAuditLog = computed(() => hasPermission('auditlog:read'))
+const canManageSystem = computed(() => hasPermission(PERMISSION_CODES.SYSTEM_CONFIG_MANAGE))
+const canApproveDamaged = computed(() => hasPermission(PERMISSION_CODES.DAMAGED_APPROVE))
+const canHandleUnregistered = computed(() => hasPermission(PERMISSION_CODES.UNREGISTERED_APPROVE))
+const canViewAuditLog = computed(() => hasPermission(PERMISSION_CODES.AUDITLOG_READ))
 
 const currentRoute = ref(route.path)
 
