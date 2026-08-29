@@ -61,15 +61,20 @@ export default defineConfig(({ mode }) => {
 
       // Inspect(),
 
-      // 仅在构建（production）时启用分析和压缩
+      // 仅在构建（production）时启用压缩；bundle 分析需显式 ANALYZE=1 触发，避免 stats.html 混入生产产物（H-4）
       ...(mode === 'production'
         ? [
-            visualizer({
-              filename: './dist/stats.html',
-              open: true,
-              gzipSize: true,
-              brotliSize: true,
-            }),
+            // 用法：cross-env ANALYZE=1 npm run build（或 PowerShell: $env:ANALYZE='1'; npm run build）
+            ...(process.env.ANALYZE
+              ? [
+                  visualizer({
+                    filename: './dist/stats.html',
+                    open: true,
+                    gzipSize: true,
+                    brotliSize: true,
+                  }),
+                ]
+              : []),
             compression({
               algorithm: 'gzip',
               ext: '.gz',
@@ -144,10 +149,15 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id: string) {
-            if (id.includes('node_modules')) {
-              // 把所有 node_modules 中的依赖单独打成 vendor chunk
-              return 'vendor'
+            if (!id.includes('node_modules')) return undefined
+            // 【BF-004 修复】按域拆分重库, 消除单一 vendor chunk(2532KB)
+            // 注意: zrender 必须与 echarts 同 chunk, 否则初始化顺序/循环依赖问题
+            if (id.includes('echarts') || id.includes('zrender') || id.includes('vue-echarts')) {
+              return 'echarts'
             }
+            if (id.includes('exceljs')) return 'exceljs'
+            if (id.includes('element-plus') || id.includes('@element-plus')) return 'element-plus'
+            return 'vendor'
           },
           // Clean up chunk names
           chunkFileNames: 'assets/js/[name]-[hash].js',
