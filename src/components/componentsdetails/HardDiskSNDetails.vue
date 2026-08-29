@@ -335,7 +335,6 @@ const handleBatchDelete = async (rows: HardDiskSN[] | undefined) => {
  * 跳转到新增表单页
  */
 const handleAdd = () => {
-  console.log('点击新增硬盘序列号')
   router.push({ name: 'HardDiskSNForm', query: {} }).catch((err) => {
     console.error('新增跳转失败:', err)
     ElMessage.error('跳转新增页失败，请重试')

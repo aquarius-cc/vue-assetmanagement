@@ -23,6 +23,8 @@ export default defineConfigWithVueTs(
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
       }],
+      // 禁止 console.log/debug（防调试代码遗留），保留 warn/error 用于错误处理
+      'no-console': ['error', { allow: ['warn', 'error'] }],
     },
   },
 

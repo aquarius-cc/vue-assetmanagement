@@ -98,11 +98,9 @@ export function createUserExcelExport({ userStore, departmentStore }: UserExport
         userRequestedAll = true
       } else if (error === 'close') {
         // 用户关闭了对话框
-        console.log('用户关闭对话框，取消操作')
         return
       } else {
         // 其他错误
-        console.log('用户取消操作或发生错误:', error)
         return
       }
     }
@@ -120,7 +118,6 @@ export function createUserExcelExport({ userStore, departmentStore }: UserExport
         ElMessage.info('正在获取全部数据...')
 
         // 获取所有数据（一次性获取全部，注意：如果数据量很大，可能需要分页获取）
-        console.log('总数据量:', userStore.pagination.total)
         if (userStore.pagination.total > 1000) {
           const confirmLargeExport = await ElMessageBox.confirm(
             `数据量较大(${userStore.pagination.total}条)，可能会消耗较长时间和资源，是否继续？`,

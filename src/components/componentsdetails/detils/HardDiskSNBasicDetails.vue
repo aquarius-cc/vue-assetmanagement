@@ -189,9 +189,7 @@ const exportColumns: ColumnConfig<HardDiskSN>[] = [
 // ===== 加载详情数据 =====
 const loadDetail = async (code: string) => {
   try {
-    console.log('loadDetail-code:', code)
     const detail = await harddiskSnStore.getById(code)
-    console.log('loadDetail-detail:', detail)
     if (!detail) {
       ElMessage.error('未找到对应硬盘序列号')
       router.back()
@@ -213,7 +211,6 @@ onMounted(async () => {
     isLoading.value = false
     return
   }
-  console.log('onMounted-code:', code)
   await loadDetail(code)
   isLoading.value = false
 })

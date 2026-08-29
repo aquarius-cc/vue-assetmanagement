@@ -222,7 +222,6 @@ const loadDetail = async (code: string) => {
 // 组件挂载时执行
 onMounted(async () => {
   const code = route.query.code as string
-  console.log('query code:', code)
   if (!code) {
     ElMessage.error('缺少出库资产编码参数')
     router.back()

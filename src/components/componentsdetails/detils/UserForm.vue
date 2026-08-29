@@ -237,7 +237,6 @@ const departmentList = computed(() => {
     value: item.department_code,
   }))
 })
-console.log('departmentList:', departmentList.value)
 /**
  * 加载用户数据（编辑模式）
  */

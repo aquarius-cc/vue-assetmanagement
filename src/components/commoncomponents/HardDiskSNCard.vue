@@ -110,7 +110,6 @@ const handleAdd = () => {
     ElMessage.error('资产编码不存在，无法新增硬盘')
     return
   }
-  console.log('HardDiskSNCard点击新增硬盘序列号，资产编码:', props.assetCode)
   router
     .push({
       name: 'HardDiskSNForm',

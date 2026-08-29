@@ -263,7 +263,6 @@ const downloadQRCode = () => {
 // ===== 生命周期 =====
 onMounted(async () => {
   const assetCode = (route.query.code as string) || (route.query.recordcode as string)
-  console.log('assetCode', assetCode)
   if (!assetCode || typeof assetCode !== 'string') {
     console.error('无效的资产编码参数')
     ElMessage.error('无效的资产编码参数')
