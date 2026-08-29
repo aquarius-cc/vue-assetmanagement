@@ -131,6 +131,7 @@ import { useRouter, useRoute, onBeforeRouteUpdate } from 'vue-router'
 import { ref, computed } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { usePermission } from '@/composables/usePermission'
+import { PERMISSION_CODES } from '@/constants/permissionCodes'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
 import NotificationBell from '@/components/commoncomponents/NotificationBell.vue'
 
@@ -140,7 +141,7 @@ const appStore = useAppStore()
 const { hasPermission } = usePermission()
 
 // 基于细粒度权限码的菜单可见性判断
-const canManageSystem = computed(() => hasPermission('system_config:manage'))
+const canManageSystem = computed(() => hasPermission(PERMISSION_CODES.SYSTEM_CONFIG_MANAGE || 'system_config:manage'))
 const canApproveDamaged = computed(() => hasPermission('damaged:approve'))
 const canHandleUnregistered = computed(() => hasPermission('unregistered:approve'))
 const canViewAuditLog = computed(() => hasPermission('auditlog:read'))
