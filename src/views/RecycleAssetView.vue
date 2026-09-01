@@ -54,6 +54,7 @@ import type { FormRules } from 'element-plus'
 import AssetOperationLayout from '@/components/AssetOperationLayout.vue'
 import { useAssetOperationForm } from '@/composables/useAssetOperationForm'
 import { recycleAssetAPI } from '@/api/recycleAsset'
+import { todayLocalISO } from '@/utils/Format'
 
 const router = useRouter()
 
@@ -75,7 +76,7 @@ const {
       recycle_asset_number: data.recycle_asset_number,
       recycle_asset_storage: '',
       recycle_asset_recycle_person_jobcode: '',
-      recycle_asset_date: new Date().toISOString().split('T')[0],
+      recycle_asset_date: todayLocalISO(),
       recycle_type: 'normal',
       recycle_asset_description: data.remark || '',
     })

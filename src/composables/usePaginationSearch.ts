@@ -136,12 +136,13 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
     const totalPages = Math.ceil(total.value / newSize)
     if (currentPage.value > totalPages && totalPages > 0) {
       currentPage.value = totalPages
+    } else if (currentPage.value < 1) {
+      currentPage.value = 1
     }
     await nextTick()
     if (search.value.trim() && searchConfig) {
       await performSearch(search.value)
     } else {
-      currentPage.value = 1
       await loadList(currentPage.value, pageSize.value)
     }
   }
@@ -198,6 +199,8 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
         isRefreshing = true
         try {
           await refreshCurrentPage()
+        } catch (e) {
+          console.error(`[usePaginationSearch/${storeId}] refresh failed:`, e)
         } finally {
           isRefreshing = false
           store.setRefreshFlag?.(false)

@@ -81,6 +81,12 @@ const formatDate = (date: Date | number | string | null | undefined): string | n
   // return `${dateObj.getFullYear()}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getDate().toString().padStart(2, '0')}`
 }
 
+/** 返回本地时区的今天 YYYY-MM-DD（避免 toISOString 的 UTC 偏移） */
+const todayLocalISO = (): string => {
+  const d = new Date()
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 const pad = (n: number): string => String(n).padStart(2, '0')
 
 const formatDateTime = (dateStr: string | null | undefined): string => {
@@ -101,7 +107,7 @@ const exactFormatDate = (date: string | null | undefined): string => {
   if (!date) return ''
   const d = new Date(date)
   if (isNaN(d.getTime())) return ''
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 // 金额格式化函数：转为 ￥xxxxx.xx 格式
@@ -244,12 +250,17 @@ const storageMapping: Record<string, string> = {
   damaged: '待报废仓库',
 }
 
-const userStatusMapping: Record<string, string> = {
-  active: '在职员工',
-  left: '离职员工',
-  retirement: '退休员工',
-  dismissed: '辞退员工',
+// 🌟 新增：用户状态反向映射（枚举→中文）——单一事实源
+const USER_STATUS_DISPLAY_MAPPING: Record<EmployeeStatus, string> = {
+  [EmployeeStatus.ACTIVE]: '在职',
+  [EmployeeStatus.LEFT]: '离职',
+  [EmployeeStatus.RETIREMENT]: '退休',
 }
+
+// 用户状态映射（从单一事实源派生，保持向后兼容）
+const userStatusMapping: Record<string, string> = Object.fromEntries(
+  Object.entries(USER_STATUS_DISPLAY_MAPPING).map(([k, v]) => [k, v + '员工']),
+)
 const getStatusDisplay = (status: string | undefined): string => {
   if (!status) return '未知'
   return userStatusMapping[status] ?? status
@@ -280,12 +291,6 @@ const USER_STATUS_INPUT_MAPPING: Record<string, EmployeeStatus> = {
   退休员工: EmployeeStatus.RETIREMENT,
   在職: EmployeeStatus.ACTIVE,
   離職: EmployeeStatus.LEFT,
-}
-// 🌟 新增：用户状态反向映射（枚举→中文）
-const USER_STATUS_DISPLAY_MAPPING: Record<EmployeeStatus, string> = {
-  [EmployeeStatus.ACTIVE]: '在职',
-  [EmployeeStatus.LEFT]: '离职',
-  [EmployeeStatus.RETIREMENT]: '退休',
 }
 // 🌟 新增：验证用户状态合法性校验
 const validateUserStatus = (status: string): EmployeeStatus | null => {
@@ -409,16 +414,18 @@ const parseExcelDate = (dateStr: string): string | null => {
   // 尝试解析各种可能的日期格式
   let date: Date | null = null
 
-  // MM-DD/YYYY  MM-DD/YYYY 格式
+  // MM/DD/YYYY 或 DD/MM/YYYY 格式
   if (/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/.test(dateStr)) {
-    date = new Date(dateStr.replace(/[\/\-]/g, '/'))
-  }
-  // 尝试解析 DD/MM/YYYY 格式 (欧洲格式)
-  else if (/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/.test(dateStr)) {
     const parts = dateStr.split(/[\/\-]/)
     if (parts.length === 3) {
-      // 假设是 DD/MM/YYYY 格式，需要转换为 MM/DD/YYYY
-      date = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`)
+      const a = parseInt(parts[0], 10)
+      const b = parseInt(parts[1], 10)
+      // 第一个数 > 12 → 必为 DD/MM/YYYY；否则按 MM/DD/YYYY（美式）
+      if (a > 12) {
+        date = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`)
+      } else {
+        date = new Date(`${parts[0]}/${parts[1]}/${parts[2]}`)
+      }
     }
   }
   // 尝试解析Excel序列号日期(数字形式)
@@ -442,14 +449,15 @@ const parseExcelDate = (dateStr: string): string | null => {
   }
 
   // return null
-  // 如果日期无效，返回空字符串或默认日期
-  return '未知'
+  // 如果日期无效，返回空字符串
+  return ''
 }
 
 export {
   formatDate,
   formatDateTime,
   exactFormatDate,
+  todayLocalISO,
   formatDateTimeFull,
   formatPrice,
   formatNumber,

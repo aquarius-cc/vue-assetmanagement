@@ -55,10 +55,10 @@ export function usePermission() {
   const isAssetAdminOrAbove = computed(() => roleLevel.value >= ROLE_HIERARCHY.asset_admin)
 
   /** 是否审计员 */
-  const isAuditor = computed(() => role.value === 'auditor')
+  const isAuditor = computed(() => role.value === ROLE_CODES.AUDITOR)
 
   /** 是否普通用户（最低权限） */
-  const isRegularUser = computed(() => role.value === 'regular_user')
+  const isRegularUser = computed(() => role.value === ROLE_CODES.REGULAR_USER)
 
   /**
    * 判断当前用户是否有指定角色

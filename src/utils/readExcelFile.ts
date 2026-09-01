@@ -11,6 +11,10 @@
 
 import ExcelJS from 'exceljs'
 
+/** 将 Date 对象格式化为本地时区 YYYY-MM-DD */
+const toLocalISODate = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
 /**
  * 读取 Excel 文件并解析为对象数组
  * @param file Excel 文件
@@ -73,7 +77,7 @@ export async function readExcelFile<T extends object>(
               let value: unknown = cell.value
 
               if (value instanceof Date) {
-                value = value.toISOString().split('T')[0]
+                value = toLocalISODate(value)
               } else if (typeof value === 'number') {
                 const isDateColumn = /日期|时间|date|time/i.test(header)
                 if (isDateColumn && value > 1 && value < 2958466) {

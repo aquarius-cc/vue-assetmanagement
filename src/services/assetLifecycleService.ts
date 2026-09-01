@@ -25,7 +25,7 @@ import type { RecycleAssetCreateForm } from '@/types/recycleasset'
 import type { DamagedAssetCreateForm } from '@/types/damagedasset'
 import type { WasteAssetCreateForm } from '@/types/wasteasset'
 import { ElMessage } from 'element-plus'
-import { formatDate } from '@/utils/Format'
+import { formatDate, todayLocalISO } from '@/utils/Format'
 
 // ==================== 出库 ====================
 export const handleAssetOut = async (data: OutAssetCreateForm) => {
@@ -46,7 +46,7 @@ export const handleAssetRecycle = async (data: RecycleAssetCreateForm) => {
   const assetStore = useAssetStore()
 
   const formattedDate =
-    formatDate(data.recycle_asset_date) || new Date().toISOString().split('T')[0]
+    formatDate(data.recycle_asset_date) || todayLocalISO()
 
   await recycleAssetStore.create({
     ...data,

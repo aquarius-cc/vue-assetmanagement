@@ -247,7 +247,7 @@ import type { AssetDetail, AssetUpdateForm } from '@/types/asset'
 import type { EmployeeAutocompleteItem } from '@/types/outasset'
 // [HR-01] 后端 v1.1.0 改为 read_only，移除EmployeeExtended（用户搜索联动已移除了
 // [HR-01] 后端 v1.1.0 改为 read_only，移除useEmployeeLinkage（用户搜索联动已移除了
-import { formatDate } from '@/utils/Format'
+import { formatDate, todayLocalISO } from '@/utils/Format'
 import ExportableAssetsSearch from '@/components/componentsdetails/detils/detilschildcomponents/ExportableAssetsSearch.vue'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
 import { useOutAssetAssetSelection } from '@/composables/useOutAssetAssetSelection'
@@ -306,8 +306,8 @@ const outAssetForm = computed<OutAssetCreateForm>(() => ({
   outasset_applicant: outAssetCreateExtendedForm.outasset_applicant_jobcode || null,
   outasset_manager: outAssetCreateExtendedForm.outasset_manager_jobcode || null,
   outasset_date: outAssetCreateExtendedForm.outasset_date
-    ? formatDate(outAssetCreateExtendedForm.outasset_date) || new Date().toISOString().split('T')[0]
-    : new Date().toISOString().split('T')[0],
+    ? formatDate(outAssetCreateExtendedForm.outasset_date) || todayLocalISO()
+    : todayLocalISO(),
   return_date: outAssetCreateExtendedForm.return_date
     ? formatDate(outAssetCreateExtendedForm.return_date)
     : null,

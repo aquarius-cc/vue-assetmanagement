@@ -177,6 +177,11 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
               `[createEntityStore/${storeId}] Invalid page: ${requestedPage}, ` +
                 `total pages: ${totalPages}, count: ${response.count}`,
             )
+            if (autoSync) {
+              entityState.value.entities = {}
+              entityState.value.ids = []
+              pagination.value = { ...pagination.value, total: response.count, page: totalPages }
+            }
             return []
           }
 

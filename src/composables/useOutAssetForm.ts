@@ -17,7 +17,7 @@ import { ElMessage } from 'element-plus'
 import { useOutAssetStore } from '@/stores/outAssetStore'
 import { useAssetStore } from '@/stores/assetStore'
 import { showErrorMessage } from '@/utils/errorHandler'
-import { formatDate } from '@/utils/Format'
+import { formatDate, todayLocalISO } from '@/utils/Format'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
 import { useEmployeeSuggestionFetcher } from '@/composables/useEmployeeSuggestionFetcher'
 import { useAutocompleteField } from '@/composables/useAutocompleteField'
@@ -64,8 +64,8 @@ export function useOutAssetForm() {
     outasset_manager_jobcode: outAssetCreateExtendedForm.outasset_manager_jobcode || null,
     outasset_date: outAssetCreateExtendedForm.outasset_date
       ? formatDate(outAssetCreateExtendedForm.outasset_date) ||
-        new Date().toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0],
+        todayLocalISO()
+      : todayLocalISO(),
     return_date: outAssetCreateExtendedForm.return_date
       ? formatDate(outAssetCreateExtendedForm.return_date)
       : null,
