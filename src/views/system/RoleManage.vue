@@ -75,7 +75,7 @@
         class="pagination"
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50]"
+        :page-sizes="PAGE_SIZE_OPTIONS"
         :total="total"
         layout="total, sizes, prev, pager, next"
         @size-change="fetchRoles"
@@ -125,6 +125,7 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { roleAPI } from '@/api/roles'
 import { usePermission } from '@/composables/usePermission'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
+import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import type { Role, RoleCreateUpdateForm } from '@/types/roles'
 import RolePermDialog from '@/components/system/RolePermDialog.vue'
 

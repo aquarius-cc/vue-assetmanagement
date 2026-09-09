@@ -74,10 +74,10 @@
         <el-row justify="center">
           <el-col :span="24" class="form-actions">
             <el-button v-if="!isEdit" @click="resetForm">重置</el-button>
-            <el-button type="success" @click="submitForm" :loading="departmentStore.loading">
+            <el-button type="primary" @click="submitForm" :loading="departmentStore.loading">
               提交
             </el-button>
-            <el-button type="primary" @click="goBack">返回</el-button>
+            <el-button @click="goBack">返回</el-button>
           </el-col>
         </el-row>
       </el-form>

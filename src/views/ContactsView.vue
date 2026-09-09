@@ -103,7 +103,7 @@
           class="pagination"
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="PAGE_SIZE_OPTIONS"
           :total="total"
           layout="total, sizes, prev, pager, next"
           @size-change="fetchContacts"
@@ -124,6 +124,7 @@ import type { EmployeeExtended } from '@/types/user'
 import type { DepartmentTreeNode } from '@/types/department'
 import DepartmentTree from '@/components/componentsdetails/components/DepartmentTree.vue'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
+import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 
 const loading = ref(true)
 const contacts = ref<EmployeeExtended[]>([])

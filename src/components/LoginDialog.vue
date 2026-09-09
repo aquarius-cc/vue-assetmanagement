@@ -52,8 +52,6 @@ function toLogin() {
 </template>
 
 <style lang="scss" scoped>
-@use '@/assets/styles/common-forms.scss' as *;
-
 .login-box {
   display: flex;
   flex-direction: column;
@@ -72,7 +70,7 @@ function toLogin() {
       text-align: right;
       font-size: 14px;
       font-weight: 500;
-      color: $text-primary;
+      color: var(--text-primary);
     }
 
     .el-input {

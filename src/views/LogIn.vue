@@ -30,6 +30,8 @@
             v-model="loginForm.auth_username"
             placeholder="请输入用户名"
             clearable
+            autocomplete="username"
+            name="username"
             :prefix-icon="User"
             @keyup.enter="handleKeyPress"
           />
@@ -42,6 +44,8 @@
             placeholder="请输入密码"
             show-password
             clearable
+            autocomplete="current-password"
+            name="password"
             :prefix-icon="Lock"
             @keyup.enter="handleKeyPress"
           />
@@ -325,8 +329,9 @@ const handleKeyPress = (event: KeyboardEvent) => {
 }
 
 .login-card {
-  width: 480px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 480px;
+  box-shadow: var(--card-shadow-lg);
   border-radius: 8px;
   border: none;
   overflow: hidden;
@@ -411,12 +416,5 @@ const handleKeyPress = (event: KeyboardEvent) => {
 .login-error {
   margin-top: 16px;
   border-radius: 8px;
-}
-</style>
-
-<!-- 全局样式：ElMessage 纯文本模式保留换行 -->
-<style>
-.el-message .el-message__content {
-  white-space: pre-line;
 }
 </style>

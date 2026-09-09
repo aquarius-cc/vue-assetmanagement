@@ -101,7 +101,15 @@
           <NotificationBell class="notification-bell" />
 
           <!-- 折叠/展开按钮 -->
-          <div class="collapse-toggle" @click="appStore.toggleSidebar">
+          <div
+            class="collapse-toggle"
+            @click="appStore.toggleSidebar"
+            @keydown.enter.prevent="appStore.toggleSidebar"
+            @keydown.space.prevent="appStore.toggleSidebar"
+            role="button"
+            tabindex="0"
+            :aria-label="appStore.sidebarCollapsed ? '展开菜单' : '收起菜单'"
+          >
             <el-icon>
               <ArrowLeft v-if="!appStore.sidebarCollapsed" />
               <ArrowRight v-else />
@@ -159,7 +167,6 @@ const handleSelect = (path: string) => {
 }
 </script>
 <style lang="scss" scoped>
-@use '@/assets/styles/common-forms.scss' as *;
 @use '@/assets/styles/global-scroll.scss' as *;
 
 .container {
@@ -168,7 +175,7 @@ const handleSelect = (path: string) => {
   padding: 0;
   margin: 0;
   box-sizing: border-box;
-  border-right: 1px solid $border-color;
+  border-right: 1px solid var(--border-color);
   background: var(--gradient-background);
   overflow-y: auto;
   overflow-x: hidden;
@@ -186,14 +193,14 @@ const handleSelect = (path: string) => {
 .container :deep(.el-menu-item) {
   height: 50px;
   line-height: 50px;
-  color: $text-primary;
+  color: var(--text-primary);
   transition: all 0.3s ease;
   border-radius: 8px;
   margin: 4px 8px;
 
   &:hover {
-    background-color: rgba($primary-color, 0.08);
-    color: $primary-color;
+    background-color: var(--opacity-primary-light);
+    color: var(--color-primary);
   }
 
   .el-icon {
@@ -203,17 +210,17 @@ const handleSelect = (path: string) => {
 }
 
 .container :deep(.el-menu-item.is-active) {
-  background-color: rgba($primary-color, 0.12);
-  color: $primary-color;
+  background-color: var(--opacity-primary-lighter);
+  color: var(--color-primary);
   font-weight: 600;
-  border-right: 3px solid $primary-color;
+  border-right: 3px solid var(--color-primary);
   border-radius: 0 8px 8px 0;
   margin-right: 0;
 }
 
 .container :deep(.el-sub-menu .el-menu-item.is-active) {
-  background-color: rgba($primary-color, 0.08);
-  color: $primary-color;
+  background-color: var(--opacity-primary-light);
+  color: var(--color-primary);
   font-weight: 500;
   border-radius: 0 8px 8px 0;
 }
@@ -226,12 +233,12 @@ const handleSelect = (path: string) => {
 .container :deep(.el-sub-menu__title) {
   height: 50px;
   line-height: 50px;
-  color: $text-primary;
+  color: var(--text-primary);
   border-radius: 8px;
   margin: 4px 8px;
 
   &:hover {
-    background-color: $background-color;
+    background-color: var(--background-color);
   }
 }
 
@@ -256,13 +263,13 @@ const handleSelect = (path: string) => {
   margin: 8px;
   border-radius: 8px;
   cursor: pointer;
-  color: $text-secondary;
+  color: var(--text-secondary);
   transition: all 0.3s ease;
-  border-top: 1px solid $border-color;
+  border-top: 1px solid var(--border-color);
 
   &:hover {
-    background-color: rgba($primary-color, 0.08);
-    color: $primary-color;
+    background-color: var(--opacity-primary-light);
+    color: var(--color-primary);
   }
 
   .el-icon {

@@ -108,7 +108,7 @@ import {
   type HeaderExample,
   type ExampleColumn,
 } from '@/utils/batchImportHelpers'
-import { exportImportTemplate } from '@/utils/exportImportTemplate'
+import { downloadExcelTemplate } from '@/utils/batchImport/templateExport'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { storageAPI } from '@/api/storage'
 import { useStorageStore } from '@/stores/storageStore'
@@ -210,20 +210,18 @@ const handleUploadChange = (uploadFile: UploadFile) => {
   }
 }
 
-// ===== 导出模板 =====
-const handleExportTemplate = () =>
-  exportImportTemplate({
-    headers: Object.keys(importConfig.excelHeaderMap),
-    exampleRowData: {
-      仓库编码: 'WH-001',
-      仓库名称: '新货主仓库',
-      仓库地址: 'A栋1楼',
-      仓库类型: '新货仓库',
-      仓库描述: '用于存放新采购资产',
-    },
-    sheetName: '仓库导入模板',
-    fileName: '仓库批量导入模板',
-  })
+// ===== 导出模板（公共工具函数，DR-1 收敛）=====
+const handleExportTemplate = async () => {
+  const headers = Object.keys(importConfig.excelHeaderMap)
+  const exampleRowData: Record<string, string> = {
+    仓库编码: 'WH-001',
+    仓库名称: '新货主仓库',
+    仓库地址: 'A栋1楼',
+    仓库类型: '新货仓库',
+    仓库描述: '用于存放新采购资产',
+  }
+  await downloadExcelTemplate('仓库导入模板', headers, [exampleRowData], '仓库批量导入模板.xlsx')
+}
 
 // ===== 导入格式参考卡片数据 =====
 const headerExamples: HeaderExample[] = [

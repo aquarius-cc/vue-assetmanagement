@@ -30,6 +30,7 @@ import { useAuthStore } from '@/stores/auth'
 import type { AuthInfo } from '@/types/authuser'
 import type { EChartsOption } from 'echarts'
 import { useDashboardCharts } from '@/composables/useDashboardCharts'
+import { useChartTheme } from '@/composables/useChartTheme'
 
 export function useDashboardPage() {
   const dashboardStore = useDashboardStore()
@@ -98,60 +99,66 @@ export function useDashboardPage() {
     assetTypeDistribution,
   )
 
+  const { theme, isDark } = useChartTheme()
+
   /**
    * [新增] 环形图配置
    * 从 composable 层生成图表选项，保持 DashboardPage.vue 组件仅负责渲染（DR-5）。
    */
-  const chartOption = computed<EChartsOption>(() => ({
-    tooltip: {
-      trigger: 'item',
-      formatter: '{b}: {c} ({d}%)',
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderColor: '#e5e7eb',
-      textStyle: { color: '#333', fontSize: 12 },
-    },
-    legend: { show: false }, // 左侧已有状态列表，图表不显示图例
-    series: [
-      {
-        type: 'pie',
-        radius: ['55%', '78%'], // 环形图
-        center: ['50%', '50%'],
-        avoidLabelOverlap: false,
-        itemStyle: { borderRadius: 3, borderColor: '#fff', borderWidth: 2 },
-        label: { show: false },
-        emphasis: {
-          label: { show: true, fontSize: 14, fontWeight: 'bold' },
-          scaleSize: 8,
-        },
-        data: statusOverview.value.chartData,
+  const chartOption = computed<EChartsOption>(() => {
+    const t = theme.value
+    void isDark.value
+    return {
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: {c} ({d}%)',
+        backgroundColor: t.tooltipBg,
+        borderColor: t.tooltipBorder,
+        textStyle: { color: t.textColor, fontSize: 12 },
       },
-    ],
-    graphic: [
-      {
-        type: 'text',
-        left: 'center',
-        top: 'center',
-        style: {
-          text: `${statusOverview.value.totalAssets}`,
-          textAlign: 'center',
-          fill: '#333',
-          fontSize: 20,
-          fontWeight: 'bold',
+      legend: { show: false }, // 左侧已有状态列表，图表不显示图例
+      series: [
+        {
+          type: 'pie',
+          radius: ['55%', '78%'], // 环形图
+          center: ['50%', '50%'],
+          avoidLabelOverlap: false,
+          itemStyle: { borderRadius: 4, borderColor: t.dividerColor, borderWidth: 2 },
+          label: { show: false },
+          emphasis: {
+            label: { show: true, fontSize: 14, fontWeight: 'bold' },
+            scaleSize: 8,
+          },
+          data: statusOverview.value.chartData,
         },
-      },
-      {
-        type: 'text',
-        left: 'center',
-        top: '56%',
-        style: {
-          text: '总资产',
-          textAlign: 'center',
-          fill: '#999',
-          fontSize: 12,
+      ],
+      graphic: [
+        {
+          type: 'text',
+          left: 'center',
+          top: 'center',
+          style: {
+            text: `${statusOverview.value.totalAssets}`,
+            textAlign: 'center',
+            fill: t.centerText,
+            fontSize: 20,
+            fontWeight: 'bold',
+          },
         },
-      },
-    ],
-  }))
+        {
+          type: 'text',
+          left: 'center',
+          top: '56%',
+          style: {
+            text: '总资产',
+            textAlign: 'center',
+            fill: t.subText,
+            fontSize: 12,
+          },
+        },
+      ],
+    }
+  })
 
   const updateTime = () => {
     const now = new Date()

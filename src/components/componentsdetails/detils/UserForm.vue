@@ -307,20 +307,12 @@ watch(
 )
 
 /**
- * 模拟接口：根据工号获取用户信息（编辑模式用）
+ * 根据工号获取用户信息（编辑模式用）
  * @param jobcode 工号
  * @returns 用户信息Promise
  */
-const getUserInfo = (jobcode: string): Promise<EmployeeExtended | null> => {
-  // 实际项目中替换为axios/fetch请求后端接口
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      userStore.getById(jobcode).then((res) => {
-        resolve(res)
-      })
-    }, 300)
-  })
-}
+const getUserInfo = (jobcode: string): Promise<EmployeeExtended | null> =>
+  userStore.getById(jobcode)
 
 /**
  * 提交表单

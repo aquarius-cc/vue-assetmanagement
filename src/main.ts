@@ -16,6 +16,7 @@ import '@/assets/styles/global-reset.scss'
 
 // 1.2 第三方 UI 库样式（Element Plus）
 import 'element-plus/dist/index.css'
+import '@/assets/styles/element-variables.scss'
 
 // 1.3 设计令牌与CSS变量
 import '@/styles/variables.css'

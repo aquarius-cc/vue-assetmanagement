@@ -17,13 +17,11 @@
 // 这个组件现在只作为容器，不需要其他逻辑
 </script>
 <style lang="scss" scoped>
-@use '@/assets/styles/common-forms.scss' as *;
-
 .asset-details {
   width: 100%;
   height: 100%;
   position: relative;
-  background: $background-color;
+  background: var(--background-color);
   box-sizing: border-box;
 
   .details-content {

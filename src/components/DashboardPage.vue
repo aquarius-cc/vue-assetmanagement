@@ -185,14 +185,12 @@ const handleSelectAsset = (assetCode: string) => {
 </script>
 
 <style lang="scss" scoped>
-@use '@/assets/styles/common-forms.scss' as *;
-
 .dashboard-page-content {
   height: 100%;
   width: 100%;
   padding: 16px;
   box-sizing: border-box;
-  background-color: $background-color;
+  background-color: var(--background-color);
   background-image: var(--background-atmosphere);
 
   .grid-row {
@@ -202,12 +200,12 @@ const handleSelectAsset = (assetCode: string) => {
   .info-card {
     height: 100%;
     border-radius: 8px;
-    box-shadow: $card-shadow;
+    box-shadow: var(--card-shadow);
     transition: all 0.3s ease;
     border: 1px solid var(--border-color-light);
 
     &:hover {
-      box-shadow: $card-hover-shadow;
+      box-shadow: var(--card-hover-shadow);
     }
   }
 

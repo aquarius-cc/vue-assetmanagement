@@ -88,7 +88,7 @@
         class="pagination"
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50]"
+        :page-sizes="PAGE_SIZE_OPTIONS"
         :total="total"
         layout="total, sizes, prev, pager, next"
         @size-change="fetchAuthUsers"
@@ -156,6 +156,7 @@ import { authUserAPI } from '@/api/authusers'
 import { getErrorMessage } from '@/utils/errorHandler'
 import { usePermission } from '@/composables/usePermission'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
+import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import type { AuthUser, AuthUserCreateForm } from '@/types/authuser'
 import BindAuthUserDialog from '@/components/system/BindAuthUserDialog.vue'
 import UserRoleAssignDialog from '@/components/system/UserRoleAssignDialog.vue'

@@ -32,52 +32,19 @@
         <el-button type="warning" @click="handleExportTemplate">导出模板</el-button>
       </div>
 
-      <div class="import-guide-card">
-        <div class="guide-header">
-          <el-icon><InfoFilled /></el-icon>
-          <span>导入格式参考</span>
-        </div>
-        <div class="guide-content">
-          <div class="guide-section">
-            <div class="section-title">📌 必填列说明</div>
-            <el-table :data="headerExamples" border size="small" style="width: 100%">
-              <el-table-column prop="headerName" label="Excel 表头（中文）" width="180" />
-              <el-table-column prop="field" label="对应字段" width="220" />
-              <el-table-column prop="required" label="必填" width="80">
-                <template #default="{ row }">
-                  <el-tag :type="row.required ? 'danger' : 'info'" size="small">
-                    {{ row.required ? '是' : '否' }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="example" label="示例值" />
-              <el-table-column prop="remark" label="备注" />
-            </el-table>
-          </div>
-          <div class="guide-section">
-            <div class="section-title">📝 示例数据（参考填写）</div>
-            <el-table :data="exampleRows" border size="small" style="width: 100%">
-              <el-table-column
-                v-for="col in exampleColumns"
-                :key="col.prop"
-                :prop="col.prop"
-                :label="col.label"
-                min-width="120"
-              />
-            </el-table>
-          </div>
-          <div class="guide-section">
-            <div class="section-title">⚠️ 注意事项</div>
-            <ul class="notice-list">
-              <li>资产编码、待报废数量、仓库编码为必填项</li>
-              <li>审批状态可选值：pending（待审批）/ approved（已批准）/ rejected（已拒绝）</li>
-              <li>日期格式统一为 YYYY-MM-DD</li>
-              <li>Excel 首行必须与「表头说明」中的中文列名完全一致</li>
-              <li>导入前建议先「导出模板」，在模板基础上填写数据</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      <!-- 导入格式参考卡 -->
+      <BatchImportGuideCard
+        :header-examples="headerExamples"
+        :example-rows="exampleRows"
+        :example-columns="exampleColumns"
+        :notices="[
+          '资产编码、待报废数量、仓库编码为必填项',
+          '审批状态可选值：pending（待审批）/ approved（已批准）/ rejected（已拒绝）',
+          '日期格式统一为 YYYY-MM-DD',
+          'Excel 首行必须与「表头说明」中的中文列名完全一致',
+          '导入前建议先「导出模板」，在模板基础上填写数据',
+        ]"
+      />
 
       <div v-if="previewData.length > 0" class="preview-table">
         <h3 class="section-title">
@@ -138,15 +105,16 @@ defineOptions({ name: 'DamagedAssetBatchImport' })
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
-import { Upload, InfoFilled } from '@element-plus/icons-vue'
+import { Upload } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import ExcelJS from 'exceljs'
 import { useBatchImport } from '@/composables/useBatchImport'
 import type { ValidatedRow } from '@/composables/useBatchImport'
 import { useDamagedAssetStore } from '@/stores/damagedAssetStore'
 import type { DamagedAssetCreateForm } from '@/types/damagedasset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { DamagedAssetExcelRow } from '@/types/batch-import'
+import { downloadExcelTemplate } from '@/utils/batchImport/templateExport'
+import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 
 // ===== 状态与实例 =====
 const router = useRouter()
@@ -231,50 +199,25 @@ const validationTagText = (row: ValidatedRow<DamagedAssetExcelRow>) => {
   return '有效'
 }
 
-// ===== 导出模板 =====
+// ===== 导出模板（公共工具函数，DR-1 收敛）=====
 const handleExportTemplate = async () => {
-  try {
-    const headers = Object.keys(importConfig.excelHeaderMap)
-    const exampleRowData: Record<string, string> = {
-      资产编码: 'ASSET-001',
-      待报废数量: '1',
-      仓库编码: 'STG001',
-      合同编码: 'CT-001',
-      待报废日期: '2025-06-01',
-      审批状态: 'pending',
-      审批人: '张三',
-      描述: '设备老化无法使用',
-    }
-    // 使用 ExcelJS 创建模板工作簿
-    const workbook = new ExcelJS.Workbook()
-    const worksheet = workbook.addWorksheet('待报废资产导入模板')
-
-    // 添加表头行和示例数据行
-    worksheet.addRow(headers)
-    worksheet.addRow(headers.map((h) => exampleRowData[h] ?? ''))
-
-    // 设置列宽
-    worksheet.columns = headers.map(() => ({ width: 20 }))
-
-    // 生成并下载文件
-    const buffer = await workbook.xlsx.writeBuffer()
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = '待报废资产批量导入模板.xlsx'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-
-    ElMessage.success('模板下载成功')
-  } catch (error) {
-    console.error('导出模板失败:', error)
-    ElMessage.error('导出模板失败，请稍后重试')
+  const headers = Object.keys(importConfig.excelHeaderMap)
+  const exampleRowData: Record<string, string> = {
+    资产编码: 'ASSET-001',
+    待报废数量: '1',
+    仓库编码: 'STG001',
+    合同编码: 'CT-001',
+    待报废日期: '2025-06-01',
+    审批状态: 'pending',
+    审批人: '张三',
+    描述: '设备老化无法使用',
   }
+  await downloadExcelTemplate(
+    '待报废资产导入模板',
+    headers,
+    [exampleRowData],
+    '待报废资产批量导入模板.xlsx',
+  )
 }
 
 // ===== 导入格式参考数据 =====
@@ -416,52 +359,6 @@ const goBack = () => {
     margin-top: 8px;
     color: var(--text-secondary);
     font-size: 14px;
-  }
-  .import-guide-card {
-    background-color: var(--card-background-muted);
-    border: 1px solid var(--border-color-light);
-    border-radius: 8px;
-    margin-bottom: 24px;
-    overflow: hidden;
-    .guide-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background-color: var(--color-primary-lighter);
-      padding: 12px 16px;
-      font-weight: 600;
-      color: var(--color-primary-light);
-      border-bottom: 1px solid var(--color-primary-light-border);
-      .el-icon {
-        font-size: 16px;
-      }
-    }
-    .guide-content {
-      padding: 16px;
-      .guide-section {
-        margin-bottom: 20px;
-        &:last-child {
-          margin-bottom: 0;
-        }
-        .section-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--text-primary);
-          margin-bottom: 12px;
-          padding-left: 4px;
-          border-left: 3px solid var(--color-primary-light);
-        }
-      }
-      .notice-list {
-        margin: 0;
-        padding-left: 20px;
-        li {
-          line-height: 1.8;
-          color: var(--text-regular);
-          font-size: 14px;
-        }
-      }
-    }
   }
   .preview-table {
     margin-bottom: 24px;

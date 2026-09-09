@@ -10,8 +10,13 @@
 <template>
   <div class="common-layout">
     <el-container class="common-container">
-      <!-- 侧边栏宽度跟随折叠状态动态变化 -->
-      <el-aside class="common-aside" :width="asideWidth">
+      <!-- 移动端菜单触发按钮 -->
+      <div v-if="isMobile" class="mobile-menu-trigger" @click="drawerOpen = true">
+        <el-icon :size="20"><Menu /></el-icon>
+      </div>
+
+      <!-- 桌面端侧边栏：<960px 隐藏，改用抽屉承载菜单 -->
+      <el-aside v-if="!isMobile" class="common-aside" :width="asideWidth">
         <AsideMenu />
       </el-aside>
       <el-container>
@@ -32,17 +37,58 @@
         </el-main>
       </el-container>
     </el-container>
+
+    <!-- 移动端抽屉导航：<960px 时承载 AsideMenu -->
+    <el-drawer
+      v-model="drawerOpen"
+      direction="ltr"
+      size="200px"
+      :with-header="false"
+      class="mobile-drawer"
+    >
+      <AsideMenu />
+    </el-drawer>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { useRoute } from 'vue-router'
 import AsideMenu from '@/components/AsideMenu.vue'
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { Menu } from '@element-plus/icons-vue'
 import { useAppStore } from '@/stores/app'
 
 const route = useRoute()
 const appStore = useAppStore()
+
+// 移动端抽屉状态：<960px 时桌面侧边栏隐藏，菜单移入抽屉
+const isMobile = ref(false)
+const drawerOpen = ref(false)
+const MOBILE_BREAKPOINT = '(max-width: 960px)'
+let mediaQuery: MediaQueryList | undefined
+
+const updateMobileState = (e?: MediaQueryListEvent) => {
+  isMobile.value = e ? e.matches : !!mediaQuery?.matches
+  if (!isMobile.value) drawerOpen.value = false
+}
+
+onMounted(() => {
+  mediaQuery = window.matchMedia(MOBILE_BREAKPOINT)
+  updateMobileState()
+  mediaQuery.addEventListener('change', updateMobileState)
+})
+
+onUnmounted(() => {
+  mediaQuery?.removeEventListener('change', updateMobileState)
+})
+
+// 路由切换后自动关闭抽屉
+watch(
+  () => route.path,
+  () => {
+    drawerOpen.value = false
+  },
+)
 
 // 侧边栏宽度：折叠时 64px（仅图标），展开时 200px（图标+文字）
 // Element Plus el-menu 折叠后宽度固定为 64px
@@ -109,6 +155,30 @@ const keepAliveComponents = computed<(string | RegExp)[]>(() => {
   margin: 8px auto;
   height: calc(100dvh - 16px);
   width: calc(100vw - 16px);
+}
+
+/* 移动端菜单触发按钮：左上角悬浮 */
+.mobile-menu-trigger {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: var(--text-primary);
+  background: var(--card-background);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+
+  &:hover {
+    opacity: 0.85;
+  }
 }
 
 /**

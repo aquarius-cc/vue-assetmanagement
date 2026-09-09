@@ -19,6 +19,7 @@ import { isAxiosError } from 'axios'
 import { notificationAPI } from '@/api/notification'
 import { safeNavigate } from '@/utils/navigation'
 import { formatDateTimeFull } from '@/utils/Format'
+import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import type {
   NotificationItem,
   NotificationFilterParams,
@@ -274,7 +275,7 @@ onMounted(fetchNotifications)
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.page_size"
           :total="pagination.total"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="PAGE_SIZE_OPTIONS"
           layout="total, sizes, prev, pager, next, jumper"
           @current-change="handlePageChange"
           @size-change="handleSizeChange"

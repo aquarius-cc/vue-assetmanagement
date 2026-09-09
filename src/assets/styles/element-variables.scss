@@ -1,0 +1,13 @@
+/**
+ * @file Element Plus 组件样式变量与全局覆盖集中入口
+ * @module assets/styles/element-variables
+ * @description
+ *   项目中所有对 Element Plus 组件的全局样式覆盖统一收敛于此，
+ *   禁止在业务组件内写非 scoped 的全局 Element Plus 样式。
+ *   使用方式：在 main.ts 中导入，全局生效。
+ */
+
+/* ElMessage 纯文本模式保留换行 */
+.el-message .el-message__content {
+  white-space: pre-line;
+}

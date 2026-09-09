@@ -11,13 +11,12 @@
  */
 import { computed, type Ref } from 'vue'
 import type { EChartsOption } from 'echarts'
+import { useChartTheme, type ChartTheme } from '@/composables/useChartTheme'
 import type {
   AssetTrendData,
   DepartmentDistributionItem,
   AssetTypeDistributionItem,
 } from '@/types/dashboard'
-
-const PIE_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#6B7280']
 
 /**
  * Top-N 聚合：取前 N 项，其余归入"其他"
@@ -47,37 +46,38 @@ function aggregateTopN<T extends { percentage: number }>(
  */
 function buildPieOption(
   data: Array<{ name: string; value: number }>,
+  theme: ChartTheme,
   title?: string,
 ): EChartsOption {
   return {
     tooltip: {
       trigger: 'item',
       formatter: '{b}: {c} ({d}%)',
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderColor: '#e5e7eb',
-      textStyle: { color: '#333', fontSize: 12 },
+      backgroundColor: theme.tooltipBg,
+      borderColor: theme.tooltipBorder,
+      textStyle: { color: theme.textColor, fontSize: 12 },
     },
     title: title
       ? {
           text: title,
           left: 'center',
-          textStyle: { fontSize: 14, fontWeight: 600, color: '#1F2937' },
+          textStyle: { fontSize: 14, fontWeight: 600, color: theme.textColor },
         }
       : undefined,
     legend: {
       orient: 'vertical',
       right: 10,
       top: 'middle',
-      textStyle: { fontSize: 12, color: '#6B7280' },
+      textStyle: { fontSize: 12, color: theme.secondaryText },
     },
-    color: PIE_COLORS,
+    color: theme.pieColors,
     series: [
       {
         type: 'pie',
         radius: ['40%', '65%'],
         center: title ? ['40%', '60%'] : ['50%', '50%'],
         avoidLabelOverlap: false,
-        itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+        itemStyle: { borderRadius: 4, borderColor: theme.dividerColor, borderWidth: 2 },
         label: { show: false },
         emphasis: {
           label: { show: true, fontSize: 13, fontWeight: 'bold' },
@@ -101,31 +101,35 @@ export function useDashboardCharts(
   departmentDistribution: Ref<DepartmentDistributionItem[]>,
   assetTypeDistribution: Ref<AssetTypeDistributionItem[]>,
 ) {
+  const { theme, isDark } = useChartTheme()
+
   /**
    * 趋势折线图 option — 仅展示 new_assets 一条线
    */
   const trendChartOption = computed<EChartsOption>(() => {
+    const t = theme.value
+    void isDark.value
     const dates = assetTrend.value.map((d) => d.date)
     const values = assetTrend.value.map((d) => d.new_assets)
     return {
       tooltip: {
         trigger: 'axis',
-        backgroundColor: 'rgba(255,255,255,0.95)',
-        borderColor: '#e5e7eb',
-        textStyle: { color: '#333', fontSize: 12 },
+        backgroundColor: t.tooltipBg,
+        borderColor: t.tooltipBorder,
+        textStyle: { color: t.textColor, fontSize: 12 },
       },
       grid: { left: 40, right: 20, top: 20, bottom: 30 },
       xAxis: {
         type: 'category',
         data: dates,
-        axisLabel: { fontSize: 11, color: '#9CA3AF', rotate: dates.length > 15 ? 45 : 0 },
-        axisLine: { lineStyle: { color: '#E5E7EB' } },
+        axisLabel: { fontSize: 11, color: t.axisText, rotate: dates.length > 15 ? 45 : 0 },
+        axisLine: { lineStyle: { color: t.borderColor } },
       },
       yAxis: {
         type: 'value',
         minInterval: 1,
-        axisLabel: { fontSize: 11, color: '#9CA3AF' },
-        splitLine: { lineStyle: { color: '#F3F4F6' } },
+        axisLabel: { fontSize: 11, color: t.axisText },
+        splitLine: { lineStyle: { color: t.gridLine } },
       },
       series: [
         {
@@ -134,8 +138,8 @@ export function useDashboardCharts(
           smooth: true,
           symbol: 'circle',
           symbolSize: 6,
-          lineStyle: { color: '#3B82F6', width: 2 },
-          itemStyle: { color: '#3B82F6' },
+          lineStyle: { color: t.lineColor, width: 2 },
+          itemStyle: { color: t.lineColor },
           areaStyle: {
             color: {
               type: 'linear',
@@ -144,8 +148,8 @@ export function useDashboardCharts(
               x2: 0,
               y2: 1,
               colorStops: [
-                { offset: 0, color: 'rgba(59,130,246,0.25)' },
-                { offset: 1, color: 'rgba(59,130,246,0.02)' },
+                { offset: 0, color: t.lineAreaTop },
+                { offset: 1, color: t.lineAreaBottom },
               ],
             },
           },
@@ -159,7 +163,7 @@ export function useDashboardCharts(
    */
   const deptPieOption = computed<EChartsOption>(() => {
     const data = aggregateTopN(departmentDistribution.value, 5, 'department_name', 'asset_count')
-    return buildPieOption(data)
+    return buildPieOption(data, theme.value)
   })
 
   /**
@@ -167,7 +171,7 @@ export function useDashboardCharts(
    */
   const typePieOption = computed<EChartsOption>(() => {
     const data = aggregateTopN(assetTypeDistribution.value, 5, 'type_name', 'count')
-    return buildPieOption(data)
+    return buildPieOption(data, theme.value)
   })
 
   return {

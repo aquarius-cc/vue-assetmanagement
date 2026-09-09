@@ -106,8 +106,8 @@ import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
 import { Upload } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import ExcelJS from 'exceljs'
 import { useBatchImport } from '@/composables/useBatchImport'
+import { downloadExcelTemplate } from '@/utils/batchImport/templateExport'
 import {
   validationTagType,
   validationTagText,
@@ -232,53 +232,28 @@ const handleFileChange = (uploadFile: UploadFile) => {
   }
 }
 
-// ===== 导出模板 =====
+// ===== 导出模板（公共工具函数，DR-1 收敛）=====
 const handleExportTemplate = async () => {
-  try {
-    const headers = Object.keys(importConfig.excelHeaderMap)
-    const exampleRowData: Record<string, string> = {
-      场景类型: 's1_no_record',
-      发现日期: '2025-06-01',
-      发现地点: '3号楼201室',
-      资产名称: '联想ThinkPad笔记本',
-      资产品牌: '联想',
-      资产规格型号: 'ThinkPad T14',
-      资产类型编码: 'HW-LAPTOP',
-      预估价值: '5999.00',
-      关联资产编码: '',
-      目标仓库编码: 'STG001',
-      处理描述: '盘点时发现未登记资产',
-    }
-    // 使用 ExcelJS 创建模板工作簿
-    const workbook = new ExcelJS.Workbook()
-    const worksheet = workbook.addWorksheet('未登记资产导入模板')
-
-    // 添加表头行和示例数据行
-    worksheet.addRow(headers)
-    worksheet.addRow(headers.map((h) => exampleRowData[h] ?? ''))
-
-    // 设置列宽
-    worksheet.columns = headers.map(() => ({ width: 20 }))
-
-    // 生成并下载文件
-    const buffer = await workbook.xlsx.writeBuffer()
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = '未登记资产批量导入模板.xlsx'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-
-    ElMessage.success('模板下载成功')
-  } catch (error) {
-    console.error('导出模板失败:', error)
-    ElMessage.error('导出模板失败，请稍后重试')
+  const headers = Object.keys(importConfig.excelHeaderMap)
+  const exampleRowData: Record<string, string> = {
+    场景类型: 's1_no_record',
+    发现日期: '2025-06-01',
+    发现地点: '3号楼201室',
+    资产名称: '联想ThinkPad笔记本',
+    资产品牌: '联想',
+    资产规格型号: 'ThinkPad T14',
+    资产类型编码: 'HW-LAPTOP',
+    预估价值: '5999.00',
+    关联资产编码: '',
+    目标仓库编码: 'STG001',
+    处理描述: '盘点时发现未登记资产',
   }
+  await downloadExcelTemplate(
+    '未登记资产导入模板',
+    headers,
+    [exampleRowData],
+    '未登记资产批量导入模板.xlsx',
+  )
 }
 
 // ===== 导入格式参考数据 =====

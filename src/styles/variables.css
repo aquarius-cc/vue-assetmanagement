@@ -57,6 +57,7 @@
   /* 阴影 */
   --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   --card-hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --card-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
 
   /* 渐变 */
   --gradient-primary: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
@@ -156,6 +157,7 @@ html.dark {
   /* 阴影 - 调整为深色阴影 */
   --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   --card-hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --card-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.45);
 
   /* 渐变 - 深色渐变 */
   --gradient-primary: linear-gradient(135deg, #1d1e1f 0%, #262727 100%);

@@ -22,6 +22,11 @@ const { isDark, toggleDark } = useDarkMode()
   <div
     class="dark-mode-toggle"
     @click="toggleDark"
+    @keydown.enter.prevent="toggleDark"
+    @keydown.space.prevent="toggleDark"
+    role="button"
+    tabindex="0"
+    :aria-label="isDark ? '切换到亮色模式' : '切换到暗色模式'"
     :title="isDark ? '切换到亮色模式' : '切换到暗色模式'"
   >
     <el-icon class="toggle-icon">

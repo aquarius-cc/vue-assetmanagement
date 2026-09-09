@@ -94,7 +94,6 @@ import type { UploadFile } from 'element-plus'
 import { isAxiosError } from 'axios'
 import { Upload } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import ExcelJS from 'exceljs'
 import { useBatchImport } from '@/composables/useBatchImport'
 import {
   validationTagType,
@@ -102,6 +101,7 @@ import {
   type HeaderExample,
   type ExampleColumn,
 } from '@/utils/batchImportHelpers'
+import { downloadExcelTemplate } from '@/utils/batchImport/templateExport'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { assetTypeAPI } from '@/api/assetType'
 import { useAssetTypeStore } from '@/stores/assetTypeStore'
@@ -177,43 +177,23 @@ const handleUploadChange = (uploadFile: UploadFile) => {
   }
 }
 
+// ===== 导出模板（公共工具函数，DR-1 收敛）=====
 const handleExportTemplate = async () => {
-  try {
-    const headers = Object.keys(importConfig.excelHeaderMap)
-    const exampleRow: Record<string, string> = {
-      类型编码: 'TYPE-001',
-      类型名称: '电子设备',
-      父级编码: '',
-      层级: '0',
-      类型描述: '电子设备类资产',
-      排序: '1',
-    }
-    const workbook = new ExcelJS.Workbook()
-    const worksheet = workbook.addWorksheet('资产分类导入模板')
-
-    worksheet.addRow(headers)
-    worksheet.addRow(headers.map((h) => exampleRow[h] ?? ''))
-
-    worksheet.columns = headers.map(() => ({ width: 20 }))
-
-    const buffer = await workbook.xlsx.writeBuffer()
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = '资产分类批量导入模板.xlsx'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-
-    ElMessage.success('模板下载成功')
-  } catch (error) {
-    console.error('导出模板失败:', error)
-    ElMessage.error('导出模板失败，请稍后重试')
+  const headers = Object.keys(importConfig.excelHeaderMap)
+  const exampleRow: Record<string, string> = {
+    类型编码: 'TYPE-001',
+    类型名称: '电子设备',
+    父级编码: '',
+    层级: '0',
+    类型描述: '电子设备类资产',
+    排序: '1',
   }
+  await downloadExcelTemplate(
+    '资产分类导入模板',
+    headers,
+    [exampleRow],
+    '资产分类批量导入模板.xlsx',
+  )
 }
 
 const headerExamples: HeaderExample[] = [

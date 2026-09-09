@@ -176,7 +176,7 @@
       <el-pagination
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50]"
+        :page-sizes="PAGE_SIZE_OPTIONS"
         :total="employeeList.length"
         layout="total, sizes, prev, pager, next"
         background
@@ -217,6 +217,7 @@ import type { DepartmentTreeNode, DepartmentEmployeeListQueryParams } from '@/ty
 import { useUserStore } from '@/stores/userStore'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import { useDepartmentEmployeeActions } from '@/composables/useDepartmentEmployeeActions'
+import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 
 // ==================== Props ====================
 

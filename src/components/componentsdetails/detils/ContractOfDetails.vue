@@ -284,7 +284,7 @@ const handleExport = async (): Promise<void> => {
   align-items: center;
   font-size: 16px;
   font-weight: 600;
-  color: $text-dark;
+  color: var(--text-dark);
   padding: 12px 16px;
   background-color: var(--card-background-light);
   border-bottom: 1px solid var(--border-color-light);

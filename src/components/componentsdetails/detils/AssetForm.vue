@@ -54,7 +54,7 @@
 
         <div class="form-actions">
           <el-button @click="resetForm">重置</el-button>
-          <el-button type="primary" @click="submitForm">提交</el-button>
+          <el-button type="primary" @click="submitForm" :loading="submitting">提交</el-button>
           <el-button type="info" @click="goBack">返回</el-button>
         </div>
       </el-form>
@@ -99,6 +99,7 @@ const assetTypeStore = useAssetTypeStore()
 const contractStore = useContractStore()
 const storageStore = useStorageStore()
 const formRef = ref()
+const submitting = ref(false)
 
 const isEditMode = computed(() => !!route.query.code)
 
@@ -290,6 +291,8 @@ const submitForm = () => {
       ElMessage.error('请填写所有必填项（标记为 * 的字段）')
       return
     }
+    if (submitting.value) return
+    submitting.value = true
     try {
       if (isEditMode.value) {
         // 【ID-2/取键契约】优先用回填捕获的 recordcode；路由参数兜底
@@ -317,6 +320,8 @@ const submitForm = () => {
           ? error.message
           : '未知错误'
       ElMessage.error(msg)
+    } finally {
+      submitting.value = false
     }
   })
 }
