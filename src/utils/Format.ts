@@ -430,7 +430,6 @@ const parseExcelDate = (dateStr: string): string | null => {
     const parts = dateStr.split(/[\/\-]/)
     if (parts.length === 3) {
       const a = parseInt(parts[0], 10)
-      const b = parseInt(parts[1], 10)
       // 第一个数 > 12 → 必为 DD/MM/YYYY；否则按 MM/DD/YYYY（美式）
       if (a > 12) {
         date = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`)
