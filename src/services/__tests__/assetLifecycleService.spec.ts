@@ -32,6 +32,7 @@ vi.mock('element-plus', () => ({
 
 vi.mock('@/utils/Format', () => ({
   formatDate: vi.fn(),
+  todayLocalISO: vi.fn(() => '2024-01-15'),
 }))
 
 describe('Asset Lifecycle Service', () => {

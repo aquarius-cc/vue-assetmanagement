@@ -248,7 +248,6 @@ describe('Format', () => {
       expect(userStatusMapping.active).toBe('在职员工')
       expect(userStatusMapping.left).toBe('离职员工')
       expect(userStatusMapping.retirement).toBe('退休员工')
-      expect(userStatusMapping.dismissed).toBe('辞退员工')
     })
   })
 
@@ -504,15 +503,14 @@ describe('Format', () => {
       expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     })
 
-    it('returns 未知 for invalid date', () => {
-      expect(parseExcelDate('not-a-date')).toBe('未知')
+    it('returns empty string for invalid date', () => {
+      expect(parseExcelDate('not-a-date')).toBe('')
     })
 
     it('handles DD/MM/YYYY format', () => {
-      // parseExcelDate cannot distinguish DD/MM from MM/DD — both match the same regex.
-      // When day > 12, JS Date interprets as invalid month, returning '未知'.
+      // 首部 > 12 视为 DD/MM/YYYY（如 25/12/2024 解析为 2024-12-25）
       const result = parseExcelDate('25/12/2024')
-      expect(result).toBe('未知')
+      expect(result).toBe('2024-12-25')
     })
   })
 

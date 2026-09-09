@@ -62,6 +62,7 @@ vi.mock('@/utils/errorHandler', () => ({
 
 vi.mock('@/utils/Format', () => ({
   formatDate: (v: string) => v,
+  todayLocalISO: () => '2024-01-01',
 }))
 
 vi.mock('@/api/user', () => ({
