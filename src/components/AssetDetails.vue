@@ -19,14 +19,23 @@
 <style lang="scss" scoped>
 .asset-details {
   width: 100%;
-  height: 100%;
+  // App 壳式布局：作为 .common-main 的 flex 子项撑满剩余高度，向内传递 flex 链
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   position: relative;
   background: var(--background-color);
   box-sizing: border-box;
+  overflow: hidden;
 
   .details-content {
     width: 100%;
-    height: 100%;
+    // 纵向 flex：内页（list-container）flex:1 撑满、bottom-buttons 贴底
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     box-sizing: border-box;
   }
