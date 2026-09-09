@@ -29,9 +29,9 @@
           <el-descriptions-item label="姓名">{{
             boundEmployee.employee_name
           }}</el-descriptions-item>
-          <el-descriptions-item label="状态">{{
-            boundEmployee.employee_status
-          }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <StatusTag :status="boundEmployee.employee_status" map-type="employee" />
+          </el-descriptions-item>
           <el-descriptions-item label="绑定用户">{{
             boundEmployee.auth_user_username || '无'
           }}</el-descriptions-item>
@@ -62,7 +62,7 @@
             >
               <span class="emp-name">{{ emp.employee_name }}</span>
               <span class="emp-jobcode">{{ emp.employee_jobcode }}</span>
-              <el-tag size="small" type="info">{{ emp.employee_status }}</el-tag>
+              <StatusTag :status="emp.employee_status" map-type="employee" size="small" />
             </div>
           </div>
           <div v-else-if="searchKeyword && !searching" class="empty-tip">无匹配结果</div>
@@ -101,6 +101,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { authUserAPI } from '@/api/authusers'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
 import type { EmployeeBrief } from '@/api/authusers'
+import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 
 interface Props {
   visible: boolean
@@ -299,7 +300,7 @@ const handleReplace = async () => {
 
 .emp-jobcode {
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .empty-tip {

@@ -7,6 +7,8 @@ import {
   getApprovalStatusText,
   getRepairStatusTagType,
   getRepairStatusText,
+  getContractStatusTagType,
+  getContractStatusText,
   getHardDiskStatusTagType,
   getHardDiskStatusText,
   getOutAssetStatusTagType,
@@ -18,6 +20,7 @@ import {
   OUTASSET_STATUS_MAP,
   APPROVAL_STATUS_MAP,
   REPAIR_STATUS_MAP,
+  CONTRACT_STATUS_MAP,
   HARD_DISK_STATUS_MAP,
   EMPLOYEE_STATUS_MAP,
   STATUS_COLOR_MAP,
@@ -83,6 +86,27 @@ describe('statusMapping', () => {
       expect(getRepairStatusText('in_progress')).toBe('维修中')
       expect(getRepairStatusText('completed')).toBe('已完成')
       expect(getRepairStatusText('failed')).toBe('维修失败')
+    })
+  })
+
+  describe('Contract status functions', () => {
+    it('getContractStatusTagType returns correct type', () => {
+      expect(getContractStatusTagType('purchasing')).toBe('warning')
+      expect(getContractStatusTagType('purchase_finished')).toBe('primary')
+      expect(getContractStatusTagType('settlement_done')).toBe('success')
+      expect(getContractStatusTagType('project_finished')).toBe('success')
+      expect(getContractStatusTagType('unknown')).toBe('info')
+    })
+
+    it('getContractStatusText returns correct label', () => {
+      expect(getContractStatusText('purchasing')).toBe('供货中')
+      expect(getContractStatusText('purchase_finished')).toBe('供货完成')
+      expect(getContractStatusText('receive_check')).toBe('到货验收')
+      expect(getContractStatusText('initial_check')).toBe('初步验收')
+      expect(getContractStatusText('project_settlement')).toBe('结算中')
+      expect(getContractStatusText('settlement_done')).toBe('结算完成')
+      expect(getContractStatusText('final_check')).toBe('最终验收')
+      expect(getContractStatusText('project_finished')).toBe('项目结束')
     })
   })
 
@@ -181,6 +205,18 @@ describe('statusMapping', () => {
       expect(REPAIR_STATUS_MAP).toHaveProperty('in_progress')
       expect(REPAIR_STATUS_MAP).toHaveProperty('completed')
       expect(REPAIR_STATUS_MAP).toHaveProperty('failed')
+    })
+
+    it('CONTRACT_STATUS_MAP has all eight statuses', () => {
+      expect(Object.keys(CONTRACT_STATUS_MAP)).toHaveLength(8)
+      expect(CONTRACT_STATUS_MAP).toHaveProperty('purchasing')
+      expect(CONTRACT_STATUS_MAP).toHaveProperty('purchase_finished')
+      expect(CONTRACT_STATUS_MAP).toHaveProperty('receive_check')
+      expect(CONTRACT_STATUS_MAP).toHaveProperty('initial_check')
+      expect(CONTRACT_STATUS_MAP).toHaveProperty('project_settlement')
+      expect(CONTRACT_STATUS_MAP).toHaveProperty('settlement_done')
+      expect(CONTRACT_STATUS_MAP).toHaveProperty('final_check')
+      expect(CONTRACT_STATUS_MAP).toHaveProperty('project_finished')
     })
 
     it('HARD_DISK_STATUS_MAP has all required statuses', () => {

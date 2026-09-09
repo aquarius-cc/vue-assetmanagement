@@ -6,6 +6,7 @@
  *   - OUTASSET_STATUS_MAP: 出库状态映射表
  *   - APPROVAL_STATUS_MAP: 审批状态映射表
  *   - REPAIR_STATUS_MAP: 维修状态映射表
+ *   - CONTRACT_STATUS_MAP: 合同状态映射表（对齐 ContractStatus 八状态）
  *   - HARD_DISK_STATUS_MAP: 硬盘状态映射表
  *   - EMPLOYEE_STATUS_MAP: 员工状态映射表
  *   - ASSET_TYPE_MAP: 资产分类映射表
@@ -14,6 +15,7 @@
  *   - getAssetStatusText / getAssetStatusTagType: 资产状态文本与标签类型
  *   - getApprovalStatusText / getApprovalStatusTagType: 审批状态文本与标签类型
  *   - getRepairStatusText / getRepairStatusTagType: 维修状态文本与标签类型
+ *   - getContractStatusText / getContractStatusTagType: 合同状态文本与标签类型
  *   - getHardDiskStatusText / getHardDiskStatusTagType: 硬盘状态文本与标签类型
  *   - getOutAssetStatusText / getOutAssetStatusTagType: 出库状态文本与标签类型
  *   - getEmployeeStatusText / getEmployeeStatusTagType: 员工状态文本与标签类型
@@ -69,6 +71,21 @@ export const REPAIR_STATUS_MAP: Record<
   in_progress: { label: '维修中', type: 'warning' },
   completed: { label: '已完成', type: 'success' },
   failed: { label: '维修失败', type: 'danger' },
+}
+
+// ===== 合同状态映射（对齐 ContractStatus 枚举，中文标签见数据字典） =====
+export const CONTRACT_STATUS_MAP: Record<
+  string,
+  { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
+> = {
+  purchasing: { label: '供货中', type: 'warning' },
+  purchase_finished: { label: '供货完成', type: 'primary' },
+  receive_check: { label: '到货验收', type: 'warning' },
+  initial_check: { label: '初步验收', type: 'warning' },
+  project_settlement: { label: '结算中', type: 'warning' },
+  settlement_done: { label: '结算完成', type: 'success' },
+  final_check: { label: '最终验收', type: 'warning' },
+  project_finished: { label: '项目结束', type: 'success' },
 }
 
 // ===== 硬盘状态映射（对齐 HardDiskStatus 枚举） =====
@@ -152,6 +169,16 @@ export function getRepairStatusTagType(status: string) {
 /** 获取维修状态文本 */
 export function getRepairStatusText(status: string) {
   return getStatusInfo(status, REPAIR_STATUS_MAP).label
+}
+
+/** 获取合同状态标签类型 */
+export function getContractStatusTagType(status: string) {
+  return getStatusInfo(status, CONTRACT_STATUS_MAP).type
+}
+
+/** 获取合同状态文本 */
+export function getContractStatusText(status: string) {
+  return getStatusInfo(status, CONTRACT_STATUS_MAP).label
 }
 
 /** 获取硬盘状态标签类型 */

@@ -65,6 +65,6 @@ const displayItems = computed(() => props.items.slice(0, 10))
 }
 .alert-label {
   font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-secondary);
 }
 </style>

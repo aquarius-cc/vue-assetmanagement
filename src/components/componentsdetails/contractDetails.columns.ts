@@ -38,6 +38,14 @@ export const contractDetailColumns: TableColumn[] = [
   },
   {
     type: 'custom',
+    prop: 'contract_end_date',
+    label: '结束日期',
+    width: 150,
+    align: 'center',
+    slotName: 'contract_end_date',
+  },
+  {
+    type: 'custom',
     prop: 'contract_status',
     label: '合同状态',
     width: 120,

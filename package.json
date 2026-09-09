@@ -16,6 +16,7 @@
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run --exclude 'src/__tests__/**'",
     "test:integration": "vitest run --include 'src/__tests__/**'"
   },

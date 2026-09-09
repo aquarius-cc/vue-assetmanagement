@@ -1,25 +1,36 @@
 // 仪表盘 Section 卡片共享样式
 // 用于 DashboardTrendSection / DashboardDistributionSection / DashboardAlertsSection
+// 全部走 F1-F5 设计令牌（CSS 变量），禁止硬编码色值
 
-$section-card-bg: #fff;
-$section-card-radius: 12px;
+$section-card-radius: 8px; // F3: 卡片圆角 8px
 $section-card-padding-x: 20px;
 $section-card-padding-y: 16px;
-$section-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-$section-title-color: #1f2937;
-$section-title-size: 14px;
+$section-title-size: 16px; // F5: 标题字号
 
 @mixin section-card {
-  background: $section-card-bg;
+  background: var(--card-background);
+  border: 1px solid var(--border-color-light);
   border-radius: $section-card-radius;
   padding: $section-card-padding-y $section-card-padding-x;
-  box-shadow: $section-card-shadow;
+  box-shadow: var(--card-shadow);
   height: 100%;
+  box-sizing: border-box;
 }
 
 @mixin section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 0 12px;
   font-size: $section-title-size;
   font-weight: 600;
-  color: $section-title-color;
+  color: var(--text-dark);
+
+  .section-title-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    flex-shrink: 0;
+  }
 }

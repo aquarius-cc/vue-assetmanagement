@@ -132,7 +132,7 @@ defineProps<{
       .status-bar-track {
         flex: 1;
         height: 6px;
-        background: rgba(255, 255, 255, 0.3);
+        background: var(--status-bar-track);
         border-radius: 3px;
         overflow: hidden;
       }

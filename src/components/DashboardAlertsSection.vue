@@ -36,7 +36,7 @@ const emit = defineEmits<{
   <el-row :gutter="16" class="alerts-row">
     <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
       <div class="section-card">
-        <h4 class="section-title">即将到期资产</h4>
+        <h4 class="section-title"><span class="section-title-dot"></span>即将到期资产</h4>
         <DashboardAlertList
           :items="expiringAssets"
           :loading="expiringLoading"
@@ -48,7 +48,7 @@ const emit = defineEmits<{
     </el-col>
     <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
       <div class="section-card">
-        <h4 class="section-title">维护提醒</h4>
+        <h4 class="section-title"><span class="section-title-dot"></span>维护提醒</h4>
         <DashboardAlertList
           :items="maintenanceReminders"
           :loading="maintenanceLoading"
@@ -65,7 +65,7 @@ const emit = defineEmits<{
 @use '@/assets/styles/dashboard-sections' as *;
 
 .alerts-row {
-  margin: 0;
+  margin: 0 0 16px;
 }
 .section-card {
   @include section-card;

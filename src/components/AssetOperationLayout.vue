@@ -74,9 +74,9 @@
             <el-descriptions-item label="资产规格">{{
               asset.asset_specification || '-'
             }}</el-descriptions-item>
-            <el-descriptions-item label="当前状态">{{
-              asset.asset_current_status
-            }}</el-descriptions-item>
+            <el-descriptions-item label="当前状态">
+              <StatusTag :status="asset.asset_current_status" />
+            </el-descriptions-item>
           </el-descriptions>
         </slot>
 
@@ -103,6 +103,7 @@
 import { useRouter } from 'vue-router'
 import type { AssetDetail } from '@/types/asset'
 import type { Component } from 'vue'
+import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 
 interface Props {
   /** 页面标题 */
@@ -153,7 +154,7 @@ function handleRetry() {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
 }
 

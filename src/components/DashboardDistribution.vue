@@ -38,7 +38,7 @@ const hasData = computed(() => {
       :option="props.chartOption"
       :loading="props.loading"
       autoresize
-      style="height: 240px; width: 100%"
+      class="distribution-chart"
     />
     <el-empty v-else :description="props.emptyText" :image-size="80" />
   </div>
@@ -49,5 +49,14 @@ const hasData = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 100%;
+}
+.distribution-chart {
+  flex: 1;
+  min-height: 240px;
+  width: 100%;
+}
+.el-empty {
+  padding-top: 40px;
 }
 </style>

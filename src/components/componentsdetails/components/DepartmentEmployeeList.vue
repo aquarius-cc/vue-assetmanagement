@@ -90,7 +90,7 @@
     <!-- 人员表格 -->
     <el-table
       ref="tableRef"
-      :data="paginatedData"
+      :data="isSortMode ? employeeList : paginatedData"
       row-key="employee_jobcode"
       border
       stripe

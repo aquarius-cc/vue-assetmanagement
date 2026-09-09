@@ -32,7 +32,7 @@ defineProps({
   <el-row :gutter="16" class="distribution-row">
     <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
       <div class="section-card">
-        <h4 class="section-title">部门资产分布</h4>
+        <h4 class="section-title"><span class="section-title-dot"></span>部门资产分布</h4>
         <DashboardDistribution
           :chart-option="deptPieOption"
           :loading="deptLoading"
@@ -42,7 +42,7 @@ defineProps({
     </el-col>
     <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
       <div class="section-card">
-        <h4 class="section-title">资产类型分布</h4>
+        <h4 class="section-title"><span class="section-title-dot"></span>资产类型分布</h4>
         <DashboardDistribution
           :chart-option="typePieOption"
           :loading="typeLoading"
@@ -57,7 +57,7 @@ defineProps({
 @use '@/assets/styles/dashboard-sections' as *;
 
 .distribution-row {
-  margin: 0;
+  margin: 0 0 16px;
 }
 .section-card {
   @include section-card;

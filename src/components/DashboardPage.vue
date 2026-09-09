@@ -1,12 +1,12 @@
 <!--
-@file 仪表盘主页，4×2 网格布局
+@file 仪表盘主页，欢迎栏 + 网格布局
 @component DashboardPage
 @usedBy
   - router/index.ts: 首页路由组件
 @dependsOn
   - composables/useDashboardPage: 仪表盘数据管理
+  - components/DashboardWelcomeBar: 顶部欢迎栏
   - components/DashboardStatCard: 统计卡片
-  - components/DashboardUserInfo: 用户信息卡片
   - components/DashboardRecentList: 最近操作列表
   - components/DashboardStatusOverview: 状态全景
   - components/DashboardTrendSection: 趋势折线图
@@ -27,6 +27,15 @@
         <el-button type="primary" size="small" @click="retryFetchDashboard">重试</el-button>
       </template>
     </el-alert>
+
+    <!-- 欢迎栏 -->
+    <DashboardWelcomeBar
+      :auth-info="authInfo"
+      :login-duration="loginDuration"
+      :current-time="currentTime"
+      :current-date="currentDate"
+      @logout="logout"
+    />
 
     <!-- Row 1: 发放 + 回收 -->
     <el-row class="grid-row" :gutter="16">
@@ -117,22 +126,13 @@
       :maintenance-loading="maintenanceLoading"
       @select-asset="handleSelectAsset"
     />
-
-    <!-- 用户信息 -->
-    <DashboardUserInfo
-      :auth-info="authInfo"
-      :login-duration="loginDuration"
-      :current-time="currentTime"
-      :current-date="currentDate"
-      @logout="logout"
-    />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { useRouter } from 'vue-router'
 import DashboardStatCard from '@/components/commoncomponents/DashboardStatCard.vue'
-import DashboardUserInfo from '@/components/commoncomponents/DashboardUserInfo.vue'
+import DashboardWelcomeBar from '@/components/commoncomponents/DashboardWelcomeBar.vue'
 import DashboardRecentList from '@/components/commoncomponents/DashboardRecentList.vue'
 import DashboardStatusOverview from '@/components/commoncomponents/DashboardStatusOverview.vue'
 import DashboardTrendSection from '@/components/DashboardTrendSection.vue'
@@ -192,7 +192,8 @@ const handleSelectAsset = (assetCode: string) => {
   width: 100%;
   padding: 16px;
   box-sizing: border-box;
-  background: $background-color;
+  background-color: $background-color;
+  background-image: var(--background-atmosphere);
 
   .grid-row {
     margin-bottom: 16px;
@@ -200,10 +201,10 @@ const handleSelectAsset = (assetCode: string) => {
 
   .info-card {
     height: 100%;
-    border-radius: 12px;
+    border-radius: 8px;
     box-shadow: $card-shadow;
     transition: all 0.3s ease;
-    border: none;
+    border: 1px solid var(--border-color-light);
 
     &:hover {
       box-shadow: $card-hover-shadow;
@@ -211,29 +212,31 @@ const handleSelectAsset = (assetCode: string) => {
   }
 
   .distribute-card {
-    background: var(--gradient-purple);
-
-    :deep(.el-card__header) {
-      background: var(--overlay-white-light);
-      border-bottom: 1px solid var(--overlay-white-medium);
-    }
+    background: var(--gradient-card-purple);
   }
 
   .recycle-card {
-    background: var(--gradient-cyan);
+    background: var(--gradient-card-cyan);
+  }
 
+  .status-overview-card {
+    background: var(--gradient-card-green);
+  }
+
+  .distribute-card,
+  .recycle-card,
+  .status-overview-card {
     :deep(.el-card__header) {
       background: var(--overlay-white-light);
       border-bottom: 1px solid var(--overlay-white-medium);
     }
-  }
 
-  .status-overview-card {
-    background: var(--gradient-green);
+    :deep(.el-card__body) {
+      color: var(--overlay-white-text);
+    }
 
-    :deep(.el-card__header) {
-      background: var(--overlay-white-light);
-      border-bottom: 1px solid var(--overlay-white-medium);
+    :deep(.stat-number) {
+      color: var(--overlay-white-text);
     }
   }
 
@@ -246,6 +249,35 @@ const handleSelectAsset = (assetCode: string) => {
     padding: 20px;
     height: calc(100% - 60px);
     overflow-y: auto;
+  }
+
+  /* 入场交错动画（实际元素来自子组件根节点，class 直接透传） */
+  .grid-row {
+    animation: dash-enter 0.5s ease both;
+  }
+
+  @for $i from 1 through 4 {
+    .grid-row:nth-of-type(#{$i}) {
+      animation-delay: #{$i * 60}ms;
+    }
+  }
+
+  @keyframes dash-enter {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .grid-row {
+      animation: none;
+      opacity: 1;
+    }
   }
 
   @media (max-width: 991px) {

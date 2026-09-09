@@ -55,12 +55,7 @@ const handleMonthChange = (val: string | Date) => {
         @change="handleMonthChange"
       />
     </div>
-    <VChart
-      :option="props.chartOption"
-      :loading="props.loading"
-      autoresize
-      style="height: 220px; width: 100%"
-    />
+    <VChart :option="props.chartOption" :loading="props.loading" autoresize class="trend-chart" />
   </div>
 </template>
 
@@ -68,16 +63,23 @@ const handleMonthChange = (val: string | Date) => {
 .trend-wrapper {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 .trend-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
+  flex-shrink: 0;
+}
+.trend-chart {
+  flex: 1;
+  min-height: 220px;
+  width: 100%;
 }
 .trend-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-text-primary, #1f2937);
+  color: var(--text-dark);
 }
 </style>

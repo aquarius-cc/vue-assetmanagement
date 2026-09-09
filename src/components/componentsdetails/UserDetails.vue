@@ -57,7 +57,7 @@
           >
             <!-- 状态列自定义渲染 -->
             <template #employee_status="{ row }">
-              <span>{{ getStatusDisplay(row.employee_status) }}</span>
+              <StatusTag :status="row.employee_status" map-type="employee" />
             </template>
             <!-- 部门列自定义渲染 -->
             <template #employee_department_name="{ row }">
@@ -125,7 +125,7 @@ import BindAuthUserDialog from '@/components/system/BindAuthUserDialog.vue'
 import { useUserStore } from '@/stores/userStore'
 import { useDepartmentStore } from '@/stores/departmentStore'
 import { userAPI } from '@/api/user'
-import { getStatusDisplay } from '@/utils/Format'
+import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import { userDetailsColumns as columns } from './userDetails.columns'
 import { createUserExcelExport } from '@/composables/useUserExcelExport'
 

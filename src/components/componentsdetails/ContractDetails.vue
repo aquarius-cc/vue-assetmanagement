@@ -71,12 +71,14 @@
 
             <!-- 自定义插槽：合同状态（颜色标识）-->
             <template #contract_status="{ row }">
-              <el-tag
-                :type="row.contract_status === 'settlement_done' ? 'success' : 'primary'"
-                size="small"
-              >
-                {{ row.contract_status || '未知状态' }}
+              <el-tag :type="getContractStatusTagType(row.contract_status)" size="small">
+                {{ getContractStatusText(row.contract_status) }}
               </el-tag>
+            </template>
+
+            <!-- 自定义插槽：合同结束日期-->
+            <template #contract_end_date="{ row }">
+              <span>{{ formatDate(row.contract_end_date) }}</span>
             </template>
 
             <!-- 自定义插槽：结算价格（格式化）-->
@@ -130,6 +132,7 @@ import { exportToExcel } from '@/utils/excelExporter'
 import type { Contract } from '@/types/contract'
 import { useContractStore } from '@/stores/contractStore'
 import { formatPrice, formatDate, contractTypeMapping } from '@/utils/Format'
+import { getContractStatusTagType, getContractStatusText } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
 
 // ===== 状态与实例 =====

@@ -67,6 +67,23 @@
   --gradient-cyan: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
   --gradient-green: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
 
+  /* 渐变卡片 - 收敛冷静版（F1 品牌色系降饱和，供仪表盘卡片使用） */
+  --gradient-card-purple: linear-gradient(135deg, #6372c9 0%, #6e4f9c 100%);
+  --gradient-card-cyan: linear-gradient(135deg, #2c76c8 0%, #2697a8 100%);
+  --gradient-card-green: linear-gradient(135deg, #3a9064 0%, #25927b 100%);
+
+  /* 渐变卡片上的白色叠加层 — 亮暗模式通用 */
+  --overlay-white-subtle: rgba(255, 255, 255, 0.1);
+  --overlay-white-light: rgba(255, 255, 255, 0.15);
+  --overlay-white-medium: rgba(255, 255, 255, 0.2);
+  --overlay-white-strong: rgba(255, 255, 255, 0.3);
+  --overlay-white-text: rgba(255, 255, 255, 0.9);
+
+  /* 页面背景氛围光（叠加在背景色之上） */
+  --background-atmosphere:
+    radial-gradient(1080px 520px at 82% -8%, rgba(43, 95, 215, 0.07) 0%, transparent 62%),
+    radial-gradient(840px 480px at -8% 108%, rgba(82, 196, 26, 0.05) 0%, transparent 58%);
+
   /* 主色衍生 */
   --color-primary-light-mid: #66b1ff;
   --color-primary-light-lighter: #79bbff;
@@ -75,6 +92,9 @@
   /* 透明度 */
   --opacity-primary-light: rgba(43, 95, 215, 0.08);
   --opacity-primary-lighter: rgba(43, 95, 215, 0.12);
+
+  /* 状态条轨道底色 */
+  --status-bar-track: rgba(43, 95, 215, 0.08);
 }
 
 /* 暗色模式变量 */
@@ -150,12 +170,10 @@ html.dark {
   --gradient-cyan: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
   --gradient-green: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
 
-  /* 渐变卡片上的白色叠加层 — 亮暗模式通用 */
-  --overlay-white-subtle: rgba(255, 255, 255, 0.1);
-  --overlay-white-light: rgba(255, 255, 255, 0.15);
-  --overlay-white-medium: rgba(255, 255, 255, 0.2);
-  --overlay-white-strong: rgba(255, 255, 255, 0.3);
-  --overlay-white-text: rgba(255, 255, 255, 0.9);
+  /* 页面背景氛围光（暗色版，叠加在背景色之上） */
+  --background-atmosphere:
+    radial-gradient(1080px 520px at 82% -8%, rgba(74, 144, 226, 0.12) 0%, transparent 62%),
+    radial-gradient(840px 480px at -8% 108%, rgba(51, 153, 255, 0.08) 0%, transparent 58%);
 
   /* 主色衍生 - 深色 */
   --color-primary-light-mid: #85c1ff;
@@ -165,6 +183,9 @@ html.dark {
   /* 透明度 */
   --opacity-primary-light: rgba(74, 144, 226, 0.15);
   --opacity-primary-lighter: rgba(74, 144, 226, 0.2);
+
+  /* 状态条轨道底色 */
+  --status-bar-track: rgba(74, 144, 226, 0.16);
 
   /* Element Plus 暗色变量覆盖 */
   --el-bg-color: #141414;
