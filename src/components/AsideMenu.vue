@@ -27,10 +27,8 @@
           :unique-opened="false"
         >
           <el-menu-item index="/main">
-            <template #title>
-              <el-icon><Location /></el-icon>
-              <span>首页</span>
-            </template>
+            <el-icon><Location /></el-icon>
+            <span>首页</span>
           </el-menu-item>
 
           <el-sub-menu index="asset">

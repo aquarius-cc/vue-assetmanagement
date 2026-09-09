@@ -1,5 +1,5 @@
 <!--
-@file 已报废资产列表页面，展示已报废资产记录并支持删除和导出操作
+@file 已报废资产列表页面，展示已报废资产记录并支持导出操作（只读模块）
 @component WasteAssetDetails
 @usedBy
   - views/WasteAssetDetails.vue: 通过 router-view 渲染已报废资产列表
@@ -17,7 +17,6 @@
     -->
     <div class="table-container">
       <SmartListContainer
-        ref="smartListRef"
         :store-config="storeConfig"
         :auto-load="true"
         :initial-page="1"
@@ -42,13 +41,11 @@
             :show-actions="false"
             :enable-edit="false"
             :enable-delete="false"
-            :enable-selection="true"
             :show-pagination="true"
             :page-size-options="slotProps.pageSizeOptions"
             @size-change="slotProps.handleSizeChange"
             @current-change="slotProps.handleCurrentChange"
             @search="slotProps.performSearch"
-            @selection-change="slotProps.handleSelectionChange"
           >
             <!-- 报废日期列自定义渲染 -->
             <template #waste_asset_date="{ row }">
@@ -59,14 +56,6 @@
           <!-- 底部按钮组（只读模块，仅导出 Excel） -->
           <div class="bottom-buttons">
             <el-button type="primary" @click="handleExportExcel">导出Excel</el-button>
-            <!-- 批量删除按钮：当选中数据时可用 -->
-            <el-button
-              type="danger"
-              :disabled="slotProps.selectedRows?.length === 0"
-              @click="handleBatchDelete(slotProps.selectedRows)"
-            >
-              批量删除 ({{ slotProps.selectedRows?.length || 0 }})
-            </el-button>
           </div>
         </template>
       </SmartListContainer>
@@ -98,21 +87,11 @@ import { exportToExcel } from '@/utils/excelExporter'
 import type { WasteAsset } from '@/types/wasteasset'
 import { useWasteAssetStore } from '@/stores/wasteAssetStore'
 import { formatDate } from '@/utils/Format'
-import type { SmartListContainerExpose } from '@/types/common'
 
 // ===== 状态与实例 =====
 const wasteAssetStore = useWasteAssetStore()
 const route = useRoute()
 const router = useRouter()
-
-/**
- * SmartListContainer 组件引用
- * 用于调用容器暴露的方法（如 refresh、reset）
- *
- * 注意：SmartListContainer 是泛型组件，使用 ComponentPublicInstance 获取公共实例类型
- * 通过类型断言访问 expose 的方法
- */
-const smartListRef = ref<SmartListContainerExpose | null>(null)
 
 /**
  * 子路由激活状态
@@ -264,46 +243,6 @@ const handleExportExcel = async () => {
     successMessage: '已报废资产数据导出成功',
     errorMessage: '已报废资产数据导出失败，请重试',
   })
-}
-
-/**
- * 批量删除
- * 弹出确认框，确认后调用 store.removeBatch 执行批量删除
- * @param rows 选中的行数据
- */
-const handleBatchDelete = async (rows: WasteAsset[] | undefined) => {
-  if (!rows || rows.length === 0) {
-    ElMessage.warning('请先选择要删除的数据')
-    return
-  }
-
-  // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows.map((row) => row.waste_asset_code).filter((code): code is string => !!code)
-
-  if (codes.length === 0) {
-    ElMessage.error('无法删除：选中的数据缺少唯一标识')
-    return
-  }
-
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除选中的 ${codes.length} 条数据吗？删除后数据不可恢复！`,
-      '批量删除确认',
-      {
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
-
-    await wasteAssetStore.removeBatch(codes)
-    smartListRef.value?.clearSelection()
-    await smartListRef.value?.refresh()
-  } catch (err) {
-    if (err === 'cancel') return
-    console.error('批量删除失败:', err)
-    ElMessage.error('批量删除失败，请重试')
-  }
 }
 
 /**

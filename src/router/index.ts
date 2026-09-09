@@ -70,6 +70,7 @@ const router = createRouter({
           meta: {
             title: '资产管理',
             requiresAuth: true,
+            showPageHeader: true,
           },
           children: [
             {
@@ -125,6 +126,7 @@ const router = createRouter({
           meta: {
             title: '合同管理',
             requiresAuth: true,
+            showPageHeader: true,
             requiredMinRole: 'system_admin',
             keepAlive: true, // 添加缓存标识（统一使用小写 keepAlive，与 MainView.vue 中的 filter 一致）
             componentName: 'ContractDetails', // 组件名称（需与组件定义的name一致）
@@ -171,6 +173,7 @@ const router = createRouter({
           meta: {
             title: '资产分类类型管理',
             requiresAuth: true,
+            showPageHeader: true,
             requiredMinRole: 'system_admin',
             keepAlive: true, // 添加缓存标识（统一使用小写 keepAlive）
             componentName: 'AssetTypeDetails', // 组件名称（需与组件定义的name一致）
@@ -204,6 +207,7 @@ const router = createRouter({
           meta: {
             title: '仓库管理',
             requiresAuth: true,
+            showPageHeader: true,
             requiredMinRole: 'system_admin',
             keepAlive: true,
             componentName: 'StorageDetails', // 组件名称（需与组件定义的name一致）
@@ -237,6 +241,7 @@ const router = createRouter({
           meta: {
             title: '用户管理',
             requiresAuth: true,
+            showPageHeader: true,
             requiredMinRole: 'system_admin',
             keepAlive: true, // 添加缓存标识（统一使用小写 keepAlive）
             componentName: 'UserDetails', // 组件名称（需与组件定义的name一致）
@@ -269,6 +274,7 @@ const router = createRouter({
           meta: {
             title: '资产发放',
             requiresAuth: true,
+            showPageHeader: true,
           },
           children: [
             {
@@ -310,6 +316,7 @@ const router = createRouter({
           meta: {
             title: '资产回收',
             requiresAuth: true,
+            showPageHeader: true,
           },
           children: [
             {
@@ -341,6 +348,7 @@ const router = createRouter({
           meta: {
             title: '损坏资产',
             requiresAuth: true,
+            showPageHeader: true,
           },
         },
         {
@@ -350,6 +358,7 @@ const router = createRouter({
           meta: {
             title: '遗失资产',
             requiresAuth: true,
+            showPageHeader: true,
           },
         },
         {
@@ -359,6 +368,7 @@ const router = createRouter({
           meta: {
             title: '找回资产',
             requiresAuth: true,
+            showPageHeader: true,
           },
         },
         {
@@ -368,6 +378,7 @@ const router = createRouter({
           meta: {
             title: '维修记录',
             requiresAuth: true,
+            showPageHeader: true,
           },
         },
         {
@@ -377,6 +388,7 @@ const router = createRouter({
           meta: {
             title: '资产报废',
             requiresAuth: true,
+            showPageHeader: true,
           },
           children: [
             {
@@ -409,6 +421,7 @@ const router = createRouter({
           meta: {
             title: '已报废资产',
             requiresAuth: true,
+            showPageHeader: true,
           },
           children: [
             {
@@ -424,7 +437,7 @@ const router = createRouter({
           path: 'unregisteredassetdetails',
           name: 'UnregisteredAssetDetails',
           component: () => import('@/components/componentsdetails/UnregisteredAssetDetails.vue'),
-          meta: { title: '未登记资产', requiresAuth: true },
+          meta: { title: '未登记资产', requiresAuth: true, showPageHeader: true },
           children: [
             {
               path: 'unregisteredassetform',
@@ -454,7 +467,12 @@ const router = createRouter({
           path: 'operationlogdetails',
           name: 'OperationLogDetails',
           component: () => import('@/components/componentsdetails/OperationLogDetails.vue'),
-          meta: { title: '资产操作日志', requiresAuth: true, requiredMinRole: 'auditor' },
+          meta: {
+            title: '资产操作日志',
+            requiresAuth: true,
+            showPageHeader: true,
+            requiredMinRole: 'auditor',
+          },
           children: [
             {
               path: 'operationlogdetail',
@@ -470,7 +488,7 @@ const router = createRouter({
           path: 'auditlogdetails',
           name: 'AuditLogDetails',
           component: () => import('@/components/componentsdetails/AuditLogDetails.vue'),
-          meta: { title: '其它操作日志', requiresAuth: true },
+          meta: { title: '其它操作日志', requiresAuth: true, showPageHeader: true },
           children: [
             {
               path: 'auditlogdetail',
@@ -484,7 +502,7 @@ const router = createRouter({
           path: 'harddisksndetails',
           name: 'HardDiskSNDetails',
           component: () => import('@/components/componentsdetails/HardDiskSNDetails.vue'),
-          meta: { title: '硬盘序列号', requiresAuth: true },
+          meta: { title: '硬盘序列号', requiresAuth: true, showPageHeader: true },
           children: [
             {
               path: 'harddisksnform',
@@ -509,6 +527,7 @@ const router = createRouter({
           meta: {
             title: '部门-人员管理',
             requiresAuth: true,
+            showPageHeader: true,
           },
           children: [
             {
@@ -555,6 +574,7 @@ const router = createRouter({
           meta: {
             title: '部门管理',
             requiresAuth: true,
+            showPageHeader: true,
             requiredMinRole: 'system_admin',
             keepAlive: true, // 添加缓存标识（统一使用小写 keepAlive）
             componentName: 'DepartmentDetails', // 组件名称（需与组件定义的name一致）
@@ -588,6 +608,9 @@ const router = createRouter({
           meta: {
             title: '角色管理',
             requiresAuth: true,
+            showPageHeader: true,
+            // 【A-14】系统管理页权限门槛（此前缺失，任意已登录角色可直访）
+            requiredMinRole: 'system_admin',
           },
         },
         {
@@ -597,6 +620,9 @@ const router = createRouter({
           meta: {
             title: '账号管理',
             requiresAuth: true,
+            showPageHeader: true,
+            // 【A-14】系统管理页权限门槛（此前缺失，任意已登录角色可直访）
+            requiredMinRole: 'system_admin',
           },
         },
         {
@@ -611,6 +637,7 @@ const router = createRouter({
           meta: {
             title: '资产录入',
             requiresAuth: true,
+            showPageHeader: true,
           },
         },
       ],

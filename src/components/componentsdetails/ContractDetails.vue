@@ -120,7 +120,7 @@ defineOptions({ name: 'ContractDetails' })
 // ===== 导入顺序：Vue 核心模块、第三方库、内部模块 =====
 import { ref, watch, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElRadioGroup, ElRadio } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import { contractDetailColumns as columns } from './contractDetails.columns'
@@ -144,11 +144,12 @@ const contractStore = useContractStore()
  */
 const smartListRef = ref<SmartListContainerExpose | null>(null)
 
+/** 导出范围（默认当前页），由导出弹窗单选控制 */
+const exportScope = ref<'current' | 'all'>('current')
+
 /**
  * 子路由激活状态 * 用于控制子路由遮罩层的显礀 */
 const isChildRouteActive = ref(false)
-
-
 
 // ===== SmartListContainer 配置 =====
 /**
@@ -208,14 +209,14 @@ const handleBatchImport = () => {
 
 /**
  * 编辑合同
- * 携带合同编码跳转到表单页面（子路由）
+ * 携带记录标识（recordcode）跳转到表单页面（子路由）
  * @param row 行数捀 */
 const handleEdit = (row: Contract) => {
-  if (!row.contract_code) {
-    ElMessage.error('合同编码不存在，无法编辑')
+  if (!row.recordcode) {
+    ElMessage.error('合同记录标识不存在，无法编辑')
     return
   }
-  router.push({ name: 'ContractForm', query: { code: row.contract_code } }).catch((err) => {
+  router.push({ name: 'ContractForm', query: { code: row.recordcode } }).catch((err) => {
     console.error('编辑跳转失败:', err)
     ElMessage.error('跳转失败，请刷新页面重试')
   })
@@ -226,8 +227,8 @@ const handleEdit = (row: Contract) => {
  * 【架构优化】删除成功后通过 SmartListContainer 刷新列表，保持数据一致态
  * @param row 行数捀 */
 const handleDelete = async (row: Contract) => {
-  if (!row.contract_code) {
-    ElMessage.error('合同编码不存在，无法删除')
+  if (!row.recordcode) {
+    ElMessage.error('合同记录标识不存在，无法删除')
     return
   }
   try {
@@ -236,9 +237,10 @@ const handleDelete = async (row: Contract) => {
       cancelButtonText: '取消',
       type: 'warning',
     })
-    await contractStore.remove(row.contract_code)
+    await contractStore.remove(row.recordcode)
     ElMessage.success('删除成功')
-    // 【架构优化】通过 SmartListContainer 刷新列表，保持数据一致态    smartListRef.value?.refresh()
+    // 【架构优化】通过 SmartListContainer 刷新列表，保持数据一致态
+    smartListRef.value?.refresh()
   } catch (err) {
     if (err !== 'cancel') {
       console.error('删除合同失败:', err)
@@ -258,11 +260,11 @@ const handleBatchDelete = async (rows: Contract[] | undefined) => {
     return
   }
 
-  // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows.map((row) => row.contract_code).filter((code): code is string => !!code)
+  // 提取选中的唯一标识字段（recordcode）
+  const codes = rows.map((row) => row.recordcode).filter((code): code is string => !!code)
 
   if (codes.length === 0) {
-    ElMessage.error('无法删除：选中的数据缺少唯一标识')
+    ElMessage.error('无法删除：选中的数据缺少记录标识')
     return
   }
 
@@ -326,41 +328,51 @@ const handleExportExcel = async () => {
     { title: '未支付金额', key: 'amount_unpaid', default: '0' },
   ]
 
-  let exportCurrent = false
-  let exportAll = false
-
   try {
-    const result = await ElMessageBox({
-      title: '选择导出范围',
-      message: h('div', null, [
+    await ElMessageBox.alert(
+      h('div', null, [
         h('p', null, `当前页面显示 ${contractStore.list.length} 条数据`),
-        h('p', null, `总共最${contractStore.pagination.total} 条数据`),
+        h('p', null, `总共 ${contractStore.pagination.total} 条数据`),
         h('br'),
-        h('p', null, '请选择导出范围'),
+        h(
+          ElRadioGroup,
+          {
+            modelValue: exportScope.value,
+            'onUpdate:modelValue': (value: string | number | boolean | undefined) => {
+              exportScope.value = value === 'all' ? 'all' : 'current'
+            },
+          },
+          () => [
+            // AI_REVIEW_NEEDED: verify ElRadio label/value props against installed element-plus version
+            h(ElRadio, { label: 'current', value: 'current' }, () => '导出当前页面'),
+            h(ElRadio, { label: 'all', value: 'all' }, () => '导出全部数据'),
+          ],
+        ),
       ]),
-      showCancelButton: true,
-      confirmButtonText: '导出当前页面',
-      cancelButtonText: '导出全部数据',
-      distinguishCancelAndClose: true,
-      closeOnClickModal: false,
-    })
-    if (result === 'confirm') exportCurrent = true
-    else if (result === 'cancel') exportAll = true
-    else return
+      '选择导出范围',
+      {
+        confirmButtonText: '确认导出',
+        showCancelButton: false,
+        closeOnClickModal: false,
+        type: 'info',
+      },
+    )
   } catch (err) {
-    if (err === 'cancel') exportAll = true
-    else if (err === 'close') return
-    else throw err
+    if (err === 'close') return
+    throw err
   }
+
+  const exportCurrent = exportScope.value === 'current'
+  const exportAll = !exportCurrent
 
   let exportData: Contract[] = []
   let fileName: string
 
   if (exportCurrent) {
     exportData = contractStore.list
-    fileName = `合同列表_当前页面_${contractStore.list.length}杀xlsx`
+    fileName = `合同列表_当前页面_${contractStore.list.length}.xlsx`
   } else if (exportAll) {
-    ElMessage.info('正在准备全部数据，请稍候..')
+    ElMessage.info('正在准备全部数据，请稍候...')
     if (contractStore.pagination.total > 1000) {
       const confirm = await ElMessageBox.confirm(
         '数据量较大，导出可能需要一些时间，是否继续',
@@ -379,7 +391,7 @@ const handleExportExcel = async () => {
         page_size: contractStore.pagination.total,
       })
       exportData = allData
-      fileName = `合同列表_全部_${allData.length}杀xlsx`
+      fileName = `合同列表_全部_${allData.length}.xlsx`
     } catch (error) {
       console.error('获取全部数据失败:', error)
       ElMessage.error('获取全部数据失败，请重试')

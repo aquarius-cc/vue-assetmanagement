@@ -129,13 +129,11 @@
     </div>
 
     <!-- 无数据提示（已搜索但无结果） -->
-    <div v-else-if="searchForm && list.length === 0" class="no-data">
+    <div v-else-if="searched && list.length === 0" class="no-data">
       暂无符合条件的可报废资产，请调整搜索条件
     </div>
   </div>
 </template>
-
-
 
 <script lang="ts" setup>
 defineOptions({ name: 'ScrapableAssetsSearch' })

@@ -15,14 +15,11 @@
         <AsideMenu />
       </el-aside>
       <el-container>
-        <!-- <el-header class="common-header">
-          <HeadersMenue/> -->
-        <!-- <div class="header-top">
-          </div> -->
-        <!-- <div class="header-bottom">
-          </div> -->
-        <!-- </el-header> -->
         <el-main class="common-main">
+          <!-- 轻页头：仅直接子页面显示（Dashboard 与详情/表单页自带页头，不重复） -->
+          <div v-if="showPageHeader" class="page-header">
+            <h2 class="page-title">{{ pageTitle }}</h2>
+          </div>
           <!-- 如果同时使用transition和keep-alive -->
           <router-view v-slot="{ Component }">
             <transition name="fade">
@@ -50,6 +47,28 @@ const appStore = useAppStore()
 // 侧边栏宽度：折叠时 64px（仅图标），展开时 200px（图标+文字）
 // Element Plus el-menu 折叠后宽度固定为 64px
 const asideWidth = computed(() => (appStore.sidebarCollapsed ? '64px' : '200px'))
+
+// 轻页头标题与显示条件：仅带 meta.showPageHeader 标记的列表页显示
+// Dashboard 自带欢迎栏、NotificationList 自带页头、详情/表单页自带 child-page-header，均不重复显示
+const showPageHeader = computed(() => {
+  if (route.name === 'Dashboard' || route.name === 'NotificationList') return false
+  const leaf = route.matched[route.matched.length - 1]
+  if (leaf?.meta?.showPageHeader) return true
+  // 可选参数默认子路由（如 /main/assetdetails 命中 :asset_code? 空值）：列表态显示页头
+  if (leaf?.name === 'AssetContentDetails' && !route.params.asset_code) {
+    return !!route.meta.showPageHeader
+  }
+  return false
+})
+const pageTitle = computed(() => {
+  if (!showPageHeader.value) return ''
+  // 可选参数默认子路由（如 /main/assetdetails 命中的 AssetContentDetails 列表态）：取父级列表页标题
+  const leaf = route.matched[route.matched.length - 1]
+  if (leaf?.name === 'AssetContentDetails' && !route.params.asset_code) {
+    return (route.matched[1]?.meta?.title as string) || ''
+  }
+  return (route.meta.title as string) || ''
+})
 
 // 动态计算需要缓存的组件名称（从路由 meta 中获取）
 const keepAliveComponents = computed<(string | RegExp)[]>(() => {
@@ -139,5 +158,21 @@ const keepAliveComponents = computed<(string | RegExp)[]>(() => {
   height: 100%;
   width: 100%;
   background-color: var(--background-color);
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding: 0 4px 12px;
+    border-bottom: 1px solid var(--border-color-light);
+
+    .page-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+  }
 }
 </style>
