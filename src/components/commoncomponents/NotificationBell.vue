@@ -172,7 +172,7 @@ function formatTime(iso: string) {
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
   box-shadow: var(--el-box-shadow);
-  z-index: 1000;
+  z-index: var(--z-notification);
   overflow: hidden;
 }
 

@@ -325,7 +325,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 100;
+  z-index: var(--z-mask);
   display: flex;
 
   .mask {
@@ -339,7 +339,7 @@ onMounted(() => {
 
   .child-router-container {
     position: relative;
-    z-index: 1;
+    z-index: var(--z-content);
     width: 70%;
     max-width: 900px;
     margin: 32px auto;

@@ -162,7 +162,7 @@ const keepAliveComponents = computed<(string | RegExp)[]>(() => {
   position: fixed;
   top: 16px;
   left: 16px;
-  z-index: 2000;
+  z-index: var(--z-view-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
