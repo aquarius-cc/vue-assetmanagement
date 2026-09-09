@@ -342,7 +342,12 @@ $breakpoint-tablet: 1024px;
  */
 @mixin list-container {
   width: 100%;
-  min-height: 100vh;
+  // App 壳式布局：撑满 .common-main 剩余高度，内部自管滚动（table-container overflow:auto）
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 16px;
   box-sizing: border-box;
   background-color: var(--background-color, $background-color);
@@ -354,8 +359,10 @@ $breakpoint-tablet: 1024px;
  */
 @mixin table-container {
   width: 100%;
-  overflow-x: auto;
-  margin-bottom: 100px;
+  // App 壳式布局：表格区自滚（上下+左右），分页与 bottom-buttons 常驻其外
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
   background: var(--card-background, $white);
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
@@ -423,20 +430,14 @@ $breakpoint-tablet: 1024px;
  *   新方案改用 left/right 约束 + calc 宽度，实现容器内对齐
  */
 @mixin bottom-buttons {
-  position: sticky;
-  bottom: 24px;
-  // 左右各留 16px，与 list-container / table-container 的 padding: 16px 对齐
-  left: 16px;
-  right: 16px;
+  // App 壳式布局：普通流内页脚，不再悬浮（sticky/z-index 已退役，永不遮盖内容）
+  flex-shrink: 0;
+  width: 100%;
   display: flex;
   gap: 16px;
   padding: 16px 24px;
-  // background: rgba(255, 255, 255, 0.95);
   background: transparent;
-  // backdrop-filter: blur(8px);
-  backdrop-filter: none;
   border-radius: 8px;
-  z-index: var(--z-sticky-bar);
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
@@ -604,7 +605,6 @@ $breakpoint-tablet: 1024px;
     .bottom-buttons {
       flex-wrap: wrap;
       justify-content: center;
-      bottom: 16px;
     }
 
     .child-router-container {
@@ -656,7 +656,6 @@ $breakpoint-tablet: 1024px;
     .list-container .bottom-buttons {
       flex-wrap: wrap;
       justify-content: center;
-      bottom: 16px;
     }
 
     .list-container .child-router-container {

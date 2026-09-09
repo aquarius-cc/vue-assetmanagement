@@ -228,9 +228,14 @@ const keepAliveComponents = computed<(string | RegExp)[]>(() => {
   height: 100%;
   width: 100%;
   background-color: var(--background-color);
+  // App 壳式布局：主内容区纵向 flex，页头/筛选不压缩，列表区（list-container）自滚
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 
   .page-header {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 12px;

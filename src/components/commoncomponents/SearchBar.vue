@@ -187,6 +187,8 @@ defineExpose({
 .search-bar {
   margin-bottom: 16px;
   border-radius: 8px;
+  // App 壳式布局：顶区筛选不被列表区压缩
+  flex-shrink: 0;
 
   :deep(.el-card__body) {
     padding: 16px 20px 0;
