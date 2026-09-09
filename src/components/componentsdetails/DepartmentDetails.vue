@@ -289,7 +289,6 @@ const handleMaskBack = () => {
 
   .table-container {
     @include table-container;
-    margin-bottom: 80px; // 为底部按钮预留空间
   }
 }
 
