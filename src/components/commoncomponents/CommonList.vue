@@ -308,7 +308,7 @@ export default defineComponent({
   width: 100%;
   padding: 16px;
   background-color: var(--background-color);
-  // App 壳式布局：撑满父容器，内部表格自滚，分页/按钮常驻
+  /* App 壳式布局：撑满父容器，内部表格自滚，分页/按钮常驻 */
   flex: 1;
   min-height: 0;
   display: flex;
@@ -318,7 +318,7 @@ export default defineComponent({
 
 .table-container {
   width: 100%;
-  // 表格区自滚（上下+左右），滚动条位于本容器
+  /* 表格区自滚（上下+左右），滚动条位于本容器 */
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -369,7 +369,7 @@ export default defineComponent({
 
 .pagination-container {
   display: flex;
-  // 常驻可见：不被表格滚动区压缩
+  /* 常驻可见：不被表格滚动区压缩 */
   flex-shrink: 0;
   justify-content: flex-end;
   align-items: center;

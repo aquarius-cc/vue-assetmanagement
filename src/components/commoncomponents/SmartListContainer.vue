@@ -221,7 +221,7 @@ export default defineComponent({
 .smart-list-container {
   width: 100%;
   height: 100%;
-  // App 壳式布局：纵向 flex，让 CommonList 占满、bottom-buttons 收缩为流内页脚
+  /* App 壳式布局：纵向 flex，让 CommonList 占满、bottom-buttons 收缩为流内页脚 */
   display: flex;
   flex-direction: column;
   overflow: hidden;
