@@ -167,8 +167,6 @@ const getScenarioTypeTagType = (
   return (scenarioTypeTagMap[type] as '' | 'success' | 'warning' | 'danger' | 'info') || 'info'
 }
 
-
-
 // ===== SmartListContainer 配置 =====
 /**
  * Store 配置对象

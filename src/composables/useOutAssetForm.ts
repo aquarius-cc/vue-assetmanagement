@@ -63,8 +63,7 @@ export function useOutAssetForm() {
     outasset_applicant_jobcode: outAssetCreateExtendedForm.outasset_applicant_jobcode || null,
     outasset_manager_jobcode: outAssetCreateExtendedForm.outasset_manager_jobcode || null,
     outasset_date: outAssetCreateExtendedForm.outasset_date
-      ? formatDate(outAssetCreateExtendedForm.outasset_date) ||
-        todayLocalISO()
+      ? formatDate(outAssetCreateExtendedForm.outasset_date) || todayLocalISO()
       : todayLocalISO(),
     return_date: outAssetCreateExtendedForm.return_date
       ? formatDate(outAssetCreateExtendedForm.return_date)

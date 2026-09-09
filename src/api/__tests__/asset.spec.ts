@@ -59,10 +59,9 @@ describe('assetAPI', () => {
       recordcode: 'Asset-20260101-ABC12345',
       asset_name: 'Updated',
     } as never)
-    expect(mockRequest.put).toHaveBeenCalledWith(
-      '/assets/assets/Asset-20260101-ABC12345/',
-      { asset_name: 'Updated' },
-    )
+    expect(mockRequest.put).toHaveBeenCalledWith('/assets/assets/Asset-20260101-ABC12345/', {
+      asset_name: 'Updated',
+    })
   })
 
   it('updateAsset throws when recordcode is missing', () => {

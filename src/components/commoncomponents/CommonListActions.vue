@@ -198,11 +198,7 @@ function buildQueryParams(
 const handleDetails = (row: Record<string, unknown>, index: number) => {
   if (props.detailRouteName) {
     try {
-      const queryParam = buildQueryParams(
-        row,
-        props.detailQueryKey,
-        props.detailQueryParamName,
-      )
+      const queryParam = buildQueryParams(row, props.detailQueryKey, props.detailQueryParamName)
       router
         .push({
           name: props.detailRouteName,

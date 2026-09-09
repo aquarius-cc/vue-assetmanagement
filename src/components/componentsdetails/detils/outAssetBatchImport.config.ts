@@ -67,7 +67,10 @@ export const outAssetImportConfig: BatchImportConfig<OutAssetExcelRow, OutAssetC
 
     // 可选字段校验（如果有值）
     const validStatuses = Object.values(OutAssetCurrentStatus)
-    if (item.outasset_current_status && !validStatuses.includes(item.outasset_current_status as OutAssetCurrentStatus)) {
+    if (
+      item.outasset_current_status &&
+      !validStatuses.includes(item.outasset_current_status as OutAssetCurrentStatus)
+    ) {
       errors.outasset_current_status = `资产状态非法，可选：${validStatuses.join(' / ')}`
     }
 

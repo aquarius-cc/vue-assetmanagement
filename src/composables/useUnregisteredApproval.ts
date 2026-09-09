@@ -27,7 +27,12 @@ export interface UnregisteredApprovalDeps {
 }
 
 /** 创建审批操作函数 */
-export function useUnregisteredApproval({ detailData, store, api, loadDetail }: UnregisteredApprovalDeps) {
+export function useUnregisteredApproval({
+  detailData,
+  store,
+  api,
+  loadDetail,
+}: UnregisteredApprovalDeps) {
   /** 通过审批 */
   const handleApprove = async () => {
     if (!detailData.value) return

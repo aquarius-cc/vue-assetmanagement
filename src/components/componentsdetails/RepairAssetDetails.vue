@@ -140,8 +140,12 @@ const { handleDelete, handleBatchDelete, handleExportExcel } = useAssetLifecycle
   entityName: '维修资产',
   fileNamePrefix: '维修资产列表',
   exportColumns,
-  refresh: async () => { smartListRef.value?.refresh() },
-  clearSelection: () => { smartListRef.value?.clearSelection() },
+  refresh: async () => {
+    smartListRef.value?.refresh()
+  },
+  clearSelection: () => {
+    smartListRef.value?.clearSelection()
+  },
 })
 </script>
 

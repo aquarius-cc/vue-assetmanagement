@@ -19,10 +19,13 @@ export default defineConfigWithVueTs(
     },
     rules: {
       // 允许以下划线开头的参数（或变量）未使用
-      '@typescript-eslint/no-unused-vars': ['error', {
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_',
-      }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
       // 禁止 console.log/debug（防调试代码遗留），保留 warn/error 用于错误处理
       'no-console': ['error', { allow: ['warn', 'error'] }],
     },
@@ -32,11 +35,11 @@ export default defineConfigWithVueTs(
     '**/dist/**',
     '**/dist-ssr/**',
     '**/coverage/**',
-    '**/*.d.ts',                            // ⭐ 忽略所有类型声明文件
-    'everything-claude-code/**',            // 忽略整个工具目录
-    '.trae/**',                             // 忽略 .trae 工具目录
-    'graphify-out/**',                      // 忽略 graphify 输出
-    '.agents/skills/impeccable/**',         // 忽略 impeccable 技能目录
+    '**/*.d.ts', // ⭐ 忽略所有类型声明文件
+    'everything-claude-code/**', // 忽略整个工具目录
+    '.trae/**', // 忽略 .trae 工具目录
+    'graphify-out/**', // 忽略 graphify 输出
+    '.agents/skills/impeccable/**', // 忽略 impeccable 技能目录
     'node_modules/**',
   ]),
 

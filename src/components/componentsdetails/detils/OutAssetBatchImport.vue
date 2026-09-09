@@ -100,8 +100,6 @@
   </div>
 </template>
 
-
-
 <script lang="ts" setup>
 defineOptions({ name: 'OutAssetBatchImport' })
 
@@ -174,7 +172,12 @@ const handleExportTemplate = async () => {
     保管人姓名: '李四',
     所属仓库: '主仓库',
   }
-  await downloadExcelTemplate('出库资产导入模板', headers, [exampleRowData], '出库资产批量导入模板.xlsx')
+  await downloadExcelTemplate(
+    '出库资产导入模板',
+    headers,
+    [exampleRowData],
+    '出库资产批量导入模板.xlsx',
+  )
 }
 
 /**

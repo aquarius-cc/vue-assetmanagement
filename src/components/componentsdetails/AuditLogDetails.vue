@@ -203,8 +203,7 @@ const buildFilterParams = (overrides?: Partial<AuditLogQueryParams>): AuditLogQu
   }
   if (filterForm.value.app_label) params.app_label = filterForm.value.app_label
   if (filterForm.value.operation_type) params.operation_type = filterForm.value.operation_type
-  if (filterForm.value.operator_jobcode)
-    params.operator_jobcode = filterForm.value.operator_jobcode
+  if (filterForm.value.operator_jobcode) params.operator_jobcode = filterForm.value.operator_jobcode
   if (filterForm.value.record_code) params.record_code = filterForm.value.record_code
   if (dateRange.value?.[0]) params.start_date = dateRange.value[0]
   if (dateRange.value?.[1]) params.end_date = dateRange.value[1]

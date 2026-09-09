@@ -85,4 +85,4 @@ export const PERMISSION_CODES = {
   WASTE_EXPORT: 'waste:export',
   WASTE_READ: 'waste:read',
   WASTE_UPDATE: 'waste:update',
-} as const;
+} as const

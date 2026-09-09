@@ -26,15 +26,8 @@ export interface OutAssetEditLoaderDeps {
 
 /** 创建编辑数据加载函数 loadEditData(recordcode) */
 export function createOutAssetEditLoader(deps: OutAssetEditLoaderDeps) {
-  const {
-    form,
-    selectedApplicant,
-    selectedManager,
-    originalFormData,
-    isLoading,
-    store,
-    router,
-  } = deps
+  const { form, selectedApplicant, selectedManager, originalFormData, isLoading, store, router } =
+    deps
 
   return async function loadEditData(recordcode: string) {
     isLoading.value = true

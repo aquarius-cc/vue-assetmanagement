@@ -1,18 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const {
-  mockGetList,
-  mockSearchAssets,
-  mockCombineSearch,
-  mockSetRefreshFlag,
-  mockGetAssetTypes,
-} = vi.hoisted(() => ({
-  mockGetList: vi.fn(),
-  mockSearchAssets: vi.fn(),
-  mockCombineSearch: vi.fn(),
-  mockSetRefreshFlag: vi.fn(),
-  mockGetAssetTypes: vi.fn(),
-}))
+const { mockGetList, mockSearchAssets, mockCombineSearch, mockSetRefreshFlag, mockGetAssetTypes } =
+  vi.hoisted(() => ({
+    mockGetList: vi.fn(),
+    mockSearchAssets: vi.fn(),
+    mockCombineSearch: vi.fn(),
+    mockSetRefreshFlag: vi.fn(),
+    mockGetAssetTypes: vi.fn(),
+  }))
 
 const mockStore = {
   getList: mockGetList,

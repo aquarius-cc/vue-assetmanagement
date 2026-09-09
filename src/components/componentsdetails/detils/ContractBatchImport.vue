@@ -122,8 +122,6 @@
   </div>
 </template>
 
-
-
 <script lang="ts" setup>
 defineOptions({ name: 'ContractBatchImport' })
 
@@ -167,8 +165,13 @@ const {
 } = useBatchImport<ContractExcelRow, ContractCreateForm>(importConfig)
 
 // ===== 预览表格分页（公共组合式函数，DR-1 收敛）=====
-const { previewPageSize, currentPreviewPage, paginatedPreviewData, resetPreviewPage, handlePreviewPageChange } =
-  usePreviewPagination(previewData)
+const {
+  previewPageSize,
+  currentPreviewPage,
+  paginatedPreviewData,
+  resetPreviewPage,
+  handlePreviewPageChange,
+} = usePreviewPagination(previewData)
 
 // ===== 适配 el-upload onChange 事件 =====
 const handleUploadChange = async (uploadFile: UploadFile, uploadFileList: UploadFile[]) => {

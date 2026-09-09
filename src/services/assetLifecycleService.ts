@@ -45,8 +45,7 @@ export const handleAssetRecycle = async (data: RecycleAssetCreateForm) => {
   const recycleAssetStore = useRecycleAssetStore()
   const assetStore = useAssetStore()
 
-  const formattedDate =
-    formatDate(data.recycle_asset_date) || todayLocalISO()
+  const formattedDate = formatDate(data.recycle_asset_date) || todayLocalISO()
 
   await recycleAssetStore.create({
     ...data,

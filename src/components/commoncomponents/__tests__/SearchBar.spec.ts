@@ -13,7 +13,8 @@ const stubs = {
   'el-col': { template: '<div class="el-col"><slot /></div>' },
   'el-form-item': { template: '<div class="el-form-item"><slot /></div>' },
   'el-input': {
-    template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+    template:
+      '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
     props: ['modelValue', 'placeholder'],
     emits: ['update:modelValue'],
   },

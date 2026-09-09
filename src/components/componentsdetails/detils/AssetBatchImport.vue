@@ -131,8 +131,6 @@
   </div>
 </template>
 
-
-
 <script lang="ts" setup>
 defineOptions({ name: 'AssetBatchImport' })
 
@@ -178,8 +176,13 @@ const {
 } = useBatchImport<AssetExcelRow, AssetCreateForm>(importConfig)
 
 // ===== 预览表格分页（公共组合式函数，DR-1 收敛）=====
-const { previewPageSize, currentPreviewPage, paginatedPreviewData, resetPreviewPage, handlePreviewPageChange } =
-  usePreviewPagination(previewData)
+const {
+  previewPageSize,
+  currentPreviewPage,
+  paginatedPreviewData,
+  resetPreviewPage,
+  handlePreviewPageChange,
+} = usePreviewPagination(previewData)
 
 // ===== 适配 el-upload 的 onChange 事件 =====
 /**

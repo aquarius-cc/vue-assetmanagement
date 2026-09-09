@@ -118,7 +118,6 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
   })
 
-
   /**
    * [新增] 计算属性 - 资产状态全景数据
    * 返回分组列表 + 环形图数据。
