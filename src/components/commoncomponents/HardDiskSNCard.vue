@@ -44,7 +44,6 @@
   </el-card>
 </template>
 
-
 <script lang="ts" setup>
 defineOptions({ name: 'HardDiskSNCard' })
 
@@ -141,7 +140,7 @@ const handleAdd = () => {
   }
 
   .el-icon {
-    font-size: 18px;
+    font-size: 16px;
     color: var(--el-color-primary);
   }
 

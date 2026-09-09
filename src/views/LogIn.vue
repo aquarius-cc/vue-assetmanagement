@@ -278,8 +278,12 @@ const testNetwork = async () => {
   // 显示诊断结果
   let message = '🔍 网络诊断报告:\n\n'
   message += `📡 Django服务器连接: ${results.connection.status === 'success' ? '✅ 正常' : '❌ 失败'}\n`
-  const loginIcon = results.login.status === 'success' ? '✅ 正常'
-    : results.login.status === 'skipped' ? '⏭️ 已跳过' : '❌ 失败'
+  const loginIcon =
+    results.login.status === 'success'
+      ? '✅ 正常'
+      : results.login.status === 'skipped'
+        ? '⏭️ 已跳过'
+        : '❌ 失败'
   message += `🔐 登录接口: ${loginIcon}\n\n`
 
   if (results.login.status === 'error') {
@@ -292,8 +296,12 @@ const testNetwork = async () => {
 
   ElMessage({
     message,
-    type: results.login.status === 'success' ? 'success'
-      : results.login.status === 'skipped' ? 'info' : 'warning',
+    type:
+      results.login.status === 'success'
+        ? 'success'
+        : results.login.status === 'skipped'
+          ? 'info'
+          : 'warning',
     duration: 8000,
     showClose: true,
   })
@@ -319,7 +327,7 @@ const handleKeyPress = (event: KeyboardEvent) => {
 .login-card {
   width: 480px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  border-radius: 16px;
+  border-radius: 8px;
   border: none;
   overflow: hidden;
 }
@@ -335,7 +343,7 @@ const handleKeyPress = (event: KeyboardEvent) => {
   margin: 0;
   color: var(--text-primary);
   font-weight: 600;
-  font-size: 22px;
+  font-size: 20px;
 }
 
 .login-form {
@@ -359,7 +367,7 @@ const handleKeyPress = (event: KeyboardEvent) => {
 
 .network-test {
   /* margin-top: 6px; */
-  font-size: 13px;
+  font-size: 14px;
   background: var(--background-color);
   border-color: var(--border-color-input);
   color: var(--text-regular);

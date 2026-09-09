@@ -198,7 +198,7 @@ const handleSelect = (path: string) => {
 
   .el-icon {
     margin-right: 8px;
-    font-size: 18px;
+    font-size: 16px;
   }
 }
 
@@ -266,11 +266,11 @@ const handleSelect = (path: string) => {
   }
 
   .el-icon {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .collapse-text {
-    font-size: 13px;
+    font-size: 14px;
     white-space: nowrap;
   }
 }

@@ -93,8 +93,6 @@
   </div>
 </template>
 
-
-
 <script lang="ts" setup>
 defineOptions({ name: 'StorageBatchImport' })
 
@@ -340,10 +338,10 @@ const handleSubmit = async () => {
       ElMessage.success(`全部导入成功！共 ${result.success_count} 条`)
       // 通知父页面刷新数据
       storageStore.setRefreshFlag(true)
+      router.go(-1)
     } else {
       ElMessage.warning(`导入完成：成功 ${result.success_count} 条，失败 ${result.fail_count} 条`)
     }
-    router.go(-1)
   } catch (error) {
     const msg = extractErrorMessage(error)
     ElMessage.error(`导入失败：${msg}`)
@@ -389,7 +387,7 @@ const goBack = () => {
   .upload-tip {
     margin-top: 8px;
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .preview-table {
@@ -405,7 +403,7 @@ const goBack = () => {
   }
   .error-text {
     color: var(--color-danger-light);
-    font-size: 13px;
+    font-size: 14px;
   }
   .form-actions {
     display: flex;

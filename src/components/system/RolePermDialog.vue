@@ -129,7 +129,7 @@ const ACTION_LABELS: Record<string, string> = {
   delete: '删除',
   approve: '审批',
   export: '导出',
-  manage: '管理',  // V-4 M-6 补全：system_config:manage
+  manage: '管理', // V-4 M-6 补全：system_config:manage
 }
 
 function groupPermissions(codes: string[]): PermModule[] {
@@ -256,7 +256,7 @@ const handleSavePermissions = async () => {
 
 .perm-count {
   margin-left: auto;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--el-text-color-secondary);
 }
 

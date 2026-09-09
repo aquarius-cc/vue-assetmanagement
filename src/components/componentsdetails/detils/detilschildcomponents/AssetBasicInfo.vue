@@ -108,7 +108,7 @@
           :value="item.type_name"
         >
           <span>{{ item.type_code }}</span>
-          <span style="color: var(--text-muted); font-size: 12px"> / {{ item.type_name }}</span>
+          <span style="color: var(--text-muted); font-size: 14px"> / {{ item.type_name }}</span>
         </el-option>
       </el-select>
     </el-form-item>

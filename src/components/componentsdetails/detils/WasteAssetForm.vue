@@ -104,8 +104,6 @@
   </div>
 </template>
 
-
-
 <script lang="ts" setup>
 defineOptions({ name: 'WasteAssetForm' })
 
@@ -176,7 +174,7 @@ const loadDetailData = async (code: string) => {
     }
     if (!detail.contract_name && detail.waste_asset_contract_code) {
       try {
-        const contract = await contractStore.getById(detail.waste_asset_contract_code)
+        const contract = (await contractStore.getByName(detail.waste_asset_contract_code))[0]
         if (contract) formData.contract_name_display = contract.contract_name
       } catch {
         // 查询失败不阻塞

@@ -183,7 +183,7 @@ const handleRemoveRole = async (userRole: UserRole) => {
 
 .empty-hint {
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .assigned-tags {

@@ -101,13 +101,13 @@ defineProps<{
 }
 .section-title {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--el-text-color-regular);
   margin-bottom: 8px;
 }
 .notice-list {
   padding-left: 20px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--el-text-color-secondary);
 }
 .notice-list li {

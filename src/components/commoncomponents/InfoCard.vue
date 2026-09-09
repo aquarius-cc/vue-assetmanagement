@@ -131,7 +131,7 @@ const formatValue = (field: InfoField): string => {
   gap: 8px;
 
   .el-icon {
-    font-size: 18px;
+    font-size: 16px;
     color: var(--el-color-primary);
   }
 

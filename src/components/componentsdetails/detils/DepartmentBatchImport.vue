@@ -129,8 +129,6 @@
   </div>
 </template>
 
-
-
 <script lang="ts" setup>
 defineOptions({ name: 'DepartmentBatchImport' })
 
@@ -409,7 +407,7 @@ const goBack = () => {
   .upload-tip {
     margin-top: 8px;
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .import-guide-card {
@@ -428,7 +426,7 @@ const goBack = () => {
       color: var(--color-primary-light);
       border-bottom: 1px solid var(--color-primary-light-border);
       .el-icon {
-        font-size: 18px;
+        font-size: 16px;
       }
     }
     .guide-content {
@@ -453,7 +451,7 @@ const goBack = () => {
         li {
           line-height: 1.8;
           color: var(--text-regular);
-          font-size: 13px;
+          font-size: 14px;
         }
       }
     }
@@ -472,7 +470,7 @@ const goBack = () => {
   }
   .error-text {
     color: var(--color-danger-light);
-    font-size: 13px;
+    font-size: 14px;
   }
   .form-actions {
     display: flex;

@@ -124,6 +124,6 @@ onMounted(async () => {
 
 .timeline-operator {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 14px;
 }
 </style>

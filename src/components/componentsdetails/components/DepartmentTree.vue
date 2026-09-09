@@ -406,12 +406,12 @@ watch(
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: 13px;
+        font-size: 14px;
       }
 
       .count-tag {
         margin-left: 4px;
-        font-size: 11px;
+        font-size: 14px;
       }
     }
   }

@@ -47,7 +47,7 @@ $breakpoint-tablet: 1024px;
 
   .box-card {
     margin: 0;
-    border-radius: 12px;
+    border-radius: 8px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     border: none;
     overflow: hidden;
@@ -57,7 +57,7 @@ $breakpoint-tablet: 1024px;
     .card-header {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       font-weight: 600;
       color: var(--color-primary, $primary-color);
       padding: 18px 24px;
@@ -183,7 +183,7 @@ $breakpoint-tablet: 1024px;
       flex: 1;
 
       .page-title {
-        font-size: 24px;
+        font-size: 20px;
         font-weight: 700;
         color: var(--text-dark, $text-dark);
         margin: 0 0 8px 0;
@@ -357,7 +357,7 @@ $breakpoint-tablet: 1024px;
   overflow-x: auto;
   margin-bottom: 100px;
   background: var(--card-background, $white);
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   padding: 16px;
   box-sizing: border-box;
@@ -435,7 +435,7 @@ $breakpoint-tablet: 1024px;
   background: transparent;
   // backdrop-filter: blur(8px);
   backdrop-filter: none;
-  border-radius: 12px;
+  border-radius: 8px;
   z-index: 50;
   align-items: center;
   justify-content: center;
@@ -514,7 +514,7 @@ $breakpoint-tablet: 1024px;
   max-height: 90vh;
   overflow-y: auto;
   background: var(--card-background, $white);
-  border-radius: 16px;
+  border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   box-sizing: border-box;
 
@@ -532,7 +532,7 @@ $breakpoint-tablet: 1024px;
     );
 
     h2 {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 600;
       color: var(--text-primary, $text-primary);
       margin: 0;
@@ -548,7 +548,7 @@ $breakpoint-tablet: 1024px;
     margin-bottom: 20px;
     border: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border-radius: 12px;
+    border-radius: 8px;
   }
 
   .el-form-item {
@@ -684,7 +684,7 @@ $breakpoint-tablet: 1024px;
 @mixin card-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-weight: 600;
   color: var(--color-primary, $primary-color);
   padding: 18px 24px;

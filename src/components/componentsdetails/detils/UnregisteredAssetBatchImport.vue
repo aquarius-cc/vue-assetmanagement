@@ -98,8 +98,6 @@
   </div>
 </template>
 
-
-
 <script lang="ts" setup>
 defineOptions({ name: 'UnregisteredAssetBatchImport' })
 
@@ -451,7 +449,7 @@ const goBack = () => {
   .upload-tip {
     margin-top: 8px;
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: 14px;
   }
   .preview-table {
     margin-bottom: 24px;
@@ -466,7 +464,7 @@ const goBack = () => {
   }
   .error-text {
     color: var(--color-danger-light);
-    font-size: 13px;
+    font-size: 14px;
   }
   .form-actions {
     display: flex;

@@ -62,7 +62,7 @@ const { isDark, toggleDark } = useDarkMode()
 }
 
 .toggle-icon {
-  font-size: 18px;
+  font-size: 16px;
   transition: transform 0.3s ease;
 
   .dark-mode-toggle:hover & {

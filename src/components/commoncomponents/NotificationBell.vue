@@ -239,18 +239,18 @@ function formatTime(iso: string) {
 }
 
 .item-time {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--el-text-color-secondary);
 }
 
 .item-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   margin-bottom: 2px;
 }
 
 .item-message {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--el-text-color-secondary);
   overflow: hidden;
   text-overflow: ellipsis;

@@ -351,7 +351,7 @@ const loadEditData = async (code: string) => {
     }
     if (!detail.damaged_asset_contract_name && detail.damaged_asset_contract_code) {
       try {
-        const contract = await contractStore.getById(detail.damaged_asset_contract_code)
+        const contract = (await contractStore.getByName(detail.damaged_asset_contract_code))[0]
         if (contract) formData.contract_name_display = contract.contract_name
       } catch {
         // 查询失败不阻塞

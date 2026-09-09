@@ -96,9 +96,9 @@
         :example-rows="exampleRows"
         :example-columns="exampleColumns"
         :notices="[
-          '合同编码、合同名称、供应商、合同价格、签订日期、合同类型、保修期、结算状态为必填项',
-          '合同类型可选值：purchase / service / information_construction / direct_procurement',
-          '结算状态可选值：pending / settled',
+          '合同编码、合同名称、供应商、合同价格、签订日期、合同类型、保修期、合同状态为必填项',
+          '合同类型可选值：tender_procurement / service / information_construction / direct_procurement',
+          '合同状态可选值：purchasing / purchase_finished / receive_check / initial_check / project_settlement / settlement_done / final_check / project_finished',
           '日期格式统一为YYYY-MM-DD，签订日期不可为空，初验/终验日期可为空',
           'Excel 首行必须与「表头说明」中的中文列名完全一致',
           '导入前建议先「导出模板」，在模板基础上填写数据',
