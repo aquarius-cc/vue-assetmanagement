@@ -56,10 +56,12 @@
               <StatusTag :status="row.asset_current_status" />
             </template>
 
-            <template #type_category="{ row }">
-              <el-tag :type="getAssetTypeTagType(row.type_category)">
-                {{ assetTypeMapping[row.type_category] || '未知' }}
+            <template #asset_type_name="{ row }">
+              <!-- 【A-9】数据源为 AssetListSerializer 反规范输出的 asset_type_name（分类名称） -->
+              <el-tag v-if="row.asset_type_name" type="info">
+                {{ row.asset_type_name }}
               </el-tag>
+              <span v-else>-</span>
             </template>
 
             <template #contract_code="{ row }">
@@ -106,7 +108,6 @@ import type { TableColumn } from '@/types/list'
 import type { SmartListContainerExpose } from '@/types/common'
 import { useAssetListConfig } from '@/composables/useAssetListConfig'
 import { useExcelExport } from '@/composables/useExcelExport'
-import { assetTypeMapping } from '@/utils/Format'
 import type { AssetDetail } from '@/types/asset'
 
 const router = useRouter()
@@ -117,16 +118,6 @@ const smartListRef = ref<SmartListContainerExpose | null>(null)
 const isChildRouteActive = ref(false)
 
 // ===== 辅助函数 =====
-const getAssetTypeTagType = (category: string) => {
-  const map: Record<string, string> = {
-    hardware: 'success',
-    software: 'primary',
-    lowvalue: 'warning',
-    other: 'danger',
-  }
-  return (map[category] || 'info') as 'success' | 'primary' | 'warning' | 'danger' | 'info'
-}
-
 const getContractCode = (contract: unknown): string => {
   if (typeof contract === 'object' && contract !== null && 'contract_code' in contract) {
     return String((contract as { contract_code: string }).contract_code || '-')
@@ -144,11 +135,11 @@ const columns: TableColumn[] = [
   { prop: 'asset_brand', label: '品牌', width: 120, align: 'center' },
   {
     type: 'custom',
-    prop: 'type_category',
+    prop: 'asset_type_name',
     label: '资产分类',
     width: 130,
     align: 'center',
-    slotName: 'type_category',
+    slotName: 'asset_type_name',
   },
   {
     type: 'custom',
@@ -188,19 +179,21 @@ watch(
 )
 
 // ===== 事件处理 =====
+// 【ID-2/取键契约】后端 AssetViewSet lookup_field="recordcode"（asset_view.py:57），
+// 编辑/删除等 detail 路由只认 recordcode 或数字 pk；asset_code 是业务编码，不可用于 detail 路由。
 const handleEdit = (row: AssetDetail) => {
-  if (!row.asset_code) {
-    ElMessage.error('资产编码不存在，无法编辑')
+  if (!row.recordcode) {
+    ElMessage.error('记录编码不存在，无法编辑')
     return
   }
-  router.push({ name: 'AssetForm', query: { code: row.asset_code } }).catch((err) => {
+  router.push({ name: 'AssetForm', query: { code: row.recordcode } }).catch((err) => {
     ElMessage.error(`跳转失败: ${err.message || '未知错误'}`)
   })
 }
 
 const handleDelete = (row: AssetDetail) => {
-  if (!row.asset_code) {
-    ElMessage.error('资产编码不存在，无法删除')
+  if (!row.recordcode) {
+    ElMessage.error('记录编码不存在，无法删除')
     return
   }
   ElMessageBox.confirm('确定要删除该资产吗？删除后不可恢复。', '删除确认', {
@@ -208,7 +201,7 @@ const handleDelete = (row: AssetDetail) => {
     cancelButtonText: '取消',
     type: 'warning',
   })
-    .then(() => assetStore.remove(row.asset_code))
+    .then(() => assetStore.remove(row.recordcode))
     .then(() => {
       ElMessage.success('资产删除成功')
       smartListRef.value?.refresh()
@@ -251,9 +244,11 @@ const handleBatchDelete = async (rows: AssetDetail[] | undefined) => {
     ElMessage.warning('请先选择要删除的数据')
     return
   }
+  // 【双约定】batch-delete 端点显式按 asset_code 处理（asset_view.py:357-367：
+  // filter(asset_code__in=ids) 并按 asset_code 做 RBAC 范围校验），勿统一为 recordcode。
   const codes = rows.map((row) => row.asset_code).filter((code): code is string => !!code)
   if (codes.length === 0) {
-    ElMessage.error('无法删除：选中的数据缺少唯一标识')
+    ElMessage.error('无法删除：选中的数据缺少资产编码')
     return
   }
   try {

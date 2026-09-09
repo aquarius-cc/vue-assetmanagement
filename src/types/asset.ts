@@ -138,11 +138,15 @@ export interface AssetCreateFormExtended extends AssetCreateForm {
 
 /**
  * 资产更新表单接口
- * 编辑时必须传递 asset_code 作为唯一标识
+ * 编辑时必须传递 recordcode（后端唯一记录编码）作为定位键
+ *
+ * 【ID-2/取键契约】后端 AssetViewSet lookup_field="recordcode"，
+ * PUT /assets/assets/{recordcode}/ 只认 recordcode 或数字 pk；
+ * asset_code 是业务编码，不能用于 detail 路由定位。
  */
 export interface AssetUpdateForm extends Partial<Omit<AssetCreateForm, 'asset_code'>> {
-  /** 资产编码（唯一标识，编辑时必须传递） */
-  asset_code: string
+  /** 记录编码（后端唯一标识，编辑时必须传递） */
+  recordcode: string
 }
 
 /**
@@ -203,6 +207,10 @@ export interface Asset {
   asset_specification: string | null
   /** 资产类型编码（外键） */
   asset_type_code: string
+  /** 资产分类名称（AssetListSerializer 反规范输出 asset_type_recordcode.type_name） */
+  asset_type_name?: string
+  /** 资产分类编码（AssetListSerializer 反规范输出 asset_type_recordcode.type_code） */
+  type_category?: string
   /** 合同编码（外键） */
   asset_contract_code: string | null
   /** 购买日期 */

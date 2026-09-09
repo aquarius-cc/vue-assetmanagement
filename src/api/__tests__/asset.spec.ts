@@ -43,25 +43,37 @@ describe('assetAPI', () => {
     expect(mockRequest.post).toHaveBeenCalledWith('/assets/assets/', { asset_name: 'Test' })
   })
 
-  it('getAssetByCode calls GET /assets/assets/{code}/', async () => {
-    await assetAPI.getAssetByCode('A001')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/assets/A001/', undefined, true, 300000)
-  })
-
-  it('updateAsset calls PUT /assets/assets/{code}/', async () => {
-    await assetAPI.updateAsset({ asset_code: 'A001', asset_name: 'Updated' } as never)
-    expect(mockRequest.put).toHaveBeenCalledWith('/assets/assets/A001/', { asset_name: 'Updated' })
-  })
-
-  it('updateAsset throws when asset_code is missing', () => {
-    expect(() => assetAPI.updateAsset({ asset_name: 'Test' } as never)).toThrow(
-      'asset_code is required',
+  // 【ID-2/取键契约】入参实为 recordcode（后端 AssetViewSet lookup_field="recordcode"）
+  it('getAssetByCode calls GET /assets/assets/{recordcode}/', async () => {
+    await assetAPI.getAssetByCode('Asset-20260101-ABC12345')
+    expect(mockRequest.get).toHaveBeenCalledWith(
+      '/assets/assets/Asset-20260101-ABC12345/',
+      undefined,
+      true,
+      300000,
     )
   })
 
-  it('deleteAsset calls DELETE /assets/assets/{code}/', async () => {
-    await assetAPI.deleteAsset('A001')
-    expect(mockRequest.delete).toHaveBeenCalledWith('/assets/assets/A001/')
+  it('updateAsset calls PUT /assets/assets/{recordcode}/ and strips recordcode from payload', async () => {
+    await assetAPI.updateAsset({
+      recordcode: 'Asset-20260101-ABC12345',
+      asset_name: 'Updated',
+    } as never)
+    expect(mockRequest.put).toHaveBeenCalledWith(
+      '/assets/assets/Asset-20260101-ABC12345/',
+      { asset_name: 'Updated' },
+    )
+  })
+
+  it('updateAsset throws when recordcode is missing', () => {
+    expect(() => assetAPI.updateAsset({ asset_name: 'Test' } as never)).toThrow(
+      'recordcode is required',
+    )
+  })
+
+  it('deleteAsset calls DELETE /assets/assets/{recordcode}/', async () => {
+    await assetAPI.deleteAsset('Asset-20260101-ABC12345')
+    expect(mockRequest.delete).toHaveBeenCalledWith('/assets/assets/Asset-20260101-ABC12345/')
   })
 
   it('getAssetByName calls GET /assets/assets/getassetbyname/{name}/', async () => {

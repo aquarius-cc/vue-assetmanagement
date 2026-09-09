@@ -91,6 +91,11 @@
           包括：data, loading, currentPage, pageSize, total, search 等
         -->
         <template #default="slotProps">
+          <!--
+            【A-10】详情入口契约：行主键为 id（后端 operation-logs/<int:pk>/，urls.py:70），
+            路由期望 query.pk（router props: pk: route.query.pk）→ detail-query-key="id" +
+            detail-query-param-name="pk"；只读页关闭编辑/删除，仅保留详情按钮
+          -->
           <CommonList
             :data="slotProps.data"
             :loading="slotProps.loading"
@@ -100,9 +105,13 @@
             :columns="columns"
             :enable-search="false"
             :detail-route-name="'OperationLogDetail'"
-            :show-detail-button="false"
-            :show-actions="false"
-            :enable-selection="true"
+            :detail-query-key="'id'"
+            :detail-query-param-name="'pk'"
+            :show-detail-button="true"
+            :show-actions="true"
+            :enable-edit="false"
+            :enable-delete="false"
+            :enable-selection="false"
             :show-pagination="true"
             :page-size-options="slotProps.pageSizeOptions"
             @size-change="slotProps.handleSizeChange"
@@ -116,9 +125,9 @@
               </el-tag>
             </template>
 
-            <!-- 操作时间列自定义渲染 -->
+            <!-- 操作时间列自定义渲染（【A-3】审计场景统一秒级精度） -->
             <template #operation_time="{ row }">
-              {{ formatDate(row.operation_time) }}
+              {{ formatDateTimeFull(row.operation_time) }}
             </template>
           </CommonList>
 
@@ -163,7 +172,7 @@ import { createOperationLogExcelExport } from '@/composables/useOperationLogExce
 import type { OperationLog } from '@/types/operationlog'
 import { operationTypeMapping, operationTypeTagMapping } from '@/types/operationlog'
 import { useOperationLogStore } from '@/stores/operationLogStore'
-import { formatDate } from '@/utils/Format'
+import { formatDateTimeFull } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'
 
 // ===== 状态与实例 =====

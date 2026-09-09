@@ -1,10 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockGetList, mockSearchAssets, mockCombineSearch, mockSetRefreshFlag } = vi.hoisted(() => ({
+const {
+  mockGetList,
+  mockSearchAssets,
+  mockCombineSearch,
+  mockSetRefreshFlag,
+  mockGetAssetTypes,
+} = vi.hoisted(() => ({
   mockGetList: vi.fn(),
   mockSearchAssets: vi.fn(),
   mockCombineSearch: vi.fn(),
   mockSetRefreshFlag: vi.fn(),
+  mockGetAssetTypes: vi.fn(),
 }))
 
 const mockStore = {
@@ -23,8 +30,13 @@ vi.mock('@/stores/assetStore', () => ({
 }))
 
 vi.mock('@/utils/Format', () => ({
-  assetTypeMapping: { laptop: '笔记本', desktop: '台式机' },
   assetCurrentStatusMapping: { in_store: '在库', in_use: '在用' },
+}))
+
+vi.mock('@/api/assetType', () => ({
+  assetTypeAPI: {
+    getAssetTypes: mockGetAssetTypes,
+  },
 }))
 
 import { useAssetListConfig } from '../useAssetListConfig'
@@ -35,15 +47,33 @@ describe('useAssetListConfig', () => {
     mockStore.pagination = { page: 1, page_size: 20, total: 0 }
   })
 
-  it('searchFields 包含 8 个字段并将映射转为 select options', () => {
-    const { searchFields } = useAssetListConfig()
+  it('searchFields 包含 8 个字段，资产分类为动态加载的 select，状态为映射 select', async () => {
+    mockGetAssetTypes.mockResolvedValue({
+      count: 2,
+      next: null,
+      previous: null,
+      results: [
+        { type_code: 'AT_W2', type_name: '笔记本' },
+        { type_code: 'AT_W3', type_name: '台式机' },
+      ],
+    })
+    const config = useAssetListConfig()
+    const searchFields = config.searchFields.value
 
     expect(searchFields).toHaveLength(8)
     const typeSelect = searchFields.find((f) => f.key === 'asset_type_category')
     expect(typeSelect?.type).toBe('select')
-    expect(typeSelect?.options).toEqual([
-      { label: '笔记本', value: 'laptop' },
-      { label: '台式机', value: 'desktop' },
+    // 【A-9】初始为空，动态拉取 AssetType 后填充（type_name → label，type_code → value）
+    expect(typeSelect?.options).toEqual([])
+    await config.loadAssetTypeOptions()
+    expect(mockGetAssetTypes).toHaveBeenCalledWith({ page: 1, page_size: 1000 })
+    // computed 在选项更新后重建数组，需重新取值断言
+    const typeSelectAfterLoad = config.searchFields.value.find(
+      (f) => f.key === 'asset_type_category',
+    )
+    expect(typeSelectAfterLoad?.options).toEqual([
+      { label: '笔记本', value: 'AT_W2' },
+      { label: '台式机', value: 'AT_W3' },
     ])
 
     const statusSelect = searchFields.find((f) => f.key === 'asset_current_status')
@@ -51,6 +81,16 @@ describe('useAssetListConfig', () => {
       { label: '在库', value: 'in_store' },
       { label: '在用', value: 'in_use' },
     ])
+  })
+
+  it('loadAssetTypeOptions 拉取失败时保持空选项（不影响主流程）', async () => {
+    mockGetAssetTypes.mockRejectedValue(new Error('network'))
+    const config = useAssetListConfig()
+
+    await config.loadAssetTypeOptions()
+
+    const typeSelect = config.searchFields.value.find((f) => f.key === 'asset_type_category')
+    expect(typeSelect?.options).toEqual([])
   })
 
   it('storeConfig.store.getList 委托 assetStore 并返回分页结构', async () => {
@@ -133,5 +173,7 @@ describe('useAssetListConfig', () => {
     const priceColumn = exportColumns.find((c) => c.key === 'asset_purchase_price')
     expect(priceColumn?.formatter?.(null)).toBe('0')
     expect(priceColumn?.formatter?.(123)).toBe('123')
+    // 【A-9】分类列取 asset_type_name（AssetListSerializer 反规范输出）
+    expect(exportColumns.find((c) => c.key === 'asset_type_name')?.title).toBe('资产分类')
   })
 })

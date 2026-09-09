@@ -229,6 +229,11 @@ const contractTypeMapping: Record<string, string> = {
   direct_procurement: '直接采购合同',
 }
 
+/**
+ * @deprecated 合同八状态中文标签已收敛至 src/utils/statusMapping.ts 的 CONTRACT_STATUS_MAP，
+ * 本映射仅保留"结算状态"旧语义（pending/settling_up/settled），供既有测试锚点兼容。
+ * 新代码请使用 getContractStatusText / getContractStatusTagType。
+ */
 const contractSettlementStatusMapping: Record<string, string> = {
   purchasing: '供货中',
   pending: '待结算',
@@ -236,6 +241,12 @@ const contractSettlementStatusMapping: Record<string, string> = {
   settled: '已结算',
 }
 
+/**
+ * @deprecated 【A-9】后端 AssetType.type_code 是自由文本树形编码（如 "AT_W2"），
+ * 本枚举（hardware/software/lowvalue/other）是虚构分类，与真实数据不符：
+ * 列表分类列展示与搜索下拉均已改为动态数据源（asset_type_name / 动态拉取 AssetType）。
+ * 保留仅为既有引用兼容，禁止在新代码中使用。
+ */
 const assetTypeMapping: Record<string, string> = {
   hardware: '硬件',
   software: '软件',

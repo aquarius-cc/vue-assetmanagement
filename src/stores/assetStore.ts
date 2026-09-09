@@ -47,6 +47,10 @@ type StrictQueryParams = {
  * 继承自 EntityStore<AssetDetail, PaginationQuery>
  * @param params 查询参数
  * @returns 资产列表响应（包 count、results）
+ *
+ * 【ID-2/取键契约】继承自工厂的 getById/remove/update 定位键为 recordcode
+ * （后端 AssetViewSet lookup_field="recordcode"）；batchDelete 定位键为 asset_code
+ * （batch-delete 端点显式按 asset_code__in 处理）——两套键不可互换。
  */
 interface AssetStore extends EntityStore<AssetDetail, PaginationQuery> {
   /**
@@ -92,6 +96,7 @@ const baseAssetStoreDef = createEntityStore<AssetDetail, PaginationQuery>('asset
         results: response.results as AssetDetail[],
       }
     },
+    // 【ID-2】code 实为 recordcode（后端 detail 路由定位键），函数名保留以兼容 API 层
     getById: (code) => assetAPI.getAssetByCode(code),
     getByName: async (name: string): Promise<AssetDetail[]> => {
       const response = await assetAPI.getAssetByName(name)
@@ -101,8 +106,11 @@ const baseAssetStoreDef = createEntityStore<AssetDetail, PaginationQuery>('asset
       return response.results
     },
     create: (data) => assetAPI.createAsset(data as unknown as AssetCreateForm),
+    // 【ID-2】update 定位键为 data.recordcode（PUT /assets/assets/{recordcode}/）
     update: (data) => assetAPI.updateAsset(data as unknown as AssetUpdateForm),
+    // 【ID-2】delete 入参为 recordcode（DELETE /assets/assets/{recordcode}/）
     delete: (code) => assetAPI.deleteAsset(code),
+    // 【双约定】batchDelete 入参为 asset_code 列表（后端按 asset_code__in 处理），勿改 recordcode
     batchDelete: (codes) => assetAPI.batchDeleteAssets(codes),
   },
   message: ElMessage,
@@ -124,7 +132,7 @@ export const useAssetStore = (): AssetStore => {
      * 自定义资产搜索方法
      * 使用后端 search_assets action，支持多条件组合搜索
      * 调用 getList({ search }) 更安全：
-     * - 使用专用选择噀AssetSelector.search_assets()
+     * - 使用专用选择器 AssetSelector.search_assets()
      * - 显式过滤 is_deleted=False
      * - 预加载关联信息
      * - 参数白名单验证

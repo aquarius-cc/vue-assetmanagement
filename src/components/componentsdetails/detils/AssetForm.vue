@@ -62,8 +62,6 @@
   </div>
 </template>
 
-
-
 <script lang="ts" setup>
 defineOptions({ name: 'AssetForm' })
 
@@ -103,6 +101,10 @@ const storageStore = useStorageStore()
 const formRef = ref()
 
 const isEditMode = computed(() => !!route.query.code)
+
+// 【ID-2/取键契约】编辑模式的定位键。route.query.code 由列表页传入 recordcode
+// （后端 AssetViewSet lookup_field="recordcode"），回填时从详情再捕获一次以防路由参数漂移。
+const editRecordcode = ref('')
 
 const assetForm = reactive<AssetCreateFormExtended>({
   asset_code: '',
@@ -217,15 +219,17 @@ const handleAssetTypeChange = (typeName: string) => {
   }
 }
 
-// 编辑：加载详情
-const loadAssetDetail = async (assetCode: string) => {
+// 编辑：加载详情（入参为 recordcode，后端 detail 路由定位键）
+const loadAssetDetail = async (recordcode: string) => {
   try {
-    const detail = await assetStore.getById(assetCode)
+    const detail = await assetStore.getById(recordcode)
     if (!detail) {
-      ElMessage.error('未找到该资产，请确认资产编码是否正确')
+      ElMessage.error('未找到该资产，请确认记录编码是否正确')
       return
     }
 
+    // 【ID-2/取键契约】以详情响应中的 recordcode 为准提交更新
+    editRecordcode.value = detail.recordcode
     assetForm.asset_code = detail.asset_code
     assetForm.asset_name = detail.asset_name
     assetForm.asset_specification = detail.asset_specification
@@ -257,7 +261,9 @@ const loadAssetDetail = async (assetCode: string) => {
         : null,
       detail.asset_applicant_jobcode ? userStore.getById(detail.asset_applicant_jobcode) : null,
       detail.asset_manager_jobcode ? userStore.getById(detail.asset_manager_jobcode) : null,
-      detail.asset_contract_code ? contractStore.getById(detail.asset_contract_code) : null,
+      detail.asset_contract_code
+        ? contractStore.getByName(detail.asset_contract_code).then((list) => list[0] ?? null)
+        : null,
     ])
     assetForm.asset_type_name = at?.type_name ?? ''
     assetForm.asset_storage_name = st?.storage_name ?? ''
@@ -275,8 +281,8 @@ const displayStatus = computed(() => getAssetStatusText(assetForm.asset_current_
 
 /**
  * 提交表单
- * 新增模式：不传 asset_code，后端自动生成并返回 List[AssetDetail]
- * 编辑模式：传递 asset_code 作为唯一标识，后端返回单个 AssetDetail
+ * 新增模式：不传定位键，后端自动生成并返回 List[AssetDetail]
+ * 编辑模式：传递 recordcode 作为定位键（后端 PUT /assets/assets/{recordcode}/），返回单个 AssetDetail
  */
 const submitForm = () => {
   formRef.value?.validate(async (valid: boolean) => {
@@ -286,9 +292,15 @@ const submitForm = () => {
     }
     try {
       if (isEditMode.value) {
+        // 【ID-2/取键契约】优先用回填捕获的 recordcode；路由参数兜底
+        const recordcode = editRecordcode.value || (route.query.code as string) || ''
+        if (!recordcode) {
+          ElMessage.error('缺少记录编码，无法更新资产')
+          return
+        }
         await assetAPI.updateAsset({
           ...getAssetCreateForm.value,
-          asset_code: assetForm.asset_code || '',
+          recordcode,
         })
         ElMessage.success('更新成功')
       } else {

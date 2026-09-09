@@ -5,7 +5,7 @@
  * 当前页/全量数据的分支处理均保持原实现。
  */
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { formatDate } from '@/utils/Format'
+import { formatDateTimeFull } from '@/utils/Format'
 import { exportToExcel, type ColumnConfig } from '@/utils/excelExporter'
 import type { OperationLog } from '@/types/operationlog'
 
@@ -42,7 +42,8 @@ export function createOperationLogExcelExport(
         title: '操作时间',
         key: 'operation_time',
         default: '',
-        formatter: (val) => formatDate(val as string | Date | null) || '',
+        // 【A-3】审计场景统一秒级精度
+        formatter: (val) => formatDateTimeFull((val as string | null) ?? null) || '',
       },
       { title: '描述', key: 'description', default: '' },
       { title: 'IP地址', key: 'ip_address', default: '' },

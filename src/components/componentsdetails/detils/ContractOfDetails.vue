@@ -25,33 +25,33 @@
           <div class="info-column">
             <div class="info-item">
               <span class="info-label">合同唯一标识</span>
-              ><span class="info-value">{{ contractDetails.recordcode || 'N/A' }}</span>
+              <span class="info-value">{{ contractDetails.recordcode || 'N/A' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">合同编码</span>
-              ><span class="info-value">{{ contractDetails.contract_code }}</span>
+              <span class="info-value">{{ contractDetails.contract_code || 'N/A' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">合同名称：</span>
-              ><span class="info-value">{{ contractDetails.contract_name }}</span>
+              <span class="info-value">{{ contractDetails.contract_name || 'N/A' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">合同类型：</span>
-              ><span class="info-value">{{
+              <span class="info-value">{{
                 getContractTypeText(contractDetails.contract_type)
               }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">供应商：</span
-              ><span class="info-value">{{ contractDetails.supplier_name }}</span>
+              ><span class="info-value">{{ contractDetails.supplier_name || 'N/A' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">质保年限：</span>
-              ><span class="info-value">{{ contractDetails.contract_warranty_period ?? 0 }}</span>
+              <span class="info-value">{{ contractDetails.contract_warranty_period ?? '-' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">合同金额：</span>
-              ><span class="info-value price"
+              <span class="info-value price"
                 >¥{{ formatNumber(contractDetails.contract_amount) }}</span
               >
             </div>
@@ -59,32 +59,30 @@
           <div class="info-column">
             <div class="info-item">
               <span class="info-label">签订日期：</span>
-              ><span class="info-value">{{ formatDate(contractDetails.contract_start_date) }}</span>
+              <span class="info-value">{{ formatDate(contractDetails.contract_start_date) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">合同状态：</span>
               <el-tag
-                :type="
-                  contractDetails.contract_status === 'settlement_done' ? 'success' : 'primary'
-                "
+                :type="getContractStatusTagType(contractDetails.contract_status || '')"
                 size="default"
               >
-                {{ contractDetails.contract_status || '-' }}
+                {{ getContractStatusText(contractDetails.contract_status || '') }}
               </el-tag>
             </div>
             <div class="info-item">
               <span class="info-label">结算价格：</span>
-              ><span class="info-value price"
+              <span class="info-value price"
                 >¥{{ formatNumber(contractDetails.settlemented_price) }}</span
               >
             </div>
             <div class="info-item">
               <span class="info-label">初验日期：</span>
-              ><span class="info-value">{{ formatDate(contractDetails.initial_check_date) }}</span>
+              <span class="info-value">{{ formatDate(contractDetails.initial_check_date) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">终验日期：</span>
-              ><span class="info-value">{{ formatDate(contractDetails.final_check_date) }}</span>
+              <span class="info-value">{{ formatDate(contractDetails.final_check_date) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">已支付金额：</span
@@ -117,8 +115,6 @@
   </div>
 </template>
 
-
-
 <script lang="ts" setup>
 defineOptions({ name: 'ContractOfDetails' })
 
@@ -131,6 +127,7 @@ import { useExcelExport } from '@/composables/useExcelExport'
 import type { Contract } from '@/types/contract'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { formatDate, formatNumber, contractTypeMapping } from '@/utils/Format'
+import { getContractStatusText, getContractStatusTagType } from '@/utils/statusMapping'
 
 // ========== 辅助函数：枚举值转中文 ==========
 const getContractTypeText = (value: string | null | undefined): string => {
@@ -186,6 +183,7 @@ const exportColumns: ColumnConfig<Contract>[] = [
     title: '合同状态',
     key: 'contract_status',
     default: '',
+    formatter: (v) => getContractStatusText((v as string) || ''),
   },
   {
     title: '结算价格',

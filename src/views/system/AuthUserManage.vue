@@ -159,6 +159,7 @@ import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
 import type { AuthUser, AuthUserCreateForm } from '@/types/authuser'
 import BindAuthUserDialog from '@/components/system/BindAuthUserDialog.vue'
 import UserRoleAssignDialog from '@/components/system/UserRoleAssignDialog.vue'
+import { formatDateTimeFull } from '@/utils/Format'
 
 // 权限检查
 // 实际上 usePermission 已经导出了 isAdmin,
@@ -201,8 +202,7 @@ const fetchAuthUsers = async () => {
 }
 
 const formatDate = (dateStr: string) => {
-  const d = new Date(dateStr)
-  return d.toLocaleString('zh-CN')
+  return formatDateTimeFull(dateStr)
 }
 
 // ==================== 新建/编辑弹窗 ====================
@@ -375,6 +375,6 @@ onMounted(() => {
 
 .unbound-hint {
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 14px;
 }
 </style>

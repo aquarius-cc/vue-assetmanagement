@@ -46,13 +46,13 @@
           </CommonList>
 
           <div class="bottom-buttons">
-            <el-button type="primary" @click="handleExportExcel">Export Excel</el-button>
+            <el-button type="primary" @click="handleExportExcel">导出Excel</el-button>
             <el-button
               type="danger"
               :disabled="slotProps.selectedRows?.length === 0"
               @click="handleBatchDelete(slotProps.selectedRows)"
             >
-              Batch Delete ({{ slotProps.selectedRows?.length || 0 }})
+              批量删除 ({{ slotProps.selectedRows?.length || 0 }})
             </el-button>
           </div>
         </template>
@@ -65,17 +65,15 @@
 defineOptions({ name: 'LostAssetDetails' })
 
 import { ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/types/list'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
-import type { ColumnConfig } from '@/utils/excelExporter'
-import { exportToExcel } from '@/utils/excelExporter'
 import type { LostAssetExtended } from '@/types/lostasset'
 import { useLostAssetStore } from '@/stores/lostAssetStore'
-import { formatDate } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'
+import { useAssetLifecycleActions, formatDate } from '@/composables/useAssetLifecycleActions'
+import type { ColumnConfig } from '@/utils/excelExporter'
 
 const lostAssetStore = useLostAssetStore()
 const smartListRef = ref<SmartListContainerExpose | null>(null)
@@ -103,123 +101,29 @@ const storeConfig = useSmartListConfig<LostAssetExtended>({
   entityName: '遗失资产',
 })
 
-const handleDelete = (row: LostAssetExtended) => {
-  if (!row.recordcode) {
-    ElMessage.error('Record code missing, cannot delete')
-    return
-  }
-  ElMessageBox.confirm('Delete this lost asset record?', 'Confirm', {
-    confirmButtonText: 'OK',
-    cancelButtonText: 'Cancel',
-    type: 'warning',
-  })
-    .then(() => lostAssetStore.remove(row.recordcode))
-    .then(() => {
-      ElMessage.success('Deleted')
-      smartListRef.value?.refresh()
-    })
-    .catch((error) => {
-      if (error !== 'cancel') {
-        console.error('Delete failed:', error)
-        ElMessage.error('Delete failed')
-      }
-    })
-}
+const exportColumns: ColumnConfig<LostAssetExtended>[] = [
+  { title: '记录编码', key: 'recordcode', default: '' },
+  { title: '资产编码', key: 'asset_code', default: '' },
+  { title: '资产名称', key: 'asset_name', default: '' },
+  { title: '遗失原因', key: 'lost_reason', default: '' },
+  { title: '最后位置', key: 'last_known_location', default: '' },
+  {
+    title: '遗失日期',
+    key: 'lost_date',
+    default: '',
+    formatter: (val: unknown) => formatDate(val as string | Date | null) || '',
+  },
+  { title: '操作人', key: 'operator_name', default: '' },
+]
 
-const handleBatchDelete = async (rows: LostAssetExtended[] | undefined) => {
-  if (!rows || rows.length === 0) {
-    ElMessage.warning('Please select data first')
-    return
-  }
-  const codes = rows.map((r) => r.recordcode).filter((c): c is string => !!c)
-  if (codes.length === 0) {
-    ElMessage.error('No valid record codes found')
-    return
-  }
-  try {
-    await ElMessageBox.confirm(
-      `Delete ${codes.length} records? This cannot be undone.`,
-      'Batch Delete',
-      { confirmButtonText: 'Delete', cancelButtonText: 'Cancel', type: 'warning' },
-    )
-    await lostAssetStore.removeBatch(codes)
-    smartListRef.value?.clearSelection()
-    await smartListRef.value?.refresh()
-  } catch (err) {
-    if (err === 'cancel') return
-    console.error('Batch delete failed:', err)
-    ElMessage.error('Batch delete failed')
-  }
-}
-
-const handleExportExcel = async () => {
-  const exportColumns: ColumnConfig<LostAssetExtended>[] = [
-    { title: 'Record Code', key: 'recordcode', default: '' },
-    { title: 'Asset Code', key: 'asset_code', default: '' },
-    { title: 'Asset Name', key: 'asset_name', default: '' },
-    { title: 'Reason', key: 'lost_reason', default: '' },
-    { title: 'Last Location', key: 'last_known_location', default: '' },
-    {
-      title: 'Lost Date',
-      key: 'lost_date',
-      default: '',
-      formatter: (val) => formatDate(val as string | Date | null) || '',
-    },
-    { title: 'Operator', key: 'operator_name', default: '' },
-  ]
-
-  let range: 'current' | 'all' | null = null
-  try {
-    await ElMessageBox.confirm(
-      `Current page: ${lostAssetStore.list.length}, Total: ${lostAssetStore.pagination.total}. Choose:`,
-      'Export Range',
-      {
-        confirmButtonText: 'Export Current',
-        cancelButtonText: 'Export All',
-        distinguishCancelAndClose: true,
-      },
-    )
-    range = 'current'
-  } catch (err) {
-    if (err === 'cancel') range = 'all'
-    else return
-  }
-
-  let exportData: LostAssetExtended[] = []
-  let fileName = ''
-
-  if (range === 'current') {
-    exportData = lostAssetStore.list
-    fileName = `LostAssets_Current_${lostAssetStore.list.length}.xlsx`
-  } else if (range === 'all') {
-    ElMessage.info('Loading all data...')
-    try {
-      const allData = await lostAssetStore.getList({
-        page: 1,
-        page_size: lostAssetStore.pagination.total,
-      })
-      exportData = allData
-      fileName = `LostAssets_All_${allData.length}.xlsx`
-    } catch (error) {
-      console.error('Failed to load all data:', error)
-      ElMessage.error('Failed to load data')
-      return
-    }
-  } else {
-    return
-  }
-
-  await exportToExcel({
-    data: exportData,
-    columns: exportColumns,
-    fileName,
-    sheetName: 'Lost Assets',
-    confirmMessage: `Export ${exportData.length} lost asset records?`,
-    emptyMessage: 'No data to export',
-    successMessage: 'Export successful',
-    errorMessage: 'Export failed',
-  })
-}
+const { handleDelete, handleBatchDelete, handleExportExcel } = useAssetLifecycleActions({
+  store: lostAssetStore,
+  entityName: '遗失资产',
+  fileNamePrefix: '遗失资产列表',
+  exportColumns,
+  refresh: async () => { smartListRef.value?.refresh() },
+  clearSelection: () => { smartListRef.value?.clearSelection() },
+})
 </script>
 
 <style lang="scss" scoped>

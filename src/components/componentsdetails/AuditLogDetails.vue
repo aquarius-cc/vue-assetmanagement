@@ -194,24 +194,28 @@ const filterForm = ref({
 })
 const dateRange = ref<[string, string] | null>(null)
 
+// ===== 筛选参数构建（loadData / handleExport 共用）=====
+const buildFilterParams = (overrides?: Partial<AuditLogQueryParams>): AuditLogQueryParams => {
+  const params: AuditLogQueryParams = {
+    page: currentPage.value,
+    page_size: pageSize.value,
+    ...overrides,
+  }
+  if (filterForm.value.app_label) params.app_label = filterForm.value.app_label
+  if (filterForm.value.operation_type) params.operation_type = filterForm.value.operation_type
+  if (filterForm.value.operator_jobcode)
+    params.operator_jobcode = filterForm.value.operator_jobcode
+  if (filterForm.value.record_code) params.record_code = filterForm.value.record_code
+  if (dateRange.value?.[0]) params.start_date = dateRange.value[0]
+  if (dateRange.value?.[1]) params.end_date = dateRange.value[1]
+  return params
+}
+
 // ===== 数据加载 =====
 const loadData = async () => {
   loading.value = true
   try {
-    const params: AuditLogQueryParams = {
-      page: currentPage.value,
-      page_size: pageSize.value,
-    }
-    if (filterForm.value.app_label) params.app_label = filterForm.value.app_label
-    if (filterForm.value.operation_type) params.operation_type = filterForm.value.operation_type
-    if (filterForm.value.operator_jobcode)
-      params.operator_jobcode = filterForm.value.operator_jobcode
-    if (filterForm.value.record_code) params.record_code = filterForm.value.record_code
-    if (dateRange.value) {
-      params.start_date = dateRange.value[0]
-      params.end_date = dateRange.value[1]
-    }
-    const response = await auditLogAPI.getAuditLogs(params)
+    const response = await auditLogAPI.getAuditLogs(buildFilterParams())
     tableData.value = response.results
     total.value = response.count
   } catch {
@@ -265,7 +269,9 @@ const handleExport = async () => {
     currentData: tableData.value,
     totalCount: total.value,
     fetchAllData: async () => {
-      const allData = await auditLogAPI.getAuditLogs({ page: 1, page_size: total.value || 1000 })
+      const allData = await auditLogAPI.getAuditLogs(
+        buildFilterParams({ page: 1, page_size: total.value || 1000 }),
+      )
       return allData.results
     },
     sheetName: '审计日志',

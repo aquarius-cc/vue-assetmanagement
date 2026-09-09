@@ -48,6 +48,8 @@
           :enable-delete="enableDelete"
           :show-detail-button="showDetailButton"
           :detail-route-name="detailRouteName"
+          :detail-query-key="detailQueryKey"
+          :detail-query-param-name="detailQueryParamName"
           :edit-route-name="editRouteName"
           @update:search="$emit('update:search', $event)"
           @search="$emit('search', $event)"
@@ -147,6 +149,14 @@ export default defineComponent({
     detailRouteName: {
       type: String,
       default: null,
+    },
+    detailQueryKey: {
+      type: String,
+      default: undefined,
+    },
+    detailQueryParamName: {
+      type: String,
+      default: undefined,
     },
     editRouteName: {
       type: String,
@@ -306,10 +316,6 @@ export default defineComponent({
   width: 100%;
   overflow-x: auto;
   margin-bottom: 16px;
-  border-radius: 12px;
-  background-color: var(--card-background);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  padding: 16px;
   box-sizing: border-box;
 }
 
@@ -358,10 +364,7 @@ export default defineComponent({
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  padding: 16px 20px;
-  background-color: var(--card-background);
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  padding: 16px 20px 0;
 }
 
 .pagination-container :deep(.el-pagination__total) {

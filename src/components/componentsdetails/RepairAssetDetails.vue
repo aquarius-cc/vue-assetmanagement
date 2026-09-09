@@ -52,13 +52,13 @@
           </CommonList>
 
           <div class="bottom-buttons">
-            <el-button type="primary" @click="handleExportExcel">Export Excel</el-button>
+            <el-button type="primary" @click="handleExportExcel">导出Excel</el-button>
             <el-button
               type="danger"
               :disabled="slotProps.selectedRows?.length === 0"
               @click="handleBatchDelete(slotProps.selectedRows)"
             >
-              Batch Delete ({{ slotProps.selectedRows?.length || 0 }})
+              批量删除 ({{ slotProps.selectedRows?.length || 0 }})
             </el-button>
           </div>
         </template>
@@ -71,48 +71,19 @@
 defineOptions({ name: 'RepairAssetDetails' })
 
 import { ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/types/list'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
-import type { ColumnConfig } from '@/utils/excelExporter'
-import { exportToExcel } from '@/utils/excelExporter'
 import type { RepairAssetExtended } from '@/types/repairasset'
 import { useRepairAssetStore } from '@/stores/repairAssetStore'
-import { formatDate } from '@/utils/Format'
+import { getRepairStatusText, getRepairStatusTagType } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
+import { useAssetLifecycleActions, formatDate } from '@/composables/useAssetLifecycleActions'
+import type { ColumnConfig } from '@/utils/excelExporter'
 
 const repairAssetStore = useRepairAssetStore()
 const smartListRef = ref<SmartListContainerExpose | null>(null)
-
-const getRepairStatusTagType = (
-  status: string | null | undefined,
-): 'success' | 'warning' | 'danger' | 'info' => {
-  switch (status) {
-    case 'completed':
-      return 'success'
-    case 'failed':
-      return 'danger'
-    case 'in_progress':
-      return 'warning'
-    default:
-      return 'info'
-  }
-}
-
-const getRepairStatusText = (status: string | null | undefined): string => {
-  switch (status) {
-    case 'completed':
-      return 'Completed'
-    case 'failed':
-      return 'Failed'
-    case 'in_progress':
-      return 'In Progress'
-    default:
-      return 'Unknown'
-  }
-}
 
 const columns: TableColumn[] = [
   { type: 'index', label: '序号', width: 60, align: 'center' },
@@ -144,131 +115,34 @@ const storeConfig = useSmartListConfig<RepairAssetExtended>({
   entityName: '维修记录',
 })
 
-const handleDelete = (row: RepairAssetExtended) => {
-  if (!row.recordcode) {
-    ElMessage.error('Record code missing, cannot delete')
-    return
-  }
-  ElMessageBox.confirm('Delete this repair record?', 'Confirm', {
-    confirmButtonText: 'OK',
-    cancelButtonText: 'Cancel',
-    type: 'warning',
-  })
-    .then(() => repairAssetStore.remove(row.recordcode))
-    .then(() => {
-      ElMessage.success('Deleted')
-      smartListRef.value?.refresh()
-    })
-    .catch((error) => {
-      if (error !== 'cancel') {
-        const msg = (error as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message
-        console.error('Delete failed:', error)
-        ElMessage.error(msg || 'Delete failed')
-      }
-    })
-}
+const exportColumns: ColumnConfig<RepairAssetExtended>[] = [
+  { title: '记录编码', key: 'recordcode', default: '' },
+  { title: '资产编码', key: 'asset_code', default: '' },
+  { title: '资产名称', key: 'asset_name', default: '' },
+  { title: '维修原因', key: 'repair_reason', default: '' },
+  {
+    title: '维修日期',
+    key: 'repair_date',
+    default: '',
+    formatter: (val: unknown) => formatDate(val as string | Date | null) || '',
+  },
+  {
+    title: '状态',
+    key: 'repair_status',
+    default: '',
+    formatter: (val: unknown) => getRepairStatusText(val as string),
+  },
+  { title: '操作人', key: 'operator_name', default: '' },
+]
 
-const handleBatchDelete = async (rows: RepairAssetExtended[] | undefined) => {
-  if (!rows || rows.length === 0) {
-    ElMessage.warning('Please select data first')
-    return
-  }
-  const codes = rows.map((r) => r.recordcode).filter((c): c is string => !!c)
-  if (codes.length === 0) {
-    ElMessage.error('No valid record codes found')
-    return
-  }
-  try {
-    await ElMessageBox.confirm(
-      `Delete ${codes.length} records? This cannot be undone.`,
-      'Batch Delete',
-      { confirmButtonText: 'Delete', cancelButtonText: 'Cancel', type: 'warning' },
-    )
-    await repairAssetStore.removeBatch(codes)
-    smartListRef.value?.clearSelection()
-    await smartListRef.value?.refresh()
-  } catch (err) {
-    if (err === 'cancel') return
-    const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-    console.error('Batch delete failed:', err)
-    ElMessage.error(msg || 'Batch delete failed')
-  }
-}
-
-const handleExportExcel = async () => {
-  const exportColumns: ColumnConfig<RepairAssetExtended>[] = [
-    { title: 'Record Code', key: 'recordcode', default: '' },
-    { title: 'Asset Code', key: 'asset_code', default: '' },
-    { title: 'Asset Name', key: 'asset_name', default: '' },
-    { title: 'Reason', key: 'repair_reason', default: '' },
-    {
-      title: 'Repair Date',
-      key: 'repair_date',
-      default: '',
-      formatter: (val) => formatDate(val as string | Date | null) || '',
-    },
-    {
-      title: 'Status',
-      key: 'repair_status',
-      default: '',
-      formatter: (val) => getRepairStatusText(val as string),
-    },
-    { title: 'Operator', key: 'operator_name', default: '' },
-  ]
-
-  let range: 'current' | 'all' | null = null
-  try {
-    await ElMessageBox.confirm(
-      `Current page: ${repairAssetStore.list.length}, Total: ${repairAssetStore.pagination.total}. Choose:`,
-      'Export Range',
-      {
-        confirmButtonText: 'Export Current',
-        cancelButtonText: 'Export All',
-        distinguishCancelAndClose: true,
-      },
-    )
-    range = 'current'
-  } catch (err) {
-    if (err === 'cancel') range = 'all'
-    else return
-  }
-
-  let exportData: RepairAssetExtended[] = []
-  let fileName = ''
-
-  if (range === 'current') {
-    exportData = repairAssetStore.list
-    fileName = `RepairAssets_Current_${repairAssetStore.list.length}.xlsx`
-  } else if (range === 'all') {
-    ElMessage.info('Loading all data...')
-    try {
-      const allData = await repairAssetStore.getList({
-        page: 1,
-        page_size: repairAssetStore.pagination.total,
-      })
-      exportData = allData
-      fileName = `RepairAssets_All_${allData.length}.xlsx`
-    } catch (error) {
-      console.error('Failed to load all data:', error)
-      ElMessage.error('Failed to load data')
-      return
-    }
-  } else {
-    return
-  }
-
-  await exportToExcel({
-    data: exportData,
-    columns: exportColumns,
-    fileName,
-    sheetName: 'Repair Assets',
-    confirmMessage: `Export ${exportData.length} repair records?`,
-    emptyMessage: 'No data to export',
-    successMessage: 'Export successful',
-    errorMessage: 'Export failed',
-  })
-}
+const { handleDelete, handleBatchDelete, handleExportExcel } = useAssetLifecycleActions({
+  store: repairAssetStore,
+  entityName: '维修资产',
+  fileNamePrefix: '维修资产列表',
+  exportColumns,
+  refresh: async () => { smartListRef.value?.refresh() },
+  clearSelection: () => { smartListRef.value?.clearSelection() },
+})
 </script>
 
 <style lang="scss" scoped>

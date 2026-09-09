@@ -4,7 +4,7 @@
   功能：新增合同/ 编辑已有合同（通过 query.code 识别）
 -->
 <template>
-  <div class="contract-form, form-container">
+  <div class="contract-form form-container">
     <el-card class="box-card">
       <template #header>
         <div class="card-header">
@@ -84,10 +84,12 @@
                 placeholder="请选择合同类型"
                 style="width: 100%"
               >
-                <el-option label="采购合同" value="purchase" />
-                <el-option label="服务合同" value="service" />
-                <el-option label="信息化建设合同" value="information_construction" />
-                <el-option label="直接采购合同" value="direct_procurement" />
+                <el-option
+                  v-for="(label, value) in contractTypeMapping"
+                  :key="value"
+                  :label="label"
+                  :value="value"
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -120,7 +122,7 @@
             </el-form-item>
           </el-col>
 
-          <!-- 合同结算状态-->
+          <!-- 合同结算状态：选项来自 CONTRACT_STATUS_MAP 单一来源 -->
           <el-col :xs="24" :sm="24" :md="12">
             <el-form-item label="合同结算状态" prop="contract_status">
               <el-select
@@ -128,8 +130,12 @@
                 placeholder="请选择结算状态"
                 style="width: 100%"
               >
-                <el-option label="待结算" value="pending" />
-                <el-option label="已结算" value="settled" />
+                <el-option
+                  v-for="(item, value) in CONTRACT_STATUS_MAP"
+                  :key="value"
+                  :label="item.label"
+                  :value="value"
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -189,19 +195,6 @@
               />
             </el-form-item>
           </el-col>
-
-          <!-- 支付记录 -->
-          <el-col :span="24">
-            <el-form-item label="支付记录" prop="paid_record">
-              <el-input
-                type="textarea"
-                :rows="3"
-                v-model="contractForm.paid_record"
-                placeholder="请输入支付记录"
-                clearable
-              />
-            </el-form-item>
-          </el-col>
         </el-row>
 
         <!-- 操作按钮 -->
@@ -226,7 +219,8 @@ import { Plus, Edit } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useContractStore } from '@/stores/contractStore'
 import type { Contract, ContractCreateForm, ContractStatus } from '@/types/contract'
-import { formatDate } from '@/utils/Format'
+import { formatDate, contractTypeMapping } from '@/utils/Format'
+import { CONTRACT_STATUS_MAP } from '@/utils/statusMapping'
 import { isAxiosError } from 'axios'
 
 // ========== 路由与状态==========
@@ -254,7 +248,6 @@ interface ContractFormData extends ContractCreateForm {
   initial_check_date: string | null
   final_check_date: string | null
   amount_paid: number
-  paid_record: string
 }
 
 // 初始化表单数据
@@ -272,7 +265,6 @@ const initFormData = (): ContractFormData => ({
   initial_check_date: null,
   final_check_date: null,
   amount_paid: 0,
-  paid_record: '',
 })
 
 const contractForm = reactive<ContractFormData>(initFormData())
@@ -383,7 +375,7 @@ const submitForm = () => {
     }
 
     // 构建提交数据，确保类型正确
-    const submitData: ContractCreateForm = {
+    const submitData: ContractCreateForm & { recordcode?: string } = {
       contract_code: contractForm.contract_code,
       contract_name: contractForm.contract_name,
       contract_amount: Number(contractForm.contract_amount),
@@ -395,7 +387,10 @@ const submitForm = () => {
       settlemented_price: Number(contractForm.settlemented_price),
       initial_check_date: safeFormatDate(contractForm.initial_check_date),
       final_check_date: safeFormatDate(contractForm.final_check_date),
-      paid_record: contractForm.paid_record || '',
+    }
+    // 编辑模式必须携带 recordcode，后端按 recordcode 定位更新（勿用 contract_code）
+    if ((route.query.code as string) && isEdit.value) {
+      submitData.recordcode = route.query.code as string
     }
 
     try {
@@ -446,7 +441,7 @@ const goBack = () => {
   min-height: auto;
   margin: 20px auto;
   padding: 20px;
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 

@@ -292,6 +292,22 @@ describe('AssetStore', () => {
   })
 
   describe('批量删除', () => {
+    it('【双约定防回归】批量删除应原样透传 asset_code（后端 batch-delete 按 asset_code 处理，非 recordcode）', async () => {
+      const mockResult = {
+        total: 2,
+        success_count: 2,
+        fail_count: 0,
+        success_ids: ['AS-001', 'AS-002'],
+        fail_items: [],
+      }
+      const { assetAPI } = await import('@/api/asset')
+      vi.mocked(assetAPI.batchDeleteAssets).mockResolvedValue(mockResult as any)
+
+      await store.removeBatch(['AS-001', 'AS-002'])
+
+      expect(assetAPI.batchDeleteAssets).toHaveBeenCalledWith(['AS-001', 'AS-002'])
+    })
+
     it('应该调用batchDelete API删除多条资产', async () => {
       const mockResult = {
         total: 2,

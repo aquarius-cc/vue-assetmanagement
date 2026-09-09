@@ -49,7 +49,7 @@
         </div>
         <div class="info-item">
           <span class="label">操作时间：</span>
-          <span class="value">{{ detailData.operation_time }}</span>
+          <span class="value">{{ formatDateTimeFull(detailData.operation_time) }}</span>
         </div>
         <div class="info-item">
           <span class="label">IP地址：</span>
@@ -77,8 +77,6 @@
   </div>
 </template>
 
-
-
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -89,6 +87,7 @@ import {
   appLabelMapping,
   auditOperationTypeTagMapping,
 } from '@/types/auditlog'
+import { formatDateTimeFull } from '@/utils/Format'
 
 const route = useRoute()
 const router = useRouter()
@@ -178,7 +177,7 @@ onMounted(async () => {
       background: var(--background-color);
       border-radius: 4px;
       padding: 12px;
-      font-size: 12px;
+      font-size: 14px;
       max-height: 300px;
       overflow-y: auto;
       white-space: pre-wrap;

@@ -115,14 +115,18 @@ export const assetAPI = {
 
   /**
    * 获取资产详情
-   * GET /api/assets/assets/{asset_code}/
+   * GET /api/assets/assets/{recordcode}/
    * 包含嵌套的关联对象（如 asset_type, asset_contract, asset_storage 等）
+   *
+   * 【ID-2/取键契约】后端 AssetViewSet lookup_field="recordcode"（asset_view.py:57），
+   * detail 路由只认 recordcode 或数字 pk；函数名保留 getAssetByCode 以兼容 8+ 调用方，
+   * 入参实为 recordcode。
    */
-  getAssetByCode: async (asset_code: string): Promise<AssetDetail | null> => {
+  getAssetByCode: async (recordcode: string): Promise<AssetDetail | null> => {
     try {
       return unwrapResponse(
         request.get<AssetDetail>(
-          `/assets/assets/${asset_code}/`,
+          `/assets/assets/${recordcode}/`,
           undefined,
           true, // 使用缓存
           300000, // 缓存时间 5 分钟
@@ -139,24 +143,27 @@ export const assetAPI = {
 
   /**
    * 更新资产
-   * PUT /api/assets/assets/{asset_code}/
+   * PUT /api/assets/assets/{recordcode}/
    *
+   * 【ID-2/取键契约】路由定位键为 recordcode（后端 lookup_field="recordcode"），
+   * 必填校验与 URL 拼装均使用 data.recordcode，payload 剥离 recordcode 后发送。
    * 字段映射同 createAsset
    */
   updateAsset: (data: AssetUpdateForm): Promise<AssetDetail> => {
-    if (!data.asset_code) {
-      throw new Error('asset_code is required for update')
+    if (!data.recordcode) {
+      throw new Error('recordcode is required for update')
     }
-    const { asset_code, ...payload } = data
-    return unwrapResponse(request.put<AssetDetail>(`/assets/assets/${asset_code}/`, payload))
+    const { recordcode, ...payload } = data
+    return unwrapResponse(request.put<AssetDetail>(`/assets/assets/${recordcode}/`, payload))
   },
 
   /**
    * 删除资产（软删除）
-   * DELETE /api/assets/assets/{asset_code}/
+   * DELETE /api/assets/assets/{recordcode}/
+   * 【ID-2/取键契约】路由定位键为 recordcode，入参实为 recordcode
    */
-  deleteAsset: (asset_code: string): Promise<void> => {
-    return unwrapResponse(request.delete<void>(`/assets/assets/${asset_code}/`))
+  deleteAsset: (recordcode: string): Promise<void> => {
+    return unwrapResponse(request.delete<void>(`/assets/assets/${recordcode}/`))
   },
 
   /**
@@ -323,11 +330,15 @@ export const assetAPI = {
    * 批量删除资产
    * POST /api/assets/assets/batch-delete/
    * 对应后端 AssetViewSet.batch_delete action
+   *
+   * 【双约定】ids 传 asset_code（业务编码）：后端显式按
+   * asset_code__in=ids 过滤并做 RBAC 范围校验（asset_view.py:357-367），
+   * 与 detail 路由的 recordcode 约定不同，勿统一。
    */
-  batchDeleteAssets: (codes: string[]): Promise<BatchDeleteResult> => {
+  batchDeleteAssets: (assetCodes: string[]): Promise<BatchDeleteResult> => {
     return unwrapResponse(
       request.post<BatchDeleteResult>('/assets/assets/batch-delete/', {
-        ids: codes,
+        ids: assetCodes,
       }),
     )
   },

@@ -180,11 +180,11 @@ watch(
  * @param row 待编辑的行数据
  */
 const handleEdit = (row: Storage) => {
-  if (!row.storage_code) {
-    ElMessage.error('仓库编码不存在，无法编辑')
+  if (!row.recordcode) {
+    ElMessage.error('仓库记录标识不存在，无法编辑')
     return
   }
-  router.push({ name: 'StorageForm', query: { code: row.storage_code } }).catch((err) => {
+  router.push({ name: 'StorageForm', query: { code: row.recordcode } }).catch((err) => {
     ElMessage.error(`跳转失败: ${err.message || '未知错误'}`)
   })
 }
@@ -195,8 +195,8 @@ const handleEdit = (row: Storage) => {
  * @param row 待删除的行数据
  */
 const handleDelete = (row: Storage) => {
-  if (!row.storage_code) {
-    ElMessage.error('仓库编码不存在，无法删除')
+  if (!row.recordcode) {
+    ElMessage.error('仓库记录标识不存在，无法删除')
     return
   }
   ElMessageBox.confirm('确定要删除该仓库吗？删除后不可恢复。', '删除确认', {
@@ -205,7 +205,7 @@ const handleDelete = (row: Storage) => {
     type: 'warning',
   })
     .then(() => {
-      return storageStore.remove(row.storage_code)
+      return storageStore.remove(row.recordcode)
     })
     .then(() => {
       ElMessage.success('仓库删除成功')
@@ -230,11 +230,11 @@ const handleBatchDelete = async (rows: Storage[] | undefined) => {
     return
   }
 
-  // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows.map((row) => row.storage_code).filter((code): code is string => !!code)
+  // 提取选中的唯一标识字段（recordcode）
+  const codes = rows.map((row) => row.recordcode).filter((code): code is string => !!code)
 
   if (codes.length === 0) {
-    ElMessage.error('无法删除：选中的数据缺少唯一标识')
+    ElMessage.error('无法删除：选中的数据缺少记录标识')
     return
   }
 

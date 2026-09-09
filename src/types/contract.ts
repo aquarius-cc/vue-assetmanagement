@@ -96,7 +96,7 @@ export interface PaidRecord {
  * 用于创建新合同时的表单数据
  */
 export interface ContractCreateForm {
-  /** 合同编码 (唯一标识) */
+  /** 合同编码（创建必填；记录的唯一定位键为 recordcode） */
   contract_code: string
   /** 合同名称 */
   contract_name: string
@@ -129,8 +129,10 @@ export interface ContractCreateForm {
  * 用于更新合同信息时的表单数据
  */
 export interface ContractUpdateForm extends Partial<ContractCreateForm> {
-  /** 合同编码 (唯一标识，用于定位要更新的记录) */
+  /** 合同编码（业务展示编码，不可作为定位键） */
   contract_code: string
+  /** 记录定位标识（对应后端 lookup_field=recordcode，更新时必须携带） */
+  recordcode?: string
 }
 
 /**

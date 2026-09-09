@@ -60,7 +60,8 @@
           <div class="info-column">
             <div class="info-item">
               <span class="info-label">操作时间：</span>
-              <span class="info-value">{{ formatDate(detailData.operation_time) }}</span>
+              <!-- 【A-3】操作日志审计需秒级精度，统一使用 formatDateTimeFull（YYYY-MM-DD HH:mm:ss） -->
+              <span class="info-value">{{ formatDateTimeFull(detailData.operation_time) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">IP 地址：</span>
@@ -69,10 +70,6 @@
             <div class="info-item">
               <span class="info-label">描述：</span>
               <span class="info-value">{{ detailData.description || '无' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">操作时间：</span>
-              <span class="info-value">{{ formatDate(detailData.operation_time) }}</span>
             </div>
           </div>
         </div>
@@ -120,8 +117,6 @@
   </div>
 </template>
 
-
-
 <script lang="ts" setup>
 defineOptions({ name: 'OperationLogDetail' })
 
@@ -134,7 +129,7 @@ import { useExcelExport } from '@/composables/useExcelExport'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import type { OperationLog } from '@/types/operationlog'
 import { operationTypeMapping, operationTypeTagMapping } from '@/types/operationlog'
-import { formatDate } from '@/utils/Format'
+import { formatDateTimeFull } from '@/utils/Format'
 import type { ChangeRecord } from '@/types/form-helpers'
 
 // ===== 操作类型辅助函数 =====
@@ -169,11 +164,27 @@ const operationLogStore = useOperationLogStore()
 const isLoading = ref(true)
 const detailData = ref<OperationLog | null>(null)
 
-/** 解析后的变更详情列表 */
+/** 解析后的变更详情列表（基于 before_data / after_data 逐字段对比） */
 const parsedChanges = computed<ChangeRecord[]>(() => {
   if (!detailData.value) return []
-  // 后端 changes 字段不存在，使用 before_data/after_data 对比
-  return []
+  const before = detailData.value.before_data
+  const after = detailData.value.after_data
+  if (!before || !after) return []
+
+  const allKeys = [...new Set([...Object.keys(before), ...Object.keys(after)])]
+  const changes: ChangeRecord[] = []
+  for (const key of allKeys) {
+    const oldVal = before[key]
+    const newVal = after[key]
+    if (String(oldVal ?? '') !== String(newVal ?? '')) {
+      changes.push({
+        field: key,
+        old_value: oldVal == null ? '' : String(oldVal),
+        new_value: newVal == null ? '' : String(newVal),
+      })
+    }
+  }
+  return changes
 })
 
 // ===== Excel 导出配置 =====
@@ -196,16 +207,11 @@ const exportColumns: ColumnConfig<OperationLog>[] = [
     title: '操作时间',
     key: 'operation_time',
     default: '',
-    formatter: (v) => formatDate(v as string) || '',
+    // 【A-3】导出与页面展示保持同一秒级精度
+    formatter: (v) => formatDateTimeFull(v as string) || '',
   },
   { title: '描述', key: 'description', default: '' },
   { title: 'IP地址', key: 'ip_address', default: '' },
-  {
-    title: '操作时间',
-    key: 'operation_time',
-    default: '',
-    formatter: (v) => formatDate(v as string) || '',
-  },
 ]
 
 // ===== 加载详情数据 =====

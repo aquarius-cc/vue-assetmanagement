@@ -108,6 +108,18 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  detailQueryKey: {
+    type: String,
+    default: undefined,
+  },
+  /**
+   * 详情跳转时 query 使用的参数名（默认与 detailQueryKey 相同）
+   * 例：操作日志行主键为 id，但路由期望 query.pk → detailQueryKey="id" + detailQueryParamName="pk"
+   */
+  detailQueryParamName: {
+    type: String,
+    default: undefined,
+  },
 })
 
 // ===== Events 定义 =====
@@ -155,9 +167,18 @@ function getIdentifierValue(entity: Record<string, unknown>): Record<string, str
 
 /**
  * 构建查询参数
- * 所有实体统一使用 recordcode 作为标识符
+ * detailQueryKey 非空时优先使用指定字段取值；paramName 指定 query 参数名（默认同取值字段名）；
+ * 否则按 code/recordcode/id 顺序兜底（query 参数名固定为 code，兼容既有详情页约定）
  */
-function buildQueryParams(row: Record<string, unknown>): Record<string, string> {
+function buildQueryParams(
+  row: Record<string, unknown>,
+  queryKey?: string,
+  paramName?: string,
+): Record<string, string> {
+  if (queryKey && row[queryKey] !== undefined && row[queryKey] !== null) {
+    return { [paramName || queryKey]: String(row[queryKey]) }
+  }
+
   const identifier = getIdentifierValue(row)
   if (!identifier) {
     return { index: '0' }
@@ -177,7 +198,11 @@ function buildQueryParams(row: Record<string, unknown>): Record<string, string> 
 const handleDetails = (row: Record<string, unknown>, index: number) => {
   if (props.detailRouteName) {
     try {
-      const queryParam = buildQueryParams(row)
+      const queryParam = buildQueryParams(
+        row,
+        props.detailQueryKey,
+        props.detailQueryParamName,
+      )
       router
         .push({
           name: props.detailRouteName,
@@ -202,7 +227,7 @@ const handleDetails = (row: Record<string, unknown>, index: number) => {
 const handleEdit = (row: Record<string, unknown>, index: number) => {
   if (props.editRouteName) {
     try {
-      const queryParam = buildQueryParams(row)
+      const queryParam = buildQueryParams(row, props.detailQueryKey)
       router
         .push({
           name: props.editRouteName,
@@ -273,7 +298,7 @@ defineExpose({
 .action-buttons .el-button {
   margin: 0;
   padding: 8px 16px;
-  font-size: 13px;
+  font-size: 14px;
   border-radius: 8px;
   min-width: 60px;
   text-align: center;
