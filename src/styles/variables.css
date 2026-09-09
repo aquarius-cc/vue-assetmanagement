@@ -100,12 +100,12 @@
   /* 层级令牌（z-index 阶梯，主题无关，仅此处定义）
      100 mask < 200 child-container < 900 notification < 1000 router-mask < 2000 view-overlay
      注：原 --z-sticky-bar(50) 已随 bottom-buttons 改为流内页脚（App 壳式布局）而退役 */
-  --z-content: 1;            /* 局部内容层（详情页内子容器等） */
-  --z-mask: 100;             /* 详情页局部遮罩（mask mixin） */
-  --z-child-container: 200;  /* 子路由详情容器（child-router-container） */
-  --z-notification: 900;     /* 通知铃铛浮层（低于详情遮罩，消除并列 1000） */
-  --z-router-mask: 1000;     /* 子路由激活全屏遮罩（router-mask-container） */
-  --z-view-overlay: 2000;    /* 视图级浮层（移动端菜单触发按钮，自定义层最高） */
+  --z-content: 1; /* 局部内容层（详情页内子容器等） */
+  --z-mask: 100; /* 详情页局部遮罩（mask mixin） */
+  --z-child-container: 200; /* 子路由详情容器（child-router-container） */
+  --z-notification: 900; /* 通知铃铛浮层（低于详情遮罩，消除并列 1000） */
+  --z-router-mask: 1000; /* 子路由激活全屏遮罩（router-mask-container） */
+  --z-view-overlay: 2000; /* 视图级浮层（移动端菜单触发按钮，自定义层最高） */
 }
 
 /* 暗色模式变量 */

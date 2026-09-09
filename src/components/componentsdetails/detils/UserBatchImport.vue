@@ -39,7 +39,7 @@
         </el-upload>
 
         <!-- 下载模板按钮 -->
-        <el-button link @click="downloadTemplate" class="template-btn">
+        <el-button link @click="handleExportTemplate" class="template-btn">
           <el-icon><Download /></el-icon>
           下载导入模板
         </el-button>
@@ -147,10 +147,10 @@ import { useUserStore } from '@/stores/userStore'
 import { useDepartmentStore } from '@/stores/index'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import { USER_STATUS_INPUT_MAPPING } from '@/utils/Format'
-import ExcelJS from 'exceljs'
 import { useBatchImport } from '@/composables/useBatchImport'
 import { validationTagType, validationTagText } from '@/utils/batchImportHelpers'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
+import { downloadExcelTemplate, type TemplateCellValue } from '@/utils/batchImport/templateExport'
 import type { ExcelEmployeeData } from '@/types/user'
 import {
   createUserBatchConfig,
@@ -292,36 +292,15 @@ const clearData = () => {
   uploadRef.value?.clearFiles()
 }
 
-// 下载模板（使用 ExcelJS）
-const downloadTemplate = async () => {
-  const templateData = userTemplateData
-
-  // 使用 ExcelJS 创建模板
-  const workbook = new ExcelJS.Workbook()
-  const worksheet = workbook.addWorksheet('员工导入模板')
-
-  // 添加表头
-  const headers = Object.keys(templateData[0])
-  worksheet.addRow(headers)
-
-  // 添加数据行
-  templateData.forEach((row) => {
-    worksheet.addRow(headers.map((h) => row[h as keyof ExcelEmployeeData]))
-  })
-
-  // 生成并下载文件
-  const buffer = await workbook.xlsx.writeBuffer()
-  const blob = new Blob([buffer], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = '员工批量导入模板.xlsx'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+// ===== 导出模板（公共工具函数，DR-1 收敛）=====
+const handleExportTemplate = async () => {
+  const headers = Object.keys(userTemplateData[0] ?? {})
+  const exampleRows: Record<string, TemplateCellValue>[] = userTemplateData.map((row) =>
+    Object.fromEntries(
+      headers.map((header) => [header, row[header as keyof ExcelEmployeeData] ?? '']),
+    ),
+  )
+  await downloadExcelTemplate('员工导入模板', headers, exampleRows, '员工批量导入模板.xlsx')
 }
 
 // 确保部门数据已加载（保证映射可用）

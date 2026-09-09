@@ -8,16 +8,21 @@ import ExcelJS from 'exceljs'
 import { ElMessage } from 'element-plus'
 
 /**
+ * 模板单元格值：字符串与数值原样保留，缺失/空值统一补空字符串
+ */
+export type TemplateCellValue = string | number
+
+/**
  * 生成并下载 Excel 导入模板
  * @param worksheetName - 工作表名称（如「资产导入模板」）
  * @param headers - 表头中文名数组（顺序即列顺序）
- * @param exampleRows - 示例数据行（每行与 headers 对齐；缺失的表头填空字符串）
+ * @param exampleRows - 示例数据行（每行与 headers 对齐；缺失的表头填空字符串，数值单元格保留原值）
  * @param fileName - 下载文件名（如「资产批量导入模板.xlsx」）
  */
 export async function downloadExcelTemplate(
   worksheetName: string,
   headers: string[],
-  exampleRows: Record<string, string>[],
+  exampleRows: Record<string, TemplateCellValue>[],
   fileName: string,
 ): Promise<void> {
   try {
@@ -25,7 +30,7 @@ export async function downloadExcelTemplate(
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet(worksheetName)
 
-    // 添加表头行和示例数据（与原实现一致：按 headers 顺序取值，缺失补空）
+    // 添加表头行和示例数据（与原实现一致：按 headers 顺序取值，缺失/空值补空）
     worksheet.addRow(headers)
     for (const rowData of exampleRows) {
       worksheet.addRow(headers.map((h) => rowData[h] ?? ''))

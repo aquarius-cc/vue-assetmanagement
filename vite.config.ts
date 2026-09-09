@@ -89,30 +89,6 @@ export default defineConfig(({ mode }) => {
             }),
           ]
         : []),
-      // Bundle analyzer - only in build mode
-      // process.env.NODE_ENV === 'production' &&
-      //   visualizer({
-      //     filename: './dist/stats.html',
-      //     open: true,
-      //     gzipSize: true,
-      //     brotliSize: true,
-      //   }),
-
-      // // Compression plugin for production builds
-      // process.env.NODE_ENV === 'production' &&
-      //   compression({
-      //     algorithm: 'gzip',
-      //     ext: '.gz',
-      //     threshold: 10240, // 10KB
-      //     deleteOriginFile: false,
-      //   }),
-      // process.env.NODE_ENV === 'production' &&
-      //   compression({
-      //     algorithm: 'brotliCompress',
-      //     ext: '.gz',
-      //     threshold: 10240, // 10KB
-      //     deleteOriginFile: false,
-      //   }),
     ].filter(Boolean),
     resolve: {
       alias: {
