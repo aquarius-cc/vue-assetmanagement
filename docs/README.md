@@ -1,4 +1,17 @@
 # 项目背景与总览
+## 0. 文档索引（D-4 收敛后）
+> **API 契约权威**：`asset_management_backend/docs/`（后端为唯一事实源）。原 `API详细文档0608.md` 前端镜像已删除（逐字节同后端版），需要时查阅后端同名文件。
+> 前端四份规范因与后端同名文档**内容各自演化、本为不同视角**，已加 `FRONTEND_` 前缀去歧义：
+
+| 本文档 | 内容 | 后端对应 |
+|:--|:--|:--|
+| [FRONTEND_API.md](FRONTEND_API.md) | API 消费文档（按 `api/*.ts` 模块） | 后端 `API.md`（端点契约权威） |
+| [FRONTEND_SECURITY.md](FRONTEND_SECURITY.md) | 前端安全（casl/`v-can` UI 管控） | 后端 `SECURITY.md`（服务端安全） |
+| [FRONTEND_TESTING.md](FRONTEND_TESTING.md) | Vitest 测试指南 | 后端 `TESTING.md`（pytest 协议） |
+| [FRONTEND_WORKFLOW.md](FRONTEND_WORKFLOW.md) | GitHub Flow + 前端 CI | 后端 `WORKFLOW.md`（后端流程） |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | 前端架构（Store 工厂/Composables/对齐规范） | — |
+| [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) | 系统架构设计（分层/依赖红线/路由权限，原错拼文件名 `ARCHITECUTRE.md`） | — |
+
 ## 1. 项目简介
 本项目为企业资产管理系统前端标准化工程化项目，基于 **Vue 3 + TypeScript + Vite 8**，采用前后端分层架构，遵循 Harness 协作流程，统一规范约束，适配人工 + AI 协同开发模式。
 涵盖资产入库、领用、外借、报废、回收等全流程，支持数据可视化、细粒度权限控制、批量导入导出等核心能力。
