@@ -329,9 +329,9 @@ export default defineComponent({
 .table-container :deep(.el-table) {
   width: var(--table-width, 100%);
   table-layout: var(--table-layout, auto);
-  min-width: var(--table-min-width, 1200px);
   border-radius: 8px;
-  overflow: hidden;
+  /* 不设 min-width/overflow：EP 根自带 overflow:hidden，且以根 clientWidth 计算列宽，
+     根被 min-width 撑开会致表头截断（详见账本 v2.9.12） */
 }
 
 .table-container :deep(.el-table__header th.el-table__cell) {

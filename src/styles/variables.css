@@ -119,7 +119,8 @@
   --table-row-hover-bg: var(--background-color);
   --table-layout: auto;
   --table-width: 100%;
-  --table-min-width: 1200px;
+  /* --table-min-width 已退役（v2.9.12）：min-width 加在 .el-table 根会撑开 EP 的
+     clientWidth 布局基准致表头截断；宽度下限需求走 EP 列定义 min-width prop */
 }
 
 /* 暗色模式变量 */
