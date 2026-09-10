@@ -25,6 +25,8 @@
           <div v-if="showPageHeader" class="page-header">
             <h2 class="page-title">{{ pageTitle }}</h2>
           </div>
+          <!-- 面包屑导航：与页头同条件显隐，数据由路由守卫 afterEach 写入 store 驱动 -->
+          <AppBreadcrumb />
           <!-- 如果同时使用transition和keep-alive -->
           <router-view v-slot="{ Component }">
             <transition name="fade">
@@ -54,9 +56,11 @@
 <script lang="ts" setup>
 import { useRoute } from 'vue-router'
 import AsideMenu from '@/components/AsideMenu.vue'
+import AppBreadcrumb from '@/components/commoncomponents/AppBreadcrumb.vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Menu } from '@element-plus/icons-vue'
 import { useAppStore } from '@/stores/app'
+import { usePageHeader } from '@/composables/usePageHeader'
 
 const route = useRoute()
 const appStore = useAppStore()
@@ -94,27 +98,8 @@ watch(
 // Element Plus el-menu 折叠后宽度固定为 64px
 const asideWidth = computed(() => (appStore.sidebarCollapsed ? '64px' : '200px'))
 
-// 轻页头标题与显示条件：仅带 meta.showPageHeader 标记的列表页显示
-// Dashboard 自带欢迎栏、NotificationList 自带页头、详情/表单页自带 child-page-header，均不重复显示
-const showPageHeader = computed(() => {
-  if (route.name === 'Dashboard' || route.name === 'NotificationList') return false
-  const leaf = route.matched[route.matched.length - 1]
-  if (leaf?.meta?.showPageHeader) return true
-  // 可选参数默认子路由（如 /main/assetdetails 命中 :asset_code? 空值）：列表态显示页头
-  if (leaf?.name === 'AssetContentDetails' && !route.params.asset_code) {
-    return !!route.meta.showPageHeader
-  }
-  return false
-})
-const pageTitle = computed(() => {
-  if (!showPageHeader.value) return ''
-  // 可选参数默认子路由（如 /main/assetdetails 命中的 AssetContentDetails 列表态）：取父级列表页标题
-  const leaf = route.matched[route.matched.length - 1]
-  if (leaf?.name === 'AssetContentDetails' && !route.params.asset_code) {
-    return (route.matched[1]?.meta?.title as string) || ''
-  }
-  return (route.meta.title as string) || ''
-})
+// 轻页头标题与显示条件：唯一实现见 composables/usePageHeader.ts（本组件与 AppBreadcrumb 共用）
+const { showPageHeader, pageTitle } = usePageHeader()
 
 // 动态计算需要缓存的组件名称（从路由 meta 中获取）
 const keepAliveComponents = computed<(string | RegExp)[]>(() => {
