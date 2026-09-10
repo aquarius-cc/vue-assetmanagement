@@ -27,19 +27,12 @@
 .table-container {
   @include table-container;
 
-  :deep(.el-table__header th.el-table__cell) {
-    text-align: center !important;
-    white-space: normal !important;
-    word-break: break-word !important;
-    padding: 16px 12px !important;
-  }
-
-  :deep(.el-table__body td.el-table__cell) {
-    text-align: center !important;
-    white-space: normal !important;
-    word-break: break-word !important;
-    padding: 12px 8px !important;
-  }
+  /* 本页差异：宽松 padding + 长文本断词换行——外层变量覆盖 --table-* 令牌，
+     CSS 变量跨 scoped 边界继承至内层 th/td（C-10 收敛，替代 :deep + !important） */
+  --table-header-padding: 16px 12px;
+  --table-body-padding: 12px 8px;
+  --table-header-word-break: break-word;
+  --table-body-word-break: break-word;
 }
 
 .bottom-buttons {

@@ -106,6 +106,20 @@
   --z-notification: 900; /* 通知铃铛浮层（低于详情遮罩，消除并列 1000） */
   --z-router-mask: 1000; /* 子路由激活全屏遮罩（router-mask-container） */
   --z-view-overlay: 2000; /* 视图级浮层（移动端菜单触发按钮，自定义层最高） */
+
+  /* 表格令牌（--table-*）：表格样式单一事实源，页面差异通过覆盖本组变量实现，
+     禁止再写 :deep + !important 覆盖 EP 表格（C-10 收敛）。
+     注：white-space 不设令牌——EP .cell 自有 white-space:normal 声明，th/td 层声明无效力；
+     word-break EP 未声明、可继承，th/td 层覆盖真实生效。 */
+  --table-header-padding: 12px 12px;
+  --table-body-padding: 12px 12px;
+  --table-header-word-break: normal;
+  --table-body-word-break: normal;
+  --table-header-bg: var(--card-background-light);
+  --table-row-hover-bg: var(--background-color);
+  --table-layout: auto;
+  --table-width: 100%;
+  --table-min-width: 1200px;
 }
 
 /* 暗色模式变量 */

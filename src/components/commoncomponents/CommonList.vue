@@ -327,29 +327,29 @@ export default defineComponent({
 }
 
 .table-container :deep(.el-table) {
-  width: 100% !important;
-  table-layout: auto !important;
+  width: var(--table-width, 100%);
+  table-layout: var(--table-layout, auto);
+  min-width: var(--table-min-width, 1200px);
   border-radius: 8px;
   overflow: hidden;
 }
 
 .table-container :deep(.el-table__header th.el-table__cell) {
-  text-align: center !important;
-  white-space: nowrap;
-  padding: 12px 12px !important;
-  background-color: var(--card-background-light) !important;
+  padding: var(--table-header-padding, 12px 12px);
+  background-color: var(--table-header-bg, var(--card-background-light));
   color: var(--text-primary);
   font-weight: 600;
+  word-break: var(--table-header-word-break, normal);
 }
 
 .table-container :deep(.el-table__body td.el-table__cell) {
-  text-align: center !important;
-  padding: 12px 12px !important;
+  padding: var(--table-body-padding, 12px 12px);
   color: var(--text-regular);
+  word-break: var(--table-body-word-break, normal);
 }
 
 .table-container :deep(.el-table__body tr:hover > td) {
-  background-color: var(--background-color) !important;
+  background-color: var(--table-row-hover-bg, var(--background-color));
 }
 
 .table-container :deep(.el-table--border) {
