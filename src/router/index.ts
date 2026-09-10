@@ -239,7 +239,7 @@ const router = createRouter({
           name: 'UserDetails',
           component: () => import('@/components/componentsdetails/UserDetails.vue'),
           meta: {
-            title: '用户管理',
+            title: '员工管理',
             requiresAuth: true,
             showPageHeader: true,
             requiredMinRole: 'system_admin',
@@ -525,7 +525,7 @@ const router = createRouter({
           name: 'DepartmentManagement',
           component: () => import('@/components/componentsdetails/DepartmentManagement.vue'),
           meta: {
-            title: '部门-人员管理',
+            title: '通讯录管理',
             requiresAuth: true,
             showPageHeader: true,
           },

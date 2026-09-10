@@ -67,12 +67,17 @@
             <span>仓库管理</span>
           </el-menu-item>
 
+          <!-- 通讯录管理：顶级入口（与员工信息平级），与路由 meta.title 一致 -->
+          <el-menu-item index="/main/departmentmanagement" v-if="canManageSystem">
+            <el-icon><Postcard /></el-icon>
+            <span>通讯录管理</span>
+          </el-menu-item>
+
           <el-sub-menu index="employee" v-if="canManageSystem">
             <template #title>
               <el-icon><UserFilled /></el-icon>
               <span>员工信息</span>
             </template>
-            <el-menu-item index="/main/departmentmanagement">通讯录管理</el-menu-item>
             <el-menu-item index="/main/userdetails">员工管理</el-menu-item>
             <el-menu-item index="/main/departmentdetails">部门管理</el-menu-item>
             <el-menu-item index="/main/roledetails">角色管理</el-menu-item>
@@ -127,6 +132,7 @@ import {
   HomeFilled,
   Location,
   Notebook,
+  Postcard,
   UserFilled,
   ArrowLeft,
   ArrowRight,

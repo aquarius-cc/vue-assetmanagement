@@ -520,33 +520,33 @@ describe('Router Guards', () => {
       ])
     })
 
-    it('should include 用户管理 for /main/userdetails', () => {
+    it('should include 员工管理 for /main/userdetails', () => {
       setupAndCapture()
       afterEachCallback({
         path: '/main/userdetails',
-        meta: { title: '用户管理' },
-        matched: [mk('/'), mk('/main'), mk('/main/userdetails', '用户管理')],
+        meta: { title: '员工管理' },
+        matched: [mk('/'), mk('/main'), mk('/main/userdetails', '员工管理')],
       })
 
       const callArg = mockSetBreadcrumbs.mock.calls[0][0]
       expect(callArg).toEqual([
         { name: '首页', path: '/main' },
-        { name: '用户管理', path: '/main/userdetails' },
+        { name: '员工管理', path: '/main/userdetails' },
       ])
     })
 
-    it('should include 部门-人员管理 for /main/departmentmanagement', () => {
+    it('should include 通讯录管理 for /main/departmentmanagement', () => {
       setupAndCapture()
       afterEachCallback({
         path: '/main/departmentmanagement',
-        meta: { title: '部门-人员管理' },
-        matched: [mk('/'), mk('/main'), mk('/main/departmentmanagement', '部门-人员管理')],
+        meta: { title: '通讯录管理' },
+        matched: [mk('/'), mk('/main'), mk('/main/departmentmanagement', '通讯录管理')],
       })
 
       const callArg = mockSetBreadcrumbs.mock.calls[0][0]
       expect(callArg).toEqual([
         { name: '首页', path: '/main' },
-        { name: '部门-人员管理', path: '/main/departmentmanagement' },
+        { name: '通讯录管理', path: '/main/departmentmanagement' },
       ])
     })
 
