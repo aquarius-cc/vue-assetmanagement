@@ -186,7 +186,11 @@ const handleSelectAsset = (assetCode: string) => {
 
 <style lang="scss" scoped>
 .dashboard-page-content {
-  height: 100%;
+  /* App 壳契约三件套（v2.9.13）：本页是 .common-main 的 flex 子项，
+     必须入列否则内容被 overflow:hidden 裁剪且无处滚动（Row 4 不显示的根因） */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   width: 100%;
   padding: 16px;
   box-sizing: border-box;
