@@ -445,17 +445,43 @@ describe('Router Guards', () => {
   })
 
   describe('breadcrumbs', () => {
+    // route.matched 形态 helper：vue-router 5 在 addRoute 时已把相对子路径归一化为绝对路径
+    const mk = (path: string, title?: string) => ({
+      path,
+      meta: title ? { title } : {},
+    })
+
     it('should include 首页 as first breadcrumb for /main', () => {
       setupAndCapture()
-      afterEachCallback({ path: '/main', meta: {} })
+      afterEachCallback({
+        path: '/main',
+        meta: {},
+        matched: [mk('/'), mk('/main')],
+      })
 
       const callArg = mockSetBreadcrumbs.mock.calls[0][0]
       expect(callArg[0]).toEqual({ name: '首页', path: '/main' })
     })
 
-    it('should generate breadcrumb chain for /main/assetdetails', () => {
+    it('should only include 首页 for /main path', () => {
       setupAndCapture()
-      afterEachCallback({ path: '/main/assetdetails', meta: {} })
+      afterEachCallback({
+        path: '/main',
+        meta: {},
+        matched: [mk('/'), mk('/main')],
+      })
+
+      const callArg = mockSetBreadcrumbs.mock.calls[0][0]
+      expect(callArg).toHaveLength(1)
+    })
+
+    it('should derive breadcrumb chain from matched meta for /main/assetdetails', () => {
+      setupAndCapture()
+      afterEachCallback({
+        path: '/main/assetdetails',
+        meta: { title: '资产详情' },
+        matched: [mk('/'), mk('/main'), mk('/main/assetdetails', '资产管理')],
+      })
 
       const callArg = mockSetBreadcrumbs.mock.calls[0][0]
       expect(callArg).toEqual([
@@ -464,9 +490,43 @@ describe('Router Guards', () => {
       ])
     })
 
-    it('should generate three-level breadcrumb for /main/userdetails', () => {
+    it('should include 角色管理 for /main/roledetails (从 meta 派生，新增路由自动生效)', () => {
       setupAndCapture()
-      afterEachCallback({ path: '/main/userdetails', meta: {} })
+      afterEachCallback({
+        path: '/main/roledetails',
+        meta: { title: '角色管理' },
+        matched: [mk('/'), mk('/main'), mk('/main/roledetails', '角色管理')],
+      })
+
+      const callArg = mockSetBreadcrumbs.mock.calls[0][0]
+      expect(callArg).toEqual([
+        { name: '首页', path: '/main' },
+        { name: '角色管理', path: '/main/roledetails' },
+      ])
+    })
+
+    it('should include 账号管理 for /main/authusermanage (从 meta 派生，新增路由自动生效)', () => {
+      setupAndCapture()
+      afterEachCallback({
+        path: '/main/authusermanage',
+        meta: { title: '账号管理' },
+        matched: [mk('/'), mk('/main'), mk('/main/authusermanage', '账号管理')],
+      })
+
+      const callArg = mockSetBreadcrumbs.mock.calls[0][0]
+      expect(callArg).toEqual([
+        { name: '首页', path: '/main' },
+        { name: '账号管理', path: '/main/authusermanage' },
+      ])
+    })
+
+    it('should include 用户管理 for /main/userdetails', () => {
+      setupAndCapture()
+      afterEachCallback({
+        path: '/main/userdetails',
+        meta: { title: '用户管理' },
+        matched: [mk('/'), mk('/main'), mk('/main/userdetails', '用户管理')],
+      })
 
       const callArg = mockSetBreadcrumbs.mock.calls[0][0]
       expect(callArg).toEqual([
@@ -475,9 +535,28 @@ describe('Router Guards', () => {
       ])
     })
 
-    it('should map known segments to Chinese names', () => {
+    it('should include 部门-人员管理 for /main/departmentmanagement', () => {
       setupAndCapture()
-      afterEachCallback({ path: '/main/contractdetails', meta: {} })
+      afterEachCallback({
+        path: '/main/departmentmanagement',
+        meta: { title: '部门-人员管理' },
+        matched: [mk('/'), mk('/main'), mk('/main/departmentmanagement', '部门-人员管理')],
+      })
+
+      const callArg = mockSetBreadcrumbs.mock.calls[0][0]
+      expect(callArg).toEqual([
+        { name: '首页', path: '/main' },
+        { name: '部门-人员管理', path: '/main/departmentmanagement' },
+      ])
+    })
+
+    it('should include 合同管理 for /main/contractdetails', () => {
+      setupAndCapture()
+      afterEachCallback({
+        path: '/main/contractdetails',
+        meta: { title: '合同管理' },
+        matched: [mk('/'), mk('/main'), mk('/main/contractdetails', '合同管理')],
+      })
 
       const callArg = mockSetBreadcrumbs.mock.calls[0][0]
       expect(callArg).toEqual([
@@ -486,12 +565,49 @@ describe('Router Guards', () => {
       ])
     })
 
-    it('should only include 首页 for /main path', () => {
+    it('should skip dynamic param level for /main/assetdetails/AST-123', () => {
       setupAndCapture()
-      afterEachCallback({ path: '/main', meta: {} })
+      afterEachCallback({
+        path: '/main/assetdetails/AST-123',
+        meta: {},
+        matched: [
+          mk('/'),
+          mk('/main'),
+          mk('/main/assetdetails', '资产管理'),
+          mk('/main/assetdetails/:asset_code?', '资产详情'),
+        ],
+      })
+
+      const callArg = mockSetBreadcrumbs.mock.calls[0][0]
+      expect(callArg).toEqual([
+        { name: '首页', path: '/main' },
+        { name: '资产管理', path: '/main/assetdetails' },
+      ])
+      // 参数值与参数级 title 均不得出现在面包屑中
+      const names = callArg.map((c: { name: string }) => c.name)
+      expect(names).not.toContain('AST-123')
+      expect(names).not.toContain('资产详情')
+    })
+
+    it('should skip levels without meta.title', () => {
+      setupAndCapture()
+      afterEachCallback({
+        path: '/main/nottitled',
+        meta: {},
+        matched: [mk('/'), mk('/main'), mk('/main/nottitled')],
+      })
 
       const callArg = mockSetBreadcrumbs.mock.calls[0][0]
       expect(callArg).toHaveLength(1)
+    })
+
+    it('should degrade to 首页 only when matched is absent (防御: 裸路由对象)', () => {
+      setupAndCapture()
+      // 旧式裸对象调用（无 matched 字段）——?? [] 防御分支，不得抛错
+      afterEachCallback({ path: '/main/assetdetails', meta: {} })
+
+      const callArg = mockSetBreadcrumbs.mock.calls[0][0]
+      expect(callArg).toEqual([{ name: '首页', path: '/main' }])
     })
   })
 

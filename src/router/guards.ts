@@ -195,56 +195,19 @@ export const setupAuthGuard = (router: Router) => {
  * @returns 面包屑数组，每个元素包含名称和路径
  */
 const generateBreadcrumbs = (route: RouteLocationNormalized) => {
-  // 【修改】any → RouteLocationNormalized
-  const breadcrumbs: Array<{ name: string; path: string }> = [] // 【新增】为 breadcrumbs 添加类型
+  const breadcrumbs: Array<{ name: string; path: string }> = [{ name: '首页', path: '/main' }]
 
-  // 首页面包屑
-  breadcrumbs.push({ name: '首页', path: '/main' })
-
-  // 根据路由生成面包屑
-  if (route.path !== '/main') {
-    const pathSegments = route.path.split('/').filter(Boolean)
-
-    const routeMap: Record<string, string> = {
-      main: '首页',
-      assetdetails: '资产管理',
-      assettypedetails: '资产类型',
-      storagedetails: '仓库管理',
-      outassetdetails: '资产发放',
-      recycleassetdetails: '资产回收',
-      damagedassetdetails: '待报废资产',
-      wasteassetdetails: '已报废资产',
-      departmentdetails: '部门管理',
-      userdetails: '用户管理',
-      contractdetails: '合同管理',
-      brokenassetdetails: '损坏资产',
-      lostassetdetails: '遗失资产',
-      foundassetdetails: '找回资产',
-      repairassetdetails: '维修资产',
-      unregisteredassetdetails: '未登记资产',
-      operationlogdetails: '操作日志',
-      auditlogdetails: '审计日志',
-      harddisksndetails: '硬盘序列号',
-      basicassetdetails: '基本信息',
-      assetform: '资产录入',
-      outassetbasicdetails: '出库详情',
-      recycleassetbasicdetails: '回收详情',
-      damagedassetbasicdetails: '报废详情',
-      wasteassetbasicdetails: '已报废详情',
-      unregisteredassetbasicdetails: '未登记详情',
-      contractofdetails: '合同详情',
-      harddisksnbasicdetails: '硬盘信息',
-    }
-
-    for (let i = 1; i < pathSegments.length; i++) {
-      const segment = pathSegments[i]
-      if (routeMap[segment]) {
-        breadcrumbs.push({
-          name: routeMap[segment],
-          path: '/' + pathSegments.slice(0, i + 1).join('/'),
-        })
-      }
-    }
+  // 直接从 route.matched 派生（单一事实源，DR-1）：
+  // vue-router 在 addRoute 时已把相对子路径归一化为绝对路径（dist addRoute L1167-1172），
+  // record.path 可直接作为面包屑链接。
+  // - 跳过 /main：已由固定"首页"项覆盖（Dashboard 空路径子路由归一化后也是 /main）
+  // - 跳过含 : 的动态参数级（如 /main/assetdetails/:asset_code?）：保持旧行为，参数级不入面包屑
+  // - meta.title 缺失则跳过该级（当前全表仅 /main 无 title，已被上述跳过覆盖）
+  for (const record of route.matched ?? []) {
+    if (record.path === '/main' || record.path.includes(':')) continue
+    const title = record.meta.title as string | undefined
+    if (!title) continue
+    breadcrumbs.push({ name: title, path: record.path })
   }
 
   return breadcrumbs
