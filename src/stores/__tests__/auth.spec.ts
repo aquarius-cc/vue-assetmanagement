@@ -1,3 +1,4 @@
+// TECHNICAL_DEBT: >500 lines（存量文件，2026-07-07 基线前已超限；本次修改新增 <50 行，暂不拆分）
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAuthStore } from '../auth'

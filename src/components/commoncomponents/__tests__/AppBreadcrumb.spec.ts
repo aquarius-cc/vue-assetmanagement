@@ -32,8 +32,7 @@ const routes: RouteRecordRaw[] = [
   },
 ]
 
-const makeRouter = () =>
-  createRouter({ history: createMemoryHistory(), routes })
+const makeRouter = () => createRouter({ history: createMemoryHistory(), routes })
 
 describe('AppBreadcrumb', () => {
   let router = makeRouter()
