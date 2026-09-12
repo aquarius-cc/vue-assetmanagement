@@ -14,6 +14,10 @@
     <el-row class="tac">
       <el-col :span="24">
         <!--
+          【R4-04 兜底入口】资产快速扫码/输入直达（扫码枪/手动粘贴），置于菜单顶部
+        -->
+        <AssetQuickScan />
+        <!--
           侧边栏折叠功能：
           - collapse 属性绑定 appStore.sidebarCollapsed 状态
           - 折叠时仅显示图标，展开时显示图标+文字
@@ -146,6 +150,7 @@ import { usePermission } from '@/composables/usePermission'
 import { PERMISSION_CODES } from '@/constants/permissionCodes'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
 import NotificationBell from '@/components/commoncomponents/NotificationBell.vue'
+import AssetQuickScan from '@/components/commoncomponents/AssetQuickScan.vue'
 
 const router = useRouter()
 const route = useRoute()

@@ -246,6 +246,7 @@ export const assetAPI = {
    * @param params 搜索参数
    */
   combineSearch: (params: {
+    asset_code?: string
     asset_name?: string
     asset_specification?: string
     asset_brand?: string

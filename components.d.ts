@@ -12,6 +12,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AppBreadcrumb: typeof import('./src/components/commoncomponents/AppBreadcrumb.vue')['default']
     AsideMenu: typeof import('./src/components/AsideMenu.vue')['default']
     AssetBasicInfo: typeof import('./src/components/componentsdetails/detils/detilschildcomponents/AssetBasicInfo.vue')['default']
     AssetBatchImport: typeof import('./src/components/componentsdetails/detils/AssetBatchImport.vue')['default']
@@ -70,8 +71,9 @@ declare module 'vue' {
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAside: typeof import('element-plus/es')['ElAside']
     ElAutocomplete: typeof import('element-plus/es')['ElAutocomplete']
-    ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElBadge: typeof import('element-plus/es')['ElBadge']
+    ElBreadcrumb: typeof import('element-plus/es')['ElBreadcrumb']
+    ElBreadcrumbItem: typeof import('element-plus/es')['ElBreadcrumbItem']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCard: typeof import('element-plus/es')['ElCard']
     ElCheckbox: typeof import('element-plus/es')['ElCheckbox']
@@ -164,6 +166,7 @@ declare module 'vue' {
 
 // For TSX support
 declare global {
+  const AppBreadcrumb: typeof import('./src/components/commoncomponents/AppBreadcrumb.vue')['default']
   const AsideMenu: typeof import('./src/components/AsideMenu.vue')['default']
   const AssetBasicInfo: typeof import('./src/components/componentsdetails/detils/detilschildcomponents/AssetBasicInfo.vue')['default']
   const AssetBatchImport: typeof import('./src/components/componentsdetails/detils/AssetBatchImport.vue')['default']
@@ -222,8 +225,9 @@ declare global {
   const ElAlert: typeof import('element-plus/es')['ElAlert']
   const ElAside: typeof import('element-plus/es')['ElAside']
   const ElAutocomplete: typeof import('element-plus/es')['ElAutocomplete']
-  const ElAvatar: typeof import('element-plus/es')['ElAvatar']
   const ElBadge: typeof import('element-plus/es')['ElBadge']
+  const ElBreadcrumb: typeof import('element-plus/es')['ElBreadcrumb']
+  const ElBreadcrumbItem: typeof import('element-plus/es')['ElBreadcrumbItem']
   const ElButton: typeof import('element-plus/es')['ElButton']
   const ElCard: typeof import('element-plus/es')['ElCard']
   const ElCheckbox: typeof import('element-plus/es')['ElCheckbox']

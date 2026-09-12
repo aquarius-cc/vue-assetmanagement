@@ -6,6 +6,9 @@
 @dependsOn
   - api/request: HTTP请求封装
   - components/commoncomponents/StatusTag: 资产状态标签
+@description
+  【R4-04 登录态分流】已登录扫码自动直达 BasicAssetDetails 全量详情（无需二次点击）；
+  未登录展示公开 6 字段白名单 + 「登录查看完整信息」引导。
 -->
 <template>
   <div class="asset-operation-view">
@@ -41,26 +44,11 @@
           <el-descriptions-item label="当前状态">
             <StatusTag :status="asset.asset_current_status" />
           </el-descriptions-item>
-          <el-descriptions-item label="存放仓库">{{ storageName }}</el-descriptions-item>
-          <el-descriptions-item label="资产分类">{{ typeName }}</el-descriptions-item>
-          <el-descriptions-item label="使用人">{{ managerName }}</el-descriptions-item>
-          <el-descriptions-item label="使用地点">{{
-            asset.asset_using_location || '-'
-          }}</el-descriptions-item>
-          <el-descriptions-item label="入库日期">{{
-            asset.asset_entry_date || '-'
-          }}</el-descriptions-item>
           <el-descriptions-item label="成色">{{ physicalGradeLabel }}</el-descriptions-item>
         </el-descriptions>
 
         <div class="action-buttons">
-          <el-button
-            type="primary"
-            @click="router.push({ path: '/main/assetdetails/' + asset.asset_code })"
-          >
-            查看详情
-          </el-button>
-          <el-button @click="router.push('/main')">返回首页</el-button>
+          <el-button type="primary" @click="goLogin">登录查看完整信息</el-button>
         </div>
       </template>
 
@@ -98,45 +86,52 @@ import { Iphone } from '@element-plus/icons-vue'
 import { get } from '@/api/request'
 import { isAxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
-import type { AssetDetail } from '@/types/asset'
 import { getPhysicalGradeDisplay } from '@/utils/Format'
+import { useAuthStore } from '@/stores/auth'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
+
+// 【R4-04 公开白名单】与后端 public_scan_view 的 data dict 严格对齐（后端为唯一契约源）
+interface PublicScanAsset {
+  asset_code: string
+  asset_name: string
+  asset_specification: string | null
+  asset_brand: string | null
+  asset_current_status: string
+  physical_grade: string | null
+}
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const loading = ref(true)
-const asset = ref<AssetDetail | null>(null)
+const asset = ref<PublicScanAsset | null>(null)
 const recordcode = computed(() => route.params.recordcode as string)
 // 新增 loadError 状态
 const loadError = ref(false)
 
-const storageName = computed(() => {
-  return (asset.value?.asset_storage?.storage_name as string) || '-'
-})
-const typeName = computed(() => {
-  return (asset.value?.asset_type?.type_name as string) || '-'
-})
-const managerName = computed(() => {
-  return (asset.value?.asset_manager?.employee_name as string) || '-'
-})
 const physicalGradeLabel = computed(() => {
-  return getPhysicalGradeDisplay(asset.value?.physical_grade)
+  return getPhysicalGradeDisplay(asset.value?.physical_grade ?? undefined)
 })
 
-// 新增 retry 函数
+// 未登录引导：登录后回到当前扫码页
+const goLogin = () => {
+  router.push({ name: 'Login', query: { redirect: route.fullPath } })
+}
+
 const fetchAsset = async () => {
   if (!recordcode.value) return
   loading.value = true
   loadError.value = false // [修复] 重置错误状态
   try {
-    const res = await get<AssetDetail>(`/public/scan/${recordcode.value}/`)
+    // 后端路由：/api/v1/assets/public/scan/{recordcode}/（baseURL=/api/v1，故此处带 /assets 前缀）
+    const res = await get<PublicScanAsset>(`/assets/public/scan/${recordcode.value}/`)
     // [修复] 手动校验业务 code（此接口未使用 unwrapResponse）
     if (res.code !== 0) {
       ElMessage.error(res.message || '查询失败')
       loadError.value = true
       return
     }
-    asset.value = res.data as AssetDetail
+    asset.value = res.data as PublicScanAsset
   } catch (err) {
     console.error('获取资产信息失败:', err)
     // [修复] 分类处理：404 = 资产不存在（保持 null），其他 = 加载失败
@@ -155,8 +150,14 @@ const fetchAsset = async () => {
   }
 }
 
-// onMounted 改为调用 fetchAsset
-onMounted(fetchAsset)
+onMounted(async () => {
+  // 【R4-04 登录态分流】已登录扫码直达全量详情（守卫已保证此处登录态已初始化）
+  if (authStore.isLoggedIn && recordcode.value) {
+    await router.push({ name: 'BasicAssetDetails', query: { code: recordcode.value } })
+    return
+  }
+  await fetchAsset()
+})
 </script>
 
 <style lang="scss" scoped>

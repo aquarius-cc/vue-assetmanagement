@@ -93,12 +93,13 @@ import { reactive, ref, onMounted } from 'vue'
 import { User, Lock, Connection } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import type { LoginForm } from '@/types/authuser'
 import { networkAPI } from '@/api/network'
 
+const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
@@ -232,8 +233,14 @@ const handleLogin = async () => {
         // 设置页面标题
         appStore.setPageTitle('首页')
 
-        // 登录成功后跳转到主页面
-        await router.push('/main')
+        // 登录成功后跳转：优先回跳来源页（如扫码页 redirect 参数，R4-04），
+        // 仅接受以单个 / 开头的站内路径（防 //evil.com 协议相对跳转），否则回 /main
+        const redirect = route.query.redirect
+        const target =
+          typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')
+            ? redirect
+            : '/main'
+        await router.push(target)
       } else {
         // 登录失败：在表单内显示详细错误信息（持久显示，直到用户手动关闭）
         loginError.value = result.message || '登录失败'

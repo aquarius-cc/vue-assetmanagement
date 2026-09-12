@@ -66,7 +66,7 @@ export type BrokenAssetListResponse = PaginatedResponse<BrokenAssetExtended>
 
 export interface BrokenAssetBatchCreateForm {
   items: Array<{
-    asset_recordcode: string
+    asset_code: string
     broken_date?: string
     broken_reason: string
     broken_description?: string
