@@ -6,7 +6,7 @@
 @dependsOn
   - components/AssetOperationLayout: 资产操作通用布局
   - composables/useAssetOperationForm: 资产操作表单逻辑
-  - api/lostAsset: 遗失资产数据接口
+  - stores/lostAssetStore: 遗失资产状态流转
 -->
 <template>
   <AssetOperationLayout
@@ -60,7 +60,7 @@ import { Warning } from '@element-plus/icons-vue'
 import type { FormRules } from 'element-plus'
 import AssetOperationLayout from '@/components/AssetOperationLayout.vue'
 import { useAssetOperationForm } from '@/composables/useAssetOperationForm'
-import { lostAssetAPI } from '@/api/lostAsset'
+import { useLostAssetStore } from '@/stores'
 
 const router = useRouter()
 
@@ -78,7 +78,8 @@ const {
   lost_description?: string | null
 }>({
   submitFn: async (data) => {
-    await lostAssetAPI.markAssetAsLost(assetCode.value, {
+    const lostAssetStore = useLostAssetStore()
+    await lostAssetStore.markAssetAsLost(assetCode.value, {
       last_known_location: data.last_known_location || null,
       lost_date: data.lost_date || undefined,
       lost_reason: data.lost_reason,

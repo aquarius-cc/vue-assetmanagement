@@ -75,6 +75,21 @@ describe('LostAssetStore', () => {
       expect(lostAssetStore.list).toHaveLength(1)
       expect(lostAssetStore.list[0].recordcode).toBe('lost-001')
     })
+
+    it('无参数时应使用默认分页', async () => {
+      const { lostAssetAPI } = await import('@/api/lostAsset')
+      vi.mocked(lostAssetAPI.getLostAssets).mockResolvedValue({
+        count: 0,
+        results: [],
+      })
+
+      await lostAssetStore.getList()
+
+      expect(lostAssetAPI.getLostAssets).toHaveBeenCalledWith({
+        page: 1,
+        page_size: 20,
+      })
+    })
   })
 
   describe('创建记录', () => {
@@ -168,6 +183,65 @@ describe('LostAssetStore', () => {
       await lostAssetStore.removeBatch(['lost-001'])
 
       expect(lostAssetAPI.batchDeleteLostAssets).toHaveBeenCalledWith(['lost-001'])
+    })
+  })
+
+  describe('状态流转', () => {
+    it('markAssetAsLost应该调用API并透传数据', async () => {
+      const mockResult = { recordcode: 'lost-001', asset_status: 'lost' }
+      const { lostAssetAPI } = await import('@/api/lostAsset')
+      vi.mocked(lostAssetAPI.markAssetAsLost).mockResolvedValue(mockResult as never)
+
+      const params = {
+        lost_reason: '办公室搬迁遗失',
+        last_known_location: '旧办公区',
+      }
+      const result = await lostAssetStore.markAssetAsLost('asset-001', params)
+
+      expect(result).toEqual(mockResult)
+      expect(lostAssetAPI.markAssetAsLost).toHaveBeenCalledWith('asset-001', params)
+    })
+
+    it('markAssetAsLost API失败时应抛出异常', async () => {
+      const { lostAssetAPI } = await import('@/api/lostAsset')
+      vi.mocked(lostAssetAPI.markAssetAsLost).mockRejectedValue(new Error('标记遗失失败'))
+
+      await expect(
+        lostAssetStore.markAssetAsLost('asset-001', { lost_reason: '遗失' }),
+      ).rejects.toThrow('标记遗失失败')
+    })
+
+    it('foundAsset应该调用API并透传找回信息', async () => {
+      const mockResult = { recordcode: 'lost-001', asset_status: 'found' }
+      const { lostAssetAPI } = await import('@/api/lostAsset')
+      vi.mocked(lostAssetAPI.foundAsset).mockResolvedValue(mockResult as never)
+
+      const params = { found_location: '仓库A', found_description: '已找回' }
+      const result = await lostAssetStore.foundAsset('asset-001', params)
+
+      expect(result).toEqual(mockResult)
+      expect(lostAssetAPI.foundAsset).toHaveBeenCalledWith('asset-001', params)
+    })
+
+    it('foundAsset API失败时应抛出异常', async () => {
+      const { lostAssetAPI } = await import('@/api/lostAsset')
+      vi.mocked(lostAssetAPI.foundAsset).mockRejectedValue(new Error('找回失败'))
+
+      await expect(lostAssetStore.foundAsset('asset-001', {})).rejects.toThrow('找回失败')
+    })
+
+    it('同一Pinia实例下二次调用应复用已有扩展action', async () => {
+      lostAssetStore.markAssetAsLost('asset-001', { lost_reason: '遗失' }).catch(() => undefined)
+      const { lostAssetAPI } = await import('@/api/lostAsset')
+      vi.mocked(lostAssetAPI.markAssetAsLost).mockResolvedValue({
+        recordcode: 'lost-001',
+      } as never)
+
+      const second = useLostAssetStore()
+      await second.markAssetAsLost('asset-002', { lost_reason: '再遗失' })
+
+      expect(second).toBeDefined()
+      expect(second.markAssetAsLost).toBe(lostAssetStore.markAssetAsLost)
     })
   })
 })

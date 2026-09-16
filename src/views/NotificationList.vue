@@ -4,7 +4,7 @@
 @usedBy
   - router/index.ts: 路由懒加载
 @dependsOn
-  - api/notification: 通知数据接口
+  - stores/notificationStore: 通知数据状态
   - utils/navigation: 安全跳转工具
   - utils/Format: 日期时间格式化
 -->
@@ -13,18 +13,14 @@
  * 通知列表页面
  * 支持按类型、优先级、已读状态筛选，关键词搜索，分页
  */
-import { ref, reactive, onMounted } from 'vue'
+import { reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { isAxiosError } from 'axios'
-import { notificationAPI } from '@/api/notification'
+import { useNotificationStore } from '@/stores'
 import { safeNavigate } from '@/utils/navigation'
 import { formatDateTimeFull } from '@/utils/Format'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
-import type {
-  NotificationItem,
-  NotificationFilterParams,
-  NotificationPaginatedData,
-} from '@/types/notification'
+import type { NotificationItem, NotificationFilterParams } from '@/types/notification'
 
 // 筛选参数
 const filters = reactive({
@@ -34,16 +30,10 @@ const filters = reactive({
   keyword: '',
 })
 
-// 分页
-const pagination = reactive({
-  page: 1,
-  page_size: 20,
-  total: 0,
-})
-
-// 数据
-const notifications = ref<NotificationItem[]>([])
-const loading = ref(false)
+const notificationStore = useNotificationStore()
+const pagination = notificationStore.pagination
+const notifications = notificationStore.notifications
+const loading = notificationStore.loading
 
 // 选项
 const typeOptions = [
@@ -76,30 +66,16 @@ const typeColorMap: Record<string, string> = {
 }
 
 async function fetchNotifications() {
-  loading.value = true
-  try {
-    const params: NotificationFilterParams = {
-      page: pagination.page,
-      page_size: pagination.page_size,
-    }
-    if (filters.is_read) params.is_read = filters.is_read === 'true'
-    if (filters.notification_type) params.notification_type = filters.notification_type
-    if (filters.priority) params.priority = filters.priority
-    if (filters.keyword) params.keyword = filters.keyword
-
-    const data = (await notificationAPI.getNotifications(params)) as unknown as
-      | NotificationItem[]
-      | NotificationPaginatedData
-    if (Array.isArray(data)) {
-      notifications.value = data
-      pagination.total = data.length
-    } else {
-      notifications.value = data.results || []
-      pagination.total = data.count || 0
-    }
-  } finally {
-    loading.value = false
+  const params: NotificationFilterParams = {
+    page: pagination.page,
+    page_size: pagination.page_size,
   }
+  if (filters.is_read) params.is_read = filters.is_read === 'true'
+  if (filters.notification_type) params.notification_type = filters.notification_type
+  if (filters.priority) params.priority = filters.priority
+  if (filters.keyword) params.keyword = filters.keyword
+
+  await notificationStore.fetchNotifications(params)
 }
 
 function handleSearch() {
@@ -130,8 +106,7 @@ function handleSizeChange(size: number) {
 async function handleMarkRead(row: NotificationItem) {
   if (!row.is_read) {
     try {
-      await notificationAPI.markRead(row.id)
-      row.is_read = true
+      await notificationStore.markRead(row.id)
     } catch (err) {
       if (!isAxiosError(err)) {
         ElMessage.warning((err as Error).message || '标记已读失败')
@@ -145,7 +120,7 @@ async function handleMarkRead(row: NotificationItem) {
 
 async function handleMarkAllRead() {
   try {
-    await notificationAPI.markAllRead()
+    await notificationStore.markAllRead()
     fetchNotifications()
   } catch (err) {
     if (!isAxiosError(err)) {

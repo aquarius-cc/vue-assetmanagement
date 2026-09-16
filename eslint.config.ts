@@ -82,7 +82,9 @@ export default defineConfigWithVueTs(
     },
   },
 
-  // 存量 36 个直连文件待迁移清单(迁移一个移除一个, 直到本块清空)
+  // 存量直连文件待迁移清单(迁移一个移除一个, 直到本块清空)
+  // FE-01 批1 已迁移 11 个视图（LostAsset/MarkBroken/LogIn/AssetLogs/FoundAsset/NotificationList/
+  // RecycleAsset/RepairAsset/RepairDone/RepairFailed/ScrapAsset）→ 已移除，仍可运行时直连的 in_use 状态资产操作视图见后续批次
   {
     name: 'app/legacy-direct-api-files',
     files: [
@@ -108,20 +110,9 @@ export default defineConfigWithVueTs(
       'src/components/componentsdetails/detils/OutAssetBatchImport.vue',
       'src/components/componentsdetails/detils/HardDiskSNForm.vue',
       'src/components/componentsdetails/detils/StorageBatchImport.vue',
-      'src/views/LostAssetView.vue',
       'src/views/ContactsView.vue',
-      'src/views/MarkBrokenView.vue',
-      'src/views/LogIn.vue',
-      'src/views/AssetLogsView.vue',
-      'src/views/FoundAssetView.vue',
-      'src/views/NotificationList.vue',
-      'src/views/RecycleAssetView.vue',
-      'src/views/RepairAssetView.vue',
-      'src/views/RepairDoneView.vue',
-      'src/views/RepairFailedView.vue',
       'src/views/system/RoleManage.vue',
       'src/views/system/AuthUserManage.vue',
-      'src/views/ScrapAssetView.vue',
     ],
     rules: {
       'no-restricted-imports': 'off',

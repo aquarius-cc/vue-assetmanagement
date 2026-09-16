@@ -53,6 +53,9 @@ export const useRecycleAssetStore = createEntityStore<RecycleAssetExtended, Pagi
       batchDelete: (codes) => recycleAssetAPI.batchDeleteRecycleAssets(codes),
     },
     message: ElMessage,
+    // 【修复双弹】调用方（RecycleAssetForm/assetLifecycleService/RecycleAssetView）
+    // 均自带成功消息，此处禁用工厂自动弹窗，避免「创建成功」与调用方消息重复
+    disableAutoMessage: true,
     enablePagination: true,
     defaultPageSize: 20,
     enableCache: false,

@@ -6,7 +6,7 @@
 @dependsOn
   - stores/auth: 登录认证与Token管理
   - stores/app: 应用全局状态
-  - api/network: 网络请求封装
+  - stores/networkStore: 网络连通性检测
 -->
 <template>
   <div class="login-container">
@@ -96,13 +96,14 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
+import { useNetworkStore } from '@/stores'
 import type { LoginForm } from '@/types/authuser'
-import { networkAPI } from '@/api/network'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
+const networkStore = useNetworkStore()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 /** 登录错误提示信息（持久显示，直到用户手动关闭） */
@@ -280,8 +281,8 @@ const testNetwork = async () => {
   ElMessage.info('开始网络诊断...')
 
   const results = {
-    connection: await networkAPI.testConnection(),
-    login: await networkAPI.testLoginAPI(),
+    connection: await networkStore.testConnection(),
+    login: await networkStore.testLoginAPI(),
   }
 
   // 网络诊断结果已在下方消息中展示

@@ -6,7 +6,7 @@
 @dependsOn
   - components/AssetOperationLayout: 资产操作通用布局
   - composables/useAssetOperationForm: 资产操作表单逻辑
-  - api/lostAsset: 遗失资产数据接口
+  - stores/lostAssetStore: 遗失资产状态流转
 -->
 <template>
   <AssetOperationLayout
@@ -47,7 +47,7 @@ import { useRouter } from 'vue-router'
 import { CircleCheck } from '@element-plus/icons-vue'
 import AssetOperationLayout from '@/components/AssetOperationLayout.vue'
 import { useAssetOperationForm } from '@/composables/useAssetOperationForm'
-import { lostAssetAPI } from '@/api/lostAsset'
+import { useLostAssetStore } from '@/stores'
 
 const router = useRouter()
 
@@ -62,7 +62,8 @@ const {
   found_description?: string | null
 }>({
   submitFn: async (data) => {
-    await lostAssetAPI.foundAsset(assetCode.value, {
+    const lostAssetStore = useLostAssetStore()
+    await lostAssetStore.foundAsset(assetCode.value, {
       found_location: data.found_location || undefined,
       found_description: data.found_description || undefined,
     })

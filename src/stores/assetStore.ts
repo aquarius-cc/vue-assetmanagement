@@ -27,6 +27,7 @@
 import { createEntityStore } from '@/stores/createEntityStore'
 import { assetAPI } from '@/api/asset'
 import type {
+  Asset,
   AssetDetail,
   AssetCreateForm,
   AssetUpdateForm,
@@ -78,6 +79,32 @@ interface AssetStore extends EntityStore<AssetDetail, PaginationQuery> {
    * @returns 资产列表响应（包 count、results）
    */
   combineSearch: (params: Record<string, string | number>) => Promise<AssetListResponse>
+
+  /**
+   * 获取资产操作时间线（状态变更历史）
+   * 使用后端 timeline action
+   * @param asset_code 资产编码
+   * @returns 时间线记录列表
+   */
+  getAssetTimeline: (
+    asset_code: string,
+  ) => Promise<Awaited<ReturnType<typeof assetAPI.getAssetTimeline>>>
+
+  /**
+   * 标记资产为损坏（状态机 broken 流转）
+   * 使用后端 mark_broken action，asset 由 recordcode 定位
+   * @param recordcode 资产记录编码（URL 查找参数）
+   * @param data 损坏信息
+   * @returns 更新后的资产
+   */
+  markAssetAsBroken: (
+    recordcode: string,
+    data: {
+      broken_reason?: string
+      broken_description?: string
+      broken_date?: string
+    },
+  ) => Promise<Asset>
 }
 
 const baseAssetStoreDef = createEntityStore<AssetDetail, PaginationQuery>('asset', {
@@ -186,6 +213,29 @@ export const useAssetStore = (): AssetStore => {
         cleanParams as Parameters<typeof assetAPI.combineSearch>[0],
       )
       return response
+    }
+
+    /**
+     * 获取资产操作时间线
+     * 代理 assetAPI.getAssetTimeline
+     */
+    extendedStore.getAssetTimeline = async (asset_code: string) => {
+      return assetAPI.getAssetTimeline(asset_code)
+    }
+
+    /**
+     * 标记资产为损坏
+     * 代理 assetAPI.markAssetAsBroken（recordcode 为 URL 定位键）
+     */
+    extendedStore.markAssetAsBroken = async (
+      recordcode: string,
+      data: {
+        broken_reason?: string
+        broken_description?: string
+        broken_date?: string
+      },
+    ) => {
+      return assetAPI.markAssetAsBroken(recordcode, data)
     }
 
     return extendedStore

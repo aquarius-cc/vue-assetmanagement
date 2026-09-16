@@ -4,7 +4,7 @@
 @usedBy
   - router/index.ts: 路由懒加载
 @dependsOn
-  - api/asset: 资产数据接口
+  - stores/assetStore: 资产数据状态
   - components/commoncomponents/StatusTag: 资产状态标签
 -->
 <template>
@@ -68,7 +68,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Document } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { assetAPI } from '@/api/asset'
+import { useAssetStore } from '@/stores'
 import type { AssetDetail } from '@/types/asset'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 
@@ -81,6 +81,7 @@ interface TimelineItem {
 
 const route = useRoute()
 const router = useRouter()
+const assetStore = useAssetStore()
 const loading = ref(true)
 const asset = ref<AssetDetail | null>(null)
 const assetCode = computed(() => route.params.code as string)
@@ -90,8 +91,8 @@ onMounted(async () => {
   if (!assetCode.value) return
   try {
     const [assetResult, timelineResult] = await Promise.all([
-      assetAPI.getAssetByCode(assetCode.value),
-      assetAPI.getAssetTimeline(assetCode.value),
+      assetStore.getById(assetCode.value),
+      assetStore.getAssetTimeline(assetCode.value),
     ])
     asset.value = assetResult
     timeline.value = timelineResult || []

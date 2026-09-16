@@ -11,9 +11,7 @@
 @dependsOn
   - components/AssetOperationLayout: 资产操作通用布局
   - composables/useAssetOperationForm: 资产操作表单逻辑
-  - api/repairAsset: 维修资产数据接口
-  - api/asset: 资产数据接口
-  - api/repairAsset: 维修资产数据接口
+  - stores/repairAssetStore: 维修资产数据状态
 -->
 <template>
   <AssetOperationLayout
@@ -81,7 +79,7 @@ import { SetUp } from '@element-plus/icons-vue'
 import type { FormRules } from 'element-plus'
 import AssetOperationLayout from '@/components/AssetOperationLayout.vue'
 import { useAssetOperationForm } from '@/composables/useAssetOperationForm'
-import { repairAssetAPI } from '@/api/repairAsset'
+import { useRepairAssetStore } from '@/stores'
 import { AssetCurrentStatus } from '@/types/asset'
 
 const router = useRouter()
@@ -100,7 +98,8 @@ const {
   repair_description?: string | null
 }>({
   submitFn: async (data) => {
-    await repairAssetAPI.repairAsset(assetCode.value, {
+    const repairAssetStore = useRepairAssetStore()
+    await repairAssetStore.repairAsset(assetCode.value, {
       repair_asset_number: data.repair_asset_number,
       repair_date: data.repair_date,
       repair_reason: data.repair_reason,

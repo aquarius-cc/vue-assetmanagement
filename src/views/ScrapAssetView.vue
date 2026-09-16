@@ -7,7 +7,7 @@
 @dependsOn
   - components/AssetOperationLayout: 资产操作通用布局
   - composables/useAssetOperationForm: 资产操作表单逻辑
-  - api/asset: 资产数据接口
+  - stores/damagedAssetStore: 待报废资产数据状态
 -->
 <template>
   <AssetOperationLayout
@@ -50,7 +50,7 @@ import { Delete } from '@element-plus/icons-vue'
 import type { FormRules } from 'element-plus'
 import AssetOperationLayout from '@/components/AssetOperationLayout.vue'
 import { useAssetOperationForm } from '@/composables/useAssetOperationForm'
-import { damagedAssetAPI } from '@/api/damagedAsset'
+import { useDamagedAssetStore } from '@/stores'
 import { AssetCurrentStatus } from '@/types/asset' // [修复] 新增状态枚举导入
 
 const router = useRouter()
@@ -67,7 +67,9 @@ const {
 } = useAssetOperationForm<{ reason: string }>({
   // [修复] 切换为专用报废 API（createDamagedAsset），不再调用已废弃的 applyDamaged 绕过状态机校验
   submitFn: async (data) => {
-    await damagedAssetAPI.createDamagedAsset({
+    const damagedAssetStore = useDamagedAssetStore()
+    // 该 store 已配置 disableAutoMessage，成功消息由 composable 统一弹出，避免双弹
+    await damagedAssetStore.create({
       asset_recordcode: assetCode.value,
       damaged_asset_description: data.reason,
       damaged_asset_number: 1,

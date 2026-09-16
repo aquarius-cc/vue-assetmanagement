@@ -9,9 +9,7 @@
 @dependsOn
   - components/AssetOperationLayout.vue: 资产操作通用布局
   - composables/useAssetOperationForm.vue: 资产操作表单逻辑
-  - api/recycleAsset.vue: 回收资产数据接口
-  - api/Asset.vue: 资产数据接口
-  - api/storage.vue: 仓库数据接口
+  - stores/recycleAssetStore: 回收资产数据状态
 -->
 <template>
   <AssetOperationLayout
@@ -51,9 +49,10 @@ import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { RefreshLeft } from '@element-plus/icons-vue'
 import type { FormRules } from 'element-plus'
+import type { RecycleAssetCreateForm } from '@/types/recycleasset'
 import AssetOperationLayout from '@/components/AssetOperationLayout.vue'
 import { useAssetOperationForm } from '@/composables/useAssetOperationForm'
-import { recycleAssetAPI } from '@/api/recycleAsset'
+import { useRecycleAssetStore } from '@/stores'
 import { todayLocalISO } from '@/utils/Format'
 
 const router = useRouter()
@@ -70,7 +69,9 @@ const {
   remark?: string | null
 }>({
   submitFn: async (data) => {
-    await recycleAssetAPI.createRecycleAsset({
+    const recycleAssetStore = useRecycleAssetStore()
+    // 该 store 已配置 disableAutoMessage，成功消息由 composable 统一弹出，避免双弹
+    await recycleAssetStore.create({
       outasset_recordcode: assetCode.value,
       recycle_asset: assetCode.value,
       recycle_asset_number: data.recycle_asset_number,
@@ -79,7 +80,7 @@ const {
       recycle_asset_date: todayLocalISO(),
       recycle_type: 'normal',
       recycle_asset_description: data.remark || '',
-    })
+    } as RecycleAssetCreateForm)
   },
   successMessage: '回收操作成功',
   errorMessage: '回收操作失败，请重试',

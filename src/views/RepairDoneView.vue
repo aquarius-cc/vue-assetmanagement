@@ -11,7 +11,7 @@
 @dependsOn
   - components/AssetOperationLayout: 资产操作通用布局
   - composables/useAssetOperationForm: 资产操作表单逻辑
-  - api/repairAsset: 维修资产数据接口
+  - stores/repairAssetStore: 维修资产数据状态
   - types/asset: 资产状态枚举
 -->
 <template>
@@ -75,7 +75,7 @@ import { CircleCheck } from '@element-plus/icons-vue'
 import type { FormRules } from 'element-plus'
 import AssetOperationLayout from '@/components/AssetOperationLayout.vue'
 import { useAssetOperationForm } from '@/composables/useAssetOperationForm'
-import { repairAssetAPI } from '@/api/repairAsset'
+import { useRepairAssetStore } from '@/stores'
 import { AssetCurrentStatus } from '@/types/asset'
 
 const router = useRouter()
@@ -94,7 +94,8 @@ const {
   physical_grade_after: string
 }>({
   submitFn: async (data) => {
-    await repairAssetAPI.repairDone(assetCode.value, {
+    const repairAssetStore = useRepairAssetStore()
+    await repairAssetStore.repairDone(assetCode.value, {
       // 空字符串兜底为 undefined，避免向后端传递空值
       actual_return_date: data.actual_return_date || undefined,
       physical_grade_after: data.physical_grade_after || undefined,

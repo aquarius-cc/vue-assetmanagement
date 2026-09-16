@@ -6,7 +6,7 @@
 @dependsOn
   - components/AssetOperationLayout: 资产操作通用布局
   - composables/useAssetOperationForm: 资产操作表单逻辑
-  - api/asset: 资产数据接口
+  - stores/assetStore: 资产数据状态
 -->
 <template>
   <AssetOperationLayout
@@ -57,7 +57,7 @@ import { WarningFilled } from '@element-plus/icons-vue'
 import type { FormRules } from 'element-plus'
 import AssetOperationLayout from '@/components/AssetOperationLayout.vue'
 import { useAssetOperationForm } from '@/composables/useAssetOperationForm'
-import { assetAPI } from '@/api/asset'
+import { useAssetStore } from '@/stores'
 
 const router = useRouter()
 
@@ -74,7 +74,8 @@ const {
   broken_date?: string | null
 }>({
   submitFn: async (data) => {
-    await assetAPI.markAssetAsBroken(assetCode.value, {
+    const assetStore = useAssetStore()
+    await assetStore.markAssetAsBroken(assetCode.value, {
       broken_reason: data.broken_reason,
       broken_description: data.broken_description || undefined,
       broken_date: data.broken_date || undefined,

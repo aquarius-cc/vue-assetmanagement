@@ -13,6 +13,8 @@ vi.mock('@/api/asset', () => ({
     batchDeleteAssets: vi.fn(),
     searchAssets: vi.fn(),
     combineSearch: vi.fn(),
+    getAssetTimeline: vi.fn(),
+    markAssetAsBroken: vi.fn(),
   },
 }))
 
@@ -288,6 +290,51 @@ describe('AssetStore', () => {
 
       const result = await store.getById('NONEXIST')
       expect(result).toBeNull()
+    })
+  })
+
+  describe('状态时间线', () => {
+    it('getAssetTimeline应该调用API并返回时间线', async () => {
+      const mockTimeline = [
+        { status: 'in_store', timestamp: '2026-01-01T00:00:00+08:00', description: '入库' },
+      ]
+      const { assetAPI } = await import('@/api/asset')
+      vi.mocked(assetAPI.getAssetTimeline).mockResolvedValue(mockTimeline as any)
+
+      const result = await store.getAssetTimeline('AS-001')
+
+      expect(result).toEqual(mockTimeline)
+      expect(assetAPI.getAssetTimeline).toHaveBeenCalledWith('AS-001')
+    })
+
+    it('getAssetTimeline API失败时应抛出异常', async () => {
+      const { assetAPI } = await import('@/api/asset')
+      vi.mocked(assetAPI.getAssetTimeline).mockRejectedValue(new Error('时间线获取失败'))
+
+      await expect(store.getAssetTimeline('AS-001')).rejects.toThrow('时间线获取失败')
+    })
+  })
+
+  describe('标记损坏', () => {
+    it('markAssetAsBroken应该调用API并透传数据', async () => {
+      const mockResult = { asset_code: 'AS-001', asset_current_status: 'broken' }
+      const { assetAPI } = await import('@/api/asset')
+      vi.mocked(assetAPI.markAssetAsBroken).mockResolvedValue(mockResult as any)
+
+      const params = { broken_reason: '外壳破损', broken_description: '屏幕碎裂' }
+      const result = await store.markAssetAsBroken('AS-001', params)
+
+      expect(result).toEqual(mockResult)
+      expect(assetAPI.markAssetAsBroken).toHaveBeenCalledWith('AS-001', params)
+    })
+
+    it('markAssetAsBroken API失败时应抛出异常', async () => {
+      const { assetAPI } = await import('@/api/asset')
+      vi.mocked(assetAPI.markAssetAsBroken).mockRejectedValue(new Error('标记失败'))
+
+      await expect(store.markAssetAsBroken('AS-001', { broken_reason: '损坏' })).rejects.toThrow(
+        '标记失败',
+      )
     })
   })
 

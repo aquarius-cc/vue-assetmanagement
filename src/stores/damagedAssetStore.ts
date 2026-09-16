@@ -54,6 +54,9 @@ export const useDamagedAssetStore = createEntityStore<DamagedAsset, PaginationQu
       batchDelete: (codes) => damagedAssetAPI.batchDeleteDamagedAssets(codes),
     },
     message: ElMessage,
+    // 【修复双弹】调用方（DamagedAssetForm/AssetBatchImport/assetLifecycleService/ScrapAssetView）
+    // 均自带成功消息，此处禁用工厂自动弹窗，避免「创建成功」与调用方消息重复
+    disableAutoMessage: true,
     idToString: (code: unknown) => String(code),
     enablePagination: true,
     defaultPageSize: 20,

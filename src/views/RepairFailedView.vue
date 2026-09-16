@@ -11,7 +11,7 @@
 @dependsOn
   - components/AssetOperationLayout: 资产操作通用布局
   - composables/useAssetOperationForm: 资产操作表单逻辑
-  - api/repairAsset: 维修资产数据接口
+  - stores/repairAssetStore: 维修资产数据状态
   - types/asset: 资产状态枚举
 -->
 <template>
@@ -58,7 +58,7 @@ import { useRouter } from 'vue-router'
 import { WarningFilled } from '@element-plus/icons-vue'
 import AssetOperationLayout from '@/components/AssetOperationLayout.vue'
 import { useAssetOperationForm } from '@/composables/useAssetOperationForm'
-import { repairAssetAPI } from '@/api/repairAsset'
+import { useRepairAssetStore } from '@/stores'
 import { AssetCurrentStatus } from '@/types/asset'
 
 const router = useRouter()
@@ -75,7 +75,8 @@ const {
 } = useAssetOperationForm<Record<string, never>>({
   submitFn: async () => {
     // 维修失败无需表单数据，仅传资产编码
-    await repairAssetAPI.repairFailed(assetCode.value)
+    const repairAssetStore = useRepairAssetStore()
+    await repairAssetStore.repairFailed(assetCode.value)
   },
   successMessage: '维修失败已确认，资产已转入待报废状态',
   errorMessage: '维修失败操作失败，请重试',
