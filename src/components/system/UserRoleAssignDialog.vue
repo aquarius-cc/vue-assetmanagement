@@ -11,8 +11,8 @@
 @usedBy
   - views/system/UserManagementPage.vue: 用户管理页面中分配角色
 @dependsOn
-  - api/userAPI: getUserRoles/assignUserRoles 用户角色相关接口
-  - api/roleAPI: getAllRoles 获取所有角色接口
+  - stores/authUserStore: getUserRoles/assignUserRole/removeUserRole 用户角色相关接口
+  - stores/roleStore: getRoles 获取所有角色接口
 -->
 <template>
   <el-dialog
@@ -71,11 +71,11 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { authUserAPI } from '@/api/authusers'
-import { roleAPI } from '@/api/roles'
+import { useAuthUserStore } from '@/stores/authUserStore'
+import { useRoleStore } from '@/stores/roleStore'
 import { getErrorMessage } from '@/utils/errorHandler'
 import type { AuthUser } from '@/types/authuser'
-import type { UserRole } from '@/api/authusers'
+import type { UserRole } from '@/types/authuser'
 import type { Role } from '@/types/roles'
 
 const props = defineProps<{
@@ -87,6 +87,9 @@ const emit = defineEmits<{
   'update:visible': [value: boolean]
   saved: []
 }>()
+
+const authUserStore = useAuthUserStore()
+const roleStore = useRoleStore()
 
 const loading = ref(false)
 const adding = ref(false)
@@ -105,8 +108,8 @@ const loadData = async () => {
   loading.value = true
   try {
     const [roles, userRoles] = await Promise.all([
-      roleAPI.getRoles(),
-      authUserAPI.getUserRoles(props.authUser.auth_id),
+      roleStore.getRoles(),
+      authUserStore.getUserRoles(props.authUser.auth_id),
     ])
     allRoles.value = roles.results
     assignedRoles.value = userRoles.results
@@ -131,7 +134,7 @@ const handleAddRole = async () => {
   if (!props.authUser || selectedRoleId.value === null) return
   adding.value = true
   try {
-    await authUserAPI.assignUserRole(props.authUser.auth_id, selectedRoleId.value)
+    await authUserStore.assignUserRole(props.authUser.auth_id, selectedRoleId.value)
     ElMessage.success('角色分配成功')
     selectedRoleId.value = null
     await loadData()
@@ -155,7 +158,7 @@ const handleRemoveRole = async (userRole: UserRole) => {
     return
   }
   try {
-    await authUserAPI.removeUserRole(props.authUser.auth_id, userRole.id)
+    await authUserStore.removeUserRole(props.authUser.auth_id, userRole.id)
     ElMessage.success('角色已移除')
     await loadData()
     emit('saved')

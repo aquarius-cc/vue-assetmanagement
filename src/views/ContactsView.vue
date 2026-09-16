@@ -3,23 +3,10 @@
 @component ContactsView.vue
 @usedBy
   - router/index.ts: 路由懒加载通讯录页面
-  - views/ContactsView.vue: 通讯录页面组件
-  - views/system/BindAuthUserDialog.vue: 绑定认证用户弹窗组件
-  - views/system/RoleAssignDialog.vue: 角色分配弹窗组件
-  - views/system/DepartmentTree.vue: 部门树组件
-  - views/system/UserManagementPage.vue: 用户管理页面组件
-  - views/system/AuthUserManage.vue: 认证用户管理页面组件
-  - views/system/RoleManage.vue: 角色管理页面组件
-  - views/system/EmployeeManage.vue: 员工管理页面组件
-  - views/system/EmployeeList.vue: 员工列表组件
-  - views/system/RoleList.vue: 角色列表组件
 @dependsOn
-  - api/user: 用户数据接口
-  - api/department: 部门数据接口
+  - stores/userStore: 员工数据接口（getList/getFuzzySearch）
+  - stores/departmentStore: getDepartmentTree 获取部门树
   - composables/useDebouncedSearch: 防抖搜索
-  - api/employeeAPI: getEmployeeInfo/getEmployeeList 员工相关接口
-  - api/roleAPI: getRoleList 角色相关接口
-  - api/authUserAPI: getAuthUserInfo/bindAuthUser/unbindAuthUser 认证用户相关接口
 -->
 <template>
   <div class="contacts-view">
@@ -118,13 +105,15 @@
 import { ref, onMounted } from 'vue'
 import { User, Search, OfficeBuilding, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { userAPI } from '@/api/user'
-import { departmentAPI } from '@/api/department'
+import { useUserStore } from '@/stores/userStore'
+import { getDepartmentTree } from '@/stores/departmentStore'
 import type { EmployeeExtended } from '@/types/user'
 import type { DepartmentTreeNode } from '@/types/department'
 import DepartmentTree from '@/components/componentsdetails/components/DepartmentTree.vue'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
+
+const userStore = useUserStore()
 
 const loading = ref(true)
 const contacts = ref<EmployeeExtended[]>([])
@@ -145,7 +134,7 @@ useDebouncedSearch(searchKeyword, () => {
 
 const fetchDepartmentTree = async () => {
   try {
-    departmentData.value = await departmentAPI.getDepartmentTree()
+    departmentData.value = await getDepartmentTree()
   } catch (err) {
     console.error('获取部门树失败:', err)
     ElMessage.error('获取部门数据失败')
@@ -165,7 +154,7 @@ const fetchContacts = async () => {
   loading.value = true
   try {
     if (searchKeyword.value.trim()) {
-      const response = await userAPI.getFuzzySearch({
+      const response = await userStore.getFuzzySearch({
         keyword: searchKeyword.value.trim(),
         department_code: selectedDepartmentCode.value || undefined,
         page: currentPage.value,
@@ -174,14 +163,14 @@ const fetchContacts = async () => {
       contacts.value = response.results || []
       total.value = response.count || 0
     } else {
-      const response = await userAPI.getUserList({
+      const res = await userStore.getList({
         department_code: selectedDepartmentCode.value || undefined,
         employee_status: statusFilter.value || undefined,
         page: currentPage.value,
         page_size: pageSize.value,
       })
-      contacts.value = response.results || []
-      total.value = response.count || 0
+      contacts.value = res
+      total.value = userStore.pagination.total
     }
   } catch (err) {
     console.error('获取通讯录失败:', err)

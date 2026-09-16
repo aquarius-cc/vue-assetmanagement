@@ -4,7 +4,7 @@
 @usedBy
   - router/index.ts: 路由懒加载
 @dependsOn
-  - api/authusers: 认证用户数据接口
+  - stores/authUserStore: 认证用户数据接口
   - composables/usePermission: 权限校验
   - composables/useDebouncedSearch: 防抖搜索
 -->
@@ -152,12 +152,13 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { User, Search, Plus } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { authUserAPI } from '@/api/authusers'
+import { useAuthUserStore } from '@/stores/authUserStore'
 import { getErrorMessage } from '@/utils/errorHandler'
 import { usePermission } from '@/composables/usePermission'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import type { AuthUser, AuthUserCreateForm } from '@/types/authuser'
+import type { PaginationQuery } from '@/stores/createEntityStore'
 import BindAuthUserDialog from '@/components/system/BindAuthUserDialog.vue'
 import UserRoleAssignDialog from '@/components/system/UserRoleAssignDialog.vue'
 import { formatDateTimeFull } from '@/utils/Format'
@@ -166,6 +167,7 @@ import { formatDateTimeFull } from '@/utils/Format'
 // 实际上 usePermission 已经导出了 isAdmin,
 // 并且 isAdmin 的判断逻辑已经包含了 isSuperuser 的判断,直接解构 isAdmin,不需要别名
 const { isAdmin } = usePermission()
+const authUserStore = useAuthUserStore()
 
 // ==================== 用户列表 ====================
 const loading = ref(false)
@@ -184,16 +186,16 @@ useDebouncedSearch(searchKeyword, () => {
 const fetchAuthUsers = async () => {
   loading.value = true
   try {
-    const params: Record<string, string | number> = {
+    const params: PaginationQuery = {
       page: currentPage.value,
       page_size: pageSize.value,
     }
     if (searchKeyword.value.trim()) {
       params.search = searchKeyword.value.trim()
     }
-    const res = await authUserAPI.getAuthUsers(params)
-    authUsers.value = res.results
-    total.value = res.count
+    const res = await authUserStore.getList(params)
+    authUsers.value = res
+    total.value = authUserStore.pagination.total
     // bound_employee 已由后端列表接口内联返回，无需额外请求
   } catch {
     ElMessage.error('获取用户列表失败')
@@ -278,10 +280,10 @@ const handleSubmit = async () => {
       if (isEdit.value && editingId.value) {
         const updateData: Partial<AuthUserCreateForm> = { ...formData }
         if (!updateData.password) delete updateData.password
-        await authUserAPI.updateAuthUser(editingId.value, updateData)
+        await authUserStore.update({ ...updateData, auth_id: editingId.value })
         ElMessage.success('更新成功')
       } else {
-        await authUserAPI.createAuthUser({ ...formData })
+        await authUserStore.create({ ...formData })
         ElMessage.success('创建成功')
       }
       dialogVisible.value = false
@@ -306,7 +308,7 @@ const currentAuthUserForBind = computed(() => {
 
 const handleDelete = async (row: AuthUser) => {
   try {
-    await authUserAPI.deleteAuthUser(row.auth_id)
+    await authUserStore.remove(String(row.auth_id))
     ElMessage.success('删除成功')
     fetchAuthUsers()
   } catch (error: unknown) {

@@ -4,8 +4,7 @@
 @usedBy
   - views/system/RoleManagementPage.vue: 角色管理页面中分配权限
 @dependsOn
-  - api/roleAPI: getRolePermissions/updateRolePermissions 角色权限相关接口
-  - api/permissionAPI: getAllPermissions 获取所有权限接口
+  - stores/roleStore: getRolePermissions/setRolePermissions/getAllPermissions 角色权限相关接口
 -->
 <template>
   <el-dialog
@@ -66,8 +65,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { roleAPI } from '@/api/roles'
-import { permissionsAPI } from '@/api/permissions'
+import { useRoleStore } from '@/stores/roleStore'
 import type { Role } from '@/types/roles'
 
 interface PermCodeItem {
@@ -90,6 +88,8 @@ const emit = defineEmits<{
   'update:visible': [value: boolean]
   saved: []
 }>()
+
+const roleStore = useRoleStore()
 
 const permLoading = ref(false)
 const permSaving = ref(false)
@@ -162,8 +162,8 @@ const loadPermissions = async () => {
 
   try {
     const [allPerms, rolePermRes] = await Promise.all([
-      permissionsAPI.getAllPermissions(),
-      roleAPI.getRolePermissions(props.role.id),
+      roleStore.getAllPermissions(),
+      roleStore.getRolePermissions(props.role.id),
     ])
 
     allPermCodes.value = allPerms.map((p) => p.permission_code)
@@ -227,7 +227,7 @@ const handleSavePermissions = async () => {
   if (!props.role) return
   permSaving.value = true
   try {
-    await roleAPI.setRolePermissions(props.role.id, {
+    await roleStore.setRolePermissions(props.role.id, {
       permission_codes: selectedPermCodes.value,
     })
     ElMessage.success('权限设置成功')

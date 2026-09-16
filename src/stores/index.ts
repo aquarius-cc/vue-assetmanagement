@@ -58,6 +58,8 @@ export { useDashboardStore } from '@/stores/dashboard'
 // User & Department
 export { useUserStore } from '@/stores/userStore'
 export { useDepartmentStore } from '@/stores/departmentStore'
+export { useRoleStore } from '@/stores/roleStore'
+export { useAuthUserStore } from '@/stores/authUserStore'
 
 // Core Assets
 export { useAssetStore } from '@/stores/assetStore'

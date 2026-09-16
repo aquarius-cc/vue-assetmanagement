@@ -211,7 +211,6 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Plus, Upload, Sort, Delete } from '@element-plus/icons-vue'
 import { getDepartmentEmployees } from '@/stores/departmentStore'
-import { userAPI } from '@/api/user'
 import type { EmployeeExtended, EmployeeStatus } from '@/types/user'
 import type { DepartmentTreeNode, DepartmentEmployeeListQueryParams } from '@/types/department'
 import { useUserStore } from '@/stores/userStore'
@@ -428,7 +427,7 @@ const {
   selectedRows,
   tableRef,
   userStore,
-  userAPI,
+  userAPI: { batchUpdateSort: userStore.batchUpdateSort },
   loadEmployeeList,
 })
 

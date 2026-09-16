@@ -3,43 +3,25 @@
  * @module api/authusers
  * @exports
  *   - authUserAPI: AuthUser 管理 API 对象（包含所有认证用户相关方法）
- *   - EmployeeBrief: 员工简要信息接口
- *   - UserRole: 用户角色关联接口
+ *   - EmployeeBrief: 员工简要信息接口（类型 re-export，定义于 types/authuser）
+ *   - UserRole: 用户角色关联接口（类型 re-export，定义于 types/authuser）
  * @callers
  *   - views/system/AuthUserManage: 认证用户管理视图
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
- *   - types/authuser: 认证用户相关类型定义
+ *   - types/authuser: 认证用户相关类型定义（含 EmployeeBrief/UserRole）
  */
 import { request, unwrapResponse } from '@/api/index'
-import type { AuthUser, AuthUserCreateForm, AuthUserListResponse } from '@/types/authuser'
+import type {
+  AuthUser,
+  AuthUserCreateForm,
+  AuthUserListResponse,
+  EmployeeBrief,
+  UserRole,
+} from '@/types/authuser'
 
-/** 员工简要信息（用于绑定查询） */
-export interface EmployeeBrief {
-  employee_jobcode: string
-  employee_name: string
-  employee_status: string
-  auth_user: number | null
-  auth_user_username: string | null
-}
-
-/** 角色简要信息（用于角色分配） */
-// export interface RoleBrief {
-//   id: number
-//   role_code: string
-//   role_name: string
-// }
-
-/** 用户-角色关联（与后端 UserRoleSerializer 字段对齐） */
-export interface UserRole {
-  id: number
-  auth_user: number
-  role: number
-  role_name: string
-  role_code: string
-  data_scope: Record<string, unknown>
-  created_at: string
-}
+// 类型 re-export：保持 B 契约下组件可统一从 types/ 导入关联类型
+export type { EmployeeBrief, UserRole }
 
 export const authUserAPI = {
   // ==================== AuthUser CRUD ====================

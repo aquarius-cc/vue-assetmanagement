@@ -5,9 +5,7 @@
   - views/system/UserManagementPage.vue: 用户管理页面中绑定认证用户弹窗
   - views/system/AuthUserManage.vue: 认证用户管理页面中绑定认证用户弹窗
 @dependsOn
-  - api/authUserAPI: getAuthUserInfo/bindAuthUser/unbindAuthUser 认证用户相关接口
-  - api/employeeAPI: getEmployeeInfo/getEmployeeList 员工相关接口
-  - api/roleAPI: getRoleList 角色相关接口
+  - stores/authUserStore: useAuthUserStore 认证用户绑定/解绑/替换接口
 -->
 <template>
   <el-dialog
@@ -98,9 +96,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { authUserAPI } from '@/api/authusers'
+import { useAuthUserStore } from '@/stores/authUserStore'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
-import type { EmployeeBrief } from '@/api/authusers'
+import type { EmployeeBrief } from '@/types/authuser'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 
 interface Props {
@@ -122,6 +120,8 @@ const emit = defineEmits<{
   saved: []
 }>()
 
+const authUserStore = useAuthUserStore()
+
 const loading = ref(false)
 const actionLoading = ref(false)
 const boundEmployee = ref<EmployeeBrief | null>(null)
@@ -142,7 +142,7 @@ useDebouncedSearch(searchKeyword, async (value) => {
   }
   searching.value = true
   try {
-    searchResults.value = await authUserAPI.searchEmployees(value.trim())
+    searchResults.value = await authUserStore.searchEmployees(value.trim())
   } catch {
     searchResults.value = []
   } finally {
@@ -154,7 +154,7 @@ const loadBindStatus = async () => {
   if (props.mode === 'from-authuser' && props.authUser) {
     loading.value = true
     try {
-      const result = await authUserAPI.getBoundEmployee(props.authUser.id)
+      const result = await authUserStore.getBoundEmployee(props.authUser.id)
       // 【防御性校验】确保返回数据包含 employee_jobcode，防止 undefined 传入后续 API
       boundEmployee.value = result && result.employee_jobcode ? result : null
       dialogTitle.value = `绑定用户 — ${props.authUser.username}`
@@ -197,7 +197,10 @@ const handleBind = async () => {
   }
   actionLoading.value = true
   try {
-    await authUserAPI.bindAuthUser(selectedEmployee.value.employee_jobcode, props.authUser.username)
+    await authUserStore.bindAuthUser(
+      selectedEmployee.value.employee_jobcode,
+      props.authUser.username,
+    )
     ElMessage.success('绑定成功')
     emit('update:visible', false)
     emit('saved')
@@ -225,7 +228,7 @@ const handleUnbind = async () => {
   }
   actionLoading.value = true
   try {
-    await authUserAPI.unbindAuthUser(boundEmployee.value.employee_jobcode)
+    await authUserStore.unbindAuthUser(boundEmployee.value.employee_jobcode)
     ElMessage.success('解绑成功')
     emit('update:visible', false)
     emit('saved')
@@ -241,7 +244,7 @@ const handleReplace = async () => {
   if (!selectedEmployee.value?.employee_jobcode || !props.authUser) return
   actionLoading.value = true
   try {
-    await authUserAPI.replaceAuthUser(
+    await authUserStore.replaceAuthUser(
       selectedEmployee.value.employee_jobcode,
       props.authUser.username,
     )

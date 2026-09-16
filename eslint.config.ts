@@ -85,17 +85,14 @@ export default defineConfigWithVueTs(
   // 存量直连文件待迁移清单(迁移一个移除一个, 直到本块清空)
   // FE-01 批1 已迁移 11 个视图（LostAsset/MarkBroken/LogIn/AssetLogs/FoundAsset/NotificationList/
   // RecycleAsset/RepairAsset/RepairDone/RepairFailed/ScrapAsset）→ 已移除，仍可运行时直连的 in_use 状态资产操作视图见后续批次
+  // FE-01 批2 已迁移 8 个视图/组件（BindAuthUserDialog/RolePermDialog/UserRoleAssignDialog/RoleManage/
+  // AuthUserManage/ContactsView/UserDetails/DepartmentEmployeeList）→ 已移除，走 roleStore/authUserStore/userStore
   {
     name: 'app/legacy-direct-api-files',
     files: [
-      'src/components/system/BindAuthUserDialog.vue',
-      'src/components/system/RolePermDialog.vue',
-      'src/components/system/UserRoleAssignDialog.vue',
       'src/components/componentsdetails/AssetTypeDetails.vue',
       'src/components/componentsdetails/AuditLogDetails.vue',
       'src/components/componentsdetails/components/DepartmentFormDialog.vue',
-      'src/components/componentsdetails/UserDetails.vue',
-      'src/components/componentsdetails/components/DepartmentEmployeeList.vue',
       'src/components/componentsdetails/components/DepartmentBatchAddDialog.vue',
       'src/components/componentsdetails/detils/AssetTypeBatchImport.vue',
       'src/components/componentsdetails/DepartmentManagement.vue',
@@ -110,9 +107,6 @@ export default defineConfigWithVueTs(
       'src/components/componentsdetails/detils/OutAssetBatchImport.vue',
       'src/components/componentsdetails/detils/HardDiskSNForm.vue',
       'src/components/componentsdetails/detils/StorageBatchImport.vue',
-      'src/views/ContactsView.vue',
-      'src/views/system/RoleManage.vue',
-      'src/views/system/AuthUserManage.vue',
     ],
     rules: {
       'no-restricted-imports': 'off',

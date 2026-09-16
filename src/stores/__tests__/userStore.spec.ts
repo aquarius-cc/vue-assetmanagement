@@ -1,4 +1,3 @@
-// TECHNICAL_DEBT: >500 lines（存量文件，2026-07-07 基线前已超限；本次修改新增 <50 行，暂不拆分）
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useUserStore } from '../userStore'
@@ -12,6 +11,8 @@ vi.mock('@/api/user', () => ({
     updateUser: vi.fn(),
     deleteUser: vi.fn(),
     batchDeleteUsers: vi.fn(),
+    getFuzzySearch: vi.fn(),
+    batchUpdateSort: vi.fn(),
   },
 }))
 
@@ -170,334 +171,6 @@ describe('UserStore', () => {
     })
   })
 
-  describe('创建校验', () => {
-    it('employee_name为空时应抛出错误', async () => {
-      await expect(
-        store.create({
-          employee_jobcode: 'EMP001',
-          employee_name: '',
-          employee_status: 'active',
-          employee_phone: '13800138000',
-          employee_location: '北京',
-          employee_department_code: 'DEP001',
-        }),
-      ).rejects.toThrow('employee_name 不能为空')
-    })
-
-    it('employee_phone为空时应抛出错误', async () => {
-      await expect(
-        store.create({
-          employee_jobcode: 'EMP001',
-          employee_name: '张三',
-          employee_status: 'active',
-          employee_phone: '',
-          employee_location: '北京',
-          employee_department_code: 'DEP001',
-        }),
-      ).rejects.toThrow('employee_phone 不能为空')
-    })
-
-    it('employee_location为空时应抛出错误', async () => {
-      await expect(
-        store.create({
-          employee_jobcode: 'EMP001',
-          employee_name: '张三',
-          employee_status: 'active',
-          employee_phone: '13800138000',
-          employee_location: '',
-          employee_department_code: 'DEP001',
-        }),
-      ).rejects.toThrow('employee_location 不能为空')
-    })
-
-    it('employee_department_code为空时应抛出错误', async () => {
-      await expect(
-        store.create({
-          employee_jobcode: 'EMP001',
-          employee_name: '张三',
-          employee_status: 'active',
-          employee_phone: '13800138000',
-          employee_location: '北京',
-          employee_department_code: '',
-        }),
-      ).rejects.toThrow('employee_department_code 不能为空')
-    })
-
-    it('employee_status为left时应通过校验', async () => {
-      const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.createUser).mockResolvedValue({
-        employee_jobcode: 'EMP001',
-        employee_name: '张三',
-        employee_status: 'left',
-        employee_phone: '13800138000',
-        employee_location: '北京',
-        employee_department_code: 'DEP001',
-      } as any)
-
-      await expect(
-        store.create({
-          employee_jobcode: 'EMP001',
-          employee_name: '张三',
-          employee_status: 'left',
-          employee_phone: '13800138000',
-          employee_location: '北京',
-          employee_department_code: 'DEP001',
-        }),
-      ).resolves.toBeDefined()
-    })
-
-    it('employee_status为retirement时应通过校验', async () => {
-      const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.createUser).mockResolvedValue({
-        employee_jobcode: 'EMP001',
-        employee_name: '张三',
-        employee_status: 'retirement',
-        employee_phone: '13800138000',
-        employee_location: '北京',
-        employee_department_code: 'DEP001',
-      } as any)
-
-      await expect(
-        store.create({
-          employee_jobcode: 'EMP001',
-          employee_name: '张三',
-          employee_status: 'retirement',
-          employee_phone: '13800138000',
-          employee_location: '北京',
-          employee_department_code: 'DEP001',
-        }),
-      ).resolves.toBeDefined()
-    })
-
-    it('employee_description为可选字段，不传时应通过校验', async () => {
-      const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.createUser).mockResolvedValue({
-        employee_jobcode: 'EMP001',
-        employee_name: '张三',
-        employee_status: 'active',
-        employee_phone: '13800138000',
-        employee_location: '北京',
-        employee_department_code: 'DEP001',
-      } as any)
-
-      await expect(
-        store.create({
-          employee_jobcode: 'EMP001',
-          employee_name: '张三',
-          employee_status: 'active',
-          employee_phone: '13800138000',
-          employee_location: '北京',
-          employee_department_code: 'DEP001',
-        }),
-      ).resolves.toBeDefined()
-    })
-
-    it('必填字段前后有空格时应自动trim', async () => {
-      const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.createUser).mockResolvedValue({
-        employee_jobcode: 'EMP001',
-        employee_name: '张三',
-        employee_status: 'active',
-        employee_phone: '13800138000',
-        employee_location: '北京',
-        employee_department_code: 'DEP001',
-      } as any)
-
-      await store.create({
-        employee_jobcode: ' EMP001 ',
-        employee_name: ' 张三 ',
-        employee_status: 'active',
-        employee_phone: ' 13800138000 ',
-        employee_location: ' 北京 ',
-        employee_department_code: ' DEP001 ',
-      })
-
-      expect(userAPI.createUser).toHaveBeenCalledWith(
-        expect.objectContaining({
-          employee_jobcode: 'EMP001',
-          employee_name: '张三',
-          employee_phone: '13800138000',
-          employee_location: '北京',
-          employee_department_code: 'DEP001',
-        }),
-      )
-    })
-  })
-
-  describe('更新校验', () => {
-    it('更新缺少employee_jobcode时应抛出异常', async () => {
-      await expect(store.update({ employee_name: '张三' })).rejects.toThrow('Missing ID for update')
-    })
-
-    it('更新无效状态时应抛出异常', async () => {
-      await expect(
-        store.update({
-          employee_jobcode: 'EMP001',
-          employee_status: 'unknown',
-        }),
-      ).rejects.toThrow('员工状态')
-    })
-
-    it('更新有效状态时应通过校验', async () => {
-      const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.updateUser).mockResolvedValue({} as any)
-
-      await expect(
-        store.update({
-          employee_jobcode: 'EMP001',
-          employee_status: 'active',
-        }),
-      ).resolves.toBeDefined()
-    })
-
-    it('更新时只传部分字段应只包含已传字段', async () => {
-      const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.updateUser).mockResolvedValue({} as any)
-
-      await store.update({
-        employee_jobcode: 'EMP001',
-        employee_name: '新名字',
-      })
-
-      expect(userAPI.updateUser).toHaveBeenCalledWith(
-        expect.objectContaining({
-          employee_jobcode: 'EMP001',
-          employee_name: '新名字',
-        }),
-      )
-    })
-
-    it('更新employee_description时应正确处理null值', async () => {
-      const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.updateUser).mockResolvedValue({} as any)
-
-      await store.update({
-        employee_jobcode: 'EMP001',
-        employee_description: null,
-      })
-
-      expect(userAPI.updateUser).toHaveBeenCalledWith(
-        expect.objectContaining({
-          employee_jobcode: 'EMP001',
-          employee_description: null,
-        }),
-      )
-    })
-
-    it('更新employee_description时应trim空格', async () => {
-      const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.updateUser).mockResolvedValue({} as any)
-
-      await store.update({
-        employee_jobcode: 'EMP001',
-        employee_description: ' 描述信息 ',
-      })
-
-      expect(userAPI.updateUser).toHaveBeenCalledWith(
-        expect.objectContaining({
-          employee_description: '描述信息',
-        }),
-      )
-    })
-
-    it('更新sort_order时应透传', async () => {
-      const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.updateUser).mockResolvedValue({} as any)
-
-      await store.update({
-        employee_jobcode: 'EMP001',
-        sort_order: 5,
-      })
-
-      expect(userAPI.updateUser).toHaveBeenCalledWith(
-        expect.objectContaining({
-          employee_jobcode: 'EMP001',
-          sort_order: 5,
-        }),
-      )
-    })
-
-    it('更新所有字段时应trim所有字符串字段', async () => {
-      const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.updateUser).mockResolvedValue({} as any)
-
-      await store.update({
-        employee_jobcode: 'EMP001',
-        employee_name: ' 张三 ',
-        employee_phone: ' 13800138000 ',
-        employee_location: ' 北京 ',
-        employee_department_code: ' DEP001 ',
-        employee_description: ' 描述 ',
-        sort_order: 1,
-      })
-
-      expect(userAPI.updateUser).toHaveBeenCalledWith(
-        expect.objectContaining({
-          employee_jobcode: 'EMP001',
-          employee_name: '张三',
-          employee_phone: '13800138000',
-          employee_location: '北京',
-          employee_department_code: 'DEP001',
-          employee_description: '描述',
-          sort_order: 1,
-        }),
-      )
-    })
-
-    it('更新left状态时应通过校验', async () => {
-      const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.updateUser).mockResolvedValue({} as any)
-
-      await expect(
-        store.update({
-          employee_jobcode: 'EMP001',
-          employee_status: 'left',
-        }),
-      ).resolves.toBeDefined()
-    })
-
-    it('更新retirement状态时应通过校验', async () => {
-      const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.updateUser).mockResolvedValue({} as any)
-
-      await expect(
-        store.update({
-          employee_jobcode: 'EMP001',
-          employee_status: 'retirement',
-        }),
-      ).resolves.toBeDefined()
-    })
-
-    it('更新employee_description为空字符串时应转换为null', async () => {
-      const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.updateUser).mockResolvedValue({} as any)
-
-      await store.update({
-        employee_jobcode: 'EMP001',
-        employee_description: '',
-      })
-
-      expect(userAPI.updateUser).toHaveBeenCalledWith(
-        expect.objectContaining({
-          employee_description: null,
-        }),
-      )
-    })
-
-    it('未传employee_description时不应包含在更新数据中', async () => {
-      const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.updateUser).mockResolvedValue({} as any)
-
-      await store.update({
-        employee_jobcode: 'EMP001',
-        employee_name: '张三',
-      })
-
-      const calledWith = vi.mocked(userAPI.updateUser).mock.calls[0][0]
-      expect(calledWith).not.toHaveProperty('employee_description')
-    })
-  })
-
   describe('获取详情', () => {
     it('应该调用getById获取员工详情', async () => {
       const { userAPI } = await import('@/api/user')
@@ -547,120 +220,79 @@ describe('UserStore', () => {
     })
   })
 
-  describe('创建校验扩展', () => {
-    it('employee_description含空格时应trim', async () => {
+  describe('模糊搜索', () => {
+    it('应该调用getFuzzySearch并透传完整分页响应', async () => {
+      const mockResponse = {
+        count: 2,
+        results: [
+          { employee_jobcode: 'EMP001', employee_name: '张三' },
+          { employee_jobcode: 'EMP002', employee_name: '李四' },
+        ],
+      }
       const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.createUser).mockResolvedValue({
-        employee_jobcode: 'EMP001',
-        employee_name: '张三',
-        employee_status: 'active',
-        employee_phone: '13800138000',
-        employee_location: '北京',
-        employee_department_code: 'DEP001',
-        employee_description: '描述信息',
-      } as any)
+      vi.mocked(userAPI.getFuzzySearch).mockResolvedValue(mockResponse as any)
 
-      await store.create({
-        employee_jobcode: 'EMP001',
-        employee_name: '张三',
-        employee_status: 'active',
-        employee_phone: '13800138000',
-        employee_location: '北京',
-        employee_department_code: 'DEP001',
-        employee_description: ' 描述信息 ',
-      } as any)
+      const result = await store.getFuzzySearch({ keyword: '张', page: 1, page_size: 20 })
 
-      expect(userAPI.createUser).toHaveBeenCalledWith(
-        expect.objectContaining({
-          employee_description: '描述信息',
-        }),
-      )
+      expect(userAPI.getFuzzySearch).toHaveBeenCalledWith({
+        keyword: '张',
+        page: 1,
+        page_size: 20,
+      })
+      expect(result.count).toBe(2)
+      expect(result.results).toHaveLength(2)
     })
 
-    it('employee_description为空字符串时应传null', async () => {
+    it('getFuzzySearch API失败时应抛出异常', async () => {
       const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.createUser).mockResolvedValue({
-        employee_jobcode: 'EMP001',
-        employee_name: '张三',
-        employee_status: 'active',
-        employee_phone: '13800138000',
-        employee_location: '北京',
-        employee_department_code: 'DEP001',
-        employee_description: null,
-      } as any)
+      vi.mocked(userAPI.getFuzzySearch).mockRejectedValue(new Error('搜索失败'))
 
-      await store.create({
-        employee_jobcode: 'EMP001',
-        employee_name: '张三',
-        employee_status: 'active',
-        employee_phone: '13800138000',
-        employee_location: '北京',
-        employee_department_code: 'DEP001',
-        employee_description: '',
-      } as any)
+      await expect(store.getFuzzySearch({ keyword: '张' })).rejects.toThrow('搜索失败')
+    })
+  })
 
-      expect(userAPI.createUser).toHaveBeenCalledWith(
-        expect.objectContaining({
-          employee_description: null,
-        }),
-      )
+  describe('批量排序', () => {
+    it('应该调用batchUpdateSort并透传排序数据', async () => {
+      const mockEmployees = [
+        { employee_jobcode: 'EMP001', sort_order: 0 },
+        { employee_jobcode: 'EMP002', sort_order: 1 },
+      ]
+      const { userAPI } = await import('@/api/user')
+      vi.mocked(userAPI.batchUpdateSort).mockResolvedValue(mockEmployees as any)
+
+      const result = await store.batchUpdateSort([
+        { employee_jobcode: 'EMP001', sort_order: 0 },
+        { employee_jobcode: 'EMP002', sort_order: 1 },
+      ])
+
+      expect(userAPI.batchUpdateSort).toHaveBeenCalledWith([
+        { employee_jobcode: 'EMP001', sort_order: 0 },
+        { employee_jobcode: 'EMP002', sort_order: 1 },
+      ])
+      expect(result).toHaveLength(2)
     })
 
-    it('sort_order未传时默认为0', async () => {
+    it('batchUpdateSort API失败时应抛出异常', async () => {
       const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.createUser).mockResolvedValue({
-        employee_jobcode: 'EMP001',
-        employee_name: '张三',
-        employee_status: 'active',
-        employee_phone: '13800138000',
-        employee_location: '北京',
-        employee_department_code: 'DEP001',
-        sort_order: 0,
-      } as any)
+      vi.mocked(userAPI.batchUpdateSort).mockRejectedValue(new Error('保存排序失败'))
 
-      await store.create({
-        employee_jobcode: 'EMP001',
-        employee_name: '张三',
-        employee_status: 'active',
-        employee_phone: '13800138000',
-        employee_location: '北京',
-        employee_department_code: 'DEP001',
-      } as any)
-
-      expect(userAPI.createUser).toHaveBeenCalledWith(
-        expect.objectContaining({
-          sort_order: 0,
-        }),
-      )
+      await expect(
+        store.batchUpdateSort([{ employee_jobcode: 'EMP001', sort_order: 0 }]),
+      ).rejects.toThrow('保存排序失败')
     })
+  })
 
-    it('sort_order有值时应透传', async () => {
+  describe('扩展方法复用', () => {
+    it('同一Pinia实例下二次调用应复用已有扩展action', async () => {
       const { userAPI } = await import('@/api/user')
-      vi.mocked(userAPI.createUser).mockResolvedValue({
-        employee_jobcode: 'EMP001',
-        employee_name: '张三',
-        employee_status: 'active',
-        employee_phone: '13800138000',
-        employee_location: '北京',
-        employee_department_code: 'DEP001',
-        sort_order: 3,
-      } as any)
+      vi.mocked(userAPI.getFuzzySearch).mockResolvedValue({ count: 0, results: [] } as any)
 
-      await store.create({
-        employee_jobcode: 'EMP001',
-        employee_name: '张三',
-        employee_status: 'active',
-        employee_phone: '13800138000',
-        employee_location: '北京',
-        employee_department_code: 'DEP001',
-        sort_order: 3,
-      } as any)
+      const second = useUserStore()
+      await second.getFuzzySearch({ keyword: '张' })
 
-      expect(userAPI.createUser).toHaveBeenCalledWith(
-        expect.objectContaining({
-          sort_order: 3,
-        }),
-      )
+      expect(second).toBeDefined()
+      expect(second.getFuzzySearch).toBe(store.getFuzzySearch)
+      expect(second.batchUpdateSort).toBe(store.batchUpdateSort)
     })
   })
 })

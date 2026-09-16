@@ -1,8 +1,8 @@
 /**
- * @file 员工管理 Store，基于 createEntityStore 工厂创建，含表单校验辅助函数
+ * @file 员工管理 Store，基于 createEntityStore 工厂创建，含表单校验辅助函数与模糊搜索/批量排序扩展方法
  * @module stores/userStore
  * @exports
- *   - useUserStore: 员工管理状态 Store
+ *   - useUserStore: 员工管理状态 Store（含 getFuzzySearch、batchUpdateSort 扩展方法）
  * @callers
  *   - composables/useDepartmentEmployeeList.ts
  *   - components/componentsdetails/UserDetails.vue
@@ -20,10 +20,42 @@
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { userAPI } from '@/api/user'
-import type { EmployeeExtended, EmployeeCreateForm, EmployeeUpdateForm } from '@/types/user'
-import type { PaginationQuery } from '@/stores/createEntityStore'
+import type {
+  EmployeeExtended,
+  EmployeeCreateForm,
+  EmployeeUpdateForm,
+  EmployeeListResponse,
+} from '@/types/user'
+import type { PaginationQuery, EntityStore } from '@/stores/createEntityStore'
 import { EmployeeStatus } from '@/types/user'
 import { ElMessage } from 'element-plus'
+
+/**
+ * 员工 Store 接口（含模糊搜索/批量排序扩展方法）
+ * 继承自 EntityStore<EmployeeExtended, PaginationQuery>
+ */
+interface UserExtendedStore extends EntityStore<EmployeeExtended, PaginationQuery> {
+  /**
+   * 全局模糊搜索员工（通讯录/员工列表搜索用）
+   * @param params 搜索参数（keyword 必填）
+   * @returns 员工列表响应（含 count/results）
+   */
+  getFuzzySearch: (params: {
+    keyword: string
+    department_code?: string
+    page?: number
+    page_size?: number
+  }) => Promise<EmployeeListResponse>
+
+  /**
+   * 批量更新员工排序
+   * @param sortData 排序数据列表 { employee_jobcode, sort_order }
+   * @returns 更新后的员工列表
+   */
+  batchUpdateSort: (
+    sortData: { employee_jobcode: string; sort_order: number }[],
+  ) => Promise<EmployeeExtended[]>
+}
 
 /**
  * 辅助函数：确保创建数据符合 EmployeeCreateForm
@@ -98,7 +130,7 @@ const ensureEmployeeUpdateForm = (data: Partial<EmployeeExtended>): EmployeeUpda
 /**
  * 员工 Store
  */
-export const useUserStore = createEntityStore<EmployeeExtended, PaginationQuery>('user', {
+const baseUserStoreDef = createEntityStore<EmployeeExtended, PaginationQuery>('user', {
   idKey: 'employee_jobcode',
   nameField: 'employee_name',
   displayName: '员工',
@@ -143,3 +175,42 @@ export const useUserStore = createEntityStore<EmployeeExtended, PaginationQuery>
   enableCache: false,
   cacheTTL: 5 * 60 * 1000,
 })
+
+/**
+ * 使用员工管理 Store（含模糊搜索/批量排序扩展方法）
+ * @returns UserExtendedStore 实例
+ */
+export const useUserStore = (): UserExtendedStore => {
+  const store = baseUserStoreDef()
+
+  if (!('getFuzzySearch' in store)) {
+    const extendedStore = store as unknown as UserExtendedStore
+
+    /**
+     * 全局模糊搜索员工
+     * 代理 userAPI.getFuzzySearch（通讯录/员工列表搜索数据源）
+     */
+    extendedStore.getFuzzySearch = async (params: {
+      keyword: string
+      department_code?: string
+      page?: number
+      page_size?: number
+    }) => {
+      return userAPI.getFuzzySearch(params)
+    }
+
+    /**
+     * 批量更新员工排序
+     * 代理 userAPI.batchUpdateSort（部门人员列表排序保存）
+     */
+    extendedStore.batchUpdateSort = async (
+      sortData: { employee_jobcode: string; sort_order: number }[],
+    ) => {
+      return userAPI.batchUpdateSort(sortData)
+    }
+
+    return extendedStore
+  }
+
+  return store as unknown as UserExtendedStore
+}

@@ -4,7 +4,7 @@
 @usedBy
   - router/index.ts: 路由懒加载
 @dependsOn
-  - api/roles: 角色数据接口
+  - stores/roleStore: 角色数据与权限配置接口
   - composables/usePermission: 权限校验
   - composables/useDebouncedSearch: 防抖搜索
   - commoncomponents/DashboardRecentList.vue: 最近操作列表组件
@@ -122,15 +122,17 @@
 import { ref, reactive, onMounted } from 'vue'
 import { User, Search, Plus } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { roleAPI } from '@/api/roles'
+import { useRoleStore } from '@/stores/roleStore'
 import { usePermission } from '@/composables/usePermission'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import type { Role, RoleCreateUpdateForm } from '@/types/roles'
+import type { PaginationQuery } from '@/stores/createEntityStore'
 import RolePermDialog from '@/components/system/RolePermDialog.vue'
 
 // C2 修复：添加权限检查
 const { isAdmin } = usePermission()
+const roleStore = useRoleStore()
 
 // ==================== 角色列表 ====================
 const loading = ref(false)
@@ -149,16 +151,16 @@ useDebouncedSearch(searchKeyword, () => {
 const fetchRoles = async () => {
   loading.value = true
   try {
-    const params: Record<string, string | number> = {
+    const params: PaginationQuery = {
       page: currentPage.value,
       page_size: pageSize.value,
     }
     if (searchKeyword.value.trim()) {
       params.search = searchKeyword.value.trim()
     }
-    const res = await roleAPI.getRoles(params)
-    roles.value = res.results
-    total.value = res.count
+    const res = await roleStore.getList(params)
+    roles.value = res
+    total.value = roleStore.pagination.total
   } catch {
     ElMessage.error('获取角色列表失败')
   } finally {
@@ -220,10 +222,10 @@ const handleSubmit = async () => {
     submitting.value = true
     try {
       if (isEdit.value && editingId.value) {
-        await roleAPI.updateRole(editingId.value, { ...formData })
+        await roleStore.update({ ...formData, id: editingId.value })
         ElMessage.success('更新成功')
       } else {
-        await roleAPI.createRole({ ...formData })
+        await roleStore.create({ ...formData })
         ElMessage.success('创建成功')
       }
       dialogVisible.value = false
@@ -243,7 +245,7 @@ const handleSubmit = async () => {
 
 const handleDelete = async (row: Role) => {
   try {
-    await roleAPI.deleteRole(row.id)
+    await roleStore.remove(String(row.id))
     ElMessage.success('删除成功')
     fetchRoles()
   } catch (error: unknown) {

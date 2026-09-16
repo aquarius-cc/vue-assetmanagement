@@ -124,7 +124,6 @@ import type { EmployeeExtended } from '@/types/user'
 import BindAuthUserDialog from '@/components/system/BindAuthUserDialog.vue'
 import { useUserStore } from '@/stores/userStore'
 import { useDepartmentStore } from '@/stores/departmentStore'
-import { userAPI } from '@/api/user'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import { userDetailsColumns as columns } from './userDetails.columns'
 import { createUserExcelExport } from '@/composables/useUserExcelExport'
@@ -236,7 +235,7 @@ const storeConfig: PaginationSearchConfig<EmployeeExtended> = {
    */
   search: {
     performSearch: async (keyword: string, page: number, page_size: number) => {
-      const response = await userAPI.getFuzzySearch({ keyword, page, page_size })
+      const response = await userStore.getFuzzySearch({ keyword, page, page_size })
       return {
         count: response.count,
         results: response.results as EmployeeExtended[],

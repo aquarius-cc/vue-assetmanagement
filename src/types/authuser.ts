@@ -173,6 +173,45 @@ export interface LogoutResponse {
   data: Record<string, never>
 }
 
+// ======================== 关联类型接口 ========================
+
+/**
+ * 员工简要信息（用于绑定查询）
+ * 与后端 EmployeeBrief 结构对齐
+ */
+export interface EmployeeBrief {
+  /** 员工工号 */
+  employee_jobcode: string
+  /** 员工姓名 */
+  employee_name: string
+  /** 员工状态 */
+  employee_status: string
+  /** 绑定的 AuthUser ID（未绑定时为 null） */
+  auth_user: number | null
+  /** 绑定的 AuthUser 用户名（未绑定时为 null） */
+  auth_user_username: string | null
+}
+
+/**
+ * 用户-角色关联（与后端 UserRoleSerializer 字段对齐）
+ */
+export interface UserRole {
+  /** 关联记录主键 */
+  id: number
+  /** AuthUser ID */
+  auth_user: number
+  /** 角色 ID */
+  role: number
+  /** 角色名称 */
+  role_name: string
+  /** 角色编码 */
+  role_code: string
+  /** 数据范围 */
+  data_scope: Record<string, unknown>
+  /** 创建时间 */
+  created_at: string
+}
+
 // ======================== 查询参数接口 ========================
 
 /**
