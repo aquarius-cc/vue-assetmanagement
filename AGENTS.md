@@ -1,10 +1,10 @@
 
 ---
 
-### 📄 文档 3：前端子引擎 `/vue-assetmanagement/AGENTS.md` (v9.5.1)
+### 📄 文档 3：前端子引擎 `/vue-assetmanagement/AGENTS.md` (v9.6.0)
 
 # 前端 AI 执行子引擎配置 (Frontend Engine)
-> 版本：v9.5.1 | 最后更新：2026-07-13
+> 版本：v9.6.0 | 最后更新：2026-09-17
 > 职责：Vue 3 组件开发、设计令牌执行、UI 交互逻辑、前端测试门禁、组件规模与复杂度管控
 
 ## §1 核心执行协议
@@ -27,7 +27,7 @@
   3. `npm run format:check` — Prettier 格式化检查，确保代码风格统一。
 - **复杂度门禁**：代码完成后，必须运行 `eslint . --ext .vue,.ts --rule "complexity: ['error', 10]"`，若超标则触发 `[HALT]`。（若未配置 ESLint 复杂度规则，须在审计票中人工核验函数行数/嵌套深度）。
 - **测试门禁**：代码完成后，**必须**运行 `vitest --coverage --threshold 80`，并单独检查 Store 层覆盖率 ≥ 90%。若未通过，触发 `[HALT]` 并补充测试用例。
-- **变异测试**：必须运行 `npx vitest --mutate`（Vitest 变异测试插件）并确保通过率 ≥ 80%（参见 T16）。**禁止**引入 Stryker 等外部变异测试工具。
+- **变异测试**：必须运行 `npm run test:mutate`（`@stryker-mutator/vitest-runner` v10，参见 T16）并确保变异通过率 ≥ 80%。
 - **复用规则索引**：编码前必须检查是否存在可复用的组件/Composables/Utils，详细复用规范见 `../Rules_Fiels/frontend-business-rules.md` 第四节（FR-1 ~ FR-4）。
 - **规模规则索引**：组件行数、Composable 规模、模板嵌套深度等量化红线见 `../Rules_Fiels/frontend-business-rules.md` 第四节（FR-5 ~ FR-7）。
 
@@ -108,6 +108,8 @@
 - 涉及全局 CSS 变量命名空间变更，可能影响其他端 → 上报根级。
 
 ## §5 变更日志
+- **v9.6.0 (2026-09-17)**：修复变异测试命令无法落地问题——`npx vitest --mutate` 依赖的 `vitest-mutant` / `@vitest/mutate` 在 npm 均不存在，经根级 §5 人工审批改用 `@stryker-mutator/vitest-runner` v10，命令改为 `npm run test:mutate`（与 frontend-testing-rules.md T16 v1.6 对齐）。
+
 - **v9.5.1 (2026-07-13)**：审计票自检项同步根级v3.4.1，增加Fact-1（事实基线）和Style-1~Style-3（写作风格）检查行。
 
 - **v9.5.0 (2026-07-13)**：同步根级v3.4.0，§1.1读取优先增加根级§9（AI交互与写作规范）引用。

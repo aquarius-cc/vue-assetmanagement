@@ -16,6 +16,7 @@
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "test": "vitest run",
+    "test:mutate": "stryker run",
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run --exclude 'src/__tests__/**'",
     "test:integration": "vitest run --include 'src/__tests__/**'"
@@ -34,6 +35,8 @@
     "vue-router": "^5.0.6"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
     "@tsconfig/node22": "^22.0.2",
     "@types/node": "^25.6.0",
     "@vitejs/plugin-vue": "^6.0.7",
