@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useOutAssetStore } from '../outAssetStore'
+import { useOutAssetStore, batchCreateOutAssets } from '../outAssetStore'
 
 vi.mock('@/api/outAsset', () => ({
   outAssetAPI: {
@@ -10,6 +10,7 @@ vi.mock('@/api/outAsset', () => ({
     updateOutAsset: vi.fn(),
     deleteOutAsset: vi.fn(),
     batchDeleteOutAssets: vi.fn(),
+    batchCreateOutAssets: vi.fn(),
   },
 }))
 
@@ -164,6 +165,33 @@ describe('OutAssetStore', () => {
       await store.removeBatch(['OA-001'])
 
       expect(outAssetAPI.batchDeleteOutAssets).toHaveBeenCalledWith(['OA-001'])
+    })
+  })
+
+  describe('批量创建', () => {
+    it('batchCreateOutAssets应该调用API并透传列表', async () => {
+      const mockResult = {
+        total: 1,
+        success_count: 1,
+        fail_count: 0,
+        success_items: [],
+        fail_items: [],
+      }
+      const { outAssetAPI } = await import('@/api/outAsset')
+      vi.mocked(outAssetAPI.batchCreateOutAssets).mockResolvedValue(mockResult as any)
+
+      const items = [{ asset_code: 'AS-001', out_asset_number: 1 }] as any[]
+      const result = await batchCreateOutAssets(items)
+
+      expect(outAssetAPI.batchCreateOutAssets).toHaveBeenCalledWith(items)
+      expect(result.success_count).toBe(1)
+    })
+
+    it('batchCreateOutAssets API失败时应抛出异常', async () => {
+      const { outAssetAPI } = await import('@/api/outAsset')
+      vi.mocked(outAssetAPI.batchCreateOutAssets).mockRejectedValue(new Error('批量创建失败'))
+
+      await expect(batchCreateOutAssets([])).rejects.toThrow('批量创建失败')
     })
   })
 })

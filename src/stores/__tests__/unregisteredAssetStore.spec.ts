@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useUnregisteredAssetStore } from '../unregisteredAssetStore'
+import { useUnregisteredAssetStore, approveUnregisteredAsset } from '../unregisteredAssetStore'
 
 vi.mock('@/api/unregisteredAsset', () => ({
   unregisteredAssetAPI: {
@@ -10,6 +10,7 @@ vi.mock('@/api/unregisteredAsset', () => ({
     updateUnregisteredAsset: vi.fn(),
     deleteUnregisteredAsset: vi.fn(),
     batchDeleteUnregisteredAssets: vi.fn(),
+    approveUnregisteredAsset: vi.fn(),
   },
 }))
 
@@ -159,6 +160,34 @@ describe('UnregisteredAssetStore', () => {
       await store.removeBatch(['UNR-001'])
 
       expect(unregisteredAssetAPI.batchDeleteUnregisteredAssets).toHaveBeenCalledWith(['UNR-001'])
+    })
+  })
+
+  describe('审批', () => {
+    it('approveUnregisteredAsset应该调用API并透传编码与表单', async () => {
+      const mockResult = { unregistered_code: 'UNR-001', approval_status: 'approved' }
+      const { unregisteredAssetAPI } = await import('@/api/unregisteredAsset')
+      vi.mocked(unregisteredAssetAPI.approveUnregisteredAsset).mockResolvedValue(mockResult as any)
+
+      const payload = { handle_type: 'create_and_recycle', approval_remark: '审批通过' }
+      const result = await approveUnregisteredAsset('UNR-001', payload)
+
+      expect(unregisteredAssetAPI.approveUnregisteredAsset).toHaveBeenCalledWith('UNR-001', payload)
+      expect(result).toEqual(mockResult)
+    })
+
+    it('approveUnregisteredAsset API失败时应抛出异常', async () => {
+      const { unregisteredAssetAPI } = await import('@/api/unregisteredAsset')
+      vi.mocked(unregisteredAssetAPI.approveUnregisteredAsset).mockRejectedValue(
+        new Error('审批失败'),
+      )
+
+      await expect(
+        approveUnregisteredAsset('UNR-001', {
+          handle_type: 'reject',
+          approval_remark: '拒绝',
+        }),
+      ).rejects.toThrow('审批失败')
     })
   })
 })

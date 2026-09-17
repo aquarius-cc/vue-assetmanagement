@@ -14,6 +14,7 @@
  *   - components/componentsdetails/detils/AssetBatchImport.vue
  *   - components/componentsdetails/detils/BasicAssetDetails.vue
  *   - components/componentsdetails/detils/DamagedAssetForm.vue
+ *   - components/componentsdetails/detils/RecycleAssetBasicDetails.vue
  *   - components/componentsdetails/detils/OutAssetBasicDetails.vue
  *   - components/componentsdetails/detils/OutAssetForm.vue
  *   - components/componentsdetails/detils/WasteAssetForm.vue
@@ -36,6 +37,7 @@ import type {
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery, EntityStore } from '@/stores/createEntityStore'
 import type { AssetBatchCreateResult } from '@/api/asset'
+import type { Contract } from '@/types/contract'
 
 type StrictQueryParams = {
   page: number
@@ -105,6 +107,14 @@ interface AssetStore extends EntityStore<AssetDetail, PaginationQuery> {
       broken_date?: string
     },
   ) => Promise<Asset>
+
+  /**
+   * 按资产编码查询关联合同
+   * 回收/报废等操作视图通过该接口展示资产关联合同
+   * @param asset_code 资产编码
+   * @returns 关联合同
+   */
+  getContractByAssetCode: (asset_code: string) => Promise<Contract>
 }
 
 const baseAssetStoreDef = createEntityStore<AssetDetail, PaginationQuery>('asset', {
@@ -236,6 +246,14 @@ export const useAssetStore = (): AssetStore => {
       },
     ) => {
       return assetAPI.markAssetAsBroken(recordcode, data)
+    }
+
+    /**
+     * 按资产编码查询关联合同
+     * 代理 assetAPI.getContractByAssetCode（通过 asset 关联查询合同）
+     */
+    extendedStore.getContractByAssetCode = async (asset_code: string) => {
+      return assetAPI.getContractByAssetCode(asset_code)
     }
 
     return extendedStore

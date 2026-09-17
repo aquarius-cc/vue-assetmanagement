@@ -89,21 +89,8 @@ export default defineConfigWithVueTs(
   // AuthUserManage/ContactsView/UserDetails/DepartmentEmployeeList）→ 已移除，走 roleStore/authUserStore/userStore
   // FE-01 批3 已迁移 8 个组件（AssetTypeDetails/AuditLogDetails/DepartmentFormDialog/DepartmentBatchAddDialog/
   // AssetTypeBatchImport/DepartmentManagement/AuditLogDetail/ContractPaymentRecord）→ 已移除，走 departmentStore/assetTypeStore/auditLogStore/contractStore
-  {
-    name: 'app/legacy-direct-api-files',
-    files: [
-      'src/components/componentsdetails/detils/AssetForm.vue',
-      'src/components/componentsdetails/detils/ContractBatchImport.vue',
-      'src/components/componentsdetails/detils/DepartmentBatchImport.vue',
-      'src/components/componentsdetails/detils/UserBatchImport.vue',
-      'src/components/componentsdetails/detils/UnregisteredAssetBasicDetails.vue',
-      'src/components/componentsdetails/detils/RecycleAssetBasicDetails.vue',
-      'src/components/componentsdetails/detils/OutAssetBatchImport.vue',
-      'src/components/componentsdetails/detils/HardDiskSNForm.vue',
-      'src/components/componentsdetails/detils/StorageBatchImport.vue',
-    ],
-    rules: {
-      'no-restricted-imports': 'off',
-    },
-  },
+  // FE-01 批4 已迁移 9 个组件（AssetForm/ContractBatchImport/DepartmentBatchImport/UserBatchImport/
+  // UnregisteredAssetBasicDetails/RecycleAssetBasicDetails/OutAssetBatchImport/HardDiskSNForm/StorageBatchImport）
+  // → 已移除，走 assetStore/contractStore/departmentStore/userStore/unregisteredAssetStore/harddiskSnStore/storageStore
+  // FE-01 全部迁移完成，legacy-direct-api-files 豁免清单已清空并移除。
 )

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useStorageStore } from '../storageStore'
+import { useStorageStore, batchCreateStorages } from '../storageStore'
 
 vi.mock('@/api/storage', () => ({
   storageAPI: {
@@ -10,6 +10,7 @@ vi.mock('@/api/storage', () => ({
     updateStorage: vi.fn(),
     deleteStorage: vi.fn(),
     batchDeleteStorages: vi.fn(),
+    batchCreateStorages: vi.fn(),
   },
 }))
 
@@ -123,6 +124,33 @@ describe('StorageStore', () => {
       await store.remove('ST-001')
 
       expect(storageAPI.deleteStorage).toHaveBeenCalledWith('ST-001')
+    })
+  })
+
+  describe('批量创建', () => {
+    it('batchCreateStorages应该调用API并透传列表', async () => {
+      const mockResult = {
+        total: 1,
+        success_count: 1,
+        fail_count: 0,
+        success_items: [],
+        fail_items: [],
+      }
+      const { storageAPI } = await import('@/api/storage')
+      vi.mocked(storageAPI.batchCreateStorages).mockResolvedValue(mockResult as any)
+
+      const items = [{ storage_name: '主仓库', storage_location: 'A栋1楼' }] as any[]
+      const result = await batchCreateStorages(items)
+
+      expect(storageAPI.batchCreateStorages).toHaveBeenCalledWith(items)
+      expect(result.success_count).toBe(1)
+    })
+
+    it('batchCreateStorages API失败时应抛出异常', async () => {
+      const { storageAPI } = await import('@/api/storage')
+      vi.mocked(storageAPI.batchCreateStorages).mockRejectedValue(new Error('批量创建失败'))
+
+      await expect(batchCreateStorages([])).rejects.toThrow('批量创建失败')
     })
   })
 })

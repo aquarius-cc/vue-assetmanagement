@@ -142,8 +142,7 @@ import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Upload, Download } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { userAPI } from '@/api/user'
-import { useUserStore } from '@/stores/userStore'
+import { useUserStore, batchCreateUsers } from '@/stores/userStore'
 import { useDepartmentStore } from '@/stores/index'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import { USER_STATUS_INPUT_MAPPING } from '@/utils/Format'
@@ -242,7 +241,7 @@ const submitBatchData = async () => {
         row.submitError = undefined
       })
 
-      const result = await userAPI.batchCreateUsers(apiDataList)
+      const result = await batchCreateUsers(apiDataList)
 
       // 使用 index 匹配：后端 fail_items 的 index 对应 validRows 的数组索引
       if (result.fail_count > 0) {

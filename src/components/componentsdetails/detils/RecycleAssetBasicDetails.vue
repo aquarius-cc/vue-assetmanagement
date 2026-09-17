@@ -42,7 +42,7 @@ import { useStorageStore } from '@/stores/storageStore'
 import { useExcelExport } from '@/composables/useExcelExport'
 import { useRecycleAssetDetailCards } from '@/composables/useRecycleAssetDetailCards'
 import InfoCard from '@/components/commoncomponents/InfoCard.vue'
-import { assetAPI } from '@/api/asset'
+import { useAssetStore } from '@/stores/assetStore'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import type { RecycleAssetExtended } from '@/types/recycleasset'
 import type { Contract } from '@/types/contract'
@@ -58,11 +58,13 @@ const recycleAssetStore = useRecycleAssetStore()
 const userStore = useUserStore()
 /** 仓库 Store：用于查询仓库详细信息 */
 const storageStore = useStorageStore()
+/** 资产 Store：用于按资产编码查询关联合同 */
+const assetStore = useAssetStore()
 const isLoading = ref(true)
 const detailData = ref<RecycleAssetExtended | null>(null)
 
 // ===== 关联数据 ref =====
-/** 合同详情：通过 assetAPI.getContractByAssetCode 获取 */
+/** 合同详情：通过 assetStore.getContractByAssetCode 获取 */
 const contractDetail = ref<Contract | null>(null)
 /** 【v1.1.0 对齐】移除 usingPerson ref，使用人信息通过后端序列化器 FK 链自动返回 */
 /** 回收人详情：通过 userStore.getById 获取 */
@@ -128,7 +130,7 @@ const exportColumns: ColumnConfig<RecycleAssetExtended>[] = [
  * @description
  * 1. 先获取回收资产主详情
  * 2. 根据主详情中的外键字段，通过 Promise.all 并行加载 3 个关联数据：
- *    - 合同：通过 assetAPI.getContractByAssetCode(recycle_asset)
+ *    - 合同：通过 assetStore.getContractByAssetCode(recycle_asset)
  *    - 回收人：通过 userStore.getById(recycle_asset_recycle_person_jobcode)
  *    - 仓库：通过 storageStore.getById(recycle_asset_storage_code)
  * 3. 使用人信息通过后端序列化器 FK 链自动返回（using_person_name / using_person_jobcode），无需单独加载
@@ -149,10 +151,10 @@ const loadDetail = async (code: string) => {
     // 并行加载关联数据（提升性能）
     const promises: Promise<unknown>[] = []
 
-    // 合同：直接调用 API（Store 未封装此方法）
+    // 合同：通过 assetStore 查询（Store 统一数据入口）
     if (detail.recycle_asset) {
       promises.push(
-        assetAPI.getContractByAssetCode(detail.recycle_asset).then((contract) => {
+        assetStore.getContractByAssetCode(detail.recycle_asset).then((contract) => {
           contractDetail.value = contract
         }),
       )

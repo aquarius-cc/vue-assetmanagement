@@ -3,6 +3,8 @@
  * @module stores/harddiskSnStore
  * @exports
  *   - useHardDiskSnStore: 硬盘序列号管理状态 Store
+ *   - getHardDiskSNsByAsset: 按资产编码查询硬盘序列号列表
+ *   - saveHardDiskSNBatch: 批量保存硬盘序列号记录（新增和编辑统一）
  * @callers
  *   - components/componentsdetails/HardDiskSNDetails.vue
  *   - components/componentsdetails/detils/HardDiskSNForm.vue
@@ -13,9 +15,42 @@
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { harddiskSnAPI } from '@/api/harddiskSn'
-import type { HardDiskSN, HardDiskSNCreateForm, HardDiskSNUpdateForm } from '@/types/harddisksn'
+import type {
+  HardDiskSN,
+  HardDiskSNCreateForm,
+  HardDiskSNUpdateForm,
+  HardDiskSNBatchSaveForm,
+  HardDiskSNListResponse,
+} from '@/types/harddisksn'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
+
+/**
+ * 按资产编码查询硬盘序列号列表
+ * 统一数据访问入口，供硬盘序列号表单按资产加载已有记录
+ * @param asset_code 资产编码
+ * @returns 硬盘序列号列表响应
+ */
+export const getHardDiskSNsByAsset = (asset_code: string): Promise<HardDiskSNListResponse> => {
+  return harddiskSnAPI.getHardDiskSNsByAsset(asset_code)
+}
+
+/**
+ * 批量保存硬盘序列号记录（新增和编辑统一）
+ * 提交 { asset_recordcode, disks } 数组，后端根据每条记录是否有 recordcode 决定新增或更新
+ * @param data 批量保存表单数据
+ * @returns 保存结果（包含 created、updated、total、asset_recordcode）
+ */
+export const saveHardDiskSNBatch = (
+  data: HardDiskSNBatchSaveForm,
+): Promise<{
+  created: number
+  updated: number
+  total: number
+  asset_recordcode: string
+}> => {
+  return harddiskSnAPI.saveHardDiskSNBatch(data)
+}
 
 /**
  * 硬盘序列号 Store

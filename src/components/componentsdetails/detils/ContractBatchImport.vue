@@ -141,8 +141,7 @@ import {
   contractExampleColumns as exampleColumns,
   contractExampleRows as exampleRows,
 } from './contractBatchImport.config'
-import { contractAPI } from '@/api/contract'
-import { useContractStore } from '@/stores/contractStore'
+import { useContractStore, batchCreateContracts } from '@/stores/contractStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import type { ContractCreateForm } from '@/types/contract'
 import type { ContractExcelRow } from '@/types/batch-import'
@@ -227,7 +226,7 @@ const handleSubmit = async () => {
       row.submitError = undefined
     })
 
-    const result = await contractAPI.batchCreateContracts(apiDataList)
+    const result = await batchCreateContracts(apiDataList)
 
     // 使用 index 匹配：后端 fail_items 的 index 对应 validRows 的数组索引
     if (result.fail_count > 0) {

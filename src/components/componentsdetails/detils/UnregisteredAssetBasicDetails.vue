@@ -174,8 +174,10 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Back, Download, Document } from '@element-plus/icons-vue'
-import { useUnregisteredAssetStore } from '@/stores/unregisteredAssetStore'
-import { unregisteredAssetAPI } from '@/api/unregisteredAsset'
+import {
+  useUnregisteredAssetStore,
+  approveUnregisteredAsset,
+} from '@/stores/unregisteredAssetStore'
 import { useExcelExport } from '@/composables/useExcelExport'
 import type { UnregisteredAsset } from '@/types/unregisteredasset'
 import {
@@ -218,7 +220,7 @@ const loadDetail = async (code: string) => {
 const { handleApprove, handleReject } = useUnregisteredApproval({
   detailData,
   store: unregisteredAssetStore,
-  api: unregisteredAssetAPI,
+  api: { approveUnregisteredAsset },
   loadDetail: loadDetail,
 })
 

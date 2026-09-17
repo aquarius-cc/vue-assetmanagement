@@ -3,6 +3,7 @@
  * @module stores/unregisteredAssetStore
  * @exports
  *   - useUnregisteredAssetStore: 未登记资产管理状态 Store
+ *   - approveUnregisteredAsset: 审批未登记资产（未登记资产详情页数据访问入口）
  * @callers
  *   - components/componentsdetails/UnregisteredAssetDetails.vue
  *   - components/componentsdetails/detils/UnregisteredAssetForm.vue
@@ -14,13 +15,28 @@
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { unregisteredAssetAPI } from '@/api/unregisteredAsset'
+import { ElMessage } from 'element-plus'
 import type {
   UnregisteredAsset,
   UnregisteredAssetCreateForm,
   UnregisteredAssetUpdateForm,
+  UnregisteredAssetApproveForm,
 } from '@/types/unregisteredasset'
-import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
+
+/**
+ * 审批未登记资产
+ * 统一数据访问入口，供未登记资产详情页审批通过/驳回复用
+ * @param code 未登记资产编码
+ * @param data 审批表单数据
+ * @returns 更新后的未登记资产
+ */
+export const approveUnregisteredAsset = (
+  code: string,
+  data: UnregisteredAssetApproveForm,
+): Promise<UnregisteredAsset> => {
+  return unregisteredAssetAPI.approveUnregisteredAsset(code, data)
+}
 
 /**
  * 未登记资产 Store

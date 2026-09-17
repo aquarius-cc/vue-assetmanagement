@@ -3,6 +3,7 @@
  * @module stores/userStore
  * @exports
  *   - useUserStore: 员工管理状态 Store（含 getFuzzySearch、batchUpdateSort 扩展方法）
+ *   - batchCreateUsers: 批量创建员工（员工批量导入数据访问入口）
  * @callers
  *   - composables/useDepartmentEmployeeList.ts
  *   - components/componentsdetails/UserDetails.vue
@@ -29,6 +30,21 @@ import type {
 import type { PaginationQuery, EntityStore } from '@/stores/createEntityStore'
 import { EmployeeStatus } from '@/types/user'
 import { ElMessage } from 'element-plus'
+import type { EmployeeBatchCreateResult } from '@/api/user'
+
+export type { EmployeeBatchCreateResult } from '@/api/user'
+
+/**
+ * 批量创建员工
+ * 统一数据访问入口，供员工批量导入复用
+ * @param items 待创建的员工列表
+ * @returns 批量创建结果（含成功/失败明细）
+ */
+export const batchCreateUsers = (
+  items: EmployeeCreateForm[],
+): Promise<EmployeeBatchCreateResult> => {
+  return userAPI.batchCreateUsers(items)
+}
 
 /**
  * 员工 Store 接口（含模糊搜索/批量排序扩展方法）

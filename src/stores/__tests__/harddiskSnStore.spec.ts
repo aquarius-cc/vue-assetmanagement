@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useHardDiskSnStore } from '../harddiskSnStore'
+import { useHardDiskSnStore, getHardDiskSNsByAsset, saveHardDiskSNBatch } from '../harddiskSnStore'
 
 vi.mock('@/api/harddiskSn', () => ({
   harddiskSnAPI: {
@@ -9,6 +9,8 @@ vi.mock('@/api/harddiskSn', () => ({
     createHardDiskSN: vi.fn(),
     updateHardDiskSN: vi.fn(),
     deleteHardDiskSN: vi.fn(),
+    getHardDiskSNsByAsset: vi.fn(),
+    saveHardDiskSNBatch: vi.fn(),
   },
 }))
 
@@ -124,6 +126,50 @@ describe('HardDiskSnStore', () => {
       await store.remove('AS-001')
 
       expect(harddiskSnAPI.deleteHardDiskSN).toHaveBeenCalledWith('AS-001')
+    })
+  })
+
+  describe('按资产查询与批量保存', () => {
+    it('getHardDiskSNsByAsset应该调用API并透传 asset_code', async () => {
+      const mockResponse = { results: [{ recordcode: 'HD-001' }], count: 1 }
+      const { harddiskSnAPI } = await import('@/api/harddiskSn')
+      vi.mocked(harddiskSnAPI.getHardDiskSNsByAsset).mockResolvedValue(mockResponse as any)
+
+      const result = await getHardDiskSNsByAsset('AS-001')
+
+      expect(harddiskSnAPI.getHardDiskSNsByAsset).toHaveBeenCalledWith('AS-001')
+      expect(result).toEqual(mockResponse)
+    })
+
+    it('getHardDiskSNsByAsset API失败时应抛出异常', async () => {
+      const { harddiskSnAPI } = await import('@/api/harddiskSn')
+      vi.mocked(harddiskSnAPI.getHardDiskSNsByAsset).mockRejectedValue(new Error('查询失败'))
+
+      await expect(getHardDiskSNsByAsset('AS-001')).rejects.toThrow('查询失败')
+    })
+
+    it('saveHardDiskSNBatch应该调用API并透传批量数据', async () => {
+      const mockResult = { created: 1, updated: 0, total: 1, asset_recordcode: 'AR-001' }
+      const { harddiskSnAPI } = await import('@/api/harddiskSn')
+      vi.mocked(harddiskSnAPI.saveHardDiskSNBatch).mockResolvedValue(mockResult)
+
+      const data = {
+        asset_recordcode: 'AR-001',
+        disks: [{ harddisk_no: '1', harddisk_sn_code: 'SN001' }],
+      } as any
+      const result = await saveHardDiskSNBatch(data)
+
+      expect(harddiskSnAPI.saveHardDiskSNBatch).toHaveBeenCalledWith(data)
+      expect(result.total).toBe(1)
+    })
+
+    it('saveHardDiskSNBatch API失败时应抛出异常', async () => {
+      const { harddiskSnAPI } = await import('@/api/harddiskSn')
+      vi.mocked(harddiskSnAPI.saveHardDiskSNBatch).mockRejectedValue(new Error('保存失败'))
+
+      await expect(
+        saveHardDiskSNBatch({ asset_recordcode: 'AR-001', disks: [] } as any),
+      ).rejects.toThrow('保存失败')
     })
   })
 })

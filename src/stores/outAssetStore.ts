@@ -3,6 +3,7 @@
  * @module stores/outAssetStore
  * @exports
  *   - useOutAssetStore: 出库资产管理状态 Store
+ *   - batchCreateOutAssets: 批量创建出库资产（出库批量导入数据访问入口）
  * @callers
  *   - services/assetLifecycleService.ts
  *   - composables/useOutAssetForm.ts
@@ -20,6 +21,21 @@ import { outAssetAPI } from '@/api/outAsset'
 import type { OutAssetDetail, OutAssetCreateForm, OutAssetUpdateForm } from '@/types/outasset'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
+import type { OutAssetBatchCreateResult } from '@/api/outAsset'
+
+export type { OutAssetBatchCreateResult } from '@/api/outAsset'
+
+/**
+ * 批量创建出库资产
+ * 统一数据访问入口，供出库资产批量导入复用
+ * @param items 待创建的出库资产列表
+ * @returns 批量创建结果（含成功/失败明细）
+ */
+export const batchCreateOutAssets = (
+  items: OutAssetCreateForm[],
+): Promise<OutAssetBatchCreateResult> => {
+  return outAssetAPI.batchCreateOutAssets(items)
+}
 
 /**
  * 出库资产 Store

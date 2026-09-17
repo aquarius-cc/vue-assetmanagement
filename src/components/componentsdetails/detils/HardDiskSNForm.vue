@@ -152,11 +152,14 @@ import { ElMessage } from 'element-plus'
 import { EditPen } from '@element-plus/icons-vue'
 import { isAxiosError } from 'axios'
 import { useAssetStore } from '@/stores/assetStore'
-import { useHardDiskSnStore } from '@/stores/harddiskSnStore'
+import {
+  useHardDiskSnStore,
+  getHardDiskSNsByAsset,
+  saveHardDiskSNBatch,
+} from '@/stores/harddiskSnStore'
 import type { DiskItem, HardDiskSNBatchSaveForm, HardDiskSN } from '@/types/harddisksn'
 import { hardDiskTypeOptions, hardDiskStatusOptions, rules } from './hardDiskSNFormConfig'
 import { HardDiskStatus } from '@/types/harddisksn'
-import { harddiskSnAPI } from '@/api/harddiskSn'
 import type { AssetDetail } from '@/types/asset'
 import type { AssetSuggestion } from '@/types/form-helpers'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
@@ -307,7 +310,7 @@ const loadEditData = async (_assetCode: string, harddiskSnCode: string) => {
   isLoading.value = true
   try {
     // 1. 获取该资产下的所有硬盘记录
-    const response = await harddiskSnAPI.getHardDiskSNsByAsset(_assetCode)
+    const response = await getHardDiskSNsByAsset(_assetCode)
     const records = response.results
 
     if (!records || records.length === 0) {
@@ -417,7 +420,7 @@ const submitForm = () => {
         })),
       }
 
-      await harddiskSnAPI.saveHardDiskSNBatch(submitData)
+      await saveHardDiskSNBatch(submitData)
 
       const activeCount = submitData.disks.filter(
         (d) => d.harddisk_status !== HardDiskStatus.SCRAP,

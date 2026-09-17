@@ -15,6 +15,7 @@ vi.mock('@/api/asset', () => ({
     combineSearch: vi.fn(),
     getAssetTimeline: vi.fn(),
     markAssetAsBroken: vi.fn(),
+    getContractByAssetCode: vi.fn(),
   },
 }))
 
@@ -425,6 +426,26 @@ describe('AssetStore', () => {
       const result = await store.getByName('不存在')
 
       expect(result).toEqual([])
+    })
+  })
+
+  describe('按资产编码查询合同', () => {
+    it('getContractByAssetCode应该调用API并透传 asset_code', async () => {
+      const mockContract = { recordcode: 'CT-001', contract_name: '采购合同' }
+      const { assetAPI } = await import('@/api/asset')
+      vi.mocked(assetAPI.getContractByAssetCode).mockResolvedValue(mockContract as any)
+
+      const result = await store.getContractByAssetCode('AS-001')
+
+      expect(result).toEqual(mockContract)
+      expect(assetAPI.getContractByAssetCode).toHaveBeenCalledWith('AS-001')
+    })
+
+    it('getContractByAssetCode API失败时应抛出异常', async () => {
+      const { assetAPI } = await import('@/api/asset')
+      vi.mocked(assetAPI.getContractByAssetCode).mockRejectedValue(new Error('查询失败'))
+
+      await expect(store.getContractByAssetCode('AS-001')).rejects.toThrow('查询失败')
     })
   })
 })

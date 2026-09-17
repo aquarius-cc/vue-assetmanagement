@@ -110,8 +110,7 @@ import {
 } from '@/utils/batchImportHelpers'
 import { downloadExcelTemplate } from '@/utils/batchImport/templateExport'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
-import { storageAPI } from '@/api/storage'
-import { useStorageStore } from '@/stores/storageStore'
+import { useStorageStore, batchCreateStorages } from '@/stores/storageStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import type { StorageCreateForm } from '@/types/storage'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
@@ -308,7 +307,7 @@ const handleSubmit = async () => {
       row.submitError = undefined
     })
     // console.log('提交数据:', apiDataList)
-    const result = await storageAPI.batchCreateStorages(apiDataList)
+    const result = await batchCreateStorages(apiDataList)
     // console.log('批量创建仓库响应:', result)
 
     // 使用 index 匹配：后端 fail_items 的 index 对应 validRows 的数组索引

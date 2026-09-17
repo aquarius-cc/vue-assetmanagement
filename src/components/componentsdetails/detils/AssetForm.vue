@@ -70,9 +70,8 @@ import { ElMessage } from 'element-plus'
 import { Edit, Plus } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
 import { isAxiosError } from 'axios'
-import type { AssetCreateFormExtended } from '@/types/asset'
+import type { AssetCreateFormExtended, AssetDetail } from '@/types/asset'
 import { getAssetStatusText } from '@/utils/Format'
-import { assetAPI } from '@/api/asset'
 import {
   useUserStore,
   useAssetStore,
@@ -301,13 +300,15 @@ const submitForm = () => {
           ElMessage.error('缺少记录编码，无法更新资产')
           return
         }
-        await assetAPI.updateAsset({
+        await assetStore.update({
           ...getAssetCreateForm.value,
           recordcode,
-        })
+        } as unknown as Partial<AssetDetail>)
         ElMessage.success('更新成功')
       } else {
-        const createdAssets = await assetAPI.createAsset(getAssetCreateForm.value)
+        const createdAssets = await assetStore.create(
+          getAssetCreateForm.value as unknown as Partial<AssetDetail>,
+        )
         const assetCount = Array.isArray(createdAssets) ? createdAssets.length : 1
         ElMessage.success(`录入成功，共创建 ${assetCount} 条资产记录`)
       }

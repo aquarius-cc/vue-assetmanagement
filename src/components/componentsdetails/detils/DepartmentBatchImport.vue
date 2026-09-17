@@ -101,8 +101,7 @@ import { Upload } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useBatchImport } from '@/composables/useBatchImport'
 import type { ValidatedRow } from '@/composables/useBatchImport'
-import { departmentAPI } from '@/api/department'
-import { useDepartmentStore } from '@/stores/departmentStore'
+import { useDepartmentStore, batchCreateDepartments } from '@/stores/departmentStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import type { DepartmentCreateForm } from '@/types/department'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
@@ -263,7 +262,7 @@ const handleSubmit = async () => {
       row.submitError = undefined
     })
 
-    const result = await departmentAPI.batchCreateDepartments(apiDataList)
+    const result = await batchCreateDepartments(apiDataList)
 
     // 使用 index 匹配：后端 fail_items 的 index 对应 validRows 的数组索引
     if (result.fail_count > 0) {

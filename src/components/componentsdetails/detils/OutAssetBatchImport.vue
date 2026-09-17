@@ -111,8 +111,7 @@ import { useRouter } from 'vue-router'
 import { useBatchImport } from '@/composables/useBatchImport'
 import { validationTagType, validationTagText } from '@/utils/batchImportHelpers'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
-import { outAssetAPI } from '@/api/outAsset'
-import { useOutAssetStore } from '@/stores/outAssetStore'
+import { useOutAssetStore, batchCreateOutAssets } from '@/stores/outAssetStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import type { OutAssetExcelRow } from '@/types/batch-import'
 import type { OutAssetCreateForm } from '@/types/outasset'
@@ -200,7 +199,7 @@ const handleSubmit = async () => {
       row.submitError = undefined
     })
 
-    const result = await outAssetAPI.batchCreateOutAssets(apiDataList)
+    const result = await batchCreateOutAssets(apiDataList)
 
     // 使用 index 匹配：后端 fail_items 的 index 对应 validRows 的数组索引
     if (result.fail_count > 0) {

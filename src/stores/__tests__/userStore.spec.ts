@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useUserStore } from '../userStore'
+import { useUserStore, batchCreateUsers } from '../userStore'
 
 vi.mock('@/api/user', () => ({
   userAPI: {
@@ -13,6 +13,7 @@ vi.mock('@/api/user', () => ({
     batchDeleteUsers: vi.fn(),
     getFuzzySearch: vi.fn(),
     batchUpdateSort: vi.fn(),
+    batchCreateUsers: vi.fn(),
   },
 }))
 
@@ -293,6 +294,42 @@ describe('UserStore', () => {
       expect(second).toBeDefined()
       expect(second.getFuzzySearch).toBe(store.getFuzzySearch)
       expect(second.batchUpdateSort).toBe(store.batchUpdateSort)
+    })
+  })
+
+  describe('批量创建', () => {
+    it('batchCreateUsers应该调用API并透传列表', async () => {
+      const mockResult = {
+        total: 2,
+        success_count: 2,
+        fail_count: 0,
+        success_items: [],
+        fail_items: [],
+      }
+      const { userAPI } = await import('@/api/user')
+      vi.mocked(userAPI.batchCreateUsers).mockResolvedValue(mockResult as any)
+
+      const items = [
+        {
+          employee_jobcode: 'EMP001',
+          employee_name: '张三',
+          employee_status: 'active',
+          employee_phone: '13800000000',
+          employee_location: '北京',
+          employee_department_code: 'D001',
+        },
+      ] as any[]
+      const result = await batchCreateUsers(items)
+
+      expect(userAPI.batchCreateUsers).toHaveBeenCalledWith(items)
+      expect(result.success_count).toBe(2)
+    })
+
+    it('batchCreateUsers API失败时应抛出异常', async () => {
+      const { userAPI } = await import('@/api/user')
+      vi.mocked(userAPI.batchCreateUsers).mockRejectedValue(new Error('批量创建失败'))
+
+      await expect(batchCreateUsers([])).rejects.toThrow('批量创建失败')
     })
   })
 })
