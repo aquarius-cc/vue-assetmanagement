@@ -145,7 +145,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { isAxiosError } from 'axios'
 import { Plus, Delete } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
-import { assetTypeAPI } from '@/api/assetType'
+import { batchCreateAssetTypes, useAssetTypeStore } from '@/stores/assetTypeStore'
 import type { AssetType, AssetTypeCreateForm } from '@/types/assettype'
 
 import AssetTypeTree from '@/components/componentsdetails/components/AssetTypeTree.vue'
@@ -154,6 +154,7 @@ import AssetTypeChildList from '@/components/componentsdetails/components/AssetT
 
 const route = useRoute()
 const router = useRouter()
+const assetTypeStore = useAssetTypeStore()
 
 const isChildRouteActive = computed(() => {
   return (
@@ -218,8 +219,7 @@ const addBatchItem = () => {
 const fetchAllData = async () => {
   isLoading.value = true
   try {
-    const response = await assetTypeAPI.getAssetTypes({ page: 1, page_size: 9999 })
-    allData.value = response.results
+    allData.value = await assetTypeStore.getList({ page: 1, page_size: 9999 })
 
     // 如果当前有选中的分类，刷新其信息
     if (selectedType.value) {
@@ -307,13 +307,13 @@ const handleSubmitForm = async () => {
     submitting.value = true
     try {
       if (isEditMode.value) {
-        await assetTypeAPI.updateAssetType({
+        await assetTypeStore.update({
           recordcode: editingRecordcode.value,
           ...formData.value,
         })
         ElMessage.success('修改成功')
       } else {
-        await assetTypeAPI.createAssetType(formData.value)
+        await assetTypeStore.create(formData.value)
         ElMessage.success('创建成功')
       }
       formDialogVisible.value = false
@@ -347,7 +347,7 @@ const handleBatchAddSubmit = async () => {
       type_description: item.type_description.trim() || null,
       sort_order: 0,
     }))
-    const result = await assetTypeAPI.batchCreateAssetTypes(items)
+    const result = await batchCreateAssetTypes(items)
     if (result.fail_count > 0) {
       ElMessage.warning(
         `批量新增完成：成功 ${result.success_count} 条，失败 ${result.fail_count} 条`,
@@ -376,7 +376,7 @@ const handleDeleteType = async () => {
       cancelButtonText: '取消',
       type: 'warning',
     })
-    await assetTypeAPI.deleteAssetType(selectedType.value.recordcode)
+    await assetTypeStore.remove(selectedType.value.recordcode)
     ElMessage.success('删除成功')
     selectedType.value = null
     await fetchAllData()
@@ -413,7 +413,7 @@ const handleDeleteChild = async (row: AssetType) => {
       cancelButtonText: '取消',
       type: 'warning',
     })
-    await assetTypeAPI.deleteAssetType(row.recordcode)
+    await assetTypeStore.remove(row.recordcode)
     ElMessage.success('删除成功')
     await fetchAllData()
   } catch (err) {
@@ -440,7 +440,7 @@ const handleBatchDelete = async (rows: AssetType[]) => {
         type: 'warning',
       },
     )
-    await assetTypeAPI.batchDeleteAssetTypes(typeCodes)
+    await assetTypeStore.removeBatch(typeCodes)
     ElMessage.success('批量删除成功')
     await fetchAllData()
   } catch (err) {

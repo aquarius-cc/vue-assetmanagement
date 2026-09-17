@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useContractStore } from '../contractStore'
+import {
+  useContractStore,
+  addPaymentRecord,
+  deletePaymentRecord,
+  approvePaymentRecord,
+  batchCreateContracts,
+} from '../contractStore'
 
 vi.mock('@/api/contract', () => ({
   contractAPI: {
@@ -11,6 +17,10 @@ vi.mock('@/api/contract', () => ({
     updateContract: vi.fn(),
     deleteContract: vi.fn(),
     batchDeleteContracts: vi.fn(),
+    addPaymentRecord: vi.fn(),
+    deletePaymentRecord: vi.fn(),
+    approvePaymentRecord: vi.fn(),
+    batchCreateContracts: vi.fn(),
   },
 }))
 
@@ -186,6 +196,75 @@ describe('ContractStore', () => {
       await store.removeBatch(['CT-001'])
 
       expect(contractAPI.batchDeleteContracts).toHaveBeenCalledWith(['CT-001'])
+    })
+  })
+
+  describe('支付记录操作', () => {
+    it('应该调用addPaymentRecord添加付款记录', async () => {
+      const { contractAPI } = await import('@/api/contract')
+      vi.mocked(contractAPI.addPaymentRecord).mockResolvedValue({
+        contract: { recordcode: 'CT-001' },
+        payment_records: [],
+      } as never)
+
+      const result = await addPaymentRecord('CT-001', {
+        amount: 1000,
+        description: '首付款',
+      })
+
+      expect(contractAPI.addPaymentRecord).toHaveBeenCalledWith('CT-001', {
+        amount: 1000,
+        description: '首付款',
+      })
+      expect(result).toBeDefined()
+    })
+
+    it('应该调用deletePaymentRecord删除付款记录', async () => {
+      const { contractAPI } = await import('@/api/contract')
+      vi.mocked(contractAPI.deletePaymentRecord).mockResolvedValue({
+        contract: { recordcode: 'CT-001' },
+        payment_records: [],
+      } as never)
+
+      await deletePaymentRecord('CT-001', 'PAY-001')
+
+      expect(contractAPI.deletePaymentRecord).toHaveBeenCalledWith('CT-001', 'PAY-001')
+    })
+
+    it('应该调用approvePaymentRecord审核付款记录', async () => {
+      const { contractAPI } = await import('@/api/contract')
+      vi.mocked(contractAPI.approvePaymentRecord).mockResolvedValue({
+        contract: { recordcode: 'CT-001' },
+        payment_records: [],
+      } as never)
+
+      await approvePaymentRecord('CT-001', 'PAY-001')
+
+      expect(contractAPI.approvePaymentRecord).toHaveBeenCalledWith('CT-001', 'PAY-001')
+    })
+  })
+
+  describe('批量创建', () => {
+    it('应该调用batchCreateContracts批量创建', async () => {
+      const mockResult = {
+        total: 2,
+        success_count: 2,
+        fail_count: 0,
+        success_ids: ['CT-001', 'CT-002'],
+        fail_items: [],
+      }
+
+      const { contractAPI } = await import('@/api/contract')
+      vi.mocked(contractAPI.batchCreateContracts).mockResolvedValue(mockResult as never)
+
+      const items = [
+        { contract_name: '合同A', contract_number: 'PO-2026-001' },
+        { contract_name: '合同B', contract_number: 'PO-2026-002' },
+      ]
+      const result = await batchCreateContracts(items)
+
+      expect(contractAPI.batchCreateContracts).toHaveBeenCalledWith(items)
+      expect(result.success_count).toBe(2)
     })
   })
 })

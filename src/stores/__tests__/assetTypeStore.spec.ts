@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useAssetTypeStore } from '../assetTypeStore'
+import { useAssetTypeStore, batchCreateAssetTypes } from '../assetTypeStore'
 
 vi.mock('@/api/assetType', () => ({
   assetTypeAPI: {
@@ -10,6 +10,7 @@ vi.mock('@/api/assetType', () => ({
     updateAssetType: vi.fn(),
     deleteAssetType: vi.fn(),
     batchDeleteAssetTypes: vi.fn(),
+    batchCreateAssetTypes: vi.fn(),
   },
 }))
 
@@ -123,6 +124,46 @@ describe('AssetTypeStore', () => {
       await store.remove('AT-001')
 
       expect(assetTypeAPI.deleteAssetType).toHaveBeenCalledWith('AT-001')
+    })
+  })
+
+  describe('批量创建', () => {
+    it('应该调用batchCreateAssetTypes批量创建', async () => {
+      const mockResult = {
+        total: 2,
+        success_count: 2,
+        fail_count: 0,
+        success_ids: ['AT-001', 'AT-002'],
+        fail_items: [],
+      }
+
+      const { assetTypeAPI } = await import('@/api/assetType')
+      vi.mocked(assetTypeAPI.batchCreateAssetTypes).mockResolvedValue(mockResult as any)
+
+      const items = [
+        { type_name: '电脑', type_information: '电脑类资产' },
+        { type_name: '打印机', type_information: '打印类资产' },
+      ]
+      const result = await batchCreateAssetTypes(items)
+
+      expect(assetTypeAPI.batchCreateAssetTypes).toHaveBeenCalledWith(items)
+      expect(result.success_count).toBe(2)
+    })
+
+    it('空数组应直接返回空结果', async () => {
+      const { assetTypeAPI } = await import('@/api/assetType')
+      vi.mocked(assetTypeAPI.batchCreateAssetTypes).mockResolvedValue({
+        total: 0,
+        success_count: 0,
+        fail_count: 0,
+        success_ids: [],
+        fail_items: [],
+      } as any)
+
+      const result = await batchCreateAssetTypes([])
+
+      expect(result.total).toBe(0)
+      expect(assetTypeAPI.batchCreateAssetTypes).toHaveBeenCalledWith([])
     })
   })
 })

@@ -153,11 +153,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { ElMessage } from 'element-plus'
-import { auditLogAPI } from '@/api/auditLog'
-import type { AuditLog, AuditLogQueryParams } from '@/types/auditlog'
+import { useAuditLogStore } from '@/stores/auditLogStore'
+import type { AuditLog } from '@/types/auditlog'
 import {
   auditOperationTypeMapping,
   appLabelMapping,
@@ -169,6 +170,10 @@ import { exactFormatDate } from '@/utils/Format'
 
 const route = useRoute()
 const router = useRouter()
+const auditLogStore = useAuditLogStore()
+
+const { loading, tableData, currentPage, pageSize, total, filterForm, dateRange } =
+  storeToRefs(auditLogStore)
 
 const isChildRouteActive = computed(() => {
   return route.name !== 'AuditLogDetails' && route.name === 'AuditLogDetail'
@@ -178,71 +183,18 @@ const handleMaskBack = () => {
   router.push({ name: 'AuditLogDetails' })
 }
 
-// ===== 状态 =====
-const loading = ref(false)
-const tableData = ref<AuditLog[]>([])
-const currentPage = ref(1)
-const pageSize = ref(20)
-const total = ref(0)
+// ===== 数据加载（错误回调统一由 Store 透传）=====
+const notifyLoadError = () => ElMessage.error('加载审计日志失败')
 
-// ===== 筛选 =====
-const filterForm = ref({
-  app_label: '',
-  operation_type: '',
-  operator_jobcode: '',
-  record_code: '',
-})
-const dateRange = ref<[string, string] | null>(null)
+const loadData = () => auditLogStore.loadData(notifyLoadError)
 
-// ===== 筛选参数构建（loadData / handleExport 共用）=====
-const buildFilterParams = (overrides?: Partial<AuditLogQueryParams>): AuditLogQueryParams => {
-  const params: AuditLogQueryParams = {
-    page: currentPage.value,
-    page_size: pageSize.value,
-    ...overrides,
-  }
-  if (filterForm.value.app_label) params.app_label = filterForm.value.app_label
-  if (filterForm.value.operation_type) params.operation_type = filterForm.value.operation_type
-  if (filterForm.value.operator_jobcode) params.operator_jobcode = filterForm.value.operator_jobcode
-  if (filterForm.value.record_code) params.record_code = filterForm.value.record_code
-  if (dateRange.value?.[0]) params.start_date = dateRange.value[0]
-  if (dateRange.value?.[1]) params.end_date = dateRange.value[1]
-  return params
-}
+const handleFilter = () => auditLogStore.handleFilter(notifyLoadError)
 
-// ===== 数据加载 =====
-const loadData = async () => {
-  loading.value = true
-  try {
-    const response = await auditLogAPI.getAuditLogs(buildFilterParams())
-    tableData.value = response.results
-    total.value = response.count
-  } catch {
-    ElMessage.error('加载审计日志失败')
-  } finally {
-    loading.value = false
-  }
-}
+const handleReset = () => auditLogStore.handleReset(notifyLoadError)
 
-const handleFilter = () => {
-  currentPage.value = 1
-  loadData()
-}
+const handleSizeChange = () => auditLogStore.handleSizeChange(notifyLoadError)
 
-const handleReset = () => {
-  filterForm.value = { app_label: '', operation_type: '', operator_jobcode: '', record_code: '' }
-  dateRange.value = null
-  handleFilter()
-}
-
-const handleSizeChange = () => {
-  currentPage.value = 1
-  loadData()
-}
-
-const handleCurrentChange = () => {
-  loadData()
-}
+const handleCurrentChange = () => auditLogStore.handleCurrentChange(notifyLoadError)
 
 const handleRowClick = (row: AuditLog) => {
   router.push({ name: 'AuditLogDetail', query: { logging_id: row.logging_id } })
@@ -268,10 +220,7 @@ const handleExport = async () => {
     currentData: tableData.value,
     totalCount: total.value,
     fetchAllData: async () => {
-      const allData = await auditLogAPI.getAuditLogs(
-        buildFilterParams({ page: 1, page_size: total.value || 1000 }),
-      )
-      return allData.results
+      return auditLogStore.fetchAllData({ page_size: total.value || 1000 })
     },
     sheetName: '审计日志',
   })

@@ -4,7 +4,7 @@
 @usedBy
   - ContractOfDetails.vue: 合同详情页面中嵌入支付记录管理
 @dependsOn
-  - api/contractAPI: getPaymentRecords/addPayment/deletePayment 合同支付相关接口
+  - stores/contractStore: getPaymentRecords/addPayment/deletePayment 合同支付相关接口（走 store 直通函数）
 -->
 <template>
   <div class="payment-record">
@@ -142,7 +142,7 @@ import { ref, computed, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { contractAPI } from '@/api/contract'
+import { addPaymentRecord, deletePaymentRecord, approvePaymentRecord } from '@/stores/contractStore'
 import type { Contract, PaymentRecord } from '@/types/contract'
 import { getErrorMessage } from '@/utils/errorHandler'
 
@@ -271,7 +271,7 @@ const submitPayment = async () => {
 
     submitting.value = true
     try {
-      await contractAPI.addPaymentRecord(props.contract.recordcode, {
+      await addPaymentRecord(props.contract.recordcode, {
         amount: paymentForm.value.amount,
         description: paymentForm.value.description,
       })
@@ -291,7 +291,7 @@ const handleDelete = async (payment: PaymentRecord) => {
   try {
     await ElMessageBox.confirm('确定要删除该支付记录吗？', '确认删除', { type: 'warning' })
 
-    await contractAPI.deletePaymentRecord(props.contract.recordcode, payment.id)
+    await deletePaymentRecord(props.contract.recordcode, payment.id)
     ElMessage.success('支付记录删除成功')
     emit('update')
     await loadPayments()
@@ -306,7 +306,7 @@ const handleApprove = async (payment: PaymentRecord) => {
   try {
     await ElMessageBox.confirm('确定要审核通过该支付记录吗？', '确认审核', { type: 'info' })
 
-    await contractAPI.approvePaymentRecord(props.contract.recordcode, payment.id)
+    await approvePaymentRecord(props.contract.recordcode, payment.id)
     ElMessage.success('支付记录审核成功')
     emit('update')
     await loadPayments()

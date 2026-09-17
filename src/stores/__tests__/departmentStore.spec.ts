@@ -1,14 +1,8 @@
-// TECHNICAL_DEBT: >500 lines（存量文件，2026-07-07 基线前已超限；本次修改新增 <50 行，暂不拆分）
+// 部门 Store 核心功能测试
+// 扩展方法（树形/员工/批量创建）见 departmentStoreExtended.spec.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import {
-  useDepartmentStore,
-  getDepartmentTree,
-  getDepartmentChildren,
-  getDepartmentEmployees,
-  moveDepartment,
-  sortDepartments,
-} from '../departmentStore'
+import { useDepartmentStore, batchCreateDepartments } from '../departmentStore'
 
 vi.mock('@/api/department', () => ({
   departmentAPI: {
@@ -23,6 +17,7 @@ vi.mock('@/api/department', () => ({
     getDepartmentEmployeeList: vi.fn(),
     moveDepartment: vi.fn(),
     sortDepartments: vi.fn(),
+    batchCreateDepartments: vi.fn(),
   },
 }))
 
@@ -254,6 +249,46 @@ describe('DepartmentStore', () => {
         }),
       )
     })
+
+    it('parent_department_code有值时应透传', async () => {
+      const { departmentAPI } = await import('@/api/department')
+      vi.mocked(departmentAPI.createDepartment).mockResolvedValue({
+        department_code: 'DEP002',
+        department_name: '前端组',
+        department_information: '负责前端开发',
+      } as any)
+
+      await store.create({
+        department_code: 'DEP002',
+        department_name: '前端组',
+        department_information: '负责前端开发',
+        parent_department_code: 'DEP001',
+      })
+
+      expect(departmentAPI.createDepartment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parent_department_code: 'DEP001',
+        }),
+      )
+    })
+
+    it('parent_department_code未传时不应包含该字段', async () => {
+      const { departmentAPI } = await import('@/api/department')
+      vi.mocked(departmentAPI.createDepartment).mockResolvedValue({
+        department_code: 'DEP001',
+        department_name: '技术部',
+        department_information: '负责技术开发',
+      } as any)
+
+      await store.create({
+        department_code: 'DEP001',
+        department_name: '技术部',
+        department_information: '负责技术开发',
+      })
+
+      const calledWith = vi.mocked(departmentAPI.createDepartment).mock.calls[0][0]
+      expect(calledWith).not.toHaveProperty('parent_department_code')
+    })
   })
 
   describe('更新记录扩展', () => {
@@ -353,245 +388,51 @@ describe('DepartmentStore', () => {
     })
   })
 
-  describe('getDepartmentEmployees扩展', () => {
-    it('employees为空数组时应返回空数组', async () => {
-      const mockResponse = {
-        department: 'DEP001',
-        employees_count: 0,
-        employees: [],
+  describe('批量创建', () => {
+    it('应该调用batchCreateDepartments批量创建', async () => {
+      const mockResult = {
+        total: 2,
+        success_count: 2,
+        fail_count: 0,
+        success_ids: ['DEP001', 'DEP002'],
+        fail_items: [],
       }
 
       const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.getDepartmentEmployeeList).mockResolvedValue(mockResponse as any)
+      vi.mocked(departmentAPI.batchCreateDepartments).mockResolvedValue(mockResult as any)
 
-      const result = await getDepartmentEmployees('DEP001')
-      expect(result).toEqual([])
-    })
-
-    it('employees的sort_order均为undefined时应保持原始顺序', async () => {
-      const mockResponse = {
-        department: 'DEP001',
-        employees_count: 2,
-        employees: [
-          { employee_jobcode: 'EMP001', employee_name: '张三' },
-          { employee_jobcode: 'EMP002', employee_name: '李四' },
-        ],
-      }
-
-      const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.getDepartmentEmployeeList).mockResolvedValue(mockResponse as any)
-
-      const result = await getDepartmentEmployees('DEP001')
-      expect(result).toHaveLength(2)
-    })
-  })
-
-  describe('树形结构扩展方法', () => {
-    it('应该调用getDepartmentTree获取部门树', async () => {
-      const mockTree = [{ department_code: 'DEP001', department_name: '技术部', children: [] }]
-
-      const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.getDepartmentTree).mockResolvedValue(mockTree as any)
-
-      const result = await getDepartmentTree()
-
-      expect(departmentAPI.getDepartmentTree).toHaveBeenCalledWith({
-        with_employee_count: true,
-      })
-      expect(result).toEqual(mockTree)
-    })
-
-    it('getDepartmentTree参数为false时应传递with_employee_count: false', async () => {
-      const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.getDepartmentTree).mockResolvedValue([] as any)
-
-      await getDepartmentTree(false)
-
-      expect(departmentAPI.getDepartmentTree).toHaveBeenCalledWith({
-        with_employee_count: false,
-      })
-    })
-
-    it('getDepartmentTree应返回嵌套树结构', async () => {
-      const mockTree = [
+      const items = [
         {
           department_code: 'DEP001',
-          department_name: '总公司',
-          children: [
-            {
-              department_code: 'DEP002',
-              department_name: '技术部',
-              children: [],
-            },
-          ],
+          department_name: '技术部',
+          department_information: '负责技术开发',
+        },
+        {
+          department_code: 'DEP002',
+          department_name: '前端组',
+          department_information: '负责前端开发',
         },
       ]
+      const result = await batchCreateDepartments(items)
 
-      const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.getDepartmentTree).mockResolvedValue(mockTree as any)
-
-      const result = await getDepartmentTree()
-
-      expect(result).toHaveLength(1)
-      expect(result[0].children).toHaveLength(1)
+      expect(departmentAPI.batchCreateDepartments).toHaveBeenCalledWith(items)
+      expect(result.success_count).toBe(2)
     })
 
-    it('应该调用getDepartmentChildren获取子部门', async () => {
-      const mockChildren = [{ department_code: 'DEP002', department_name: '前端组' }]
-
+    it('空数组应直接返回空结果', async () => {
       const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.getDepartmentChildren).mockResolvedValue(mockChildren as any)
-
-      const result = await getDepartmentChildren('DEP001')
-
-      expect(departmentAPI.getDepartmentChildren).toHaveBeenCalledWith('DEP001')
-      expect(result).toEqual(mockChildren)
-    })
-
-    it('getDepartmentChildren无子部门时应返回空数组', async () => {
-      const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.getDepartmentChildren).mockResolvedValue([] as any)
-
-      const result = await getDepartmentChildren('DEP999')
-
-      expect(result).toEqual([])
-    })
-
-    it('应该调用moveDepartment移动部门', async () => {
-      const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.moveDepartment).mockResolvedValue({} as any)
-
-      await moveDepartment('DEP002', { parent_department_code: 'DEP001', sort_order: 1 })
-
-      expect(departmentAPI.moveDepartment).toHaveBeenCalledWith('DEP002', {
-        parent_department_code: 'DEP001',
-        sort_order: 1,
-      })
-    })
-
-    it('应该调用sortDepartments批量排序部门', async () => {
-      const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.sortDepartments).mockResolvedValue({} as any)
-
-      const sortData = [
-        { department_code: 'DEP001', sort_order: 2 },
-        { department_code: 'DEP002', sort_order: 1 },
-      ]
-      await sortDepartments(sortData)
-
-      expect(departmentAPI.sortDepartments).toHaveBeenCalledWith(sortData)
-    })
-
-    it('应该调用getDepartmentEmployees获取部门人员', async () => {
-      const mockResponse = {
-        department: 'DEP001',
-        employees_count: 2,
-        employees: [
-          {
-            employee_jobcode: 'EMP001',
-            employee_name: '张三',
-            sort_order: 1,
-          },
-          {
-            employee_jobcode: 'EMP002',
-            employee_name: '李四',
-            sort_order: 2,
-          },
-        ],
-      }
-
-      const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.getDepartmentEmployeeList).mockResolvedValue(mockResponse as any)
-
-      const result = await getDepartmentEmployees('DEP001')
-
-      expect(departmentAPI.getDepartmentEmployeeList).toHaveBeenCalledWith('DEP001', undefined)
-      expect(result).toHaveLength(2)
-      expect(result[0].employee_name).toBe('张三')
-    })
-
-    it('应该按sort_order升序排列员工', async () => {
-      const mockResponse = {
-        department: 'DEP001',
-        employees_count: 3,
-        employees: [
-          { employee_jobcode: 'EMP001', employee_name: '张三', sort_order: 3 },
-          { employee_jobcode: 'EMP002', employee_name: '李四', sort_order: 1 },
-          { employee_jobcode: 'EMP003', employee_name: '王五', sort_order: 2 },
-        ],
-      }
-
-      const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.getDepartmentEmployeeList).mockResolvedValue(mockResponse as any)
-
-      const result = await getDepartmentEmployees('DEP001')
-
-      expect(result[0].employee_name).toBe('李四')
-      expect(result[1].employee_name).toBe('王五')
-      expect(result[2].employee_name).toBe('张三')
-    })
-
-    it('sort_order为null的员工应排到最后', async () => {
-      const mockResponse = {
-        department: 'DEP001',
-        employees_count: 2,
-        employees: [
-          { employee_jobcode: 'EMP001', employee_name: '张三', sort_order: null },
-          { employee_jobcode: 'EMP002', employee_name: '李四', sort_order: 1 },
-        ],
-      }
-
-      const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.getDepartmentEmployeeList).mockResolvedValue(mockResponse as any)
-
-      const result = await getDepartmentEmployees('DEP001')
-
-      expect(result[0].employee_name).toBe('李四')
-      expect(result[1].employee_name).toBe('张三')
-    })
-
-    it('应该处理employees为null的情况', async () => {
-      const mockResponse = {
-        department: 'DEP001',
-        employees_count: 0,
-        employees: null,
-      }
-
-      const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.getDepartmentEmployeeList).mockResolvedValue(mockResponse as any)
-
-      const result = await getDepartmentEmployees('DEP001')
-
-      expect(result).toEqual([])
-    })
-
-    it('应该处理employees为undefined的情况', async () => {
-      const mockResponse = {
-        department: 'DEP001',
-        employees_count: 0,
-      }
-
-      const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.getDepartmentEmployeeList).mockResolvedValue(mockResponse as any)
-
-      const result = await getDepartmentEmployees('DEP001')
-
-      expect(result).toEqual([])
-    })
-
-    it('getDepartmentEmployees应传递筛选参数', async () => {
-      const { departmentAPI } = await import('@/api/department')
-      vi.mocked(departmentAPI.getDepartmentEmployeeList).mockResolvedValue({
-        department: 'DEP001',
-        employees_count: 1,
-        employees: [{ employee_jobcode: 'EMP001', employee_name: '张三', sort_order: 1 }],
+      vi.mocked(departmentAPI.batchCreateDepartments).mockResolvedValue({
+        total: 0,
+        success_count: 0,
+        fail_count: 0,
+        success_ids: [],
+        fail_items: [],
       } as any)
 
-      await getDepartmentEmployees('DEP001', { status: 'active' })
+      const result = await batchCreateDepartments([])
 
-      expect(departmentAPI.getDepartmentEmployeeList).toHaveBeenCalledWith('DEP001', {
-        status: 'active',
-      })
+      expect(result.total).toBe(0)
+      expect(departmentAPI.batchCreateDepartments).toHaveBeenCalledWith([])
     })
   })
 })

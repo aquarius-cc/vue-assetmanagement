@@ -114,9 +114,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { departmentAPI } from '@/api/department'
+import { batchCreateDepartments } from '@/stores/departmentStore'
 import type { Department, DepartmentCreateForm } from '@/types/department'
-import type { DepartmentBatchCreateResult } from '@/api/department'
+import type { DepartmentBatchCreateResult } from '@/stores/departmentStore'
 
 // ==================== Props & Emits ====================
 
@@ -198,7 +198,7 @@ const handleSubmit = async () => {
       sort_order: item.sort_order ?? 0,
     }))
 
-    const result = await departmentAPI.batchCreateDepartments(items)
+    const result = await batchCreateDepartments(items)
     submitResult.value = result
 
     if (result.fail_count === 0) {

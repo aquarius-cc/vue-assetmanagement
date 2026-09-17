@@ -10,10 +10,12 @@ import { auditLogAPI } from '@/api/auditLog'
 vi.mock('@/api/auditLog', () => ({
   auditLogAPI: {
     getAuditLogs: vi.fn(),
+    getAuditLogByLoggingId: vi.fn(),
   },
 }))
 
 const mockGetAuditLogs = vi.mocked(auditLogAPI.getAuditLogs)
+const mockGetAuditLogByLoggingId = vi.mocked(auditLogAPI.getAuditLogByLoggingId)
 
 describe('useAuditLogStore', () => {
   beforeEach(() => {
@@ -84,14 +86,25 @@ describe('useAuditLogStore', () => {
     })
   })
 
-  it('loadData 错误时不崩溃', async () => {
+  it('loadData 错误时调用 onError 回调', async () => {
     mockGetAuditLogs.mockRejectedValue(new Error('network error'))
 
     const store = useAuditLogStore()
-    await store.loadData()
+    const onError = vi.fn()
+    await store.loadData(onError)
 
+    expect(onError).toHaveBeenCalledTimes(1)
     expect(store.loading).toBe(false)
-    expect(store.tableData).toEqual([])
+  })
+
+  it('loadData 成功时不调用 onError 回调', async () => {
+    mockGetAuditLogs.mockResolvedValue({ results: [], count: 0 } as never)
+
+    const store = useAuditLogStore()
+    const onError = vi.fn()
+    await store.loadData(onError)
+
+    expect(onError).not.toHaveBeenCalled()
   })
 
   it('handleFilter 重置页码并加载', async () => {
@@ -148,5 +161,35 @@ describe('useAuditLogStore', () => {
       page: 1,
       page_size: 100,
     })
+  })
+
+  it('fetchAllData 携带筛选条件与 overrides', async () => {
+    mockGetAuditLogs.mockResolvedValue({ results: [], count: 0 } as never)
+
+    const store = useAuditLogStore()
+    store.filterForm.app_label = 'asset'
+    store.filterForm.operation_type = 'create'
+    store.dateRange = ['2026-01-01', '2026-01-31']
+    await store.fetchAllData({ page_size: 1000 })
+
+    expect(mockGetAuditLogs).toHaveBeenCalledWith({
+      page: 1,
+      page_size: 1000,
+      app_label: 'asset',
+      operation_type: 'create',
+      start_date: '2026-01-01',
+      end_date: '2026-01-31',
+    })
+  })
+
+  it('getAuditLogByLoggingId 调用 API 并返回详情', async () => {
+    const mockDetail = { logging_id: 'LOG-001', id: 1, app_label: 'asset' }
+    mockGetAuditLogByLoggingId.mockResolvedValue(mockDetail as never)
+
+    const store = useAuditLogStore()
+    const result = await store.getAuditLogByLoggingId('LOG-001')
+
+    expect(mockGetAuditLogByLoggingId).toHaveBeenCalledWith('LOG-001')
+    expect(result).toEqual(mockDetail)
   })
 })

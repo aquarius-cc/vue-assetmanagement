@@ -5,6 +5,7 @@
  *   - useAuditLogStore: 审计日志状态 Store
  * @callers
  *   - components/componentsdetails/AuditLogDetails.vue（间接引用）
+ *   - components/componentsdetails/detils/AuditLogDetail.vue
  * @dependsOn
  *   - api/auditLog: 审计日志 API 接口
  *   - types/auditlog: 审计日志类型定义
@@ -32,7 +33,7 @@ export const useAuditLogStore = defineStore('auditLog', () => {
   const dateRange = ref<[string, string] | null>(null)
 
   // ===== 数据加载 =====
-  async function loadData() {
+  async function loadData(onError?: () => void) {
     loading.value = true
     try {
       const params: AuditLogQueryParams = {
@@ -52,19 +53,20 @@ export const useAuditLogStore = defineStore('auditLog', () => {
       tableData.value = response.results
       total.value = response.count
     } catch {
-      // 错误由组件处理
+      // 错误由调用方处理（组件可通过 onError 回调提示）
+      onError?.()
     } finally {
       loading.value = false
     }
   }
 
   // ===== 筛选操作 =====
-  function handleFilter() {
+  function handleFilter(onError?: () => void) {
     currentPage.value = 1
-    loadData()
+    loadData(onError)
   }
 
-  function handleReset() {
+  function handleReset(onError?: () => void) {
     filterForm.value = {
       app_label: '',
       operation_type: '',
@@ -72,26 +74,39 @@ export const useAuditLogStore = defineStore('auditLog', () => {
       record_code: '',
     }
     dateRange.value = null
-    handleFilter()
+    handleFilter(onError)
   }
 
   // ===== 分页操作 =====
-  function handleSizeChange() {
+  function handleSizeChange(onError?: () => void) {
     currentPage.value = 1
-    loadData()
+    loadData(onError)
   }
 
-  function handleCurrentChange() {
-    loadData()
+  function handleCurrentChange(onError?: () => void) {
+    loadData(onError)
   }
 
   // ===== 导出数据获取 =====
-  async function fetchAllData(): Promise<AuditLog[]> {
+  async function fetchAllData(overrides?: Partial<AuditLogQueryParams>): Promise<AuditLog[]> {
     const response = await auditLogAPI.getAuditLogs({
       page: 1,
       page_size: 100, // 与后端 MAX_PAGE_SIZE 对齐，超限会被静默钳位
+      ...(filterForm.value.app_label && { app_label: filterForm.value.app_label }),
+      ...(filterForm.value.operation_type && { operation_type: filterForm.value.operation_type }),
+      ...(filterForm.value.operator_jobcode && {
+        operator_jobcode: filterForm.value.operator_jobcode,
+      }),
+      ...(filterForm.value.record_code && { record_code: filterForm.value.record_code }),
+      ...(dateRange.value && { start_date: dateRange.value[0], end_date: dateRange.value[1] }),
+      ...overrides,
     })
     return response.results
+  }
+
+  // ===== 日志详情 =====
+  async function getAuditLogByLoggingId(loggingId: string): Promise<AuditLog> {
+    return auditLogAPI.getAuditLogByLoggingId(loggingId)
   }
 
   return {
@@ -110,5 +125,6 @@ export const useAuditLogStore = defineStore('auditLog', () => {
     handleSizeChange,
     handleCurrentChange,
     fetchAllData,
+    getAuditLogByLoggingId,
   }
 })

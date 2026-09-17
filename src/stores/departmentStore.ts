@@ -8,6 +8,7 @@
  *   - moveDepartment: 移动部门
  *   - sortDepartments: 批量排序部门
  *   - getDepartmentEmployees: 获取部门下人员列表
+ *   - batchCreateDepartments: 批量创建部门
  * @callers
  *   - components/componentsdetails/DepartmentDetails.vue
  *   - components/componentsdetails/UserDetails.vue
@@ -30,10 +31,13 @@ import type {
   DepartmentEmployeeListResponse,
   DepartmentEmployeeListQueryParams,
 } from '@/types/department'
+import type { DepartmentBatchCreateResult } from '@/api/department'
 import type { EmployeeExtended } from '@/types/user'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import type { MoveDepartmentParams } from '@/types/department'
+
+export type { DepartmentBatchCreateResult } from '@/api/department'
 
 /**
  * 辅助函数：确保创建数据符合 DepartmentCreateForm
@@ -59,6 +63,10 @@ const ensureDepartmentCreateForm = (data: Partial<Department>): DepartmentCreate
     department_information: data.department_information!.trim(),
     // 排序顺序：可选字段，未填时默认传 0（与后端默认值一致）
     sort_order: data.sort_order ?? 0,
+    // 父部门编码：可选字段，有值则透传（维持新增子部门行为）
+    ...(data.parent_department_code !== undefined && {
+      parent_department_code: data.parent_department_code,
+    }),
   }
 }
 
@@ -155,7 +163,19 @@ export const sortDepartments = async (
 }
 
 /**
- * 获取部门下的人员列表
+ * 批量创建部门
+ * 统一数据访问入口，供批量新增弹窗与批量导入复用
+ * @param items 待创建的部门列表
+ * @returns 批量创建结果（含成功/失败明细）
+ */
+export const batchCreateDepartments = async (
+  items: DepartmentCreateForm[],
+): Promise<DepartmentBatchCreateResult> => {
+  return departmentAPI.batchCreateDepartments(items)
+}
+
+/**
+ * 获取部门下的员工列表
  * 通过 Store 层封装 API 调用，统一数据访问入口
  * 后端返回格式: { department, employees_count, employees }
  *

@@ -87,19 +87,13 @@ export default defineConfigWithVueTs(
   // RecycleAsset/RepairAsset/RepairDone/RepairFailed/ScrapAsset）→ 已移除，仍可运行时直连的 in_use 状态资产操作视图见后续批次
   // FE-01 批2 已迁移 8 个视图/组件（BindAuthUserDialog/RolePermDialog/UserRoleAssignDialog/RoleManage/
   // AuthUserManage/ContactsView/UserDetails/DepartmentEmployeeList）→ 已移除，走 roleStore/authUserStore/userStore
+  // FE-01 批3 已迁移 8 个组件（AssetTypeDetails/AuditLogDetails/DepartmentFormDialog/DepartmentBatchAddDialog/
+  // AssetTypeBatchImport/DepartmentManagement/AuditLogDetail/ContractPaymentRecord）→ 已移除，走 departmentStore/assetTypeStore/auditLogStore/contractStore
   {
     name: 'app/legacy-direct-api-files',
     files: [
-      'src/components/componentsdetails/AssetTypeDetails.vue',
-      'src/components/componentsdetails/AuditLogDetails.vue',
-      'src/components/componentsdetails/components/DepartmentFormDialog.vue',
-      'src/components/componentsdetails/components/DepartmentBatchAddDialog.vue',
-      'src/components/componentsdetails/detils/AssetTypeBatchImport.vue',
-      'src/components/componentsdetails/DepartmentManagement.vue',
-      'src/components/componentsdetails/detils/AuditLogDetail.vue',
       'src/components/componentsdetails/detils/AssetForm.vue',
       'src/components/componentsdetails/detils/ContractBatchImport.vue',
-      'src/components/componentsdetails/detils/ContractPaymentRecord.vue',
       'src/components/componentsdetails/detils/DepartmentBatchImport.vue',
       'src/components/componentsdetails/detils/UserBatchImport.vue',
       'src/components/componentsdetails/detils/UnregisteredAssetBasicDetails.vue',

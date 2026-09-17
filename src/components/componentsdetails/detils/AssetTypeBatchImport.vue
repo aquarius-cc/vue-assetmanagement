@@ -103,7 +103,7 @@ import {
 } from '@/utils/batchImportHelpers'
 import { downloadExcelTemplate } from '@/utils/batchImport/templateExport'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
-import { assetTypeAPI } from '@/api/assetType'
+import { batchCreateAssetTypes } from '@/stores/assetTypeStore'
 import { useAssetTypeStore } from '@/stores/assetTypeStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import type { AssetTypeCreateForm } from '@/types/assettype'
@@ -326,7 +326,7 @@ const handleSubmit = async () => {
       return
     }
 
-    const result = await assetTypeAPI.batchCreateAssetTypes(apiDataList)
+    const result = await batchCreateAssetTypes(apiDataList)
 
     // 场景1: 200 响应，后端逐条处理返回 fail_items
     if (result.fail_count > 0) {

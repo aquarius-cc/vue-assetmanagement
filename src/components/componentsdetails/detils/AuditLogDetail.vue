@@ -80,7 +80,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { auditLogAPI } from '@/api/auditLog'
+import { useAuditLogStore } from '@/stores/auditLogStore'
 import type { AuditLog } from '@/types/auditlog'
 import {
   auditOperationTypeMapping,
@@ -91,6 +91,7 @@ import { formatDateTimeFull } from '@/utils/Format'
 
 const route = useRoute()
 const router = useRouter()
+const auditLogStore = useAuditLogStore()
 const loading = ref(false)
 const detailData = ref<AuditLog | null>(null)
 
@@ -115,7 +116,7 @@ onMounted(async () => {
   }
   loading.value = true
   try {
-    detailData.value = await auditLogAPI.getAuditLogByLoggingId(loggingId)
+    detailData.value = await auditLogStore.getAuditLogByLoggingId(loggingId)
   } catch {
     const { ElMessage } = await import('element-plus')
     ElMessage.error('加载审计日志详情失败')

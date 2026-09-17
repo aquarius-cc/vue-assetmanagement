@@ -3,6 +3,7 @@
  * @module stores/assetTypeStore
  * @exports
  *   - useAssetTypeStore: 资产类型管理状态 Store
+ *   - batchCreateAssetTypes: 批量创建资产类型
  * @callers
  *   - composables/useRecycleFormAssociations.ts
  *   - components/componentsdetails/detils/AssetForm.vue
@@ -15,9 +16,12 @@
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { assetTypeAPI } from '@/api/assetType'
+import type { AssetTypeBatchCreateResult } from '@/api/assetType'
 import type { AssetType, AssetTypeCreateForm, AssetTypeUpdateForm } from '@/types/assettype'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
+
+export type { AssetTypeBatchCreateResult } from '@/api/assetType'
 
 /**
  * 资产类型 Store
@@ -51,3 +55,15 @@ export const useAssetTypeStore = createEntityStore<AssetType, PaginationQuery>('
   defaultPageSize: 20,
   enableCache: false,
 })
+
+/**
+ * 批量创建资产类型
+ * 统一数据访问入口，供批量导入与详情页批量新增复用
+ * @param items 待创建的资产类型列表
+ * @returns 批量创建结果（含成功/失败明细）
+ */
+export const batchCreateAssetTypes = async (
+  items: AssetTypeCreateForm[],
+): Promise<AssetTypeBatchCreateResult> => {
+  return assetTypeAPI.batchCreateAssetTypes(items)
+}

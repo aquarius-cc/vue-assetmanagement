@@ -118,7 +118,7 @@
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { departmentAPI } from '@/api/department'
+import { moveDepartment, useDepartmentStore } from '@/stores/departmentStore'
 import type { Department, DepartmentCreateForm, DepartmentTreeNode } from '@/types/department'
 import { departmentFormStaticRules } from './departmentFormDialogRules'
 import { isDescendant, isDescendantByCode } from '@/utils/departmentTree'
@@ -155,6 +155,9 @@ const emit = defineEmits<{
 
 /** 最大层级（0-5，共 6 层） */
 const MAX_LEVEL = 5
+
+/** 部门 Store 实例 */
+const departmentStore = useDepartmentStore()
 
 // ==================== 状态定义 ====================
 
@@ -409,13 +412,13 @@ const handleSubmit = async () => {
       // 如果上级部门变更，需要调用 moveDepartment
       // 后端字段名为 target_parent_department_code，与 MoveDepartmentSerializer 保持一致
       if (parentChanged && editDept) {
-        await departmentAPI.moveDepartment(editDept.department_code, {
+        await moveDepartment(editDept.department_code, {
           target_parent_department_code: formData.value.parent_department_code,
         })
       }
 
       // 更新其他信息
-      await departmentAPI.updateDepartment({
+      await departmentStore.update({
         department_code: formData.value.department_code,
         department_name: formData.value.department_name,
         department_information: formData.value.department_information,
@@ -424,7 +427,7 @@ const handleSubmit = async () => {
       ElMessage.success('部门更新成功')
     } else {
       // 新增部门
-      await departmentAPI.createDepartment(formData.value)
+      await departmentStore.create(formData.value)
       ElMessage.success('部门创建成功')
     }
 

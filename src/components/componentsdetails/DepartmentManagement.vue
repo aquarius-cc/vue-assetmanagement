@@ -133,7 +133,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Sort } from '@element-plus/icons-vue'
-import { departmentAPI } from '@/api/department'
+import { getDepartmentTree, moveDepartment, useDepartmentStore } from '@/stores/departmentStore'
 import type { Department, DepartmentTreeNode, MoveDepartmentParams } from '@/types/department'
 
 // ==================== 组件导入 ====================
@@ -144,6 +144,7 @@ import DepartmentFormDialog from '@/components/componentsdetails/components/Depa
 import DepartmentBatchAddDialog from '@/components/componentsdetails/components/DepartmentBatchAddDialog.vue'
 
 const route = useRoute()
+const departmentStore = useDepartmentStore()
 
 /**
  * 判断当前是否激活了子路由
@@ -206,7 +207,7 @@ const batchAddParent = ref<Department | null>(null)
 const loadDepartmentTree = async () => {
   try {
     isLoading.value = true
-    const tree = await departmentAPI.getDepartmentTree({ with_employee_count: true })
+    const tree = await getDepartmentTree()
     departmentTree.value = tree
 
     // 如果当前有选中的部门，刷新其信息
@@ -271,7 +272,7 @@ const handleDepartmentMove = async (data: {
     const params: MoveDepartmentParams = {
       target_parent_department_code: data.parent_department_code,
     }
-    await departmentAPI.moveDepartment(data.department_code, params)
+    await moveDepartment(data.department_code, params)
     ElMessage.success('部门移动成功')
     // 刷新树
     await loadDepartmentTree()
@@ -361,7 +362,7 @@ const handleDeleteDepartment = async (department: Department) => {
       },
     )
 
-    await departmentAPI.deleteDepartment(department.department_code)
+    await departmentStore.remove(department.department_code)
     ElMessage.success('删除成功')
 
     // 如果删除的是当前选中的部门，清空选中
