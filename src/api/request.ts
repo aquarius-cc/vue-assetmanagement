@@ -201,10 +201,8 @@ function pickErrorMessage(data: unknown): string {
 }
 
 function showStatusMessage(status: number, msg: string): void {
+  // 401 不会进入此函数：错误拦截器(L300)已提前拦截 401 走刷新/登出流程
   switch (status) {
-    case 401:
-      showLoginExpired()
-      break
     case 403:
       ElMessage.error('没有权限访问该资源')
       break
