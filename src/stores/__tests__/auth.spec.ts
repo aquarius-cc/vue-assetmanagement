@@ -317,6 +317,25 @@ describe('AuthStore', () => {
       expect(result).toBe(false)
       expect(authStore.isLoggedIn).toBe(false)
     })
+
+    it('重复调用应直接返回已初始化状态', async () => {
+      const { getDecryptedToken } = vi.mocked(await import('@/utils/tokenCrypto'))
+      const token = `header.${btoa(JSON.stringify({ role: 'admin' }))}.signature`
+      vi.mocked(getDecryptedToken).mockImplementation((key: string) => {
+        const map: Record<string, string> = {
+          authInfo: JSON.stringify({ auth_id: 1, auth_username: 'admin', isactive: true }),
+          access_token: token,
+          refresh_token: 'refresh-token',
+        }
+        return map[key] || null
+      })
+
+      await authStore.initAuthState()
+      const callsAfterFirst = getDecryptedToken.mock.calls.length
+
+      expect(await authStore.initAuthState()).toBe(true)
+      expect(getDecryptedToken.mock.calls.length).toBe(callsAfterFirst)
+    })
   })
 
   describe('getAuthInfo', () => {
@@ -488,6 +507,28 @@ describe('AuthStore', () => {
 
       expect(result.success).toBe(false)
       expect(result.message).toBe('登录失败，请检查用户名和密码或后端服务器状态')
+    })
+
+    it('Error无message时应返回默认错误信息', async () => {
+      const { authAPI } = await import('@/api/auth')
+      vi.mocked(authAPI.login).mockRejectedValue(new Error(''))
+
+      const result = await authStore.login({ auth_username: 'admin', password: '123456' })
+
+      expect(result.message).toBe('登录失败，请检查用户名和密码或后端服务器状态')
+    })
+
+    it('响应体错误应取后端message或回退默认文案', async () => {
+      const { authAPI } = await import('@/api/auth')
+      vi.mocked(authAPI.login).mockRejectedValue({ response: { data: { message: '后端拒绝' } } })
+      expect((await authStore.login({ auth_username: 'admin', password: '123456' })).message).toBe(
+        '后端拒绝',
+      )
+
+      vi.mocked(authAPI.login).mockRejectedValue({ response: { data: {} } })
+      expect((await authStore.login({ auth_username: 'admin', password: '123456' })).message).toBe(
+        '登录失败，请检查用户名和密码或后端服务器状态',
+      )
     })
 
     it('JWT无role字段时应使用默认角色regular_user', async () => {

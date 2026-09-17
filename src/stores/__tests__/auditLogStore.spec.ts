@@ -182,6 +182,24 @@ describe('useAuditLogStore', () => {
     })
   })
 
+  it('loadData/fetchAllData 携带操作人工号与记录编码', async () => {
+    mockGetAuditLogs.mockResolvedValue({ results: [], count: 0 } as never)
+
+    const store = useAuditLogStore()
+    store.filterForm.operator_jobcode = 'EMP001'
+    store.filterForm.record_code = 'AST001'
+
+    await store.loadData()
+    expect(mockGetAuditLogs).toHaveBeenCalledWith(
+      expect.objectContaining({ operator_jobcode: 'EMP001', record_code: 'AST001' }),
+    )
+
+    await store.fetchAllData()
+    expect(mockGetAuditLogs).toHaveBeenLastCalledWith(
+      expect.objectContaining({ operator_jobcode: 'EMP001', record_code: 'AST001' }),
+    )
+  })
+
   it('getAuditLogByLoggingId 调用 API 并返回详情', async () => {
     const mockDetail = { logging_id: 'LOG-001', id: 1, app_label: 'asset' }
     mockGetAuditLogByLoggingId.mockResolvedValue(mockDetail as never)
