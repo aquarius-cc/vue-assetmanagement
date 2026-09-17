@@ -49,6 +49,45 @@ describe('authAPI', () => {
         '用户名错误',
       )
     })
+
+    it('throws 登录失败 when business response has no message', async () => {
+      mockRequest.post.mockResolvedValueOnce({ code: 400, data: null, message: '' })
+      await expect(authAPI.login({ auth_username: 'admin', password: 'wrong' })).rejects.toThrow(
+        '登录失败',
+      )
+    })
+
+    it('rejects with backend message from response.data.message', async () => {
+      const err = new Error('原始错误') as Error & {
+        response?: { data?: { message?: string } }
+      }
+      err.response = { data: { message: '凭证无效' } }
+      mockRequest.post.mockRejectedValueOnce(err)
+      await expect(authAPI.login({ auth_username: 'admin', password: 'x' })).rejects.toThrow(
+        '凭证无效',
+      )
+    })
+
+    it('rejects with Error message when no backend message', async () => {
+      mockRequest.post.mockRejectedValueOnce(new Error('网络连接失败'))
+      await expect(authAPI.login({ auth_username: 'admin', password: 'x' })).rejects.toThrow(
+        '网络连接失败',
+      )
+    })
+
+    it('rejects with generic message when rejection is a string', async () => {
+      mockRequest.post.mockRejectedValueOnce('oops-string')
+      await expect(authAPI.login({ auth_username: 'admin', password: 'x' })).rejects.toThrow(
+        '登录失败，请稍后重试',
+      )
+    })
+
+    it('rejects with generic message on unknown rejection', async () => {
+      mockRequest.post.mockRejectedValueOnce({ weird: true })
+      await expect(authAPI.login({ auth_username: 'admin', password: 'x' })).rejects.toThrow(
+        '登录失败，请稍后重试',
+      )
+    })
   })
 
   describe('logout', () => {
@@ -57,6 +96,21 @@ describe('authAPI', () => {
       expect(mockRequest.post).toHaveBeenCalledWith('/auth/logout/', {
         refresh: 'refresh-token-123',
       })
+    })
+
+    it('calls POST /auth/logout/ with empty body when no refresh token', async () => {
+      await authAPI.logout()
+      expect(mockRequest.post).toHaveBeenCalledWith('/auth/logout/', {})
+    })
+
+    it('rethrows Error rejections after logging', async () => {
+      mockUnwrapResponse.mockRejectedValueOnce(new Error('logout-failed'))
+      await expect(authAPI.logout('refresh-token-123')).rejects.toThrow('logout-failed')
+    })
+
+    it('rethrows string rejections', async () => {
+      mockUnwrapResponse.mockRejectedValueOnce('err-string')
+      await expect(authAPI.logout('refresh-token-123')).rejects.toBe('err-string')
     })
   })
 

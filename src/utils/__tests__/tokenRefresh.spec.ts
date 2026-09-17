@@ -40,6 +40,100 @@ function makeHttpError(status: number) {
   return error
 }
 
+class MockBroadcastChannel {
+  static instances: MockBroadcastChannel[] = []
+  listeners: Array<(event: MessageEvent) => void> = []
+  postMessage = vi.fn()
+  name: string
+
+  constructor(name: string) {
+    this.name = name
+    MockBroadcastChannel.instances.push(this)
+  }
+
+  addEventListener(_type: string, fn: (event: MessageEvent) => void) {
+    this.listeners.push(fn)
+  }
+
+  close() {}
+}
+
+describe('refreshAccessToken - no BroadcastChannel support', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.stubGlobal('BroadcastChannel', undefined)
+    tokenCrypto.getDecryptedToken.mockReturnValue('refresh-token')
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('should refresh successfully without a BroadcastChannel available', async () => {
+    axiosPost.mockResolvedValueOnce(okResponse('no-bc-access'))
+
+    const access = await refreshAccessToken('bearer')
+
+    expect(access).toBe('no-bc-access')
+  })
+})
+
+describe('refreshAccessToken - BroadcastChannel sync', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    MockBroadcastChannel.instances.length = 0
+    vi.stubGlobal('BroadcastChannel', MockBroadcastChannel)
+    tokenCrypto.getDecryptedToken.mockReturnValue('refresh-token')
+    csrf.getCsrfToken.mockReturnValue('csrf-token')
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('should broadcast new tokens and handle incoming access messages', async () => {
+    axiosPost.mockResolvedValueOnce(okResponse('bc-access', 'bc-refresh'))
+
+    const access = await refreshAccessToken('bearer')
+
+    expect(access).toBe('bc-access')
+    expect(MockBroadcastChannel.instances).toHaveLength(1)
+    const channel = MockBroadcastChannel.instances[0]
+    expect(channel.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'access',
+        channel: 'bearer',
+        access: 'bc-access',
+        refresh: 'refresh-token',
+      }),
+    )
+
+    channel.postMessage.mockClear()
+    tokenCrypto.setEncryptedToken.mockClear()
+    axiosPost.mockResolvedValueOnce(okResponse('c-access'))
+
+    await refreshAccessToken('cookie')
+
+    expect(channel.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'access', channel: 'cookie', access: 'c-access' }),
+    )
+
+    const dispatch = (data: unknown) => {
+      for (const fn of channel.listeners) fn({ data } as MessageEvent)
+    }
+    dispatch(null)
+    dispatch({ type: 'other' })
+    dispatch({ type: 'access', access: '' })
+    dispatch({ type: 'access', access: 'mem-cookie', channel: 'cookie' })
+    dispatch({ type: 'access', access: 'mem-bearer', channel: 'bearer' })
+    dispatch({ type: 'access', access: 'mem-bearer2', channel: 'bearer', refresh: 'r2' })
+
+    expect(tokenCrypto.setEncryptedToken).toHaveBeenCalledWith('access_token', 'mem-bearer2')
+    expect(tokenCrypto.setEncryptedToken).toHaveBeenCalledWith('refresh_token', 'r2')
+    expect(tokenCrypto.setEncryptedToken).not.toHaveBeenCalledWith('refresh_token', 'mem-bearer')
+  })
+})
+
 describe('refreshAccessToken - bearer channel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -133,6 +227,13 @@ describe('refreshAccessToken - bearer channel', () => {
     expect(access).toBe('second-try')
     expect(axiosPost).toHaveBeenCalledTimes(2)
   })
+
+  it('should throw when transient retries are exhausted', async () => {
+    axiosPost.mockRejectedValue(makeTransientError())
+
+    await expect(refreshAccessToken('bearer')).rejects.toBeDefined()
+    expect(axiosPost).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('refreshAccessToken - cookie channel', () => {
@@ -185,6 +286,13 @@ describe('refreshAccessToken - cookie channel', () => {
 
     const access = await refreshAccessToken('cookie')
     expect(access).toBe('cookie-recovered')
+    expect(axiosPost).toHaveBeenCalledTimes(2)
+  })
+
+  it('should throw when transient retries are exhausted', async () => {
+    axiosPost.mockRejectedValue(makeTransientError())
+
+    await expect(refreshAccessToken('cookie')).rejects.toBeDefined()
     expect(axiosPost).toHaveBeenCalledTimes(2)
   })
 })
