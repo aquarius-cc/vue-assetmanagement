@@ -410,7 +410,7 @@ const submitForm = () => {
     try {
       if (isEditMode.value) {
         const recordcode = route.query.code as string
-        await outAssetStore.update({ asset_recordcode: recordcode, ...outAssetForm.value })
+        await outAssetStore.update({ recordcode, ...outAssetForm.value })
         ElMessage.success('出库资产修改成功')
       } else {
         await outAssetStore.create(outAssetForm.value)

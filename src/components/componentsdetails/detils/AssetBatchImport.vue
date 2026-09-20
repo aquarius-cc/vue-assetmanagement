@@ -143,7 +143,6 @@ import { useBatchImport } from '@/composables/useBatchImport'
 import { usePreviewPagination } from '@/composables/usePreviewPagination'
 import { validationTagType, validationTagText } from '@/utils/batchImportHelpers'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
-import { request } from '@/api/index'
 import { useAssetStore } from '@/stores/assetStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import { isAxiosError } from 'axios'
@@ -257,24 +256,10 @@ const handleSubmit = async () => {
       row.submitError = undefined
     })
 
-    // 调用后端批量创建接口（直接用 request.post 避免 unwrapResponse 丢失详细错误）
-    let result: {
-      total: number
-      success_count: number
-      fail_count: number
-      success_items: unknown[]
-      fail_items: Array<{ index: number; error_message: string }>
-    }
+    // 调用后端批量创建接口（统一走 store，端点仅在 api 层定义；400 由 axios 拦截器 reject）
+    let result: Awaited<ReturnType<typeof assetStore.batchCreateAssets>>
     try {
-      const res = await request.post('/assets/assets/batch-create/', { items: apiDataList })
-      const respData = res.data as Record<string, unknown>
-      result = {
-        total: respData.total as number,
-        success_count: respData.success_count as number,
-        fail_count: respData.fail_count as number,
-        success_items: respData.success_items as unknown[],
-        fail_items: respData.fail_items as Array<{ index: number; error_message: string }>,
-      }
+      result = await assetStore.batchCreateAssets(apiDataList)
     } catch (axiosError: unknown) {
       // 处理 400 错误：后端返回 { code: 400, data: { items: [{ field: ["错误"] }] } }
       if (isAxiosError(axiosError) && axiosError.response?.status === 400) {

@@ -284,7 +284,7 @@ export function useOutAssetForm() {
       try {
         if (isEditMode.value) {
           await outAssetStore.update({
-            asset_recordcode: route.query.code as string,
+            recordcode: route.query.code as string,
             ...outAssetForm.value,
           })
           ElMessage.success('出库资产修改成功')

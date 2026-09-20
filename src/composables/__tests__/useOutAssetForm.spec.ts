@@ -475,9 +475,7 @@ describe('useOutAssetForm', () => {
       form.submitForm()
       await vi.waitFor(() => expect(mockElMessageSuccess).toHaveBeenCalled())
 
-      expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({ asset_recordcode: 'OUT001' }),
-      )
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ recordcode: 'OUT001' }))
     })
 
     it('编辑模式更新成功后跳转列表', async () => {
@@ -488,9 +486,7 @@ describe('useOutAssetForm', () => {
       submitForm()
       await vi.waitFor(() => expect(mockPush).toHaveBeenCalled())
 
-      expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({ asset_recordcode: 'OUT001' }),
-      )
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ recordcode: 'OUT001' }))
       expect(mockSetRefreshFlag).toHaveBeenCalledWith(true)
     })
 
