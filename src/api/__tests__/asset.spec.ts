@@ -75,9 +75,9 @@ describe('assetAPI', () => {
     expect(mockRequest.delete).toHaveBeenCalledWith('/assets/assets/Asset-20260101-ABC12345/')
   })
 
-  it('getAssetByName calls GET /assets/assets/getassetbyname/{name}/', async () => {
+  it('getAssetByName calls GET /assets/assets/get_asset_by_name/{name}/', async () => {
     await assetAPI.getAssetByName('Test Asset')
-    expect(mockRequest.get).toHaveBeenCalledWith('/assets/assets/getassetbyname/Test%20Asset/')
+    expect(mockRequest.get).toHaveBeenCalledWith('/assets/assets/get_asset_by_name/Test%20Asset/')
   })
 
   it('searchAvailableAssets calls GET /assets/assets/search_available/', async () => {

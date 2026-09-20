@@ -168,13 +168,13 @@ export const assetAPI = {
 
   /**
    * 按名称搜索资产
-   * GET /api/assets/assets/getassetbyname/{name}/
+   * GET /api/assets/assets/get_asset_by_name/{name}/
    */
   getAssetByName: async (name: string): Promise<AssetListResponse | null> => {
     try {
       return unwrapResponse(
         request.get<AssetListResponse>(
-          `/assets/assets/getassetbyname/${encodeURIComponent(name)}/`,
+          `/assets/assets/get_asset_by_name/${encodeURIComponent(name)}/`,
         ),
       )
     } catch (error) {

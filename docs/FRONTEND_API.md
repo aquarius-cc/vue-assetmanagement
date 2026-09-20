@@ -25,7 +25,7 @@
 | `getAssetHistory` | GET | `/assets/assets/{code}/history/` | 操作历史 |
 | `getAssetTimeline` | GET | `/assets/assets/{code}/timeline/` | 状态时间线 |
 | `searchAvailableAssets` | GET | `/assets/assets/search_available/` | 可用资产 |
-| `getAssetByName` | GET | `/assets/assets/getassetbyname/{name}/` | 按名称查 |
+| `getAssetByName` | GET | `/assets/assets/get_asset_by_name/{name}/` | 按名称查 |
 | `getContractByAssetCode` | GET | `/assets/assets/contract_by_asset/{code}/` | 查关联合同 |
 | `changeAssetStatus` | POST | `/assets/assets/{code}/change_status/` | 变更状态 |
 | `getCombinedDetails` | GET | `/assets/assets/combined_details/` | 综合详情 |
@@ -124,7 +124,7 @@
 | `batchCreateContracts` | POST | `/assets/contracts/batch-create/` | 批量创建 |
 | `batchDeleteContracts` | POST | `/assets/contracts/batch-delete/` | 批量删除 |
 | `getFuzzySearch` | GET | `/assets/contracts/search/` | 模糊搜索 |
-| `getContractByName` | GET | `/assets/contracts/getcontractByname/{name}/` | 按名称查 |
+| `getContractByName` | GET | `/assets/contracts/get_contract_by_name/{name}/` | 按名称查 |
 | `getContractStatistics` | GET | `/assets/contracts/statistics/` | 统计 |
 | `addPaymentRecord` | POST | `/assets/contracts/{code}/payment_record/` | 添加付款记录 |
 | `updateSettlementStatus` | POST | `/assets/contracts/{code}/update_settlement_status/` | 更新结算状态 |

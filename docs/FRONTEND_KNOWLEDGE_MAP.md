@@ -121,7 +121,7 @@ assetAPI
 ├── getAssetByCode(code)                 GET  /assets/assets/{code}/
 ├── updateAsset(data)                    PUT  /assets/assets/{code}/
 ├── deleteAsset(code)                    DELETE /assets/assets/{code}/
-├── getAssetByName(name)                 GET  /assets/assets/getassetbyname/{name}/
+├── getAssetByName(name)                 GET  /assets/assets/get_asset_by_name/{name}/
 ├── searchAvailableAssets(params)        GET  /assets/assets/search_available/
 ├── searchAssets(params)                 GET  /assets/assets/search/
 ├── combineSearch(params)                GET  /assets/assets/combine_search/

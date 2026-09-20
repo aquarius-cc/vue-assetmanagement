@@ -77,13 +77,13 @@ export const contractAPI = {
 
   /**
    * 按名称搜索合同
-   * GET /api/assets/contracts/getcontractByname/{name}/
+   * GET /api/assets/contracts/get_contract_by_name/{name}/
    * 对应后端 ContractViewSet.getcontractByname action
    */
   getContractByName: (contract_name: string): Promise<ContractListResponse> => {
     return unwrapResponse(
       request.get<ContractListResponse>(
-        `/assets/contracts/getcontractByname/${encodeURIComponent(contract_name)}/`,
+        `/assets/contracts/get_contract_by_name/${encodeURIComponent(contract_name)}/`,
       ),
     )
   },
