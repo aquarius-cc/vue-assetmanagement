@@ -1,52 +1,37 @@
 /**
- * @file Dashboard 页面数据获取与交互逻辑（时钟、登录时长、统计数据、退出）
+ * @file Dashboard 页面数据获取与交互逻辑（时钟、登录时长、统计数据、图表、刷新）
  * @module composables/useDashboardPage.ts
  * @description
  *   - 提供 Dashboard 页面的获取与交互逻辑
- *   - 包含时钟、登录时长、统计数据、退出等功能
- *   - 提供退出登录的功能
+ *   - 用户会话（authInfo/logout）职责已下沉至 useDashboardUser（FR-6 拆分）
+ *   - 包含时钟、登录时长、统计数据、图表、刷新与退出等功能
  * @returns
- *   - useDashboardPage: Dashboard 页面 composable 函数
+ *   - useDashboardPage: Dashboard 页面 composable 函数（返回形状与拆分前一致）
  * @example
  *   - Dashboard 页面 composable 函数调用示例
  *   ```ts
  *   import { useDashboardPage } from '@/composables/useDashboardPage'
  *   const { authInfo, currentTime, currentDate, loginDuration, distributeStats, recycleStats, wasteStats, recentOutAssets, recentRecycleAssets } = useDashboardPage()
  *   ```
- * @todo
- *   - [ ] Dashboard 页面 composable 函数的测试用例
  * @callers
  *   - components/DashboardPage.vue
  * @dependsOn
+ *   - composables/useDashboardUser: 用户会话（authInfo/logout/logout 起始时间键）
  *   - stores/dashboard: 仪表盘数据 store
- *   - stores/auth: 认证状态 store
- *   - types/authuser: 认证信息类型
  *   - utils/Format: 日期时间格式化
+ *   - composables/useDashboardCharts | useChartTheme: 图表配置与主题
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useDashboardStore } from '@/stores/dashboard'
-import { useAuthStore } from '@/stores/auth'
-import type { AuthInfo } from '@/types/authuser'
 import type { EChartsOption } from 'echarts'
 import { useDashboardCharts } from '@/composables/useDashboardCharts'
 import { useChartTheme } from '@/composables/useChartTheme'
+import { useDashboardUser, LOGIN_START_TIME_KEY } from '@/composables/useDashboardUser'
 
 export function useDashboardPage() {
   const dashboardStore = useDashboardStore()
-  const authStore = useAuthStore()
-
-  const authInfo = computed(() => {
-    const info = authStore.authInfo as AuthInfo | undefined
-    if (!info) {
-      return { real_name: '暂无用户', auth_name: '暂无管理员用户名' }
-    }
-    return {
-      real_name: info.auth_username || '暂无用户',
-      auth_name: info.auth_username || '暂无管理员用户名',
-      isactive: info.isactive || false,
-    }
-  })
+  const { authInfo, logout } = useDashboardUser()
 
   // 时间
   const currentTime = ref('')
@@ -57,7 +42,6 @@ export function useDashboardPage() {
   const loadError = ref(false)
 
   // 登录时长
-  const LOGIN_START_TIME_KEY = 'loginStartTime'
   const loginDuration = ref('00:00:00')
   const getLoginStartTime = (): number => {
     const stored = sessionStorage.getItem(LOGIN_START_TIME_KEY)
@@ -219,22 +203,6 @@ export function useDashboardPage() {
       ElMessage.success('回收数据刷新成功')
     } catch {
       ElMessage.error('刷新失败')
-    }
-  }
-
-  const isLoggingOut = ref(false)
-  const logout = async () => {
-    if (isLoggingOut.value) return
-    isLoggingOut.value = true
-    try {
-      sessionStorage.removeItem(LOGIN_START_TIME_KEY)
-      await authStore.logout()
-      location.reload()
-    } catch (error) {
-      console.error('退出登录失败:', error)
-      location.reload()
-    } finally {
-      isLoggingOut.value = false
     }
   }
 
