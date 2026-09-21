@@ -34,8 +34,6 @@ export const useFoundAssetStore = createEntityStore<FoundAssetExtended, Paginati
         const response = await foundAssetAPI.getFoundAssets(safeParams)
         return {
           count: response.count,
-          next: response.next,
-          previous: response.previous,
           results: response.results as FoundAssetExtended[],
         }
       },

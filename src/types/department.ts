@@ -5,7 +5,7 @@
  *   - DepartmentCreateForm/DepartmentUpdateForm: 部门表单接口
  *   - Department/DepartmentBrief: 部门基础与简要信息接口
  *   - DepartmentQueryParams: 部门查询参数
- *   - DepartmentListResponse/DepartmentListResponseOld: 部门列表响应接口（兼容旧版） 已删除
+ *   - DepartmentListResponse: 部门列表响应接口
  *   - DepartmentTreeNode/DepartmentTreeQueryParams: 部门树形结构接口
  *   - DepartmentSortItem/MoveDepartmentParams: 部门排序与移动接口
  *   - DepartmentEmployeeListResponse/DepartmentEmployeeListQueryParams: 部门员工列表接口
@@ -18,6 +18,7 @@
  */
 
 import type { EmployeeExtended } from '@/types/user'
+import type { PaginatedResponse } from '@/types/common'
 
 // ==================== 基础接口定义 ====================
 
@@ -107,14 +108,9 @@ export interface DepartmentQueryParams {
 // ==================== 响应接口 ====================
 
 /**
- * 部门列表响应接口
+ * 部门列表响应接口（DR-1：由 PaginatedResponse 派生，单一事实来源）
  */
-export interface DepartmentListResponse {
-  count: number
-  next: string | null
-  previous: string | null
-  results: Department[]
-}
+export type DepartmentListResponse = PaginatedResponse<Department>
 
 /**
  * 部门简化接口
@@ -179,16 +175,6 @@ export interface DepartmentForm {
   department_name: string
   department_information: string
 }
-
-// ==================== 兼容性接口 ====================
-// 旧版部门列表响应接口，用于兼容旧版后端返回的部门列表   可删除
-// export interface DepartmentListResponseOld {
-//   success: boolean
-//   count: number
-//   next: string | null
-//   previous: string | null
-//   results: Department[]
-// }
 
 // ==================== Excel 导入类型 ====================
 

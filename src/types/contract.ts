@@ -8,7 +8,7 @@
  *   - Contract: 合同基础接口
  *   - PaymentRecord/PaidRecord: 支付记录接口
  *   - ContractQueryParams: 合同查询参数
- *   - ContractListResponse/ContractListResponseOld: 合同列表响应接口
+ *   - ContractListResponse: 合同列表响应接口
  *   - ContractTableData: 合同表格数据接口
  *   - ContractStats: 合同统计接口
  *   - ExcelContractData/ValidatedContractData: Excel导入导出接口
@@ -17,6 +17,8 @@
  *   - utils/Format（格式化工具）
  *   - components/*（组件）
  */
+
+import type { PaginatedResponse } from '@/types/common'
 
 // ==================== 枚举类型定义 ====================
 
@@ -210,18 +212,9 @@ export interface ContractQueryParams {
 // ==================== 响应接口 ====================
 
 /**
- * 合同列表响应接口
+ * 合同列表响应接口（DR-1：由 PaginatedResponse 派生，单一事实来源）
  */
-export interface ContractListResponse {
-  /** 总记录数 */
-  count: number
-  /** 下一页链接 */
-  next: string | null
-  /** 上一页链接 */
-  previous: string | null
-  /** 合同列表数据 */
-  results: Contract[]
-}
+export type ContractListResponse = PaginatedResponse<Contract>
 
 /**
  * 创建用于表格显示的Contract类型
@@ -322,14 +315,4 @@ export interface ValidatedContractData {
   validationStatus: 'success' | 'error'
   /** 验证错误信息 */
   validationError: string
-}
-
-// ==================== 兼容性接口（保留原有的兼容性定义以兼容现有代码） ====================
-
-export interface ContractListResponseOld {
-  success: boolean
-  count: number
-  next: string | null
-  previous: string | null
-  results: Contract[]
 }

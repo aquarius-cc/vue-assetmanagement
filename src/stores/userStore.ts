@@ -159,8 +159,6 @@ const baseUserStoreDef = createEntityStore<EmployeeExtended, PaginationQuery>('u
       const response = await userAPI.getUserList(safeParams)
       return {
         count: response.count,
-        next: response.next,
-        previous: response.previous,
         results: response.results as EmployeeExtended[],
       }
     },

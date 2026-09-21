@@ -68,8 +68,6 @@ const baseLostAssetStoreDef = createEntityStore<LostAssetExtended, PaginationQue
       const response = await lostAssetAPI.getLostAssets(safeParams)
       return {
         count: response.count,
-        next: response.next,
-        previous: response.previous,
         results: response.results as LostAssetExtended[],
       }
     },

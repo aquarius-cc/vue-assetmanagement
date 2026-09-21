@@ -7,7 +7,7 @@
  *   - EmployeeCreateForm/EmployeeUpdateForm: 员工表单接口
  *   - Employee/EmployeeExtended: 员工基础与扩展接口
  *   - EmployeeQueryParams: 员工查询参数
- *   - EmployeeListResponse/EmployeeListResponseOld: 员工列表响应接口（兼容旧版） 已删除
+ *   - EmployeeListResponse: 员工列表响应接口
  *   - EmployeeForm: 员工表单接口（兼容性）
  *   - ValidatedEmployeeData: 验证后的员工数据接口
  * @callers
@@ -17,6 +17,7 @@
  */
 
 import type { Department } from '@/types/department'
+import type { PaginatedResponse } from '@/types/common'
 
 // ==================== 枚举类型定义 ====================
 
@@ -149,18 +150,9 @@ export interface EmployeeQueryParams {
 // ==================== 响应接口 ====================
 
 /**
- * 员工列表响应接口
+ * 员工列表响应接口（DR-1：由 PaginatedResponse 派生，单一事实来源）
  */
-export interface EmployeeListResponse {
-  /** 总记录数 */
-  count: number
-  /** 下一页链接 */
-  next: string | null
-  /** 上一页链接 */
-  previous: string | null
-  /** 员工列表数据 */
-  results: Employee[]
-}
+export type EmployeeListResponse = PaginatedResponse<Employee>
 
 /**
  * 员工简化接口
@@ -177,16 +169,6 @@ export interface EmployeeForm {
   employee_phone: string
   employee_description?: string | null
 }
-
-// ==================== 兼容性接口 ====================
-// 旧版员工列表响应接口，用于兼容旧版后端返回的员工列表   可删除
-// export interface EmployeeListResponseOld {
-//   success: boolean
-//   count: number
-//   next: string | null
-//   previous: string | null
-//   results: Employee[]
-// }
 
 // ==================== Excel 导入验证类型 ====================
 

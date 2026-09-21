@@ -34,8 +34,6 @@ export const useWasteAssetStore = createEntityStore<WasteAsset, PaginationQuery>
       const response = await wasteAssetAPI.getWasteAssets(safeParams)
       return {
         count: response.count,
-        next: response.next,
-        previous: response.previous,
         results: response.results as WasteAsset[],
       }
     },

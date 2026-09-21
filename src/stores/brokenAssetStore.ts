@@ -34,8 +34,6 @@ export const useBrokenAssetStore = createEntityStore<BrokenAssetExtended, Pagina
         const response = await brokenAssetAPI.getBrokenAssets(safeParams)
         return {
           count: response.count,
-          next: response.next,
-          previous: response.previous,
           results: response.results as BrokenAssetExtended[],
         }
       },

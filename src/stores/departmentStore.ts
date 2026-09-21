@@ -103,8 +103,6 @@ export const useDepartmentStore = createEntityStore<Department, PaginationQuery>
       const response = await departmentAPI.getDepartmentList(safeParams)
       return {
         count: response.count,
-        next: response.next,
-        previous: response.previous,
         results: response.results as Department[],
       }
     },

@@ -56,8 +56,6 @@ export const useUnregisteredAssetStore = createEntityStore<UnregisteredAsset, Pa
         const response = await unregisteredAssetAPI.getUnregisteredAssets(safeParams)
         return {
           count: response.count,
-          next: response.next,
-          previous: response.previous,
           results: response.results as UnregisteredAsset[],
         }
       },

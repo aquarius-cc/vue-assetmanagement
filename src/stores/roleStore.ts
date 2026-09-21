@@ -69,8 +69,6 @@ const baseRoleStoreDef = createEntityStore<Role, PaginationQuery>('role', {
       const response = await roleAPI.getRoles(safeParams)
       return {
         count: response.count,
-        next: response.next,
-        previous: response.previous,
         results: response.results as Role[],
       }
     },

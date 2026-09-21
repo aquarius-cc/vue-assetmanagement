@@ -177,4 +177,7 @@ export interface RecycleAssetBatchCreateForm {
 /**
  * 批量创建回收记录响应
  */
-export type RecycleAssetBatchCreateResult = BatchCreateResult<RecycleAssetExtended, RecycleAssetBatchItem>
+export type RecycleAssetBatchCreateResult = BatchCreateResult<
+  RecycleAssetExtended,
+  RecycleAssetBatchItem
+>

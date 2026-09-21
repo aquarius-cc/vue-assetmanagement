@@ -91,8 +91,6 @@ const baseAuthUserStoreDef = createEntityStore<AuthUser, PaginationQuery>('authU
       const response = await authUserAPI.getAuthUsers(safeParams)
       return {
         count: response.count,
-        next: response.next,
-        previous: response.previous,
         results: response.results as AuthUser[],
       }
     },

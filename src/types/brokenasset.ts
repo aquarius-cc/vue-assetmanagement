@@ -73,4 +73,7 @@ export interface BrokenAssetBatchCreateForm {
   }>
 }
 
-export type BrokenAssetBatchCreateResult = BatchCreateResult<BrokenAssetExtended, Record<string, unknown>>
+export type BrokenAssetBatchCreateResult = BatchCreateResult<
+  BrokenAssetExtended,
+  Record<string, unknown>
+>

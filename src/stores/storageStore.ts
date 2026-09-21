@@ -54,8 +54,6 @@ export const useStorageStore = createEntityStore<Storage, PaginationQuery>('stor
       const response = await storageAPI.getStorages(safeParams)
       return {
         count: response.count,
-        next: response.next,
-        previous: response.previous,
         results: response.results as Storage[],
       }
     },

@@ -41,8 +41,6 @@ export const useDamagedAssetStore = createEntityStore<DamagedAsset, PaginationQu
         const response = await damagedAssetAPI.getDamagedAssets(safeParams)
         return {
           count: response.count,
-          next: response.next,
-          previous: response.previous,
           results: response.results as DamagedAsset[],
         }
       },

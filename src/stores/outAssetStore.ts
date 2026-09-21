@@ -53,8 +53,6 @@ export const useOutAssetStore = createEntityStore<OutAssetDetail, PaginationQuer
       const response = await outAssetAPI.getOutAssets(safeParams)
       return {
         count: response.count,
-        next: response.next,
-        previous: response.previous,
         results: response.results as OutAssetDetail[],
       }
     },

@@ -41,8 +41,6 @@ export const useRecycleAssetStore = createEntityStore<RecycleAssetExtended, Pagi
         const response = await recycleAssetAPI.getRecycleAssets(safeParams)
         return {
           count: response.count,
-          next: response.next,
-          previous: response.previous,
           results: response.results as RecycleAssetExtended[],
         }
       },

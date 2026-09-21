@@ -69,8 +69,6 @@ export const useHardDiskSnStore = createEntityStore<HardDiskSN, PaginationQuery>
       const response = await harddiskSnAPI.getHardDiskSNs(safeParams)
       return {
         count: response.count,
-        next: response.next,
-        previous: response.previous,
         results: response.results as HardDiskSN[],
       }
     },

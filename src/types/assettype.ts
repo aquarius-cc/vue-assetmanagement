@@ -13,6 +13,8 @@
  *   - components/*（组件）
  */
 
+import type { PaginatedResponse } from '@/types/common'
+
 // ==================== 基础接口定义 ====================
 
 /**
@@ -91,14 +93,9 @@ export interface AssetTypeQueryParams {
 // ==================== 响应接口 ====================
 
 /**
- * 资产类型列表响应接口
+ * 资产类型列表响应接口（DR-1：由 PaginatedResponse 派生，单一事实来源）
  */
-export interface AssetTypeListResponse {
-  count: number
-  next: string | null
-  previous: string | null
-  results: AssetType[]
-}
+export type AssetTypeListResponse = PaginatedResponse<AssetType>
 
 /**
  * 资产类型简化接口

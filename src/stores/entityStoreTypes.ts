@@ -5,7 +5,7 @@
  *   - PaginationQuery: 分页查询参数接口
  *   - PaginationState: 分页状态接口
  *   - EntityState: 实体状态接口
- *   - ListResponse: 列表响应接口
+ *   - ListResponse: 列表响应接口（由 types/common 的 PaginatedResponse 派生，DR-1 单一事实来源）
  *   - BatchDeleteResult: 批量删除结果接口
  *   - EntityStoreConfig: Store 配置接口
  *   - EntityStore: Store 统一接口
@@ -34,6 +34,7 @@
  */
 import type { ElMessage } from 'element-plus'
 import type { Ref } from 'vue'
+import type { PaginatedResponse } from '@/types/common'
 
 // ✅ 重构：分离查询参数和分页状态
 export interface PaginationQuery {
@@ -57,16 +58,10 @@ export interface EntityState<T> {
   loading: boolean
 }
 
-export interface ListResponse<T> {
-  results: T[]
-  count: number
-  /** 后端返回的总页数（可选） */
-  total_pages?: number
-  /** 后端返回的当前页码（可选） */
-  page?: number
-  /** 后端返回的每页大小（可选） */
-  page_size?: number
-}
+// DR-1：分页响应唯一事实来源为 types/common.ts 的 PaginatedResponse（DRF 契约全字段）。
+// ListResponse 仅保留工厂消费所需字段，count/results 必填，其余字段可选以兼容各 store 的部分映射。
+export type ListResponse<T> = Pick<PaginatedResponse<T>, 'count' | 'results'> &
+  Partial<Pick<PaginatedResponse<T>, 'next' | 'previous' | 'total_pages' | 'page' | 'page_size'>>
 
 // ✅ 新增：批量删除结果接口（与后端 success_response 格式对齐）
 export interface BatchDeleteResult {

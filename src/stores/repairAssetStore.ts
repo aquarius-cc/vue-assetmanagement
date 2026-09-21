@@ -75,8 +75,6 @@ const baseRepairAssetStoreDef = createEntityStore<RepairAssetExtended, Paginatio
         const response = await repairAssetAPI.getRepairAssets(safeParams)
         return {
           count: response.count,
-          next: response.next,
-          previous: response.previous,
           results: response.results as RepairAssetExtended[],
         }
       },

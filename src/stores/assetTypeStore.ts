@@ -39,8 +39,6 @@ export const useAssetTypeStore = createEntityStore<AssetType, PaginationQuery>('
       const response = await assetTypeAPI.getAssetTypes(safeParams)
       return {
         count: response.count,
-        next: response.next,
-        previous: response.previous,
         results: response.results as AssetType[],
       }
     },

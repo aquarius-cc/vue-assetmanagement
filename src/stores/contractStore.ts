@@ -45,8 +45,6 @@ export const useContractStore = createEntityStore<Contract, PaginationQuery>('co
       const response = await contractAPI.getContracts(safeParams)
       return {
         count: response.count,
-        next: response.next,
-        previous: response.previous,
         results: response.results as Contract[],
       }
     },

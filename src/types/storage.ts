@@ -15,6 +15,8 @@
  *   - components/*（组件）
  */
 
+import type { PaginatedResponse } from '@/types/common'
+
 // ==================== 枚举类型定义 ====================
 
 /**
@@ -129,18 +131,9 @@ export interface StorageQueryParams {
 // ==================== 响应接口 ====================
 
 /**
- * 仓库列表响应接口
+ * 仓库列表响应接口（DR-1：由 PaginatedResponse 派生，单一事实来源）
  */
-export interface StorageResponse {
-  /** 总记录数 */
-  count: number
-  /** 下一页链接 */
-  next: string | null
-  /** 上一页链接 */
-  previous: string | null
-  /** 仓库列表数据 */
-  results: Storage[]
-}
+export type StorageResponse = PaginatedResponse<Storage>
 
 /**
  * 仓库简化接口

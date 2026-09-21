@@ -34,8 +34,6 @@ export const useOperationLogStore = createEntityStore<OperationLog, PaginationQu
         const response = await operationLogAPI.getOperationLogs(safeParams)
         return {
           count: response.count,
-          next: response.next,
-          previous: response.previous,
           results: response.results as OperationLog[],
         }
       },
