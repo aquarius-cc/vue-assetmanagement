@@ -25,25 +25,14 @@ import type {
 } from '@/types/user'
 import type { DepartmentBrief } from '@/types/department'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
+import type { BatchCreateResult } from '@/types/common'
 
 /**
  * 批量创建员工响应
  * 对应后端 EmployeeViewSet.batch_create action 返回格式
  * fail_items 格式与后端 BatchOperationMixin.batch_execute 对齐
  */
-export interface EmployeeBatchCreateResult {
-  total: number
-  success_count: number
-  fail_count: number
-  success_items: EmployeeExtended[]
-  fail_items: Array<{
-    index: number
-    error_code: string
-    error_message: string
-    input_data: EmployeeCreateForm
-    row_number?: number
-  }>
-}
+export type EmployeeBatchCreateResult = BatchCreateResult<EmployeeExtended, EmployeeCreateForm>
 
 /**
  * 员工管理 API

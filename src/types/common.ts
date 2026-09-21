@@ -4,6 +4,7 @@
  * @exports
  *   - ApiResponse: API响应基础接口
  *   - PaginatedResponse: 分页响应接口
+ *   - BatchCreateFailItem / BatchCreateResult: 批量创建结果通用类型（10 处 XxxBatchCreateResult 统一收敛基类型，审查 #24）
  *   - PaginationParams/SearchParams/DateRangeParams/BaseQueryParams: 查询参数接口
  *   - TableColumn: 表格列配置接口
  *   - UserStatus/OperationType: 状态枚举
@@ -31,6 +32,36 @@ export interface PaginatedResponse<T> {
   total_pages: number
   page: number
   page_size: number
+}
+
+// ===== 批量创建结果通用类型（DR-1 收敛：#24 10 处 XxxBatchCreateResult 单源） =====
+// 模型：/后端 batch_create action 返回格式
+// fail_items 结构对应后端 BatchOperationMixin.batch_execute：
+// index（批次位置）/ error_code（业务错误码）/ error_message / input_data（提交原报）/ row_number（可选行号）
+
+/**
+ * 批量创建失败明细项
+ * @typeParam F - 提交时的表单数据类型（默认 unknown）
+ */
+export interface BatchCreateFailItem<F = unknown> {
+  index: number
+  error_code: string
+  error_message: string
+  input_data: F
+  row_number?: number
+}
+
+/**
+ * 批量创建结果
+ * @typeParam T - success_items 元素类型
+ * @typeParam F - fail_items.input_data 类型（默认 unknown）
+ */
+export interface BatchCreateResult<T, F = unknown> {
+  total: number
+  success_count: number
+  fail_count: number
+  success_items: T[]
+  fail_items: BatchCreateFailItem<F>[]
 }
 
 // 分页查询参数

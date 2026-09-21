@@ -21,24 +21,13 @@ import type {
   AssetTypeQueryParams,
 } from '@/types/assettype'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
+import type { BatchCreateResult } from '@/types/common'
 
 /**
  * 批量创建资产类型响应
  * 对应后端 AssetTypeViewSet.batch_create action 返回格式
  */
-export interface AssetTypeBatchCreateResult {
-  total: number
-  success_count: number
-  fail_count: number
-  success_items: AssetType[]
-  fail_items: Array<{
-    index: number
-    error_code: string
-    error_message: string
-    input_data: AssetTypeCreateForm
-    row_number?: number
-  }>
-}
+export type AssetTypeBatchCreateResult = BatchCreateResult<AssetType, AssetTypeCreateForm>
 
 /**
  * 资产类型管理 API

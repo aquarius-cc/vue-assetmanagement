@@ -12,7 +12,7 @@
  *   - composables/*（组合式函数）
  *   - components/*（组件）
  */
-import type { PaginatedResponse } from '@/types/common'
+import type { PaginatedResponse, BatchCreateResult } from '@/types/common'
 import type { AssetDetail } from '@/types/asset'
 // ==================== 基础接口定义 ====================
 
@@ -177,16 +177,4 @@ export interface RecycleAssetBatchCreateForm {
 /**
  * 批量创建回收记录响应
  */
-export interface RecycleAssetBatchCreateResult {
-  total: number
-  success_count: number
-  fail_count: number
-  success_items: RecycleAssetExtended[]
-  fail_items: Array<{
-    index: number
-    error_code: string
-    error_message: string
-    input_data: RecycleAssetBatchItem
-    row_number?: number
-  }>
-}
+export type RecycleAssetBatchCreateResult = BatchCreateResult<RecycleAssetExtended, RecycleAssetBatchItem>

@@ -27,25 +27,14 @@ import type {
   DepartmentEmployeeListQueryParams,
 } from '@/types/department'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
+import type { BatchCreateResult } from '@/types/common'
 
 /**
  * 批量创建部门响应
  * 对应后端 DepartmentViewSet.batch_create action 返回格式
  * fail_items 格式与后端 BatchOperationMixin.batch_execute 对齐
  */
-export interface DepartmentBatchCreateResult {
-  total: number
-  success_count: number
-  fail_count: number
-  success_items: Department[]
-  fail_items: Array<{
-    index: number
-    error_code: string
-    error_message: string
-    input_data: DepartmentCreateForm
-    row_number?: number
-  }>
-}
+export type DepartmentBatchCreateResult = BatchCreateResult<Department, DepartmentCreateForm>
 
 /**
  * 部门管理 API

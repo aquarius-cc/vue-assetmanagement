@@ -23,25 +23,14 @@ import type {
   RecyclableOutAssetResponse,
 } from '@/types/outasset'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
+import type { BatchCreateResult } from '@/types/common'
 
 /**
  * 批量创建出库记录响应
  * 对应后端 OutAssetViewSet.batch_create action 返回格式
  * fail_items 格式与后端 BatchOperationMixin.batch_execute 对齐
  */
-export interface OutAssetBatchCreateResult {
-  total: number
-  success_count: number
-  fail_count: number
-  success_items: OutAssetDetail[]
-  fail_items: Array<{
-    index: number
-    error_code: string
-    error_message: string
-    input_data: OutAssetCreateForm
-    row_number?: number
-  }>
-}
+export type OutAssetBatchCreateResult = BatchCreateResult<OutAssetDetail, OutAssetCreateForm>
 
 /**
  * 出库资产管理 API

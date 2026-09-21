@@ -21,25 +21,14 @@ import type {
   StorageResponse,
 } from '@/types/storage'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
+import type { BatchCreateResult } from '@/types/common'
 
 /**
  * 批量创建仓库响应
  * 对应后端 StorageViewSet.batch_create action 返回格式
  * fail_items 格式与后端 BatchOperationMixin.batch_execute 对齐
  */
-export interface StorageBatchCreateResult {
-  total: number
-  success_count: number
-  fail_count: number
-  success_items: Storage[]
-  fail_items: Array<{
-    index: number
-    error_code: string
-    error_message: string
-    input_data: StorageCreateForm
-    row_number?: number
-  }>
-}
+export type StorageBatchCreateResult = BatchCreateResult<Storage, StorageCreateForm>
 
 /**
  * 仓库管理 API

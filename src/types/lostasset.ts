@@ -14,7 +14,7 @@
  *   - components/*（组件）
  */
 
-import type { PaginatedResponse } from '@/types/common'
+import type { PaginatedResponse, BatchCreateResult } from '@/types/common'
 
 /**
  * 遗失资产数据模型
@@ -164,16 +164,4 @@ export interface LostAssetBatchCreateForm {
 /**
  * 批量创建遗失记录响应
  */
-export interface LostAssetBatchCreateResult {
-  total: number
-  success_count: number
-  fail_count: number
-  success_items: LostAssetExtended[]
-  fail_items: Array<{
-    index: number
-    error_code: string
-    error_message: string
-    input_data: LostAssetBatchItem
-    row_number?: number
-  }>
-}
+export type LostAssetBatchCreateResult = BatchCreateResult<LostAssetExtended, LostAssetBatchItem>

@@ -35,25 +35,14 @@ import type {
 } from '@/types/asset'
 import type { Contract } from '@/types/contract'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
+import type { BatchCreateResult } from '@/types/common'
 
 /**
  * 批量创建资产响应
  * 对应后端 AssetViewSet.batch_create action 返回格式
  * fail_items 格式与后端BatchOperationMixin.batch_execute 对齐
  */
-export interface AssetBatchCreateResult {
-  total: number
-  success_count: number
-  fail_count: number
-  success_items: AssetDetail[]
-  fail_items: Array<{
-    index: number
-    error_code: string
-    error_message: string
-    input_data: AssetCreateForm
-    row_number?: number
-  }>
-}
+export type AssetBatchCreateResult = BatchCreateResult<AssetDetail, AssetCreateForm>
 
 /**
  * [LR-01] 资产操作历史记录页

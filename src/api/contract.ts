@@ -22,25 +22,14 @@ import type {
   PaidRecord,
 } from '@/types/contract'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
+import type { BatchCreateResult } from '@/types/common'
 
 /**
  * 批量创建合同响应
  * 对应后端 ContractViewSet.batch_create action 返回格式
  * fail_items 格式与后端BatchOperationMixin.batch_execute 对齐
  */
-export interface ContractBatchCreateResult {
-  total: number
-  success_count: number
-  fail_count: number
-  success_items: Contract[]
-  fail_items: Array<{
-    index: number
-    error_code: string
-    error_message: string
-    input_data: ContractCreateForm
-    row_number?: number
-  }>
-}
+export type ContractBatchCreateResult = BatchCreateResult<Contract, ContractCreateForm>
 
 /**
  * 支付记录操作响应

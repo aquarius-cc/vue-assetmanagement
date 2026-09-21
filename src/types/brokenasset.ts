@@ -13,7 +13,7 @@
  *   - components/*（组件）
  */
 
-import type { PaginatedResponse } from '@/types/common'
+import type { PaginatedResponse, BatchCreateResult } from '@/types/common'
 
 /**
  * BrokenAsset data model
@@ -73,16 +73,4 @@ export interface BrokenAssetBatchCreateForm {
   }>
 }
 
-export interface BrokenAssetBatchCreateResult {
-  total: number
-  success_count: number
-  fail_count: number
-  success_items: BrokenAssetExtended[]
-  fail_items: Array<{
-    index: number
-    error_code: string
-    error_message: string
-    input_data: Record<string, unknown>
-    row_number?: number
-  }>
-}
+export type BrokenAssetBatchCreateResult = BatchCreateResult<BrokenAssetExtended, Record<string, unknown>>
