@@ -197,6 +197,11 @@ html.dark {
   --gradient-cyan: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
   --gradient-green: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
 
+  /* 渐变卡片 - 暗色版（亮色收敛冷静版降饱和，避免刺眼） */
+  --gradient-card-purple: linear-gradient(135deg, #3d3a66 0%, #44306a 100%);
+  --gradient-card-cyan: linear-gradient(135deg, #1f4a70 0%, #1d5761 100%);
+  --gradient-card-green: linear-gradient(135deg, #1f533f 0%, #1c5349 100%);
+
   /* 页面背景氛围光（暗色版，叠加在背景色之上） */
   --background-atmosphere:
     radial-gradient(1080px 520px at 82% -8%, rgba(74, 144, 226, 0.12) 0%, transparent 62%),
