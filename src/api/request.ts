@@ -203,9 +203,13 @@ function pickErrorMessage(data: unknown): string {
 function showStatusMessage(status: number, msg: string): void {
   // 401 不会进入此函数：错误拦截器(L300)已提前拦截 401 走刷新/登出流程
   switch (status) {
-    case 403:
-      ElMessage.error('没有权限访问该资源')
+    case 403: {
+      // 【BF-002 建议2】CSRF 校验失败(后端 PermissionDenied("CSRF Failed: ...") → 403 detail 含 "CSRF")
+      // 与权限拒绝区分: 前者引导刷新页面重取 csrftoken, 后者仍按权限提示, 避免配错被误判为无权限
+      const isCsrfFailure = String(msg).toLowerCase().includes('csrf')
+      ElMessage.error(isCsrfFailure ? '页面会话校验失败，请刷新页面后重试' : '没有权限访问该资源')
       break
+    }
     case 404:
       ElMessage.error('请求的资源不存在或您无权访问')
       break

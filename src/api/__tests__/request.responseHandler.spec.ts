@@ -198,6 +198,12 @@ describe('request responseHandler', () => {
       expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith('没有权限访问该资源')
     })
 
+    it('403 with CSRF detail shows page-session refresh guidance instead of no-permission', async () => {
+      const error = makeHttpError(403, { detail: 'CSRF Failed: Origin checking failed.' })
+      await expect(handlers.resErr?.(error)).rejects.toBe(error)
+      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith('页面会话校验失败，请刷新页面后重试')
+    })
+
     it('404 shows not-found message', async () => {
       const error = makeHttpError(404, { detail: 'missing' })
       await expect(handlers.resErr?.(error)).rejects.toBe(error)
