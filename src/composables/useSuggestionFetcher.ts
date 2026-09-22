@@ -6,7 +6,6 @@
  *   - SuggestionFetcherOptions: 配置选项类型
  * @callers
  *   - composables/useEmployeeSuggestionFetcher
- *   - composables/useOutAssetForm
  *   - composables/useRecyclePersonLinkage
  *   - components/componentsdetails/detils/*Form.vue（各表单组件）
  * @dependsOn

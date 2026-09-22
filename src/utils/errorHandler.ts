@@ -7,7 +7,6 @@
  *   - getAxiosResponseData: 从错误对象提取 Axios 响应数据
  *   - showErrorMessage: 统一错误提示（ElMessage.error）
  * @callers
- *   - composables/useOutAssetForm
  *   - composables/useDepartmentEmployeeList
  *   - views/system/AuthUserManage
  * @dependsOn

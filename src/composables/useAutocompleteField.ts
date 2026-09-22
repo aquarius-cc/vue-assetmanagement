@@ -4,7 +4,6 @@
  * @exports
  *   - useAutocompleteField: 创建自动完成字段 handler 集合
  * @callers
- *   - composables/useOutAssetForm: 出库表单申请人/保管人字段
  *   - components/componentsdetails/detils/OutAssetForm.vue
  * @dependsOn
  *   - vue: ref 响应式

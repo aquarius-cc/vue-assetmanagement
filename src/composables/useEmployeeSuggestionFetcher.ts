@@ -4,7 +4,6 @@
  * @exports
  *   - useEmployeeSuggestionFetcher: 创建员工建议获取函数
  * @callers
- *   - composables/useOutAssetForm: 出库表单员工字段
  *   - composables/useRecyclePersonLinkage: 回收人建议获取
  * @dependsOn
  *   - composables/useSuggestionFetcher: 通用建议获取器工厂

@@ -6,7 +6,6 @@
  *   - OutAssetBatchCreateResult: 批量创建出库资产响应类型
  * @callers
  *   - stores/outAssetStore: 出库资产状态管理
- *   - composables/useOutAssetForm: 出库资产表单组合式函数
  *   - composables/useRecyclableOutAssets: 可回收出库资产列表
  * @dependsOn
  *   - api/request.ts: 使用 request 实例

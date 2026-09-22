@@ -7,7 +7,6 @@
  *   - services/assetLifecycleService.ts
  *   - composables/useAssetListConfig.ts
  *   - composables/useAssetBatchImport.ts
- *   - composables/useOutAssetForm.ts
  *   - composables/useWastedAssets.ts
  *   - composables/useScrapableAssets.ts
  *   - components/componentsdetails/detils/AssetForm.vue
