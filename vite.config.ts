@@ -163,6 +163,14 @@ export default defineConfig(({ mode }) => {
           secure: false, // 如果是https接口，需要配置这个参数
           // rewrite: (path) => path.replace(/^\/api/, '') // 如果后端不需要/api前缀，可以重写路径
         },
+        '/ws': {
+          // 【BF-002 建议1】WebSocket 走 Vite 代理, 消除双 host 结构(localhost ↔ 127.0.0.1)。
+          // dev 下前端用同源相对路径 /ws/... 由 5173 转发至后端; 生产同源走 nginx location /ws/。
+          target: env.VITE_API_TARGET || 'http://127.0.0.1:8000',
+          ws: true, // 启用 WebSocket 升级转发
+          changeOrigin: true,
+          secure: false,
+        },
       },
     },
   }

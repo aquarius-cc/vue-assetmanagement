@@ -18,7 +18,10 @@ import { getInMemoryAccessToken } from '@/utils/tokenMemory'
 import { useAuthStore } from '@/stores/auth'
 import type { NotificationItem } from '@/types/notification'
 
-const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || 'ws://127.0.0.1:8000'
+// 【BF-002 建议1】同源相对路径: dev 经 Vite /ws 代理(5173)转发, 生产经 nginx location /ws/ 转发。
+// 消除 ws://127.0.0.1:8000 直连的双 host 结构(cookie 按 host 隔离的潜在坑);
+// 特殊/独立部署时可用 VITE_WS_BASE_URL 显式指定完整 ws(s):// 地址。
+const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || ''
 
 type WSMessage = { type: string; data?: NotificationItem; message?: string }
 

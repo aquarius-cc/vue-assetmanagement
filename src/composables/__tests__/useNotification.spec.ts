@@ -115,7 +115,7 @@ describe('useNotification', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(wsInstances.length).toBe(1)
-    expect(wsInstances[0].url).toContain('ws://')
+    expect(wsInstances[0].url).toContain('/ws/notifications/')
   })
 
   it('should set isConnected when WebSocket opens', async () => {
