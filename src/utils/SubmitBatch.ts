@@ -9,8 +9,6 @@
  *   - submitBatch: 通用批量提交函数（支持并发控制）
  * @callers
  *   - composables/useBatchImport
- *   - composables/useAssetBatchImport
- *   - composables/useContractBatchImport
  * @dependsOn
  *   - axios (isAxiosError)
  */

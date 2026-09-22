@@ -6,7 +6,6 @@
  * @callers
  *   - services/assetLifecycleService.ts
  *   - composables/useAssetListConfig.ts
- *   - composables/useAssetBatchImport.ts
  *   - composables/useWastedAssets.ts
  *   - composables/useScrapableAssets.ts
  *   - components/componentsdetails/detils/AssetForm.vue

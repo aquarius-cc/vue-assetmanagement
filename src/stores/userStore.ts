@@ -5,7 +5,6 @@
  *   - useUserStore: 员工管理状态 Store（含 getFuzzySearch、batchUpdateSort 扩展方法）
  *   - batchCreateUsers: 批量创建员工（员工批量导入数据访问入口）
  * @callers
- *   - composables/useDepartmentEmployeeList.ts
  *   - components/componentsdetails/UserDetails.vue
  *   - components/componentsdetails/detils/AssetForm.vue
  *   - components/componentsdetails/detils/UserForm.vue

@@ -8,7 +8,6 @@
  *   - approvePaymentRecord: 审核付款记录
  *   - batchCreateContracts: 批量创建合同
  * @callers
- *   - composables/useContractBatchImport.ts
  *   - components/componentsdetails/ContractDetails.vue
  *   - components/componentsdetails/detils/AssetForm.vue
  *   - components/componentsdetails/detils/ContractForm.vue

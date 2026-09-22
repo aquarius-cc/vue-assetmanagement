@@ -7,7 +7,6 @@
  * @callers
  *   - stores/userStore: 员工状态管理
  *   - composables/useDepartmentCache: 部门缓存组合式函数
- *   - composables/useDepartmentEmployeeList: 部门员工列表组合式函数
  *   - composables/useEmployeeSuggestionFetcher: 员工建议获取组合式函数
  *   - views/ContactsView: 通讯录视图
  * @dependsOn

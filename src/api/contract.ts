@@ -6,7 +6,6 @@
  *   - ContractBatchCreateResult: 批量创建合同响应类型
  * @callers
  *   - stores/contractStore: 合同状态管理
- *   - composables/useContractBatchImport: 合同批量导入
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
  *   - types/contract: 合同相关类型定义

@@ -4,9 +4,6 @@
  * @exports
  *   - useBatchImport: 通用批量导入 composable
  *   - ValidatedRow: 校验行数据类型
- * @callers
- *   - composables/useAssetBatchImport: 资产批量导入
- *   - composables/useContractBatchImport: 合同批量导入
  * @dependsOn
  *   - utils/batchImport/types: BatchImportConfig 类型
  *   - utils/SubmitBatch: 分批提交工具
