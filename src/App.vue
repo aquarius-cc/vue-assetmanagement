@@ -4,7 +4,6 @@
 @usedBy
   - main.ts: 应用入口
 @dependsOn
-  - components/LoginDialog: 登录弹窗
   - components/DarkModeToggle: 暗色模式切换
   - composables/useDarkMode: 暗色模式逻辑
 -->
