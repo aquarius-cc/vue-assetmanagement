@@ -4,7 +4,12 @@ import { createOperationLogExcelExport } from '../useOperationLogExcelExport'
 
 const mocks = vi.hoisted(() => ({
   elMessage: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
-  elMessageBox: { confirm: vi.fn(async () => 'confirm') },
+  elMessageBox: Object.assign(
+    vi.fn(async () => 'confirm'),
+    {
+      confirm: vi.fn(async () => 'confirm'),
+    },
+  ),
   exportToExcel: vi.fn(async () => undefined),
 }))
 
@@ -68,6 +73,7 @@ function setup(options: { total?: number; all?: OperationLog[] } = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.elMessageBox.mockResolvedValue('confirm')
   mocks.elMessageBox.confirm.mockResolvedValue('confirm')
 })
 
@@ -78,7 +84,7 @@ afterEach(() => {
 describe('createOperationLogExcelExport', () => {
   it('确认导出时使用当前列表数据', async () => {
     const { store, handleExportExcel } = setup()
-    mocks.elMessageBox.confirm.mockResolvedValueOnce('confirm')
+    mocks.elMessageBox.mockResolvedValueOnce('confirm')
     await handleExportExcel()
     expect(mocks.exportToExcel).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -93,7 +99,7 @@ describe('createOperationLogExcelExport', () => {
   it('当前页导出触发列格式化（操作类型与时间）', async () => {
     const { handleExportExcel, getTypeText } = setup()
     driveExportToExcel()
-    mocks.elMessageBox.confirm.mockResolvedValueOnce('confirm')
+    mocks.elMessageBox.mockResolvedValueOnce('confirm')
     await handleExportExcel()
     expect(getTypeText).toHaveBeenCalledWith('out')
   })
@@ -103,9 +109,9 @@ describe('createOperationLogExcelExport', () => {
       total: 5,
       all: [makeLog(1), makeLog(2)],
     })
-    mocks.elMessageBox.confirm.mockRejectedValueOnce('cancel')
+    mocks.elMessageBox.mockRejectedValueOnce('cancel')
     await handleExportExcel()
-    expect(mocks.elMessage.info).toHaveBeenCalledWith('正在准备全部数据，请稍候...')
+    expect(mocks.elMessage.info).toHaveBeenCalledWith('正在准备全部操作日志数据，请稍候...')
     expect(store.getList).toHaveBeenCalledWith({ page: 1, page_size: 5 })
     expect(mocks.exportToExcel).toHaveBeenCalledWith(
       expect.objectContaining({ fileName: '操作日志列表_全部_2条.xlsx' }),
@@ -117,10 +123,10 @@ describe('createOperationLogExcelExport', () => {
       total: 2000,
       all: [makeLog(1), makeLog(2)],
     })
-    mocks.elMessageBox.confirm.mockRejectedValueOnce('cancel')
+    mocks.elMessageBox.mockRejectedValueOnce('cancel')
     mocks.elMessageBox.confirm.mockResolvedValueOnce('confirm')
     await handleExportExcel()
-    expect(mocks.elMessage.info).toHaveBeenCalledWith('正在准备全部数据，请稍候...')
+    expect(mocks.elMessage.info).toHaveBeenCalledWith('正在准备全部操作日志数据，请稍候...')
     expect(store.getList).toHaveBeenCalledWith({ page: 1, page_size: 2000 })
     expect(mocks.exportToExcel).toHaveBeenCalledWith(
       expect.objectContaining({ fileName: '操作日志列表_全部_2条.xlsx' }),
@@ -129,7 +135,7 @@ describe('createOperationLogExcelExport', () => {
 
   it('总量超过阈值但取消时中止导出', async () => {
     const { store, handleExportExcel } = setup({ total: 2000 })
-    mocks.elMessageBox.confirm.mockRejectedValueOnce('cancel')
+    mocks.elMessageBox.mockRejectedValueOnce('cancel')
     mocks.elMessageBox.confirm.mockRejectedValueOnce('cancel')
     await handleExportExcel()
     expect(store.getList).not.toHaveBeenCalled()
@@ -138,8 +144,7 @@ describe('createOperationLogExcelExport', () => {
 
   it('获取全部数据失败时提示错误', async () => {
     const { store, handleExportExcel } = setup({ total: 2000 })
-    mocks.elMessageBox.confirm.mockRejectedValueOnce('cancel')
-    mocks.elMessageBox.confirm.mockResolvedValueOnce('confirm')
+    mocks.elMessageBox.mockRejectedValueOnce('cancel')
     store.getList.mockRejectedValueOnce(new Error('boom'))
     await handleExportExcel()
     expect(mocks.elMessage.error).toHaveBeenCalledWith('获取全部数据失败，请重试')
@@ -148,7 +153,7 @@ describe('createOperationLogExcelExport', () => {
 
   it('点关闭对话框时中止导出', async () => {
     const { store, handleExportExcel } = setup()
-    mocks.elMessageBox.confirm.mockRejectedValueOnce('close')
+    mocks.elMessageBox.mockRejectedValueOnce('close')
     await handleExportExcel()
     expect(store.getList).not.toHaveBeenCalled()
     expect(mocks.exportToExcel).not.toHaveBeenCalled()

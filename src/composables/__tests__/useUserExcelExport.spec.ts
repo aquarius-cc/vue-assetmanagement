@@ -6,7 +6,6 @@ const mocks = vi.hoisted(() => ({
   elMessage: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
   elMessageBox: vi.fn(),
   exportToExcel: vi.fn(async () => undefined),
-  showErrorMessage: vi.fn(),
 }))
 
 vi.mock('element-plus', () => ({
@@ -19,10 +18,6 @@ vi.mock('element-plus', () => ({
 
 vi.mock('@/utils/excelExporter', () => ({
   exportToExcel: mocks.exportToExcel,
-}))
-
-vi.mock('@/utils/errorHandler', () => ({
-  showErrorMessage: mocks.showErrorMessage,
 }))
 
 function makeEmp(jobcode: string, name: string, deptCode = 'D01'): EmployeeExtended {
@@ -80,6 +75,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.elMessageBox.mockReset()
   mocks.elMessageBox.confirm.mockReset()
+  mocks.elMessageBox.mockResolvedValue('confirm')
   mocks.elMessageBox.confirm.mockResolvedValue('confirm')
   mocks.exportToExcel.mockResolvedValue(undefined)
   vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -93,9 +89,8 @@ describe('useUserExcelExport', () => {
     expect(mocks.exportToExcel).toHaveBeenCalledWith(
       expect.objectContaining({
         data: userStore.list,
-        fileName: '用户列表_当前页面_1_1条.xlsx',
+        fileName: '用户列表_当前页面_1条.xlsx',
         sheetName: '用户列表',
-        additionalData: { departmentMapping: { D01: '技术部' } },
       }),
     )
     expect(mocks.exportToExcel).toHaveBeenCalledTimes(1)
@@ -106,7 +101,7 @@ describe('useUserExcelExport', () => {
     const { handleExportExcel, userStore } = setup({ total: 200, all: [makeEmp('J002', '李四')] })
     mocks.elMessageBox.mockRejectedValue('cancel')
     await handleExportExcel()
-    expect(mocks.elMessage.info).toHaveBeenCalledWith('正在获取全部数据...')
+    expect(mocks.elMessage.info).toHaveBeenCalledWith('正在准备全部用户数据，请稍候...')
     expect(userStore.getList).toHaveBeenCalledWith({ page: 1, page_size: 200 })
     expect(mocks.exportToExcel).toHaveBeenCalledWith(
       expect.objectContaining({ fileName: '用户列表_全部_1条.xlsx' }),
@@ -136,15 +131,12 @@ describe('useUserExcelExport', () => {
     expect(mocks.exportToExcel).not.toHaveBeenCalled()
   })
 
-  it('全量获取失败时调用错误处理器', async () => {
+  it('全量获取失败时提示错误', async () => {
     const { handleExportExcel, userStore } = setup({ total: 200 })
     mocks.elMessageBox.mockRejectedValue('cancel')
     userStore.getList.mockRejectedValueOnce(new Error('boom'))
     await handleExportExcel()
-    expect(mocks.showErrorMessage).toHaveBeenCalledWith(
-      expect.any(Error),
-      '获取全部数据失败，请重试',
-    )
+    expect(mocks.elMessage.error).toHaveBeenCalledWith('获取全部数据失败，请重试')
     expect(mocks.exportToExcel).not.toHaveBeenCalled()
   })
 
@@ -155,10 +147,10 @@ describe('useUserExcelExport', () => {
     expect(mocks.exportToExcel).not.toHaveBeenCalled()
   })
 
-  it('范围弹窗其他异常时中止导出', async () => {
+  it('范围弹窗其他异常时中止导出（异常向上传播）', async () => {
     const { handleExportExcel } = setup()
     mocks.elMessageBox.mockRejectedValue(new Error('boom'))
-    await handleExportExcel()
+    await expect(handleExportExcel()).rejects.toThrow('boom')
     expect(mocks.exportToExcel).not.toHaveBeenCalled()
   })
 
