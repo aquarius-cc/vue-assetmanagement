@@ -31,30 +31,9 @@ $breakpoint-tablet: 1024px;
     overflow: hidden;
     background: var(--card-background);
 
-    // 卡片头部（局部 mixin，避免污染外部）
+    // 卡片头部（复用末部独立 mixin，避免重复样式）
     .card-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 600;
-      color: var(--color-primary);
-      padding: 18px 24px;
-      background: linear-gradient(
-        135deg,
-        var(--color-primary-lighter, #f0f7ff) 0%,
-        var(--color-primary-lighter, #e6f0ff) 100%
-      );
-      border-bottom: 1px solid var(--border-color);
-
-      .el-icon {
-        font-size: 20px;
-        color: var(--color-primary);
-      }
-
-      span {
-        font-size: 16px;
-        color: var(--text-primary);
-      }
+      @include card-header;
     }
   }
 
