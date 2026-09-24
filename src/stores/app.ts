@@ -13,6 +13,7 @@
  */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { logError } from '@/utils/logger'
 
 export const useAppStore = defineStore('app', () => {
   // 应用状态
@@ -108,7 +109,7 @@ export const useAppStore = defineStore('app', () => {
         const parsedSettings = JSON.parse(savedSettings)
         settings.value = { ...settings.value, ...parsedSettings }
       } catch (error) {
-        console.error('恢复应用设置失败:', error)
+        logError('stores/app', '恢复应用设置失败', error)
       }
     }
   }

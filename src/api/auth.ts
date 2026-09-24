@@ -11,6 +11,7 @@
  *   - types/authuser: 认证相关类型定义
  */
 import { request, unwrapResponse } from '@/api/index'
+import { logError } from '@/utils/logger'
 import type { LoginRequest, LoginResponse, AuthUser, LogoutResponse } from '@/types/authuser'
 
 /**
@@ -46,13 +47,7 @@ export const authAPI = {
       const errorMsg = response.message || '登录失败'
       throw new Error(errorMsg)
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error('登录失败:', error.message)
-      } else if (typeof error === 'string') {
-        console.error('登录失败:', error)
-      } else {
-        console.error('登录失败:', '未知错误')
-      }
+      logError('api/auth', '登录失败', error)
       // 提取后端返回的错误信息，包装为 Error 抛出
       // 确保调用方（authStore.login）能通过 error.message 获取准确提示
       // 注意：业务失败时抛出的 Error 无 .response，需保留其原始 message
@@ -87,13 +82,7 @@ export const authAPI = {
       )
       return response
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error('退出登录接口调用失败:', error.message)
-      } else if (typeof error === 'string') {
-        console.error('退出登录接口调用失败:', error)
-      } else {
-        console.error('退出登录接口调用失败:', '未知错误')
-      }
+      logError('api/auth', '退出登录接口调用失败', error)
       // 即使后端接口调用失败，也向上抛出错误
       // 由 Store 层决定是否仍然清除本地状态
       throw error

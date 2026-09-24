@@ -17,8 +17,7 @@ export interface OutAssetEditLoaderDeps {
   /** 原始数据快照（用于编辑模式变更检测） */
   originalFormData: Ref<OutAssetCreateExtended | null>
   isLoading: Ref<boolean>
-  // 详情记录字段动态回填（原组件实现即按动态属性访问）
-  // AI_REVIEW_NEEDED: 使用 any 以匹配后端动态详情结构，人工复查后可细化为 OutAssetDetail
+  // 详情记录字段动态回填（原组件实现即按动态属性访问；any 为兼容后端动态结构，非笔误）
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   store: { getById(code: string): Promise<any> }
   router: { back: () => void }

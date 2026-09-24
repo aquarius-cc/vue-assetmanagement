@@ -73,7 +73,7 @@ const isCollapsed = computed(() => appStore.sidebarCollapsed)
  * 从任意文本中提取 recordcode。
  * 支持：完整 URL（?code=REC-xxx 或末段路径）、JSON 二维码内容（recordcode/asset_code 键，
  * 兼容 qr_code 字段原设计的 JSON 形态）、直接粘贴的编码。
- * # AI_REVIEW_NEEDED: regex——recordcode 形态若后端调整（如长度/字符集），此处需同步
+ * 维护提示：recordcode 形态若后端调整（如长度/字符集），此处正则需同步
  */
 const extractRecordcode = (raw: string): string | null => {
   const text = raw.trim()

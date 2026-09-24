@@ -36,6 +36,7 @@ import type {
   EntityStoreConfig,
   BatchDeleteResult,
 } from './entityStoreTypes'
+import { logError, logWarn } from '@/utils/logger'
 
 // 重新导出类型，保持向后兼容（38 个消费者文件无需修改导入路径）
 export type {
@@ -173,8 +174,9 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
           const totalPages = response.total_pages ?? Math.ceil(response.count / requestedPageSize)
 
           if (requestedPage > totalPages && totalPages > 0) {
-            console.warn(
-              `[createEntityStore/${storeId}] Invalid page: ${requestedPage}, ` +
+            logWarn(
+              'stores/createEntityStore',
+              `[${storeId}] Invalid page: ${requestedPage}, ` +
                 `total pages: ${totalPages}, count: ${response.count}`,
             )
             if (autoSync) {
@@ -264,7 +266,7 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
     // 在 createEntityStore 的 return 块中添加：
     const getNameByCode = async (code: string): Promise<string | null> => {
       if (!config.nameField) {
-        console.warn(`[createEntityStore] "nameField" not configured for store "${storeId}"`)
+        logWarn('stores/createEntityStore', `"nameField" not configured for store "${storeId}"`)
         return null
       }
 
@@ -277,8 +279,9 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
       // 2. 本地没有 → 调用 getById（会走缓存/防重/网络）
       const getByIdApi = config.api.getById
       if (!getByIdApi) {
-        console.warn(
-          `[createEntityStore] "getById" API not provided, cannot fetch name for code: ${code}`,
+        logWarn(
+          'stores/createEntityStore',
+          `"getById" API not provided, cannot fetch name for code: ${code}`,
         )
         return null
       }
@@ -290,7 +293,11 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
         }
         return null
       } catch (error) {
-        console.error(`Failed to fetch entity by code "${code}" for name lookup:`, error)
+        logError(
+          'stores/createEntityStore',
+          `Failed to fetch entity by code "${code}" for name lookup`,
+          error,
+        )
         return null
       }
     }

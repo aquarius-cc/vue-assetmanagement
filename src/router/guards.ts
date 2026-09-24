@@ -17,6 +17,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { ElMessage } from 'element-plus'
 import { ROLE_CODES, ROLE_HIERARCHY } from '@/constants/roles'
+import { logError } from '@/utils/logger'
 
 // 不需要认证的页面白名单
 const whiteList = ['/login']
@@ -151,7 +152,7 @@ export const setupAuthGuard = (router: Router) => {
           return true
         } catch (error) {
           // token无效，清除登录状态并重定向到登录页
-          console.error('Token验证失败:', error)
+          logError('router/guards', 'Token验证失败', error)
           authStore.silentLogout()
           ElMessage.error('登录已过期，请重新登录')
           return '/login'
@@ -165,7 +166,7 @@ export const setupAuthGuard = (router: Router) => {
         return true
       }
     } catch (error) {
-      console.error('路由守卫错误:', error)
+      logError('router/guards', '路由守卫错误', error)
       return '/login'
     }
   })

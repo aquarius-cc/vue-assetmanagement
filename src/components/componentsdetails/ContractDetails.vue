@@ -346,7 +346,6 @@ const handleExportExcel = async () => {
             },
           },
           () => [
-            // AI_REVIEW_NEEDED: verify ElRadio label/value props against installed element-plus version
             h(ElRadio, { label: 'current', value: 'current' }, () => '导出当前页面'),
             h(ElRadio, { label: 'all', value: 'all' }, () => '导出全部数据'),
           ],

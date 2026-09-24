@@ -33,6 +33,7 @@ import { permissionsAPI } from '@/api/permissions'
 import type { DataScope } from '@/types/permission'
 import { DEFAULT_ROLE } from '@/constants/roles'
 import { decodeJWTPayload } from '@/utils/decodeJwt'
+import { logError, logWarn } from '@/utils/logger'
 
 export const useAuthStore = defineStore('AuthUser', () => {
   const authInfo = ref<AuthInfo | null>(null) // 认证用户信息
@@ -145,7 +146,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
       applyRbacFromJwt(savedAccessToken)
       return true
     } catch (error) {
-      console.error('恢复用户状态失败:', error)
+      logError('stores/auth', '恢复用户状态失败', error)
       silentLogout()
       return false
     }
@@ -161,7 +162,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
       await getAuthInfo()
       return isLoggedIn.value
     } catch (error) {
-      console.error('Cookie 会话验证失败:', error)
+      logError('stores/auth', 'Cookie 会话验证失败', error)
       silentLogout()
       return false
     }
@@ -219,7 +220,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
       void loadMyPermissions()
       return { success: true, message: '登录成功' }
     } catch (error) {
-      console.error('登录失败:', error)
+      logError('stores/auth', '登录失败', error)
       return { success: false, message: extractLoginErrorMessage(error) }
     }
   }
@@ -237,11 +238,11 @@ export const useAuthStore = defineStore('AuthUser', () => {
         await authAPI.logout(token || undefined)
         ElMessage.success('退出成功')
       } else {
-        console.warn('退出登录时未找到 refresh_token，仅清除本地状态')
+        logWarn('stores/auth', '退出登录时未找到 refresh_token，仅清除本地状态')
         ElMessage.success('已退出登录')
       }
     } catch (error) {
-      console.error('退出登录接口异常，仍清除本地状态:', error)
+      logError('stores/auth', '退出登录接口异常，仍清除本地状态', error)
       ElMessage.warning('退出登录时服务端通信异常，已清除本地状态')
     } finally {
       resetAuthState()
@@ -326,7 +327,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
         setEncryptedToken('myPermissions', JSON.stringify(res))
         permissionsLoaded.value = true
       } catch (error) {
-        console.error('加载权限失败:', error)
+        logError('stores/auth', '加载权限失败', error)
         permissions.value = []
         dataScope.value = null
         ElMessage.warning('权限加载失败，部分功能可能不可用')

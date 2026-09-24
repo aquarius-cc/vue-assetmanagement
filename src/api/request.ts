@@ -39,6 +39,7 @@ import { detectAuthChannel } from '@/utils/device'
 import { refreshAccessToken, MissingRefreshTokenError } from '@/utils/tokenRefresh'
 import { isTransientError } from '@/utils/requestErrors'
 import { getCsrfToken } from '@/utils/csrf'
+import { logError, logWarn } from '@/utils/logger'
 
 // ---------- 扩展 Axios 类型，添加自定义属性 _retry ----------
 declare module 'axios' {
@@ -114,7 +115,7 @@ async function handleRefreshFailure(
 ): Promise<unknown> {
   const detail = refreshError instanceof Error ? refreshError.message : String(refreshError)
   if (isTransientError(refreshError)) {
-    console.error(`Token 刷新瞬时失败（保留会话）: ${detail}`)
+    logError('api/request', `Token 刷新瞬时失败（保留会话）: ${detail}`)
     showErrorDedup('网络异常，请稍后重试')
     return undefined
   }
@@ -124,11 +125,11 @@ async function handleRefreshFailure(
     !(refreshError instanceof MissingRefreshTokenError) &&
     (originalRequest._retryCount || 0) <= MAX_REFRESH_RETRY_COUNT
   if (isRotationRace) {
-    console.warn(`Token 刷新失败（轮换竞态，重放原请求）: ${detail}`)
+    logWarn('api/request', `Token 刷新失败（轮换竞态，重放原请求）: ${detail}`)
     originalRequest._retry = false
     return api(originalRequest)
   }
-  console.error(`Token 刷新失败（会话失效）: ${detail}`)
+  logError('api/request', `Token 刷新失败（会话失效）: ${detail}`)
   clearAllAuthTokens()
   showLoginExpired()
   redirectToLogin()
@@ -151,7 +152,7 @@ async function handleUnauthorized(error: unknown): Promise<unknown> {
 
   originalRequest._retryCount = originalRequest._retryCount || 0
   if (originalRequest._retryCount >= MAX_REFRESH_RETRY_COUNT) {
-    console.error('Token 刷新重试次数超过上限')
+    logError('api/request', 'Token 刷新重试次数超过上限')
     clearAllAuthTokens()
     showLoginExpired()
     redirectToLogin()
@@ -271,7 +272,7 @@ api.interceptors.request.use(
     return config
   },
   (error: unknown) => {
-    console.error('请求配置错误:', error)
+    logError('api/request', '请求配置错误', error)
     return Promise.reject(error)
   },
 )
@@ -293,7 +294,7 @@ api.interceptors.response.use(
   async (error: unknown) => {
     // 防御：非 Axios 错误直接抛出
     if (!isAxiosError(error)) {
-      console.error('非 Axios 错误:', error)
+      logError('api/request', '非 Axios 错误', error)
       return Promise.reject(error)
     }
 
@@ -376,7 +377,7 @@ export async function get<T>(
     if (options?.useCache) {
       const cached = cache.get(cacheKey)
       if (cached !== undefined) {
-        console.warn(`[降级] 请求失败，返回缓存数据: ${url}`)
+        logWarn('api/request', `[降级] 请求失败，返回缓存数据: ${url}`)
         return cached as ApiResponse<T>
       }
     }

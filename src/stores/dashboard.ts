@@ -18,6 +18,7 @@ import type {
   AssetTypeDistributionItem,
 } from '@/types/dashboard'
 import { ElMessage } from 'element-plus'
+import { logError } from '@/utils/logger'
 import {
   getStatusColor as getStatusColorFromMapping,
   ASSET_STATUS_CHART_COLORS,
@@ -202,7 +203,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       return data
     } catch (error) {
       // fetchDashboardOverview catch 块重构
-      console.error('获取仪表盘概览数据失败:', error)
+      logError('stores/dashboard', '获取仪表盘概览数据失败', error)
       // [修复] 分类处理：业务错误拦截器未处理，需手动提示实际原因
       if (!isAxiosError(error)) {
         ElMessage.error((error as Error).message || '获取仪表盘概览数据失败')
@@ -227,7 +228,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       return data
     } catch (error) {
       // fetchRecentOutAssets catch 块重构（同上模式）
-      console.error('获取最近发放记录失败:', error)
+      logError('stores/dashboard', '获取最近发放记录失败', error)
       if (!isAxiosError(error)) {
         ElMessage.error((error as Error).message || '获取最近发放记录失败')
       }
@@ -250,7 +251,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       return data
     } catch (error) {
       // fetchRecentRecycleAssets catch 块重构（同上模式）
-      console.error('获取最近回收记录失败:', error)
+      logError('stores/dashboard', '获取最近回收记录失败', error)
       if (!isAxiosError(error)) {
         ElMessage.error((error as Error).message || '获取最近回收记录失败')
       }
@@ -277,7 +278,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     } catch (error) {
       // 仅最新请求的错误才展示，过期请求的错误静默丢弃
       if (requestId === trendRequestId) {
-        console.error('获取资产趋势数据失败:', error)
+        logError('stores/dashboard', '获取资产趋势数据失败', error)
         if (!isAxiosError(error)) {
           ElMessage.error((error as Error).message || '获取资产趋势数据失败')
         }
@@ -301,7 +302,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       departmentDistribution.value = data
       return data
     } catch (error) {
-      console.error('获取部门分布数据失败:', error)
+      logError('stores/dashboard', '获取部门分布数据失败', error)
       if (!isAxiosError(error)) {
         ElMessage.error((error as Error).message || '获取部门分布数据失败')
       }
@@ -321,7 +322,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       assetTypeDistribution.value = data
       return data
     } catch (error) {
-      console.error('获取类型分布数据失败:', error)
+      logError('stores/dashboard', '获取类型分布数据失败', error)
       if (!isAxiosError(error)) {
         ElMessage.error((error as Error).message || '获取类型分布数据失败')
       }
@@ -342,7 +343,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       expiringAssets.value = data
       return data
     } catch (error) {
-      console.error('获取即将到期资产失败:', error)
+      logError('stores/dashboard', '获取即将到期资产失败', error)
       if (!isAxiosError(error)) {
         ElMessage.error((error as Error).message || '获取即将到期资产失败')
       }
@@ -362,7 +363,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       maintenanceReminders.value = data
       return data
     } catch (error) {
-      console.error('获取维护提醒失败:', error)
+      logError('stores/dashboard', '获取维护提醒失败', error)
       if (!isAxiosError(error)) {
         ElMessage.error((error as Error).message || '获取维护提醒失败')
       }

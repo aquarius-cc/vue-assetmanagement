@@ -16,6 +16,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse } from '@/api/index'
+import { logError } from '@/utils/logger'
 import type {
   EmployeeListResponse,
   EmployeeExtended,
@@ -81,7 +82,7 @@ export const userAPI = {
         ),
       )
     } catch (error) {
-      console.error('获取员工详情失败:', error)
+      logError('api/user', '获取员工详情失败', error)
       throw error
     }
   },
@@ -99,7 +100,7 @@ export const userAPI = {
         } as Record<string, string>),
       )
     } catch (error) {
-      console.error('根据姓名搜索员工失败:', error)
+      logError('api/user', '根据姓名搜索员工失败', error)
       throw error
     }
   },
