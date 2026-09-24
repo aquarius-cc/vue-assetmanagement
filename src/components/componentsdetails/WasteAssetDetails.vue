@@ -87,6 +87,7 @@ import { exportToExcel } from '@/utils/excelExporter'
 import type { WasteAsset } from '@/types/wasteasset'
 import { useWasteAssetStore } from '@/stores/wasteAssetStore'
 import { formatDate } from '@/utils/Format'
+import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
 const wasteAssetStore = useWasteAssetStore()
@@ -225,7 +226,7 @@ const handleExportExcel = async () => {
       exportData = allData
       fileName = `已报废资产列表_全部_${allData.length}条.xlsx`
     } catch (error) {
-      console.error('导出全部数据失败:', error)
+      logError('components/componentsdetails/WasteAssetDetails', '导出全部数据失败:', error)
       ElMessage.error('获取全部数据失败，请重试')
       return
     }

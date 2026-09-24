@@ -149,6 +149,7 @@ import { formatDate, getAssetStatusText } from '@/utils/Format'
 import { usePermission } from '@/composables/usePermission'
 import { useAssetStatusChecks } from '@/composables/useAssetStatus'
 import { BASE_URL } from '@/api/config'
+import { logError } from '@/utils/logger'
 // import { useOperationGuard } from '@/composables/useOperationGuard'
 
 // ===== 路由与状态管理 =====
@@ -263,7 +264,7 @@ const downloadQRCode = () => {
 onMounted(async () => {
   const assetCode = (route.query.code as string) || (route.query.recordcode as string)
   if (!assetCode || typeof assetCode !== 'string') {
-    console.error('无效的资产编码参数')
+    logError('components/componentsdetails/detils/BasicAssetDetails', '无效的资产编码参数')
     ElMessage.error('无效的资产编码参数')
     isLoading.value = false
     return
@@ -277,7 +278,7 @@ onMounted(async () => {
       ElMessage.warning(`未找到资产编码为 ${assetCode} 的资产`)
     }
   } catch (error) {
-    console.error('获取资产详情失败', error)
+    logError('components/componentsdetails/detils/BasicAssetDetails', '获取资产详情失败', error)
     ElMessage.error('获取资产详情失败，请重试')
   } finally {
     isLoading.value = false

@@ -93,6 +93,7 @@ import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { Department } from '@/types/department'
 import { useDepartmentStore } from '@/stores/departmentStore'
 import type { SmartListContainerExpose } from '@/types/common'
+import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -166,7 +167,7 @@ watch(
  */
 const handleAdd = () => {
   router.push({ name: 'DepartmentForm', query: {} }).catch((err) => {
-    console.error('新增部门跳转失败:', err)
+    logError('components/componentsdetails/DepartmentDetails', '新增部门跳转失败:', err)
     ElMessage.error('跳转失败，请刷新页面重试')
   })
 }
@@ -176,7 +177,7 @@ const handleAdd = () => {
  */
 const handleBatchImport = () => {
   router.push({ name: 'DepartmentBatchImport' }).catch((err) => {
-    console.error('批量导入跳转失败:', err)
+    logError('components/componentsdetails/DepartmentDetails', '批量导入跳转失败:', err)
     ElMessage.error('跳转失败，请刷新页面重试')
   })
 }
@@ -196,7 +197,7 @@ const handleEdit = (row: Department) => {
       query: { code: row.department_code },
     })
     .catch((err) => {
-      console.error('编辑部门跳转失败:', err)
+      logError('components/componentsdetails/DepartmentDetails', '编辑部门跳转失败:', err)
       ElMessage.error('跳转失败，请刷新页面重试')
     })
 }
@@ -224,7 +225,7 @@ const handleDelete = async (row: Department) => {
     smartListRef.value?.refresh()
   } catch (err) {
     if (err === 'cancel') return // 用户取消删除
-    console.error('删除部门异常:', err)
+    logError('components/componentsdetails/DepartmentDetails', '删除部门异常:', err)
     ElMessage.error('删除失败，请重试')
   }
 }
@@ -264,7 +265,7 @@ const handleBatchDelete = async (rows: Department[] | undefined) => {
     await smartListRef.value?.refresh()
   } catch (err) {
     if (err === 'cancel') return
-    console.error('批量删除失败:', err)
+    logError('components/componentsdetails/DepartmentDetails', '批量删除失败:', err)
     ElMessage.error('批量删除失败，请重试')
   }
 }

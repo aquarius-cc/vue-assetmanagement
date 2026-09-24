@@ -13,6 +13,7 @@ import { ref } from 'vue'
 import { assetAPI } from '@/api/asset'
 import type { AssetSimpleReturn, AssetListSimpleResponse } from '@/types/asset'
 import { ElMessage } from 'element-plus'
+import { logError } from '@/utils/logger'
 
 export function useExportableAssets() {
   const list = ref<AssetSimpleReturn[]>([])
@@ -32,7 +33,7 @@ export function useExportableAssets() {
       total.value = response.count
       currentPage.value = page
     } catch (error) {
-      console.error('[useExportableAssets] 获取可出库资产失败', error)
+      logError('composables/useExportableAssets', '[useExportableAssets] 获取可出库资产失败', error)
       ElMessage.error('加载可出库资产列表失败')
       list.value = []
       total.value = 0

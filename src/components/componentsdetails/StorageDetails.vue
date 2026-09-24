@@ -100,6 +100,7 @@ import { useStorageStore } from '@/stores/storageStore'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { Storage } from '@/types/storage'
 import { storageMapping } from '@/utils/Format'
+import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
 const router = useRouter()
@@ -254,7 +255,7 @@ const handleBatchDelete = async (rows: Storage[] | undefined) => {
     await smartListRef.value?.refresh()
   } catch (err) {
     if (err === 'cancel') return
-    console.error('批量删除失败:', err)
+    logError('components/componentsdetails/StorageDetails', '批量删除失败:', err)
     ElMessage.error('批量删除失败，请重试')
   }
 }

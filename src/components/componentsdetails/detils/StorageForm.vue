@@ -99,6 +99,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 // Stores
 import { useStorageStore } from '@/stores/storageStore'
 import type { StorageCreateForm } from '@/types/storage'
+import { logError } from '@/utils/logger'
 
 // ==================== 路由与状态 ====================
 const router = useRouter()
@@ -156,7 +157,7 @@ const loadEditData = async (code: string) => {
     formData.storage_description = detail.storage_description ?? ''
     formData.id = detail.id
   } catch (error) {
-    console.error('加载仓库数据失败:', error)
+    logError('components/componentsdetails/detils/StorageForm', '加载仓库数据失败:', error)
     ElMessage.error('加载数据失败，请重试')
     router.push({ name: 'StorageDetails' })
   }
@@ -198,7 +199,7 @@ const submitForm = () => {
           ? error.message
           : '未知错误'
       ElMessage.error(msg)
-      console.error('提交失败:', error)
+      logError('components/componentsdetails/detils/StorageForm', '提交失败:', error)
     }
   })
 }

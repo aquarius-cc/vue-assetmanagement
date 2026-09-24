@@ -71,6 +71,7 @@ import { ElMessage } from 'element-plus'
 import { useAssetStore } from '@/stores'
 import type { AssetDetail } from '@/types/asset'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
+import { logError } from '@/utils/logger'
 
 interface TimelineItem {
   status: string
@@ -97,7 +98,7 @@ onMounted(async () => {
     asset.value = assetResult
     timeline.value = timelineResult || []
   } catch (err) {
-    console.error('获取资产状态日志失败:', err)
+    logError('views/AssetLogsView', '获取资产状态日志失败:', err)
     ElMessage.error('获取资产信息失败，请稍后重试')
   } finally {
     loading.value = false

@@ -114,6 +114,7 @@ import type { ColumnConfig } from '@/utils/excelExporter'
 import type { DamagedAsset } from '@/types/damagedasset'
 import { formatDate } from '@/utils/Format'
 import { getApprovalStatusText, getApprovalStatusTagType } from '@/utils/statusMapping'
+import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -174,7 +175,7 @@ const loadDetail = async (id: string) => {
     }
     detailData.value = detail
   } catch (error) {
-    console.error('获取详情失败:', error)
+    logError('components/componentsdetails/detils/DamagedAssetBasicDetails', '获取详情失败:', error)
     ElMessage.error('加载待报废资产详情失败，请稍后重试')
   }
 }
@@ -206,7 +207,11 @@ onMounted(async () => {
         router.back()
       }
     } catch (error) {
-      console.error('获取详情失败:', error)
+      logError(
+        'components/componentsdetails/detils/DamagedAssetBasicDetails',
+        '获取详情失败:',
+        error,
+      )
       ElMessage.error('加载待报废资产详情失败，请稍后重试')
     }
   }

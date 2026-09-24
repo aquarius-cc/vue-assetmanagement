@@ -140,7 +140,7 @@ describe('createSuggestionFetcher', () => {
     await fetcher('query', cb)
 
     expect(cb).toHaveBeenCalledWith([])
-    expect(consoleSpy).toHaveBeenCalledWith('获取建议失败:', expect.any(Error))
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('获取建议失败'))
     consoleSpy.mockRestore()
   })
 

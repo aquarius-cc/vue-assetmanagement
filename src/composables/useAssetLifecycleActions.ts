@@ -8,6 +8,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import { formatDate } from '@/utils/Format'
+import { logError } from '@/utils/logger'
 
 /** 最小 store 接口（适用于损坏/遗失/找回/维修四个 store） */
 export interface AssetLifecycleStore<T = Record<string, unknown>> {
@@ -64,7 +65,7 @@ export function useAssetLifecycleActions<T>(
       })
       .catch((error) => {
         if (error !== 'cancel') {
-          console.error('删除失败:', error)
+          logError('composables/useAssetLifecycleActions', '删除失败:', error)
           ElMessage.error('删除失败')
         }
       })
@@ -93,7 +94,7 @@ export function useAssetLifecycleActions<T>(
       await refresh?.()
     } catch (err) {
       if (err === 'cancel') return
-      console.error('批量删除失败:', err)
+      logError('composables/useAssetLifecycleActions', '批量删除失败:', err)
       ElMessage.error('批量删除失败，请重试')
     }
   }
@@ -132,7 +133,7 @@ export function useAssetLifecycleActions<T>(
         exportData = allData
         fileName = `${fileNamePrefix}_全部_${allData.length}.xlsx`
       } catch (error) {
-        console.error('加载全部数据失败:', error)
+        logError('composables/useAssetLifecycleActions', '加载全部数据失败:', error)
         ElMessage.error('加载数据失败')
         return
       }

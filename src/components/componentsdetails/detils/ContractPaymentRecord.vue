@@ -145,6 +145,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { addPaymentRecord, deletePaymentRecord, approvePaymentRecord } from '@/stores/contractStore'
 import type { Contract, PaymentRecord } from '@/types/contract'
 import { getErrorMessage } from '@/utils/errorHandler'
+import { logError } from '@/utils/logger'
 
 // Props
 const props = defineProps<{
@@ -246,7 +247,7 @@ const loadPayments = async () => {
       payments.value = []
     }
   } catch (e) {
-    console.error('解析支付记录失败:', e)
+    logError('components/componentsdetails/detils/ContractPaymentRecord', '解析支付记录失败:', e)
     payments.value = []
   } finally {
     loading.value = false

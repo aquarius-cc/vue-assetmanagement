@@ -8,6 +8,7 @@
 import { ref, type Ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { EmployeeExtended } from '@/types/user'
+import { logError } from '@/utils/logger'
 
 /** 表格实例的最小接口（仅使用 clearSelection） */
 export interface SortableTableRef {
@@ -117,7 +118,7 @@ export function useDepartmentEmployeeActions(deps: DepartmentEmployeeActionsDeps
       // 重新加载以获取后端确认后的数据
       await loadEmployeeList()
     } catch (error) {
-      console.error('保存排序失败:', error)
+      logError('composables/useDepartmentEmployeeActions', '保存排序失败:', error)
       ElMessage.error('保存排序失败')
     } finally {
       isSavingSort.value = false
@@ -173,7 +174,7 @@ export function useDepartmentEmployeeActions(deps: DepartmentEmployeeActionsDeps
       await loadEmployeeList()
     } catch (error) {
       if (error === 'cancel') return // 用户取消删除
-      console.error('批量删除失败:', error)
+      logError('composables/useDepartmentEmployeeActions', '批量删除失败:', error)
       ElMessage.error('批量删除失败，请重试')
     } finally {
       isBatchDeleting.value = false

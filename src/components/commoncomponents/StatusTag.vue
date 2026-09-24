@@ -19,6 +19,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { logWarn } from '@/utils/logger'
 import {
   getStatusInfo,
   ASSET_STATUS_MAP,
@@ -59,7 +60,8 @@ const statusInfo = computed(() => {
   }
 
   if (!isValidStatus(props.status, map)) {
-    console.warn(
+    logWarn(
+      'components/commoncomponents/StatusTag',
       `[StatusTag] Invalid status "${props.status}" for mapType "${props.mapType || 'asset'}"`,
     )
     return {

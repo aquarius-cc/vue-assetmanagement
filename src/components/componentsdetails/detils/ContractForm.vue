@@ -222,6 +222,7 @@ import type { Contract, ContractCreateForm, ContractStatus } from '@/types/contr
 import { formatDate, contractTypeMapping } from '@/utils/Format'
 import { CONTRACT_STATUS_MAP } from '@/utils/statusMapping'
 import { isAxiosError } from 'axios'
+import { logError } from '@/utils/logger'
 
 // ========== 路由与状态==========
 const route = useRoute()
@@ -345,7 +346,7 @@ const loadContractDetail = async (code: string) => {
       contract_status: targetContract.contract_status as ContractStatus,
     })
   } catch (error) {
-    console.error('获取合同详情失败:', error)
+    logError('components/componentsdetails/detils/ContractForm', '获取合同详情失败:', error)
     ElMessage.error('获取合同详情失败，请重试')
     goBack()
   } finally {
@@ -410,7 +411,7 @@ const submitForm = () => {
           ? error.message
           : '操作失败：未知错误'
       ElMessage.error(errorMsg)
-      console.error('合同提交失败:', error)
+      logError('components/componentsdetails/detils/ContractForm', '合同提交失败:', error)
     }
   })
 }

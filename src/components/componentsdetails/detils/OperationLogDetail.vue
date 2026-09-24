@@ -131,6 +131,7 @@ import type { OperationLog } from '@/types/operationlog'
 import { operationTypeMapping, operationTypeTagMapping } from '@/types/operationlog'
 import { formatDateTimeFull } from '@/utils/Format'
 import type { ChangeRecord } from '@/types/form-helpers'
+import { logError } from '@/utils/logger'
 
 // ===== 操作类型辅助函数 =====
 
@@ -225,7 +226,7 @@ const loadDetail = async (pk: string | number) => {
     }
     detailData.value = detail
   } catch (error) {
-    console.error('获取详情失败:', error)
+    logError('components/componentsdetails/detils/OperationLogDetail', '获取详情失败:', error)
     ElMessage.error('加载操作日志详情失败，请稍后重试')
   }
 }

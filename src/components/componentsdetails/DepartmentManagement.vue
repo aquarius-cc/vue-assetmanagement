@@ -142,6 +142,7 @@ import DepartmentInfoCard from '@/components/componentsdetails/components/Depart
 import DepartmentEmployeeList from '@/components/componentsdetails/components/DepartmentEmployeeList.vue'
 import DepartmentFormDialog from '@/components/componentsdetails/components/DepartmentFormDialog.vue'
 import DepartmentBatchAddDialog from '@/components/componentsdetails/components/DepartmentBatchAddDialog.vue'
+import { logError } from '@/utils/logger'
 
 const route = useRoute()
 const departmentStore = useDepartmentStore()
@@ -225,7 +226,7 @@ const loadDepartmentTree = async () => {
       }
     }
   } catch (error) {
-    console.error('加载部门树失败:', error)
+    logError('components/componentsdetails/DepartmentManagement', '加载部门树失败:', error)
     ElMessage.error('加载部门树失败')
   } finally {
     isLoading.value = false
@@ -277,7 +278,7 @@ const handleDepartmentMove = async (data: {
     // 刷新树
     await loadDepartmentTree()
   } catch (error) {
-    console.error('部门移动失败:', error)
+    logError('components/componentsdetails/DepartmentManagement', '部门移动失败:', error)
     ElMessage.error('部门移动失败')
     // 恢复树状态
     await loadDepartmentTree()
@@ -374,7 +375,7 @@ const handleDeleteDepartment = async (department: Department) => {
     await loadDepartmentTree()
   } catch (error: unknown) {
     if (error !== 'cancel') {
-      console.error('删除部门失败:', error)
+      logError('components/componentsdetails/DepartmentManagement', '删除部门失败:', error)
       ElMessage.error(error?.toString() || '删除失败，请检查该部门下是否有子部门或人员')
     }
   }

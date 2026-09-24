@@ -17,6 +17,7 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatDate } from '@/utils/Format'
 import ExcelJS from 'exceljs'
+import { logError } from '@/utils/logger'
 
 // 定义通用的列配置接口
 export interface ColumnConfig<T = unknown> {
@@ -123,7 +124,7 @@ export const exportToExcel = async <T>(config: ExcelExportConfig<T>): Promise<vo
       ElMessage.info('已取消导出')
       return
     }
-    console.error('导出失败:', error)
+    logError('utils/excelExporter', '导出失败:', error)
     ElMessage.error(config.errorMessage || '导出失败，请重试')
   }
 }

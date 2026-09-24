@@ -151,6 +151,7 @@ import type { AssetType, AssetTypeCreateForm } from '@/types/assettype'
 import AssetTypeTree from '@/components/componentsdetails/components/AssetTypeTree.vue'
 import AssetTypeInfoCard from '@/components/componentsdetails/components/AssetTypeInfoCard.vue'
 import AssetTypeChildList from '@/components/componentsdetails/components/AssetTypeChildList.vue'
+import { logError } from '@/utils/logger'
 
 const route = useRoute()
 const router = useRouter()
@@ -233,7 +234,7 @@ const fetchAllData = async () => {
       if (root) selectedType.value = root
     }
   } catch (error) {
-    console.error('加载资产分类数据失败:', error)
+    logError('components/componentsdetails/AssetTypeDetails', '加载资产分类数据失败:', error)
     ElMessage.error('加载资产分类数据失败')
   } finally {
     isLoading.value = false
@@ -452,7 +453,7 @@ const handleBatchDelete = async (rows: AssetType[]) => {
 /** 批量导入 */
 const handleBatchImport = () => {
   router.push({ name: 'AssetTypeBatchImport' }).catch((err) => {
-    console.error('跳转批量导入页面失败:', err)
+    logError('components/componentsdetails/AssetTypeDetails', '跳转批量导入页面失败:', err)
   })
 }
 

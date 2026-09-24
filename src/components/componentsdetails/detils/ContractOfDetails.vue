@@ -128,6 +128,7 @@ import type { Contract } from '@/types/contract'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { formatDate, formatNumber, contractTypeMapping } from '@/utils/Format'
 import { getContractStatusText, getContractStatusTagType } from '@/utils/statusMapping'
+import { logError } from '@/utils/logger'
 
 // ========== 辅助函数：枚举值转中文 ==========
 const getContractTypeText = (value: string | null | undefined): string => {
@@ -207,7 +208,7 @@ const loadContractDetail = async (code: string) => {
     if (!detail) throw new Error('合同不存在')
     contractDetails.value = detail
   } catch (error) {
-    console.error('获取合同详情失败:', error)
+    logError('components/componentsdetails/detils/ContractOfDetails', '获取合同详情失败:', error)
     ElMessage.error('获取合同详情失败，请重试')
     router.back()
   }

@@ -283,7 +283,7 @@ describe('request responseHandler', () => {
       const error = new Error('plain failure')
       const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       await expect(handlers.resErr?.(error)).rejects.toBe(error)
-      expect(errSpy).toHaveBeenCalledWith('非 Axios 错误:', error)
+      expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('非 Axios 错误'))
     })
   })
 
@@ -292,7 +292,7 @@ describe('request responseHandler', () => {
       const error = new Error('bad config')
       const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       await expect(handlers.reqErr?.(error)).rejects.toBe(error)
-      expect(errSpy).toHaveBeenCalledWith('请求配置错误:', error)
+      expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('请求配置错误'))
     })
   })
 
@@ -319,6 +319,7 @@ describe('request responseHandler', () => {
       const result = await get('/rdg-stale', { v: 1 }, { useCache: true })
       expect(result).toEqual(stale)
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('/rdg-stale'))
+      warnSpy.mockRestore()
     })
 
     it('throws when cache is empty and request fails', async () => {

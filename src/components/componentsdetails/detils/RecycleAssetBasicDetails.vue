@@ -49,6 +49,7 @@ import type { Contract } from '@/types/contract'
 import type { EmployeeExtended } from '@/types/user'
 import type { Storage } from '@/types/storage'
 import { formatDate } from '@/utils/Format'
+import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -185,7 +186,7 @@ const loadDetail = async (code: string) => {
 
     await Promise.all(promises)
   } catch (error) {
-    console.error('获取详情失败:', error)
+    logError('components/componentsdetails/detils/RecycleAssetBasicDetails', '获取详情失败:', error)
     ElMessage.error('加载回收资产详情失败，请稍后重试')
   } finally {
     isLoading.value = false

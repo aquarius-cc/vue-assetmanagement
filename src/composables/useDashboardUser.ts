@@ -13,6 +13,7 @@
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import type { AuthInfo } from '@/types/authuser'
+import { logError } from '@/utils/logger'
 
 export const LOGIN_START_TIME_KEY = 'loginStartTime'
 
@@ -40,7 +41,7 @@ export function useDashboardUser() {
       await authStore.logout()
       location.reload()
     } catch (error) {
-      console.error('退出登录失败:', error)
+      logError('composables/useDashboardUser', '退出登录失败:', error)
       location.reload()
     } finally {
       isLoggingOut.value = false

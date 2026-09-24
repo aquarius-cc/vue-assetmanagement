@@ -1,3 +1,5 @@
+import { logError, logWarn } from '@/utils/logger'
+
 /**
  * @file Token 混淆存储工具（非加密）
  * @module src/utils/tokenCrypto
@@ -32,7 +34,10 @@ if (!CRYPTO_KEY) {
 
 // 密钥质量验证：至少16个字符，防止弱密钥
 if (CRYPTO_KEY.length < 16) {
-  console.warn('[tokenCrypto] 加密密钥长度不足16字符，建议使用更长的密钥以提高安全性')
+  logWarn(
+    'utils/tokenCrypto',
+    '[tokenCrypto] 加密密钥长度不足16字符，建议使用更长的密钥以提高安全性',
+  )
 }
 
 /**
@@ -78,7 +83,7 @@ export function setEncryptedToken(key: string, value: string): void {
     const encrypted = xorEncrypt(value, CRYPTO_KEY)
     localStorage.setItem(key, encrypted)
   } catch (error) {
-    console.error('Token 加密存储失败:', error)
+    logError('utils/tokenCrypto', 'Token 加密存储失败:', error)
     throw new Error(`[tokenCrypto] 加密失败，拒绝明文存储 Token: ${error}`)
   }
 }

@@ -47,6 +47,7 @@
 import { computed, defineComponent, onMounted, ref, type PropType } from 'vue'
 import { ElMessage } from 'element-plus'
 import { usePaginationSearch, type PaginationSearchConfig } from '@/composables/usePaginationSearch'
+import { logError, logWarn } from '@/utils/logger'
 
 // ======================================================================
 // 调用链文档（调试用）
@@ -157,7 +158,10 @@ export default defineComponent({
       }
 
       if (hasLoaded.value) {
-        console.warn('[SmartListContainer] 数据已加载，跳过重复请求')
+        logWarn(
+          'components/commoncomponents/SmartListContainer',
+          '[SmartListContainer] 数据已加载，跳过重复请求',
+        )
         return
       }
       hasLoaded.value = true
@@ -169,7 +173,11 @@ export default defineComponent({
           page_size: pageSizeValue,
         })
       } catch (error) {
-        console.error('[SmartListContainer] 初始加载失败:', error)
+        logError(
+          'components/commoncomponents/SmartListContainer',
+          '[SmartListContainer] 初始加载失败:',
+          error,
+        )
         ElMessage.error(props.storeConfig.messages?.loadFailed ?? '加载数据失败')
         hasLoaded.value = false
       }

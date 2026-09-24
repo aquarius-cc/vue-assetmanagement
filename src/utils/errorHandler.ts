@@ -15,6 +15,7 @@
 
 import { isAxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
+import { logError } from '@/utils/logger'
 
 /**
  * 从错误对象中提取可读的错误消息
@@ -63,6 +64,6 @@ export function getAxiosResponseData(err: unknown): Record<string, unknown> | nu
  * @param fallback 兜底错误消息
  */
 export function showErrorMessage(err: unknown, fallback: string): void {
-  console.error(fallback, err)
+  logError('utils/errorHandler', fallback, err)
   ElMessage.error(getErrorMessage(err, fallback))
 }

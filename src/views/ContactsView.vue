@@ -112,6 +112,7 @@ import type { DepartmentTreeNode } from '@/types/department'
 import DepartmentTree from '@/components/componentsdetails/components/DepartmentTree.vue'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
+import { logError } from '@/utils/logger'
 
 const userStore = useUserStore()
 
@@ -136,7 +137,7 @@ const fetchDepartmentTree = async () => {
   try {
     departmentData.value = await getDepartmentTree()
   } catch (err) {
-    console.error('获取部门树失败:', err)
+    logError('views/ContactsView', '获取部门树失败:', err)
     ElMessage.error('获取部门数据失败')
   }
 }
@@ -173,7 +174,7 @@ const fetchContacts = async () => {
       total.value = userStore.pagination.total
     }
   } catch (err) {
-    console.error('获取通讯录失败:', err)
+    logError('views/ContactsView', '获取通讯录失败:', err)
     ElMessage.error('获取通讯录失败，请稍后重试')
   } finally {
     loading.value = false

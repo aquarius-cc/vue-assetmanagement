@@ -163,6 +163,7 @@ import { HardDiskStatus } from '@/types/harddisksn'
 import type { AssetDetail } from '@/types/asset'
 import type { AssetSuggestion } from '@/types/form-helpers'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
+import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -348,7 +349,7 @@ const loadEditData = async (_assetCode: string, harddiskSnCode: string) => {
     // 4. 保存原始数据用于变更对比
     originalFormData.value = JSON.parse(JSON.stringify(formData))
   } catch (error) {
-    console.error('加载硬盘记录失败:', error)
+    logError('components/componentsdetails/detils/HardDiskSNForm', '加载硬盘记录失败:', error)
     ElMessage.error('加载数据失败，请刷新重试')
     router.back()
   } finally {
@@ -441,7 +442,7 @@ const submitForm = () => {
       } else {
         ElMessage.error('操作失败，请重试')
       }
-      console.error('硬盘序列号提交失败', error)
+      logError('components/componentsdetails/detils/HardDiskSNForm', '硬盘序列号提交失败', error)
     }
   })
 }

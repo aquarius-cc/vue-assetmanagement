@@ -109,6 +109,7 @@ import type { SmartListContainerExpose } from '@/types/common'
 import { useAssetListConfig } from '@/composables/useAssetListConfig'
 import { useExcelExport } from '@/composables/useExcelExport'
 import type { AssetDetail } from '@/types/asset'
+import { logError } from '@/utils/logger'
 
 const router = useRouter()
 const route = useRoute()
@@ -266,7 +267,7 @@ const handleBatchDelete = async (rows: AssetDetail[] | undefined) => {
     await smartListRef.value?.refresh()
   } catch (err) {
     if (err === 'cancel') return
-    console.error('批量删除失败:', err)
+    logError('components/componentsdetails/AssetContentDetails', '批量删除失败:', err)
     ElMessage.error('批量删除失败，请重试')
   }
 }

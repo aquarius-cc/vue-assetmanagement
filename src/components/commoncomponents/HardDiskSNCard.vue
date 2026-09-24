@@ -54,6 +54,7 @@ import { ElMessage } from 'element-plus'
 import type { HardDiskSN } from '@/types/harddisksn'
 import { HardDiskType } from '@/types/harddisksn'
 import { getHardDiskStatusText, getHardDiskStatusTagType } from '@/utils/statusMapping'
+import { logError } from '@/utils/logger'
 
 // ===== Props 定义 =====
 interface Props {
@@ -115,7 +116,7 @@ const handleAdd = () => {
       query: { assetCode: props.assetCode },
     })
     .catch((err) => {
-      console.error('跳转新增页面失败:', err)
+      logError('components/commoncomponents/HardDiskSNCard', '跳转新增页面失败:', err)
       ElMessage.error('跳转失败，请重试')
     })
 }

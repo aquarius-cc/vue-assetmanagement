@@ -8,6 +8,7 @@ import type { Ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { formatDate } from '@/utils/Format'
 import type { OutAssetCreateExtended, EmployeeAutocompleteItem } from '@/types/outasset'
+import { logError } from '@/utils/logger'
 
 /** 编辑加载器依赖 */
 export interface OutAssetEditLoaderDeps {
@@ -77,7 +78,11 @@ export function createOutAssetEditLoader(deps: OutAssetEditLoaderDeps) {
       // 保存原始数据快照
       originalFormData.value = JSON.parse(JSON.stringify(form))
     } catch (error) {
-      console.error('加载出库资产详情失败:', error)
+      logError(
+        'components/componentsdetails/detils/outAssetFormEditLoader',
+        '加载出库资产详情失败:',
+        error,
+      )
       ElMessage.error('加载出库记录失败，请刷新页面重试')
       router.back()
     } finally {

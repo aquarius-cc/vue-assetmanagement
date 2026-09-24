@@ -114,6 +114,7 @@ import { Document } from '@element-plus/icons-vue'
 import { useAssetStore } from '@/stores/assetStore'
 import { useContractStore } from '@/stores/contractStore'
 import { useWasteAssetStore } from '@/stores/wasteAssetStore'
+import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -181,7 +182,7 @@ const loadDetailData = async (code: string) => {
       }
     }
   } catch (error) {
-    console.error('加载已报废资产详情失败:', error)
+    logError('components/componentsdetails/detils/WasteAssetForm', '加载已报废资产详情失败:', error)
     ElMessage.error('加载数据失败，请刷新重试')
     router.back()
   } finally {

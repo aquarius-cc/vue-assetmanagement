@@ -89,6 +89,7 @@ import { ElMessage } from 'element-plus'
 import { getPhysicalGradeDisplay } from '@/utils/Format'
 import { useAuthStore } from '@/stores/auth'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
+import { logError } from '@/utils/logger'
 
 // 【R4-04 公开白名单】与后端 public_scan_view 的 data dict 严格对齐（后端为唯一契约源）
 interface PublicScanAsset {
@@ -133,7 +134,7 @@ const fetchAsset = async () => {
     }
     asset.value = res.data as PublicScanAsset
   } catch (err) {
-    console.error('获取资产信息失败:', err)
+    logError('views/ScanAssetView', '获取资产信息失败:', err)
     // [修复] 分类处理：404 = 资产不存在（保持 null），其他 = 加载失败
     if (isAxiosError(err) && err.response?.status === 404) {
       // 404：asset 保持 null，模板走"未找到资产"分支

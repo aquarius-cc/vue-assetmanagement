@@ -8,6 +8,7 @@ import { h, type Ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { HandleType } from '@/types/unregisteredasset'
 import type { UnregisteredAsset } from '@/types/unregisteredasset'
+import { logError } from '@/utils/logger'
 
 /** 审批操作依赖 */
 export interface UnregisteredApprovalDeps {
@@ -49,7 +50,7 @@ export function useUnregisteredApproval({
       await loadDetail(detailData.value.unregistered_code)
       store.setRefreshFlag(true)
     } catch (error) {
-      console.error('审批操作失败:', error)
+      logError('composables/useUnregisteredApproval', '审批操作失败:', error)
       ElMessage.error('审批操作失败，请重试')
     }
   }
@@ -75,7 +76,7 @@ export function useUnregisteredApproval({
     } catch (error) {
       // 用户取消操作不提示错误
       if (error === 'cancel' || error === 'close') return
-      console.error('拒绝操作失败:', error)
+      logError('composables/useUnregisteredApproval', '拒绝操作失败:', error)
       ElMessage.error('拒绝操作失败，请重试')
     }
   }

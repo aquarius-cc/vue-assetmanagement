@@ -254,6 +254,7 @@ import { createOutAssetEditLoader } from './outAssetFormEditLoader'
 import { useEmployeeSuggestionFetcher } from '@/composables/useEmployeeSuggestionFetcher'
 import { useAutocompleteField } from '@/composables/useAutocompleteField'
 import { AssetCurrentStatus } from '@/types/asset'
+import { logError } from '@/utils/logger'
 
 // ========== 类型增强：解决assetStore 类型定义缺失（运行时方法存在）==========
 // 注意：createEntityStore 实际返回了getByName/getById/update 等方法，但TypeScript 未能正确推断
@@ -434,7 +435,7 @@ const submitForm = () => {
       } else {
         ElMessage.error('操作失败，请检查网络连接后重试')
       }
-      console.error('出库资产提交失败:', error)
+      logError('components/componentsdetails/detils/OutAssetForm', '出库资产提交失败:', error)
     }
   })
 }

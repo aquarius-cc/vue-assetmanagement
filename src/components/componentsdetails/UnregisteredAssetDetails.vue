@@ -122,6 +122,7 @@ import { useUnregisteredAssetStore } from '@/stores/unregisteredAssetStore'
 import { formatDate } from '@/utils/Format'
 import { getApprovalStatusText, getApprovalStatusTagType } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
+import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
 const unregisteredAssetStore = useUnregisteredAssetStore()
@@ -214,7 +215,7 @@ const handleEdit = (row: UnregisteredAsset) => {
   router
     .push({ name: 'UnregisteredAssetForm', query: { code: row.unregistered_code } })
     .catch((err) => {
-      console.error('编辑跳转失败:', err)
+      logError('components/componentsdetails/UnregisteredAssetDetails', '编辑跳转失败:', err)
       ElMessage.error('跳转编辑页失败，请重试')
     })
 }
@@ -245,7 +246,7 @@ const handleDelete = (row: UnregisteredAsset) => {
     })
     .catch((error) => {
       if (error !== 'cancel') {
-        console.error('删除失败:', error)
+        logError('components/componentsdetails/UnregisteredAssetDetails', '删除失败:', error)
         ElMessage.error('删除失败，请刷新页面重试')
       }
     })
@@ -257,7 +258,7 @@ const handleDelete = (row: UnregisteredAsset) => {
  */
 const handleAdd = () => {
   router.push({ name: 'UnregisteredAssetForm', query: {} }).catch((err) => {
-    console.error('新增跳转失败:', err)
+    logError('components/componentsdetails/UnregisteredAssetDetails', '新增跳转失败:', err)
     ElMessage.error('跳转新增页失败，请重试')
   })
 }
@@ -268,7 +269,7 @@ const handleAdd = () => {
  */
 const handleBatchImport = () => {
   router.push({ name: 'UnregisteredAssetBatchImport' }).catch((err) => {
-    console.error('批量导入跳转失败:', err)
+    logError('components/componentsdetails/UnregisteredAssetDetails', '批量导入跳转失败:', err)
     ElMessage.error('跳转批量导入页失败，请重试')
   })
 }
@@ -352,7 +353,7 @@ const handleExportExcel = async () => {
       exportData = allData
       fileName = `未登记资产列表_全部_${allData.length}条.xlsx`
     } catch (error) {
-      console.error('导出全部数据失败:', error)
+      logError('components/componentsdetails/UnregisteredAssetDetails', '导出全部数据失败:', error)
       ElMessage.error('获取全部数据失败，请重试')
       return
     }
@@ -407,7 +408,7 @@ const handleBatchDelete = async (rows: UnregisteredAsset[] | undefined) => {
     await smartListRef.value?.refresh()
   } catch (err) {
     if (err === 'cancel') return
-    console.error('批量删除失败:', err)
+    logError('components/componentsdetails/UnregisteredAssetDetails', '批量删除失败:', err)
     ElMessage.error('批量删除失败，请重试')
   }
 }

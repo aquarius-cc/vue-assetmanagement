@@ -61,6 +61,7 @@ import type { EmployeeExtended } from '@/types/user'
 import type { AssetDetail } from '@/types/asset'
 import { formatDate, outassetTypeMapping } from '@/utils/Format'
 import { getAssetStatusText } from '@/utils/statusMapping'
+import { logError } from '@/utils/logger'
 
 // ========== 辅助函数：枚举转文本（安全处理 null/undefined）==========
 /**
@@ -214,7 +215,7 @@ const loadDetail = async (code: string) => {
 
     await Promise.all(promises)
   } catch (error) {
-    console.error('获取详情失败:', error)
+    logError('components/componentsdetails/detils/OutAssetBasicDetails', '获取详情失败:', error)
     ElMessage.error('加载出库资产详情失败，请稍后重试')
   }
 }

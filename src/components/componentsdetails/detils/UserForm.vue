@@ -142,6 +142,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import type { EmployeeCreateForm, EmployeeExtended } from '@/types/user'
 import { useUserStore } from '@/stores'
 import { useDepartmentStore } from '@/stores'
+import { logError } from '@/utils/logger'
 
 // // 定义用户表单类型接口
 // interface UserForm {
@@ -268,7 +269,7 @@ const loadUserData = async () => {
       goBack()
     }
   } catch (error) {
-    console.error('获取用户信息失败：', error)
+    logError('components/componentsdetails/detils/UserForm', '获取用户信息失败：', error)
     ElMessage.error('获取用户信息失败，请联系管理员！')
   } finally {
     isLoading.value = false
@@ -345,7 +346,7 @@ const submitForm = async () => {
   } catch (error) {
     // 校验失败/接口异常处理
     ElMessage.error('表单校验失败，请检查输入！')
-    console.error('表单提交失败：', error)
+    logError('components/componentsdetails/detils/UserForm', '表单提交失败：', error)
   }
 }
 

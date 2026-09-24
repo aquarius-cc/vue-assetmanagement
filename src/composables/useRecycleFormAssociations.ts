@@ -16,6 +16,7 @@ import { useStorageStore } from '@/stores/storageStore'
 import { useAssetTypeStore } from '@/stores/assetTypeStore'
 import type { Storage } from '@/types/storage'
 import type { AssetType } from '@/types/assettype'
+import { logError } from '@/utils/logger'
 
 export function useRecycleFormAssociations() {
   const storageStore = useStorageStore()
@@ -70,7 +71,11 @@ export function useRecycleFormAssociations() {
     } catch (err) {
       error.value = '加载仓库列表失败'
       ElMessage.error(error.value)
-      console.error('[useRecycleFormAssociations] loadStorages error:', err)
+      logError(
+        'composables/useRecycleFormAssociations',
+        '[useRecycleFormAssociations] loadStorages error:',
+        err,
+      )
       storages.value = []
     } finally {
       loading.value = false
@@ -96,7 +101,11 @@ export function useRecycleFormAssociations() {
     } catch (err) {
       error.value = '加载资产类型失败'
       ElMessage.error(error.value)
-      console.error('[useRecycleFormAssociations] loadAssetTypes error:', err)
+      logError(
+        'composables/useRecycleFormAssociations',
+        '[useRecycleFormAssociations] loadAssetTypes error:',
+        err,
+      )
       assetTypes.value = []
     } finally {
       loading.value = false

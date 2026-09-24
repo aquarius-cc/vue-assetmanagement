@@ -106,7 +106,8 @@ describe('errorHandler', () => {
 
       showErrorMessage(new Error('boom'), 'fallback')
 
-      expect(spy).toHaveBeenCalledWith('fallback', new Error('boom'))
+      expect(spy).toHaveBeenCalledWith(expect.stringContaining('"module":"utils/errorHandler"'))
+      expect(spy).toHaveBeenCalledWith(expect.stringContaining('"message":"fallback"'))
       expect(ElMessage.error).toHaveBeenCalledWith('boom')
       spy.mockRestore()
     })

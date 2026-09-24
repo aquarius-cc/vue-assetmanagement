@@ -112,6 +112,7 @@ import { HardDiskType } from '@/types/harddisksn'
 import { useHardDiskSnStore } from '@/stores/harddiskSnStore'
 import { getHardDiskStatusText, getHardDiskStatusTagType } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
+import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
 const harddiskSnStore = useHardDiskSnStore()
@@ -252,7 +253,7 @@ const handleEdit = (row: HardDiskSN) => {
       query: { assetCode: row.asset_code, harddiskSnCode: String(row.harddisk_sn_code) },
     })
     .catch((err) => {
-      console.error('编辑跳转失败:', err)
+      logError('components/componentsdetails/HardDiskSNDetails', '编辑跳转失败:', err)
       ElMessage.error('跳转编辑页失败，请重试')
     })
 }
@@ -284,7 +285,7 @@ const handleDelete = (row: HardDiskSN) => {
     })
     .catch((error) => {
       if (error !== 'cancel') {
-        console.error('删除失败:', error)
+        logError('components/componentsdetails/HardDiskSNDetails', '删除失败:', error)
         ElMessage.error('删除失败，请刷新页面重试')
       }
     })
@@ -325,7 +326,7 @@ const handleBatchDelete = async (rows: HardDiskSN[] | undefined) => {
     await smartListRef.value?.refresh()
   } catch (err) {
     if (err === 'cancel') return
-    console.error('批量删除失败:', err)
+    logError('components/componentsdetails/HardDiskSNDetails', '批量删除失败:', err)
     ElMessage.error('批量删除失败，请重试')
   }
 }
@@ -336,7 +337,7 @@ const handleBatchDelete = async (rows: HardDiskSN[] | undefined) => {
  */
 const handleAdd = () => {
   router.push({ name: 'HardDiskSNForm', query: {} }).catch((err) => {
-    console.error('新增跳转失败:', err)
+    logError('components/componentsdetails/HardDiskSNDetails', '新增跳转失败:', err)
     ElMessage.error('跳转新增页失败，请重试')
   })
 }
@@ -409,7 +410,7 @@ const handleExportExcel = async () => {
       exportData = allData
       fileName = `硬盘序列号列表_全部_${allData.length}条.xlsx`
     } catch (error) {
-      console.error('导出全部数据失败:', error)
+      logError('components/componentsdetails/HardDiskSNDetails', '导出全部数据失败:', error)
       ElMessage.error('获取全部数据失败，请重试')
       return
     }

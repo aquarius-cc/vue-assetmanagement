@@ -106,6 +106,7 @@ import type { ColumnConfig } from '@/utils/excelExporter'
 import type { HardDiskSN } from '@/types/harddisksn'
 import { HardDiskType } from '@/types/harddisksn'
 import { getHardDiskStatusText, getHardDiskStatusTagType } from '@/utils/statusMapping'
+import { logError } from '@/utils/logger'
 // import { formatDate } from '@/utils/Format'
 
 // ===== 硬盘类型辅助函数 =====
@@ -195,7 +196,7 @@ const loadDetail = async (code: string) => {
     }
     detailData.value = detail
   } catch (error) {
-    console.error('获取详情失败:', error)
+    logError('components/componentsdetails/detils/HardDiskSNBasicDetails', '获取详情失败:', error)
     ElMessage.error('加载硬盘序列号详情失败，请稍后重试')
   }
 }

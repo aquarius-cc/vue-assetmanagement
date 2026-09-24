@@ -95,6 +95,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { isAxiosError } from 'axios'
 import { useDepartmentStore } from '@/stores/departmentStore'
 import type { DepartmentCreateForm } from '@/types/department'
+import { logError } from '@/utils/logger'
 
 // ===== 路由与 Store =====
 const route = useRoute()
@@ -166,7 +167,7 @@ onMounted(async () => {
       router.push('/main/departmentdetails')
     }
   } catch (error: unknown) {
-    console.error('加载部门详情失败:', error)
+    logError('components/componentsdetails/detils/DepartmentForm', '加载部门详情失败:', error)
     ElMessage.error('加载部门数据失败，请稍后重试')
   } finally {
     isLoading.value = false
@@ -215,7 +216,7 @@ const submitForm = () => {
       } else {
         ElMessage.error('操作失败：发生未知错误')
       }
-      console.error('部门操作失败:', error)
+      logError('components/componentsdetails/detils/DepartmentForm', '部门操作失败:', error)
     }
   })
 }

@@ -6,6 +6,7 @@
  */
 import ExcelJS from 'exceljs'
 import { ElMessage } from 'element-plus'
+import { logError } from '@/utils/logger'
 
 /**
  * 模板单元格值：字符串与数值原样保留，缺失/空值统一补空字符串
@@ -55,7 +56,7 @@ export async function downloadExcelTemplate(
 
     ElMessage.success('模板下载成功')
   } catch (error) {
-    console.error('导出模板失败:', error)
+    logError('utils/batchImport/templateExport', '导出模板失败:', error)
     ElMessage.error('导出模板失败，请稍后重试')
   }
 }

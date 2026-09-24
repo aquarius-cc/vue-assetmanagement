@@ -1,3 +1,5 @@
+import { logError } from '@/utils/logger'
+
 /**
  * @file 通用建议获取器工厂，适配 el-autocomplete 的 fetch-suggestions 签名
  * @module composables/useSuggestionFetcher
@@ -65,7 +67,7 @@ export function createSuggestionFetcher<T, R>(options: SuggestionFetcherOptions<
 
       cb(suggestions)
     } catch (error) {
-      console.error('获取建议失败:', error)
+      logError('composables/useSuggestionFetcher', '获取建议失败:', error)
       cb([])
     }
   }

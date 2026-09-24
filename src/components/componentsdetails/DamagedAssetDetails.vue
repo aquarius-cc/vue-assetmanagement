@@ -110,6 +110,7 @@ import { useDamagedAssetStore } from '@/stores/damagedAssetStore'
 import { formatDate } from '@/utils/Format'
 import { getApprovalStatusText, getApprovalStatusTagType } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
+import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
 const damagedAssetStore = useDamagedAssetStore()
@@ -292,7 +293,7 @@ const handleEdit = (row: DamagedAsset) => {
     return
   }
   router.push({ name: 'DamagedAssetForm', query: { code: row.recordcode } }).catch((err) => {
-    console.error('编辑跳转失败:', err)
+    logError('components/componentsdetails/DamagedAssetDetails', '编辑跳转失败:', err)
     ElMessage.error('跳转编辑页失败，请重试')
   })
 }
@@ -321,7 +322,7 @@ const handleDelete = (row: DamagedAsset) => {
     })
     .catch((error) => {
       if (error !== 'cancel') {
-        console.error('删除失败:', error)
+        logError('components/componentsdetails/DamagedAssetDetails', '删除失败:', error)
         ElMessage.error('删除失败，请刷新页面重试')
       }
     })
@@ -332,7 +333,7 @@ const handleDelete = (row: DamagedAsset) => {
  */
 const handleAdd = () => {
   router.push({ name: 'DamagedAssetForm', query: {} }).catch((err) => {
-    console.error('新增跳转失败:', err)
+    logError('components/componentsdetails/DamagedAssetDetails', '新增跳转失败:', err)
     ElMessage.error('跳转新增页失败，请重试')
   })
 }
@@ -342,7 +343,7 @@ const handleAdd = () => {
  */
 const handleBatchImport = () => {
   router.push({ name: 'DamagedAssetBatchImport' }).catch((err) => {
-    console.error('批量导入跳转失败:', err)
+    logError('components/componentsdetails/DamagedAssetDetails', '批量导入跳转失败:', err)
     ElMessage.error('跳转批量导入页失败，请重试')
   })
 }
@@ -423,7 +424,7 @@ const handleExportExcel = async () => {
       exportData = allData
       fileName = `待报废资产列表_全部_${allData.length}条.xlsx`
     } catch (error) {
-      console.error('导出全部数据失败:', error)
+      logError('components/componentsdetails/DamagedAssetDetails', '导出全部数据失败:', error)
       ElMessage.error('获取全部数据失败，请重试')
       return
     }
@@ -478,7 +479,7 @@ const handleBatchDelete = async (rows: DamagedAsset[] | undefined) => {
     await smartListRef.value?.refresh()
   } catch (err) {
     if (err === 'cancel') return
-    console.error('批量删除失败:', err)
+    logError('components/componentsdetails/DamagedAssetDetails', '批量删除失败:', err)
     ElMessage.error('批量删除失败，请重试')
   }
 }

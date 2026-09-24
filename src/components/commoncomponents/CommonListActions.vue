@@ -65,6 +65,7 @@
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { logError } from '@/utils/logger'
 
 // ===== Props 定义 =====
 const props = defineProps({
@@ -205,11 +206,11 @@ const handleDetails = (row: Record<string, unknown>, index: number) => {
           query: queryParam,
         })
         .catch((error) => {
-          console.error('详情路由跳转失败:', error)
+          logError('components/commoncomponents/CommonListActions', '详情路由跳转失败:', error)
           ElMessage.error('详情路由跳转失败')
         })
     } catch (error) {
-      console.error('详情路由跳转失败:', error)
+      logError('components/commoncomponents/CommonListActions', '详情路由跳转失败:', error)
       ElMessage.error('详情路由跳转失败')
     }
   } else {
@@ -230,11 +231,11 @@ const handleEdit = (row: Record<string, unknown>, index: number) => {
           query: queryParam,
         })
         .catch((error) => {
-          console.error('编辑路由跳转失败:', error)
+          logError('components/commoncomponents/CommonListActions', '编辑路由跳转失败:', error)
           ElMessage.error('编辑路由跳转失败')
         })
     } catch (error) {
-      console.error('编辑路由跳转失败:', error)
+      logError('components/commoncomponents/CommonListActions', '编辑路由跳转失败:', error)
       ElMessage.error('编辑路由跳转失败')
     }
   } else {

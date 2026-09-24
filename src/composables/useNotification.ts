@@ -22,6 +22,7 @@ import { ElMessage } from 'element-plus'
 import { notificationAPI } from '@/api/notification'
 import { useNotificationConnection } from '@/composables/useNotificationConnection'
 import type { NotificationItem } from '@/types/notification'
+import { logError } from '@/utils/logger'
 
 // 重新导出类型，保持向后兼容
 export type { NotificationItem as Notification } from '@/types/notification'
@@ -86,7 +87,7 @@ export function useNotification() {
       unreadCount.value = 0
       ElMessage.success('已全部标记为已读') // [修复] 新增成功反馈
     } catch (err) {
-      console.error('标记全部已读失败:', err)
+      logError('composables/useNotification', '标记全部已读失败:', err)
       // [修复] 分类处理：业务错误拦截器未处理，需手动提示
       if (!isAxiosError(err)) {
         ElMessage.error((err as Error).message || '标记全部已读失败')
@@ -112,7 +113,7 @@ export function useNotification() {
         notifications.value = data.results
       }
     } catch (err) {
-      console.error('加载通知列表失败:', err)
+      logError('composables/useNotification', '加载通知列表失败:', err)
       // [修复] 分类处理：业务错误拦截器未处理，需手动提示
       if (!isAxiosError(err)) {
         ElMessage.error((err as Error).message || '加载通知列表失败')

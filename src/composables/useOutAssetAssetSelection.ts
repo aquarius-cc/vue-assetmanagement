@@ -8,6 +8,7 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { AssetDetail } from '@/types/asset'
 import type { OutAssetCreateExtended, AssetAutocompleteItem } from '@/types/outasset'
+import { logError } from '@/utils/logger'
 
 /** assetStore 的最小类型（与组件内的 ExtendedAssetStore 一致的子集） */
 interface AssetSelectionStore {
@@ -71,7 +72,7 @@ export function useOutAssetAssetSelection(
         selectedAsset.value = null
       }
     } catch (error) {
-      console.error('资产编码校验失败:', error)
+      logError('composables/useOutAssetAssetSelection', '资产编码校验失败:', error)
       ElMessage.error('系统错误，请稍后再试')
       clearAssetInfo()
     }
@@ -103,7 +104,7 @@ export function useOutAssetAssetSelection(
         selectedAsset.value = null
       }
     } catch (error) {
-      console.error('资产名称校验失败:', error)
+      logError('composables/useOutAssetAssetSelection', '资产名称校验失败:', error)
       form.outasset_code = '验证失败'
       selectedAsset.value = null
     }

@@ -222,6 +222,7 @@ import { useUnregisteredAssetStore } from '@/stores/unregisteredAssetStore'
 import type { UnregisteredAssetCreateForm } from '@/types/unregisteredasset'
 import { ScenarioType } from '@/types/unregisteredasset'
 import { useUnregisteredFormLinkage } from '@/composables/useUnregisteredFormLinkage'
+import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -375,7 +376,11 @@ const loadEditData = async (code: string) => {
 
     originalFormData.value = JSON.parse(JSON.stringify(formData))
   } catch (error) {
-    console.error('加载未登记资产详情失败', error)
+    logError(
+      'components/componentsdetails/detils/UnregisteredAssetForm',
+      '加载未登记资产详情失败',
+      error,
+    )
     ElMessage.error('加载数据失败，请刷新重试')
     router.back()
   } finally {
@@ -425,7 +430,11 @@ const submitForm = () => {
       } else {
         ElMessage.error('操作失败，请重试')
       }
-      console.error('未登记资产提交失败', error)
+      logError(
+        'components/componentsdetails/detils/UnregisteredAssetForm',
+        '未登记资产提交失败',
+        error,
+      )
     }
   })
 }

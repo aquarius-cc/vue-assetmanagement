@@ -217,6 +217,7 @@ import { useUserStore } from '@/stores/userStore'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import { useDepartmentEmployeeActions } from '@/composables/useDepartmentEmployeeActions'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
+import { logError } from '@/utils/logger'
 
 // ==================== Props ====================
 
@@ -346,7 +347,11 @@ const loadEmployeeList = async () => {
       employeeList.value = await getDepartmentEmployees(props.departmentCode, queryParams)
     }
   } catch (error) {
-    console.error('加载人员列表失败:', error)
+    logError(
+      'components/componentsdetails/components/DepartmentEmployeeList',
+      '加载人员列表失败:',
+      error,
+    )
     ElMessage.error('加载人员列表失败')
   } finally {
     isLoading.value = false
@@ -407,7 +412,11 @@ const handleDeleteEmployee = async (row: EmployeeExtended) => {
     // 刷新列表
     await loadEmployeeList()
   } catch (error) {
-    console.error('删除人员失败:', error)
+    logError(
+      'components/componentsdetails/components/DepartmentEmployeeList',
+      '删除人员失败:',
+      error,
+    )
     ElMessage.error('删除人员失败')
   }
 }

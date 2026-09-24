@@ -38,6 +38,7 @@ import type { ContractCreateForm } from '@/types/contract'
 import { EmployeeStatus } from '@/types/user'
 import type { ExcelEmployeeData, ValidatedEmployeeData } from '@/types/user'
 import type { ExcelDepartmentData, ValidatedDepartmentData } from '@/types/department'
+import { logWarn } from '@/utils/logger'
 import {
   ASSET_STATUS_MAP,
   getAssetStatusText as getAssetStatusTextFromStatusMapping,
@@ -145,7 +146,7 @@ const contractiInfoFormate = (
 
   // 若 rawData 为空（undefined 或 null），返回空对象（或抛出错误，根据业务需求）
   if (!rawData) {
-    console.warn('格式化合同数据失败：原始数据为空')
+    logWarn('utils/Format', '格式化合同数据失败：原始数据为空')
     return {}
   }
 

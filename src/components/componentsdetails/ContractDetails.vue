@@ -134,6 +134,7 @@ import { useContractStore } from '@/stores/contractStore'
 import { formatPrice, formatDate, contractTypeMapping } from '@/utils/Format'
 import { getContractStatusTagType, getContractStatusText } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
+import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -195,7 +196,7 @@ watch(
  */
 const handleAddContract = () => {
   router.push({ name: 'ContractForm', query: {} }).catch((err) => {
-    console.error('新增跳转失败:', err)
+    logError('components/componentsdetails/ContractDetails', '新增跳转失败:', err)
     ElMessage.error('跳转失败，请刷新页面重试')
   })
 }
@@ -205,7 +206,7 @@ const handleAddContract = () => {
  * 跳转到批量导入页页 */
 const handleBatchImport = () => {
   router.push({ name: 'ContractBatchImport' }).catch((err) => {
-    console.error('批量导入跳转失败:', err)
+    logError('components/componentsdetails/ContractDetails', '批量导入跳转失败:', err)
     ElMessage.error('跳转失败，请刷新页面重试')
   })
 }
@@ -220,7 +221,7 @@ const handleEdit = (row: Contract) => {
     return
   }
   router.push({ name: 'ContractForm', query: { code: row.recordcode } }).catch((err) => {
-    console.error('编辑跳转失败:', err)
+    logError('components/componentsdetails/ContractDetails', '编辑跳转失败:', err)
     ElMessage.error('跳转失败，请刷新页面重试')
   })
 }
@@ -246,7 +247,7 @@ const handleDelete = async (row: Contract) => {
     smartListRef.value?.refresh()
   } catch (err) {
     if (err !== 'cancel') {
-      console.error('删除合同失败:', err)
+      logError('components/componentsdetails/ContractDetails', '删除合同失败:', err)
       ElMessage.error('删除失败，请重试')
     }
   }
@@ -287,7 +288,7 @@ const handleBatchDelete = async (rows: Contract[] | undefined) => {
     await smartListRef.value?.refresh()
   } catch (err) {
     if (err === 'cancel') return
-    console.error('批量删除失败:', err)
+    logError('components/componentsdetails/ContractDetails', '批量删除失败:', err)
     ElMessage.error('批量删除失败，请重试')
   }
 }
@@ -395,7 +396,7 @@ const handleExportExcel = async () => {
       exportData = allData
       fileName = `合同列表_全部_${allData.length}.xlsx`
     } catch (error) {
-      console.error('获取全部数据失败:', error)
+      logError('components/componentsdetails/ContractDetails', '获取全部数据失败:', error)
       ElMessage.error('获取全部数据失败，请重试')
       return
     }
@@ -420,7 +421,7 @@ const handleExportExcel = async () => {
  */
 const handleViewAsset = () => {
   router.push('/main/assetdetails').catch((err) => {
-    console.error('跳转资产页面失败:', err)
+    logError('components/componentsdetails/ContractDetails', '跳转资产页面失败:', err)
     ElMessage.error('跳转失败，请刷新页面重试')
   })
 }

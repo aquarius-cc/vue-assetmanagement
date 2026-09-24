@@ -19,6 +19,7 @@ import { isAxiosError } from 'axios'
 import { assetAPI } from '@/api/asset'
 import type { AssetDetail } from '@/types/asset'
 import { useOperationGuard } from '@/composables/useOperationGuard'
+import { logError } from '@/utils/logger'
 
 /**
  * 资产操作表单选项
@@ -90,7 +91,7 @@ export function useAssetOperationForm<T = Record<string, unknown>>(
     try {
       asset.value = await assetAPI.getAssetByCode(assetCode.value)
     } catch (err) {
-      console.error('获取资产信息失败:', err)
+      logError('composables/useAssetOperationForm', '获取资产信息失败:', err)
       // [修复] 分类处理：业务错误（非 AxiosError）拦截器未处理，需手动提示
       if (!isAxiosError(err)) {
         ElMessage.error((err as Error).message || '获取资产信息失败')
@@ -114,7 +115,7 @@ export function useAssetOperationForm<T = Record<string, unknown>>(
         ElMessage.success(options.successMessage)
         router.back()
       } catch (err) {
-        console.error('操作失败:', err)
+        logError('composables/useAssetOperationForm', '操作失败:', err)
         if (handleForbiddenError(err)) return // 403 处理
         if (handleConflictError(err)) return // 409 处理
         // [修复] 仅当未抑制默认错误时才显示通用提示

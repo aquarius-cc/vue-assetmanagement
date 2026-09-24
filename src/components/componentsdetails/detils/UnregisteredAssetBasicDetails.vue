@@ -189,6 +189,7 @@ import {
 import { useUnregisteredApproval } from '@/composables/useUnregisteredApproval'
 import { formatDate } from '@/utils/Format'
 import { getApprovalStatusText, getApprovalStatusTagType } from '@/utils/statusMapping'
+import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -211,7 +212,11 @@ const loadDetail = async (code: string) => {
     }
     detailData.value = detail
   } catch (error) {
-    console.error('获取详情失败:', error)
+    logError(
+      'components/componentsdetails/detils/UnregisteredAssetBasicDetails',
+      '获取详情失败:',
+      error,
+    )
     ElMessage.error('加载未登记资产详情失败，请稍后重试')
   }
 }

@@ -151,6 +151,7 @@ import { validationTagType, validationTagText } from '@/utils/batchImportHelpers
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { downloadExcelTemplate, type TemplateCellValue } from '@/utils/batchImport/templateExport'
 import type { ExcelEmployeeData } from '@/types/user'
+import { logError } from '@/utils/logger'
 import {
   createUserBatchConfig,
   userHeaderExamples as headerExamples,
@@ -281,7 +282,7 @@ const submitBatchData = async () => {
       return
     }
     const msg = extractErrorMessage(error)
-    console.error('批量导入失败:', error)
+    logError('components/componentsdetails/detils/UserBatchImport', '批量导入失败:', error)
     ElMessage.error(`导入失败：${msg}`)
   }
 }

@@ -122,6 +122,7 @@ import { moveDepartment, useDepartmentStore } from '@/stores/departmentStore'
 import type { Department, DepartmentCreateForm, DepartmentTreeNode } from '@/types/department'
 import { departmentFormStaticRules } from './departmentFormDialogRules'
 import { isDescendant, isDescendantByCode } from '@/utils/departmentTree'
+import { logError } from '@/utils/logger'
 
 // ==================== Props & Emits ====================
 
@@ -435,7 +436,7 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     emit('success')
   } catch (error: unknown) {
-    console.error('提交失败:', error)
+    logError('components/componentsdetails/components/DepartmentFormDialog', '提交失败:', error)
     const errorMsg = error instanceof Error ? error.message : '操作失败'
     ElMessage.error(errorMsg)
   } finally {

@@ -175,6 +175,7 @@ import SelectedRecordsTable, {
   type SelectedRecord,
 } from './detilschildcomponents/SelectedRecordsTable.vue'
 import RecycleSharedInfo from './detilschildcomponents/RecycleSharedInfo.vue'
+import { logError } from '@/utils/logger'
 
 const router = useRouter()
 const route = useRoute()
@@ -310,11 +311,11 @@ const loadEditData = async (recordcode: string) => {
           selectedOutAsset.value = outDetail as RecyclableOutAsset
         }
       } catch (e) {
-        console.warn('加载关联出库记录失败', e)
+        logError('components/componentsdetails/detils/RecycleAssetForm', '加载关联出库记录失败', e)
       }
     }
   } catch (error) {
-    console.error('加载回收记录失败:', error)
+    logError('components/componentsdetails/detils/RecycleAssetForm', '加载回收记录失败:', error)
     ElMessage.error('加载回收记录失败，请刷新页面重试')
   }
 }

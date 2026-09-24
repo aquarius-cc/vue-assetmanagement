@@ -98,6 +98,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { useNetworkStore } from '@/stores'
 import type { LoginForm } from '@/types/authuser'
+import { logError } from '@/utils/logger'
 
 const route = useRoute()
 const router = useRouter()
@@ -255,7 +256,7 @@ const handleLogin = async () => {
     //   return
     // }
     // 其他异常（网络异常、服务器错误等）
-    console.error('登录异常:', error)
+    logError('views/LogIn', '登录异常:', error)
     loginError.value = '网络异常，请检查网络连接后重试'
   } finally {
     loading.value = false

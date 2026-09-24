@@ -17,6 +17,7 @@ import { h } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { ColumnConfig } from '@/utils/excelExporter'
+import { logError } from '@/utils/logger'
 
 export interface ExportOptions<T> {
   /** 实体名称（用于文件名和提示） */
@@ -102,7 +103,7 @@ export function useExcelExport() {
         exportData = await fetchAllData()
         fileName = `${entityName}列表_全部_${exportData.length}条.xlsx`
       } catch (error) {
-        console.error('获取全部数据失败:', error)
+        logError('composables/useExcelExport', '获取全部数据失败:', error)
         ElMessage.error('获取全部数据失败，请重试')
         return
       }

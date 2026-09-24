@@ -28,6 +28,7 @@ import type { EChartsOption } from 'echarts'
 import { useDashboardCharts } from '@/composables/useDashboardCharts'
 import { useChartTheme } from '@/composables/useChartTheme'
 import { useDashboardUser, LOGIN_START_TIME_KEY } from '@/composables/useDashboardUser'
+import { logError } from '@/utils/logger'
 
 export function useDashboardPage() {
   const dashboardStore = useDashboardStore()
@@ -171,7 +172,7 @@ export function useDashboardPage() {
     try {
       await dashboardStore.initDashboardData()
     } catch (error) {
-      console.error('获取仪表盘数据失败:', error)
+      logError('composables/useDashboardPage', '获取仪表盘数据失败:', error)
       // [修复] AxiosError 由拦截器已弹窗；非 AxiosError 由 store 层已弹窗
       // 此处仅设置 UI 错误状态，不重复弹窗
       loadError.value = true

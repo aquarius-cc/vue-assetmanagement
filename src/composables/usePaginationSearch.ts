@@ -19,6 +19,7 @@ import { ElMessage } from 'element-plus'
 import { readReactive, writeReactive, readStoreValue } from '@/utils/reactiveAccess'
 import { usePaginationSearchState, type SearchConfig } from './usePaginationSearchState'
 import type { PaginationQuery } from '@/stores/createEntityStore'
+import { logError } from '@/utils/logger'
 
 // ======================== 类型定义 ========================
 
@@ -94,7 +95,7 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
         updateTotal(response.count)
       }
     } catch (err) {
-      console.error('[usePaginationSearch] Load list failed:', err)
+      logError('composables/usePaginationSearch', '[usePaginationSearch] Load list failed:', err)
       ElMessage.error(messages.loadFailed)
       throw err
     } finally {
@@ -200,7 +201,7 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
         try {
           await refreshCurrentPage()
         } catch (e) {
-          console.error('[usePaginationSearch] refresh failed:', e)
+          logError('composables/usePaginationSearch', '[usePaginationSearch] refresh failed:', e)
         } finally {
           isRefreshing = false
           store.setRefreshFlag?.(false)

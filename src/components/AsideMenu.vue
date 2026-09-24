@@ -151,6 +151,7 @@ import { PERMISSION_CODES } from '@/constants/permissionCodes'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
 import NotificationBell from '@/components/commoncomponents/NotificationBell.vue'
 import AssetQuickScan from '@/components/commoncomponents/AssetQuickScan.vue'
+import { logError } from '@/utils/logger'
 
 const router = useRouter()
 const route = useRoute()
@@ -172,7 +173,7 @@ onBeforeRouteUpdate((to) => {
 const handleSelect = (path: string) => {
   router.push(path).catch((err) => {
     if (!err.message.includes('NavigationDuplicated')) {
-      console.error('菜单跳转失败:', err)
+      logError('components/AsideMenu', '菜单跳转失败:', err)
     }
   })
 }

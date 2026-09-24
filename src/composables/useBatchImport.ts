@@ -15,6 +15,7 @@ import type { BatchImportConfig } from '@/utils/batchImport/types'
 import { submitBatch } from '@/utils/SubmitBatch'
 import type { SubmitBatchResult } from '@/utils/SubmitBatch'
 import { readExcelFile } from '@/utils/readExcelFile'
+import { logError } from '@/utils/logger'
 
 export interface ValidatedRow<T> {
   data: T
@@ -63,7 +64,7 @@ export function useBatchImport<TExcel extends object, TApi extends object>(
       })
       ElMessage.success(`成功读取 ${data.length} 条记录`)
     } catch (error) {
-      console.error('Excel 解析失败:', error)
+      logError('composables/useBatchImport', 'Excel 解析失败:', error)
       const msg = error instanceof Error ? error.message : '未知错误'
       parseError.value = msg
       ElMessage.error(`文件解析失败: ${msg}`)

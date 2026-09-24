@@ -12,6 +12,7 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { readReactive } from '@/utils/reactiveAccess'
+import { logError, logWarn } from '@/utils/logger'
 
 export interface SearchConfig<T> {
   performSearch: (
@@ -51,7 +52,10 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
   /** 单关键词搜索 */
   const performSearch = async (keyword: string = search.value) => {
     if (!searchConfig) {
-      console.warn('[usePaginationSearch] Search function not configured')
+      logWarn(
+        'composables/usePaginationSearchState',
+        '[usePaginationSearch] Search function not configured',
+      )
       return
     }
     search.value = keyword
@@ -69,7 +73,11 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
       searchTotal.value = response.count ?? 0
       updateTotal(response.count)
     } catch (error) {
-      console.error('[usePaginationSearch] Search failed:', error)
+      logError(
+        'composables/usePaginationSearchState',
+        '[usePaginationSearch] Search failed:',
+        error,
+      )
       ElMessage.error(messages.searchFailed)
       searchResults.value = []
       searchTotal.value = 0
@@ -82,7 +90,10 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
   /** 多参数搜索 */
   const performSearchWithParams = async (params: Record<string, string>) => {
     if (!searchConfig) {
-      console.warn('[usePaginationSearch] Search function not configured')
+      logWarn(
+        'composables/usePaginationSearchState',
+        '[usePaginationSearch] Search function not configured',
+      )
       return
     }
 
@@ -105,7 +116,11 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
         searchTotal.value = response.count ?? 0
         updateTotal(response.count)
       } catch (error) {
-        console.error('[usePaginationSearch] Search failed:', error)
+        logError(
+          'composables/usePaginationSearchState',
+          '[usePaginationSearch] Search failed:',
+          error,
+        )
         ElMessage.error(messages.searchFailed)
         searchResults.value = []
         searchTotal.value = 0

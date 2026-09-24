@@ -115,6 +115,7 @@ import type { OutAsset, OutAssetDetail } from '@/types/outasset'
 import { useOutAssetStore } from '@/stores/outAssetStore'
 import { formatDate, outassetTypeMapping } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'
+import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
 const outAssetStore = useOutAssetStore()
@@ -220,7 +221,7 @@ const handleEdit = (row: OutAsset) => {
     return
   }
   router.push({ name: 'OutAssetForm', query: { code: row.recordcode } }).catch((err) => {
-    console.error('编辑跳转失败:', err)
+    logError('components/componentsdetails/OutAssetDetails', '编辑跳转失败:', err)
     ElMessage.error('跳转编辑页失败，请重试')
   })
 }
@@ -250,7 +251,7 @@ const handleDelete = (row: OutAsset) => {
     })
     .catch((error) => {
       if (error !== 'cancel') {
-        console.error('删除失败:', error)
+        logError('components/componentsdetails/OutAssetDetails', '删除失败:', error)
         ElMessage.error('删除失败，请刷新页面重试')
       }
     })
@@ -261,7 +262,7 @@ const handleDelete = (row: OutAsset) => {
  */
 const handleAddOutAsset = () => {
   router.push({ name: 'OutAssetForm', query: {} }).catch((err) => {
-    console.error('新增跳转失败:', err)
+    logError('components/componentsdetails/OutAssetDetails', '新增跳转失败:', err)
     ElMessage.error('跳转新增页失败，请重试')
   })
 }
@@ -271,7 +272,7 @@ const handleAddOutAsset = () => {
  */
 const handleBatchImport = () => {
   router.push({ name: 'OutAssetBatchImport' }).catch((err) => {
-    console.error('批量导入跳转失败:', err)
+    logError('components/componentsdetails/OutAssetDetails', '批量导入跳转失败:', err)
     ElMessage.error('跳转批量导入页失败，请重试')
   })
 }
@@ -365,7 +366,7 @@ const handleExportExcel = async () => {
       exportData = allData
       fileName = `出库资产列表_全部_${allData.length}条.xlsx`
     } catch (error) {
-      console.error('导出全部数据失败:', error)
+      logError('components/componentsdetails/OutAssetDetails', '导出全部数据失败:', error)
       ElMessage.error('获取全部数据失败，请重试')
       return
     }
@@ -420,7 +421,7 @@ const handleBatchDelete = async (rows: OutAsset[] | undefined) => {
     await smartListRef.value?.refresh()
   } catch (err) {
     if (err === 'cancel') return
-    console.error('批量删除失败:', err)
+    logError('components/componentsdetails/OutAssetDetails', '批量删除失败:', err)
     ElMessage.error('批量删除失败，请重试')
   }
 }

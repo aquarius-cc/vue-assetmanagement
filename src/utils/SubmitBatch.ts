@@ -14,6 +14,7 @@
  */
 
 import { isAxiosError } from 'axios'
+import { logError } from '@/utils/logger'
 
 /** 失败项：包含原始数据和具体错误信息 */
 export interface FailedItem<T> {
@@ -107,7 +108,7 @@ export async function submitBatch<T extends object>(
       } catch (error) {
         const errorMsg = extractErrorMessage(error)
         const idValue = String(item[idField] ?? 'unknown')
-        console.error(`[${entityName}] 创建失败 (ID: ${idValue}): ${errorMsg}`)
+        logError('utils/SubmitBatch', `[${entityName}] 创建失败 (ID: ${idValue}): ${errorMsg}`)
         failedItems.push({ item, error: errorMsg })
       }
     })

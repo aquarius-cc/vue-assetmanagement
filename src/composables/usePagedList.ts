@@ -12,6 +12,7 @@
  */
 import { type Ref, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { logError } from '@/utils/logger'
 
 /** 分页列表 Composable 的配置项 */
 export interface PagedListOptions<TItem> {
@@ -72,7 +73,7 @@ export function usePagedList<TItem>(options: PagedListOptions<TItem>): PagedList
       list.value = response.results
       total.value = response.count
     } catch (error) {
-      console.error(`[${tag}]`, error)
+      logError('composables/usePagedList', `[${tag}]`, error)
       ElMessage.error(errorMessage)
       list.value = []
       total.value = 0

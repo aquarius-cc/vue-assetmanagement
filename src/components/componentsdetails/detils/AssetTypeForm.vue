@@ -101,6 +101,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { isAxiosError } from 'axios'
 import { useAssetTypeStore } from '@/stores/assetTypeStore'
 import type { AssetTypeCreateForm, AssetTypeUpdateForm } from '@/types/assettype'
+import { logError } from '@/utils/logger'
 
 const route = useRoute()
 const router = useRouter()
@@ -157,7 +158,7 @@ onMounted(async () => {
       router.replace('/main/assettypedetails')
     }
   } catch (error) {
-    console.error('获取资产分类详情失败:', error)
+    logError('components/componentsdetails/detils/AssetTypeForm', '获取资产分类详情失败:', error)
     ElMessage.error('加载数据失败，请稍后重试')
   }
 })
@@ -194,7 +195,7 @@ const submitForm = () => {
       } else {
         ElMessage.error('操作失败，发生未知错误')
       }
-      console.error('资产分类操作失败：', error)
+      logError('components/componentsdetails/detils/AssetTypeForm', '资产分类操作失败：', error)
     }
   })
 }
