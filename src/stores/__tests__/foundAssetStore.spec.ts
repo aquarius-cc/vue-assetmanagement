@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useFoundAssetStore } from '../foundAssetStore'
+import { ElMessage } from 'element-plus'
 
 vi.mock('@/api/foundAsset', () => ({
   foundAssetAPI: {
@@ -59,6 +60,7 @@ describe('FoundAssetStore', () => {
 
       await store.getList()
 
+      expect(foundAssetAPI.getFoundAssets).toHaveBeenCalledWith({ page: 1, page_size: 20 })
       expect(store.list).toHaveLength(1)
       expect(store.list[0].recordcode).toBe('FA-001')
       expect(store.list[0].asset_name).toBe('笔记本电脑')
@@ -75,8 +77,10 @@ describe('FoundAssetStore', () => {
 
       await store.getList({ page: 2, page_size: 10 })
 
+      expect(foundAssetAPI.getFoundAssets).toHaveBeenCalledWith({ page: 2, page_size: 10 })
       expect(store.pagination.total).toBe(30)
       expect(store.pagination.page).toBe(2)
+      expect(store.getTotalPages).toBe(3)
     })
 
     it('应该处理API错误', async () => {
@@ -100,6 +104,7 @@ describe('FoundAssetStore', () => {
 
       await store.create({ asset_name: '笔记本电脑', found_date: '2026-07-09' })
 
+      expect(ElMessage.success).toHaveBeenCalledWith('Found Asset创建成功')
       expect(store.list).toHaveLength(1)
       expect(store.list[0].recordcode).toBe('FA-001')
     })
@@ -135,6 +140,31 @@ describe('FoundAssetStore', () => {
       const result = await store.getById('FA-001')
 
       expect(result).toBeDefined()
+    })
+
+    it('缓存关闭时重复获取详情应每次调用API', async () => {
+      const { foundAssetAPI } = await import('@/api/foundAsset')
+      vi.mocked(foundAssetAPI.getFoundAssetByCode).mockResolvedValue({
+        recordcode: 'FA-001',
+      } as never)
+
+      await store.getById('FA-001')
+      await store.getById('FA-001')
+
+      expect(foundAssetAPI.getFoundAssetByCode).toHaveBeenCalledTimes(2)
+    })
+
+    it('应该通过编码获取资产名称', async () => {
+      const { foundAssetAPI } = await import('@/api/foundAsset')
+      vi.mocked(foundAssetAPI.getFoundAssetByCode).mockResolvedValue({
+        recordcode: 'FA-001',
+        asset_name: '笔记本电脑',
+      } as never)
+
+      await store.getById('FA-001')
+      const name = await store.getNameByCode('FA-001')
+
+      expect(name).toBe('笔记本电脑')
     })
 
     it('应该调用API更新记录', async () => {

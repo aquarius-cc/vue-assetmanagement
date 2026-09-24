@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useWasteAssetStore } from '../wasteAssetStore'
+import { ElMessage } from 'element-plus'
 
 vi.mock('@/api/wasteAsset', () => ({
   wasteAssetAPI: {
@@ -59,6 +60,7 @@ describe('WasteAssetStore', () => {
 
       await store.getList()
 
+      expect(wasteAssetAPI.getWasteAssets).toHaveBeenCalledWith({ page: 1, page_size: 20 })
       expect(store.list).toHaveLength(1)
       expect(store.list[0].asset_code).toBe('WA-001')
       expect(store.list[0].asset_name).toBe('报废电脑')
@@ -75,8 +77,10 @@ describe('WasteAssetStore', () => {
 
       await store.getList({ page: 4, page_size: 20 })
 
+      expect(wasteAssetAPI.getWasteAssets).toHaveBeenCalledWith({ page: 4, page_size: 20 })
       expect(store.pagination.total).toBe(80)
       expect(store.pagination.page).toBe(4)
+      expect(store.getTotalPages).toBe(4)
     })
 
     it('应该处理API错误', async () => {
@@ -103,6 +107,7 @@ describe('WasteAssetStore', () => {
         waste_date: '2026-07-09',
       })
 
+      expect(ElMessage.success).toHaveBeenCalledWith('已报废资产创建成功')
       expect(store.list).toHaveLength(1)
       expect(store.list[0].asset_code).toBe('WA-001')
     })
@@ -138,6 +143,31 @@ describe('WasteAssetStore', () => {
       const result = await store.getById('WA-001')
 
       expect(result).toBeDefined()
+    })
+
+    it('缓存关闭时重复获取详情应每次调用API', async () => {
+      const { wasteAssetAPI } = await import('@/api/wasteAsset')
+      vi.mocked(wasteAssetAPI.getWasteAsset).mockResolvedValue({
+        asset_code: 'WA-001',
+      } as never)
+
+      await store.getById('WA-001')
+      await store.getById('WA-001')
+
+      expect(wasteAssetAPI.getWasteAsset).toHaveBeenCalledTimes(2)
+    })
+
+    it('应该通过编码获取资产名称', async () => {
+      const { wasteAssetAPI } = await import('@/api/wasteAsset')
+      vi.mocked(wasteAssetAPI.getWasteAsset).mockResolvedValue({
+        asset_code: 'WA-001',
+        asset_name: '报废电脑',
+      } as never)
+
+      await store.getById('WA-001')
+      const name = await store.getNameByCode('WA-001')
+
+      expect(name).toBe('报废电脑')
     })
 
     it('应该调用API更新记录', async () => {

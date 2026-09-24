@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useRecycleAssetStore } from '../recycleAssetStore'
+import { ElMessage } from 'element-plus'
 
 vi.mock('@/api/recycleAsset', () => ({
   recycleAssetAPI: {
@@ -59,6 +60,7 @@ describe('RecycleAssetStore', () => {
 
       await store.getList()
 
+      expect(recycleAssetAPI.getRecycleAssets).toHaveBeenCalledWith({ page: 1, page_size: 20 })
       expect(store.list).toHaveLength(1)
       expect(store.list[0].recordcode).toBe('RC-001')
       expect(store.list[0].recycle_asset_name).toBe('回收笔记本')
@@ -75,8 +77,10 @@ describe('RecycleAssetStore', () => {
 
       await store.getList({ page: 2, page_size: 20 })
 
+      expect(recycleAssetAPI.getRecycleAssets).toHaveBeenCalledWith({ page: 2, page_size: 20 })
       expect(store.pagination.total).toBe(35)
       expect(store.pagination.page).toBe(2)
+      expect(store.getTotalPages).toBe(2)
     })
 
     it('应该处理API错误', async () => {
@@ -140,6 +144,31 @@ describe('RecycleAssetStore', () => {
       expect(result).toBeDefined()
     })
 
+    it('缓存关闭时重复获取详情应每次调用API', async () => {
+      const { recycleAssetAPI } = await import('@/api/recycleAsset')
+      vi.mocked(recycleAssetAPI.getRecycleAssetByCode).mockResolvedValue({
+        recordcode: 'RC-001',
+      } as never)
+
+      await store.getById('RC-001')
+      await store.getById('RC-001')
+
+      expect(recycleAssetAPI.getRecycleAssetByCode).toHaveBeenCalledTimes(2)
+    })
+
+    it('应该通过编码获取资产名称', async () => {
+      const { recycleAssetAPI } = await import('@/api/recycleAsset')
+      vi.mocked(recycleAssetAPI.getRecycleAssetByCode).mockResolvedValue({
+        recordcode: 'RC-001',
+        recycle_asset_name: '回收笔记本',
+      } as never)
+
+      await store.getById('RC-001')
+      const name = await store.getNameByCode('RC-001')
+
+      expect(name).toBe('回收笔记本')
+    })
+
     it('应该调用API更新记录', async () => {
       const { recycleAssetAPI } = await import('@/api/recycleAsset')
       vi.mocked(recycleAssetAPI.updateRecycleAsset).mockResolvedValue({
@@ -148,6 +177,7 @@ describe('RecycleAssetStore', () => {
 
       await store.update({ recordcode: 'RC-001' } as never)
 
+      expect(ElMessage.success).toHaveBeenCalledWith('回收资产更新成功')
       expect(recycleAssetAPI.updateRecycleAsset).toHaveBeenCalled()
     })
 

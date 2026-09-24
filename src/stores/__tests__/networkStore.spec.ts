@@ -19,6 +19,10 @@ describe('NetworkStore', () => {
     vi.clearAllMocks()
   })
 
+  it('store 的唯一标识应为 network', () => {
+    expect(networkStore.$id).toBe('network')
+  })
+
   describe('连通性测试', () => {
     it('testConnection应代理API并返回结果', async () => {
       const { networkAPI } = await import('@/api/network')
