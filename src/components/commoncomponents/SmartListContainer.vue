@@ -43,8 +43,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, onMounted, ref, type PropType } from 'vue'
+<script setup lang="ts" generic="T extends object">
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { usePaginationSearch, type PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import { logError, logWarn } from '@/utils/logger'
@@ -68,7 +68,7 @@ import { logError, logWarn } from '@/utils/logger'
 //       │   ├─ handleSizeChange(newSize)             ← 每页条数变更
 //       │   │   ├─ performSearch() 或 loadList()     ← 根据是否有搜索词决定
 //       │   ├─ handleCurrentChange(newPage)          ← 页码变更
-//       │   │   ├─ performSearch() 或 loadList()
+//       │   │   └─ performSearch() 或 loadList()
 //       │   └─ refreshCurrentPage()                  ← 刷新当前页
 //       │       └─ performSearch() 或 loadList()
 //       │
@@ -94,129 +94,96 @@ import { logError, logWarn } from '@/utils/logger'
 //   → performSearch() 或 loadList() → 列表自动刷新
 // ======================================================================
 
-export default defineComponent({
-  name: 'SmartListContainer',
-  props: {
-    storeConfig: {
-      type: Object as PropType<PaginationSearchConfig<object>>,
-      required: true,
-    },
-    autoLoad: {
-      type: Boolean,
-      default: true,
-    },
-    initialPage: {
-      type: Number,
-      default: 1,
-    },
-    initialPageSize: {
-      type: Number,
-      default: undefined,
-    },
-  },
-  setup(props, { slots, expose }) {
-    const {
-      currentPage,
-      pageSize,
-      search,
-      searchParams,
-      total,
-      isSearching,
-      tableData,
-      storeLoading,
-      handleSizeChange,
-      handleCurrentChange,
-      performSearch,
-      performSearchWithParams,
-      refreshCurrentPage,
-      resetToFirstPage,
-      pageSizeOptions,
-    } = usePaginationSearch<object>(props.storeConfig as PaginationSearchConfig<object>)
+interface Props {
+  storeConfig: PaginationSearchConfig<T>
+  autoLoad?: boolean
+  initialPage?: number
+  initialPageSize?: number
+}
 
-    // ===== 选中行状态 =====
-    const selectedRows = ref<object[]>([])
+const props = withDefaults(defineProps<Props>(), {
+  autoLoad: true,
+  initialPage: 1,
+})
 
-    const handleSelectionChange = (rows: object[]) => {
-      selectedRows.value = rows
-    }
+const {
+  currentPage,
+  pageSize,
+  search,
+  searchParams,
+  total,
+  isSearching,
+  tableData,
+  storeLoading,
+  handleSizeChange,
+  handleCurrentChange,
+  performSearch,
+  performSearchWithParams,
+  refreshCurrentPage,
+  resetToFirstPage,
+  pageSizeOptions,
+} = usePaginationSearch<T>(props.storeConfig)
 
-    const clearSelection = () => {
-      selectedRows.value = []
-    }
+// ===== 选中行状态 =====
+const selectedRows = ref<T[]>([])
 
-    // ===== 计算属性 =====
-    const isLoading = computed(() => {
-      return storeLoading.value || isSearching.value
+const handleSelectionChange = (rows: T[]) => {
+  selectedRows.value = rows
+}
+
+const clearSelection = () => {
+  selectedRows.value = []
+}
+
+// ===== 计算属性 =====
+const isLoading = computed(() => {
+  return storeLoading.value || isSearching.value
+})
+
+// ===== 生命周期：自动加载数据 =====
+const hasLoaded = ref(false)
+
+onMounted(async () => {
+  if (!props.autoLoad) {
+    return
+  }
+
+  if (hasLoaded.value) {
+    logWarn(
+      'components/commoncomponents/SmartListContainer',
+      '[SmartListContainer] 数据已加载，跳过重复请求',
+    )
+    return
+  }
+  hasLoaded.value = true
+
+  try {
+    const pageSizeValue = props.initialPageSize ?? props.storeConfig.defaultPageSize ?? 20
+    await props.storeConfig.store.getList({
+      page: props.initialPage,
+      page_size: pageSizeValue,
     })
+  } catch (error) {
+    logError(
+      'components/commoncomponents/SmartListContainer',
+      '[SmartListContainer] 初始加载失败:',
+      error,
+    )
+    ElMessage.error(props.storeConfig.messages?.loadFailed ?? '加载数据失败')
+    hasLoaded.value = false
+  }
+})
 
-    // ===== 生命周期：自动加载数据 =====
-    const hasLoaded = ref(false)
-
-    onMounted(async () => {
-      if (!props.autoLoad) {
-        return
-      }
-
-      if (hasLoaded.value) {
-        logWarn(
-          'components/commoncomponents/SmartListContainer',
-          '[SmartListContainer] 数据已加载，跳过重复请求',
-        )
-        return
-      }
-      hasLoaded.value = true
-
-      try {
-        const pageSizeValue = props.initialPageSize ?? props.storeConfig.defaultPageSize ?? 20
-        await props.storeConfig.store.getList({
-          page: props.initialPage,
-          page_size: pageSizeValue,
-        })
-      } catch (error) {
-        logError(
-          'components/commoncomponents/SmartListContainer',
-          '[SmartListContainer] 初始加载失败:',
-          error,
-        )
-        ElMessage.error(props.storeConfig.messages?.loadFailed ?? '加载数据失败')
-        hasLoaded.value = false
-      }
-    })
-
-    // ===== 暴露方法给父组件 =====
-    expose({
-      refresh: refreshCurrentPage,
-      reset: resetToFirstPage,
-      search: performSearch,
-      searchWithParams: performSearchWithParams,
-      currentPage,
-      pageSize,
-      data: tableData,
-      clearSelection,
-    })
-
-    return {
-      currentPage,
-      pageSize,
-      search,
-      searchParams,
-      total,
-      isSearching,
-      tableData,
-      isLoading,
-      selectedRows,
-      pageSizeOptions,
-      handleSizeChange,
-      handleCurrentChange,
-      performSearch,
-      performSearchWithParams,
-      refreshCurrentPage,
-      resetToFirstPage,
-      handleSelectionChange,
-      clearSelection,
-      slots,
-    }
-  },
+// ===== 暴露方法给父组件 =====
+defineExpose({
+  refresh: refreshCurrentPage,
+  reset: resetToFirstPage,
+  search: performSearch,
+  searchWithParams: performSearchWithParams,
+  currentPage,
+  pageSize,
+  data: tableData,
+  clearSelection,
 })
 </script>
 

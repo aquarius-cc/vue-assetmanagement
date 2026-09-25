@@ -128,7 +128,7 @@ import type { Ref } from 'vue'
  * SmartListContainer 组件暴露的方法接口
  * 用于在父组件中通过 ref 获取组件实例并调用其方法
  */
-export interface SmartListContainerExpose {
+export interface SmartListContainerExpose<T = unknown> {
   /**
    * 刷新当前页数据
    * 根据当前是否有搜索词，决定是重新搜索还是重新加载列表
@@ -166,7 +166,7 @@ export interface SmartListContainerExpose {
   /**
    * 表格数据（响应式）
    */
-  data: Ref<unknown[]>
+  data: Ref<T[]>
 
   /**
    * 清空表格多选状态

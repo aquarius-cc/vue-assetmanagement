@@ -51,8 +51,8 @@
           :detail-query-key="detailQueryKey"
           :detail-query-param-name="detailQueryParamName"
           :edit-route-name="editRouteName"
-          @update:search="$emit('update:search', $event)"
-          @search="$emit('search', $event)"
+          @update:search="emit('update:search', $event)"
+          @search="emit('search', $event)"
           @edit="handleRowEdit"
           @delete="handleRowDelete"
           @detail="handleRowDetail"
@@ -80,225 +80,156 @@
   </div>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, ref, type PropType } from 'vue'
+<script setup lang="ts" generic="T extends object">
+import { computed, ref } from 'vue'
 import type { ElTable } from 'element-plus'
 import CommonListColumn from './CommonListColumn.vue'
 import CommonListActions from './CommonListActions.vue'
 import type { TableColumn } from '@/types/list'
 
-export default defineComponent({
-  name: 'CommonList',
-  props: {
-    data: {
-      type: Array as PropType<object[]>,
-      required: true,
-    },
-    columns: {
-      type: Array as PropType<TableColumn[]>,
-      required: true,
-    },
-    currentPage: {
-      type: Number,
-      default: 1,
-    },
-    pageSize: {
-      type: Number,
-      default: 20,
-    },
-    total: {
-      type: Number,
-      default: 0,
-    },
-    pageSizeOptions: {
-      type: Array as PropType<number[]>,
-      default: () => [20, 50, 100, 200, 500],
-    },
-    loading: {
-      type: Boolean,
-      default: false,
-    },
-    search: {
-      type: String,
-      default: '',
-    },
-    enableSearch: {
-      type: Boolean,
-      default: true,
-    },
-    enableEdit: {
-      type: Boolean,
-      default: true,
-    },
-    enableDelete: {
-      type: Boolean,
-      default: true,
-    },
-    showPagination: {
-      type: Boolean,
-      default: true,
-    },
-    showActions: {
-      type: Boolean,
-      default: true,
-    },
-    showDetailButton: {
-      type: Boolean,
-      default: false,
-    },
-    detailRouteName: {
-      type: String,
-      default: null,
-    },
-    detailQueryKey: {
-      type: String,
-      default: undefined,
-    },
-    detailQueryParamName: {
-      type: String,
-      default: undefined,
-    },
-    editRouteName: {
-      type: String,
-      default: null,
-    },
-    searchPlaceholder: {
-      type: String,
-      default: '搜索',
-    },
-    actionColumnWidth: {
-      type: [Number, String],
-      default: 'auto',
-    },
-    enableSelection: {
-      type: Boolean,
-      default: false,
-    },
-    rowKey: {
-      type: String,
-      default: 'id',
-    },
+interface Props {
+  data: T[]
+  columns: TableColumn[]
+  currentPage?: number
+  pageSize?: number
+  total?: number
+  pageSizeOptions?: number[]
+  loading?: boolean
+  search?: string
+  enableSearch?: boolean
+  enableEdit?: boolean
+  enableDelete?: boolean
+  showPagination?: boolean
+  showActions?: boolean
+  showDetailButton?: boolean
+  detailRouteName?: string
+  detailQueryKey?: string
+  detailQueryParamName?: string
+  editRouteName?: string
+  searchPlaceholder?: string
+  actionColumnWidth?: number | string
+  enableSelection?: boolean
+  rowKey?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  currentPage: 1,
+  pageSize: 20,
+  total: 0,
+  pageSizeOptions: () => [20, 50, 100, 200, 500],
+  loading: false,
+  search: '',
+  enableSearch: true,
+  enableEdit: true,
+  enableDelete: true,
+  showPagination: true,
+  showActions: true,
+  showDetailButton: false,
+  searchPlaceholder: '搜索',
+  actionColumnWidth: 'auto',
+  enableSelection: false,
+  rowKey: 'id',
+})
+
+const emit = defineEmits<{
+  (e: 'update:currentPage', page: number): void
+  (e: 'update:pageSize', size: number): void
+  (e: 'update:search', keyword: string): void
+  (e: 'sizeChange', size: number): void
+  (e: 'currentChange', page: number): void
+  (e: 'search', keyword: string): void
+  (e: 'edit', row: T, index: number): void
+  (e: 'delete', row: T, index: number): void
+  (e: 'detail', row: T, index: number): void
+  (e: 'selectionChange', rows: T[]): void
+}>()
+
+// ===== 表格实例引用 =====
+const tableRef = ref<InstanceType<typeof ElTable> | null>(null)
+const actionsRef = ref<InstanceType<typeof CommonListActions> | null>(null)
+
+// ===== 本地状态（用于 v-model） =====
+const localCurrentPage = computed({
+  get: () => props.currentPage,
+  set: (val: number) => emit('update:currentPage', val),
+})
+
+const localPageSize = computed({
+  get: () => props.pageSize,
+  set: (val: number) => emit('update:pageSize', val),
+})
+
+// ===== 方法 =====
+const ROW_KEY_FALLBACK_FIELDS = [
+  'id',
+  'code',
+  'asset_code',
+  'asset_type_code',
+  'contract_code',
+  'damaged_asset_code',
+  'department_code',
+  'employee_jobcode',
+  'harddisk_sn_code',
+  'logging_id',
+  'outasset_recordcode',
+  'storage_code',
+  'user_jobcode',
+  'waste_asset_code',
+] as const
+
+const asRowKey = (value: unknown): string | number | undefined => {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return value
+  }
+  return undefined
+}
+
+const getRowKey = (row: object): string | number | undefined => {
+  const obj = row as Record<string, unknown>
+  for (const field of [props.rowKey, ...ROW_KEY_FALLBACK_FIELDS]) {
+    if (!field) {
+      continue
+    }
+    const key = asRowKey(obj[field])
+    if (key !== undefined) {
+      return key
+    }
+  }
+  return undefined
+}
+
+const handleSizeChange = (size: number) => {
+  emit('sizeChange', size)
+}
+
+const handleCurrentChange = (page: number) => {
+  emit('currentChange', page)
+}
+
+const handleSelectionChange = (rows: T[]) => {
+  emit('selectionChange', rows)
+}
+
+const handleRowEdit = (row: Record<string, unknown>, index: number) => {
+  emit('edit', row as T, index)
+}
+const handleRowDelete = (row: Record<string, unknown>, index: number) => {
+  emit('delete', row as T, index)
+}
+const handleRowDetail = (row: Record<string, unknown>, index: number) => {
+  emit('detail', row as T, index)
+}
+
+// ===== 暴露方法 =====
+defineExpose({
+  search: () => {
+    actionsRef.value?.search()
   },
-  emits: {
-    'update:currentPage': (_page: number) => true,
-    'update:pageSize': (_size: number) => true,
-    'update:search': (_keyword: string) => true,
-    sizeChange: (_size: number) => true,
-    currentChange: (_page: number) => true,
-    search: (_keyword: string) => true,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    edit: (_row: any, _index: number) => true,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete: (_row: any, _index: number) => true,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    detail: (_row: any, _index: number) => true,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    selectionChange: (_rows: any[]) => true,
+  clearSearch: () => {
+    actionsRef.value?.clearSearch()
   },
-  setup(props, { emit, expose }) {
-    // ===== 表格实例引用 =====
-    const tableRef = ref<InstanceType<typeof ElTable> | null>(null)
-    const actionsRef = ref<InstanceType<typeof CommonListActions> | null>(null)
-
-    // ===== 本地状态（用于 v-model） =====
-    const localCurrentPage = computed({
-      get: () => props.currentPage,
-      set: (val: number) => emit('update:currentPage', val),
-    })
-
-    const localPageSize = computed({
-      get: () => props.pageSize,
-      set: (val: number) => emit('update:pageSize', val),
-    })
-
-    // ===== 方法 =====
-    const getRowKey = (row: object): string | number | undefined => {
-      const obj = row as Record<string, unknown>
-      if (props.rowKey) {
-        const val = obj[props.rowKey]
-        if (val !== undefined && val !== null) {
-          if (typeof val === 'string' || typeof val === 'number') {
-            return val
-          }
-        }
-      }
-      const fields = [
-        'id',
-        'code',
-        'asset_code',
-        'asset_type_code',
-        'contract_code',
-        'damaged_asset_code',
-        'department_code',
-        'employee_jobcode',
-        'harddisk_sn_code',
-        'logging_id',
-        'outasset_recordcode',
-        'storage_code',
-        'user_jobcode',
-        'waste_asset_code',
-      ]
-      for (const field of fields) {
-        const val = obj[field]
-        if (val !== undefined && val !== null) {
-          if (typeof val === 'string' || typeof val === 'number') {
-            return val
-          }
-        }
-      }
-      return undefined
-    }
-
-    const handleSizeChange = (size: number) => {
-      emit('sizeChange', size)
-    }
-
-    const handleCurrentChange = (page: number) => {
-      emit('currentChange', page)
-    }
-
-    const handleSelectionChange = (rows: object[]) => {
-      emit('selectionChange', rows)
-    }
-
-    const handleRowEdit = (row: object, index: number) => {
-      emit('edit', row, index)
-    }
-    const handleRowDelete = (row: object, index: number) => {
-      emit('delete', row, index)
-    }
-    const handleRowDetail = (row: object, index: number) => {
-      emit('detail', row, index)
-    }
-
-    // ===== 暴露方法 =====
-    expose({
-      search: () => {
-        actionsRef.value?.search()
-      },
-      clearSearch: () => {
-        actionsRef.value?.clearSearch()
-      },
-      clearSelection: () => {
-        tableRef.value?.clearSelection()
-      },
-    })
-
-    return {
-      CommonListColumn,
-      CommonListActions,
-      tableRef,
-      actionsRef,
-      localCurrentPage,
-      localPageSize,
-      getRowKey,
-      handleSizeChange,
-      handleCurrentChange,
-      handleSelectionChange,
-      handleRowEdit,
-      handleRowDelete,
-      handleRowDetail,
-    }
+  clearSelection: () => {
+    tableRef.value?.clearSelection()
   },
 })
 </script>
