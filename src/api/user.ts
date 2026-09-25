@@ -88,17 +88,13 @@ export const userAPI = {
   },
 
   /**
-   * [LR-03] 按姓名搜索员工（补充末尾斜杠，使用 params 对象传参）
+   * [LR-03] 按姓名搜索员工（复用 getFuzzySearch 唯一实现，DR-1）
    * @param employee_name 员工姓名
    * @returns 员工列表响应
    */
   getUserByName: async (employee_name: string): Promise<EmployeeListResponse> => {
     try {
-      return unwrapResponse(
-        request.get<EmployeeListResponse>(`/users/employees/search/`, {
-          keyword: employee_name,
-        } as Record<string, string>),
-      )
+      return await userAPI.getFuzzySearch({ keyword: employee_name })
     } catch (error) {
       logError('api/user', '根据姓名搜索员工失败', error)
       throw error

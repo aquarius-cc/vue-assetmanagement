@@ -9,12 +9,14 @@
  *   - components/system/UserRoleAssignDialog.vue
  * @dependsOn
  *   - api/authusers: AuthUser 管理 API 接口
- *   - types/authuser: AuthUser 相关类型定义（含 EmployeeBrief/UserRole）
+ *   - types/authuser: AuthUser 相关类型定义（含 BoundEmployee/UserRole）
+ *   - types/user: 员工类型定义（searchEmployees 结果元素）
  *   - stores/createEntityStore: 实体 Store 工厂
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { authUserAPI } from '@/api/authusers'
-import type { AuthUser, AuthUserCreateForm, EmployeeBrief, UserRole } from '@/types/authuser'
+import type { AuthUser, AuthUserCreateForm, BoundEmployee, UserRole } from '@/types/authuser'
+import type { Employee } from '@/types/user'
 import type { PaginationQuery, EntityStore } from '@/stores/createEntityStore'
 
 /**
@@ -25,16 +27,16 @@ interface AuthUserStore extends EntityStore<AuthUser, PaginationQuery> {
   /**
    * 模糊搜索员工（绑定弹窗用）
    * @param keyword 搜索关键词
-   * @returns 员工简要信息列表
+   * @returns 员工列表（search 端点返回的 Employee 列表）
    */
-  searchEmployees: (keyword: string) => Promise<EmployeeBrief[]>
+  searchEmployees: (keyword: string) => Promise<Employee[]>
 
   /**
    * 根据 AuthUser ID 查询绑定的 Employee
    * @param authId AuthUser ID
-   * @returns 绑定的员工简要信息
+   * @returns 已绑定员工信息（含 auth_user 外键）
    */
-  getBoundEmployee: (authId: number) => Promise<EmployeeBrief>
+  getBoundEmployee: (authId: number) => Promise<BoundEmployee>
 
   /**
    * 绑定 Employee 到 AuthUser

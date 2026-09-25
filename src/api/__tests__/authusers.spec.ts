@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockRequest, mockUnwrapResponse } = vi.hoisted(() => ({
+const { mockRequest, mockUnwrapResponse, mockUserAPI } = vi.hoisted(() => ({
   mockRequest: {
     get: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
     post: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
@@ -14,11 +14,18 @@ const { mockRequest, mockUnwrapResponse } = vi.hoisted(() => ({
       return res.data
     },
   ),
+  mockUserAPI: {
+    getFuzzySearch: vi.fn(),
+  },
 }))
 
 vi.mock('@/api/index', () => ({
   request: mockRequest,
   unwrapResponse: mockUnwrapResponse,
+}))
+
+vi.mock('@/api/user', () => ({
+  userAPI: mockUserAPI,
 }))
 
 import { authUserAPI } from '@/api/authusers'
@@ -92,12 +99,26 @@ describe('authUserAPI', () => {
     expect(mockRequest.delete).toHaveBeenCalledWith('/users/4/roles/9/')
   })
 
-  it('searchEmployees calls GET search endpoint with keyword and page_size', async () => {
-    await authUserAPI.searchEmployees('张')
-    expect(mockRequest.get).toHaveBeenCalledWith('/users/employees/search/', {
-      keyword: '张',
-      page_size: 20,
+  it('searchEmployees 复用 getFuzzySearch 端点并提取 results', async () => {
+    const { userAPI } = await import('@/api/user')
+    vi.mocked(userAPI.getFuzzySearch).mockResolvedValue({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          employee_jobcode: 'EMP001',
+          employee_name: '张',
+          employee_status: 'active',
+        } as never,
+      ],
     })
+
+    const result = await authUserAPI.searchEmployees('张')
+
+    expect(userAPI.getFuzzySearch).toHaveBeenCalledWith({ keyword: '张', page_size: 20 })
+    expect(result).toHaveLength(1)
+    expect(result[0]?.employee_jobcode).toBe('EMP001')
   })
 
   it('unwrapResponse 提取 data', async () => {

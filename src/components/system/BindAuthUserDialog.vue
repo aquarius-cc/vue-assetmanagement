@@ -31,7 +31,7 @@
             <StatusTag :status="boundEmployee.employee_status" map-type="employee" />
           </el-descriptions-item>
           <el-descriptions-item label="绑定用户">{{
-            boundEmployee.auth_user_username || '无'
+            props.authUser?.username || '无'
           }}</el-descriptions-item>
         </el-descriptions>
         <div class="action-row">
@@ -98,7 +98,8 @@ import { ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthUserStore } from '@/stores/authUserStore'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
-import type { EmployeeBrief } from '@/types/authuser'
+import type { BoundEmployee } from '@/types/authuser'
+import type { Employee } from '@/types/user'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 
 interface Props {
@@ -124,11 +125,11 @@ const authUserStore = useAuthUserStore()
 
 const loading = ref(false)
 const actionLoading = ref(false)
-const boundEmployee = ref<EmployeeBrief | null>(null)
+const boundEmployee = ref<BoundEmployee | null>(null)
 const searchKeyword = ref('')
-const searchResults = ref<EmployeeBrief[]>([])
+const searchResults = ref<Employee[]>([])
 const searching = ref(false)
-const selectedEmployee = ref<EmployeeBrief | null>(null)
+const selectedEmployee = ref<Employee | null>(null)
 const showSearch = ref(false)
 
 const dialogTitle = ref('绑定用户')
@@ -185,7 +186,7 @@ watch(
   },
 )
 
-const handleSelectEmployee = (emp: EmployeeBrief) => {
+const handleSelectEmployee = (emp: Employee) => {
   selectedEmployee.value = emp
   searchKeyword.value = `${emp.employee_name} (${emp.employee_jobcode})`
   searchResults.value = []

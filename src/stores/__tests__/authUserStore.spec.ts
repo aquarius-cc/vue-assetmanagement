@@ -191,8 +191,6 @@ describe('AuthUserStore', () => {
           employee_jobcode: 'EMP001',
           employee_name: '张三',
           employee_status: 'active',
-          auth_user: null,
-          auth_user_username: null,
         },
       ]
       const { authUserAPI } = await import('@/api/authusers')
@@ -210,7 +208,6 @@ describe('AuthUserStore', () => {
         employee_name: '张三',
         employee_status: 'active',
         auth_user: 1,
-        auth_user_username: 'admin',
       }
       const { authUserAPI } = await import('@/api/authusers')
       vi.mocked(authUserAPI.getBoundEmployee).mockResolvedValue(mockBound as never)

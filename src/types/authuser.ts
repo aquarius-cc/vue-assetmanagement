@@ -8,6 +8,7 @@
  *   - LogoutResponse: 认证响应接口
  *   - AuthUserQueryParams: 认证用户查询参数
  *   - AuthUserListResponse: 认证用户列表响应接口
+ *   - BoundEmployee: 已绑定员工信息（含 auth_user 外键）
  * @callers
  *   - stores/authuserStore（认证用户状态管理）
  *   - composables/*（组合式函数）
@@ -15,6 +16,7 @@
  */
 
 import type { PaginatedResponse } from '@/types/common'
+import type { Employee } from '@/types/user'
 
 /**
  * 认证用户数据模型
@@ -176,20 +178,17 @@ export interface LogoutResponse {
 // ======================== 关联类型接口 ========================
 
 /**
- * 员工简要信息（用于绑定查询）
- * 与后端 EmployeeBrief 结构对齐
+ * 已绑定员工的完整信息（/users/employees/by-auth-user/ 端点返回）
+ *
+ * 与后端 EmployeeDetailSerializer 对齐：其 Meta.fields = "__all__"，
+ * 故输出 Employee 全部字段 + auth_user 外键（序列化为 AuthUser 主键 auth_id）。
+ *
+ * 注意：后端不返回 auth_user_username（全仓无该字段），
+ * 用户名需由调用方从 AuthUser 侧获取，此处不声明。
  */
-export interface EmployeeBrief {
-  /** 员工工号 */
-  employee_jobcode: string
-  /** 员工姓名 */
-  employee_name: string
-  /** 员工状态 */
-  employee_status: string
-  /** 绑定的 AuthUser ID（未绑定时为 null） */
+export interface BoundEmployee extends Employee {
+  /** 绑定的 AuthUser ID（AuthUser.auth_id，未绑定时为 null） */
   auth_user: number | null
-  /** 绑定的 AuthUser 用户名（未绑定时为 null） */
-  auth_user_username: string | null
 }
 
 /**

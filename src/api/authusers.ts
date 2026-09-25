@@ -3,25 +3,29 @@
  * @module api/authusers
  * @exports
  *   - authUserAPI: AuthUser 管理 API 对象（包含所有认证用户相关方法）
- *   - EmployeeBrief: 员工简要信息接口（类型 re-export，定义于 types/authuser）
+ *   - BoundEmployee: 已绑定员工信息接口（类型 re-export，定义于 types/authuser）
  *   - UserRole: 用户角色关联接口（类型 re-export，定义于 types/authuser）
  * @callers
  *   - views/system/AuthUserManage: 认证用户管理视图
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
- *   - types/authuser: 认证用户相关类型定义（含 EmployeeBrief/UserRole）
+ *   - api/user.ts: searchEmployees 复用 getFuzzySearch 端点实现（DR-1）
+ *   - types/authuser: 认证用户相关类型定义（含 BoundEmployee/UserRole）
+ *   - types/user: 员工类型定义（search 结果元素 Employee）
  */
 import { request, unwrapResponse } from '@/api/index'
+import { userAPI } from '@/api/user'
 import type {
   AuthUser,
   AuthUserCreateForm,
   AuthUserListResponse,
-  EmployeeBrief,
+  BoundEmployee,
   UserRole,
 } from '@/types/authuser'
+import type { Employee } from '@/types/user'
 
 // 类型 re-export：保持 B 契约下组件可统一从 types/ 导入关联类型
-export type { EmployeeBrief, UserRole }
+export type { BoundEmployee, UserRole }
 
 export const authUserAPI = {
   // ==================== AuthUser CRUD ====================
@@ -55,7 +59,7 @@ export const authUserAPI = {
 
   /** 根据 AuthUser ID 查询绑定的 Employee */
   getBoundEmployee: (authId: number) => {
-    return unwrapResponse(request.get<EmployeeBrief>(`/users/employees/by-auth-user/${authId}/`))
+    return unwrapResponse(request.get<BoundEmployee>(`/users/employees/by-auth-user/${authId}/`))
   },
 
   /** 绑定 Employee 到 AuthUser */
@@ -105,10 +109,14 @@ export const authUserAPI = {
 
   // ==================== 搜索员工（绑定弹窗用） ====================
 
-  /** 模糊搜索员工 */
-  searchEmployees: (keyword: string) => {
-    return unwrapResponse(
-      request.get<EmployeeBrief[]>('/users/employees/search/', { keyword, page_size: 20 }),
-    )
+  /**
+   * 模糊搜索员工（绑定弹窗用）
+   * DR-1：复用 userAPI.getFuzzySearch 唯一端点实现，此处仅做结果集提取
+   * @param keyword 搜索关键词
+   * @returns 员工列表（search 端点 results 元素为 EmployeeSerializer 输出）
+   */
+  searchEmployees: async (keyword: string): Promise<Employee[]> => {
+    const response = await userAPI.getFuzzySearch({ keyword, page_size: 20 })
+    return response.results
   },
 }
