@@ -11,6 +11,7 @@
  *   - stores/assetStore: 资产数据与搜索 API
  *   - utils/excelExporter: 列配置类型
  *   - utils/Format: 状态/类型映射
+ *   - utils/logger: 资产类型截断告警日志
  *   - types/common: 搜索字段配置类型
  */
 import { computed, onMounted, ref } from 'vue'
@@ -20,6 +21,7 @@ import type { SearchFieldConfig } from '@/types/common'
 import { useAssetStore } from '@/stores/assetStore'
 import type { AssetDetail } from '@/types/asset'
 import { assetCurrentStatusMapping } from '@/utils/Format'
+import { logError } from '@/utils/logger'
 import { assetTypeAPI } from '@/api/assetType'
 
 export function useAssetListConfig() {
@@ -33,7 +35,13 @@ export function useAssetListConfig() {
 
   const loadAssetTypeOptions = async () => {
     try {
-      const res = await assetTypeAPI.getAssetTypes({ page: 1, page_size: 1000 })
+      const res = await assetTypeAPI.getAssetTypes({ page: 1, page_size: 100 }) // 与后端 MAX_PAGE_SIZE 对齐，超限会被静默钳位
+      if (res.count > res.results.length) {
+        logError(
+          'composables/useAssetListConfig',
+          `资产类型共 ${res.count} 条，超过单页返回上限，分类下拉仅展示前 ${res.results.length} 条`,
+        )
+      }
       assetTypeOptions.value = res.results.map((t) => ({ label: t.type_name, value: t.type_code }))
     } catch {
       // 拉取失败时保持空选项，不影响列表主流程

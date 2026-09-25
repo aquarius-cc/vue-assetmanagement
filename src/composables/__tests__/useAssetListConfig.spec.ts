@@ -1,13 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockGetList, mockSearchAssets, mockCombineSearch, mockSetRefreshFlag, mockGetAssetTypes } =
-  vi.hoisted(() => ({
-    mockGetList: vi.fn(),
-    mockSearchAssets: vi.fn(),
-    mockCombineSearch: vi.fn(),
-    mockSetRefreshFlag: vi.fn(),
-    mockGetAssetTypes: vi.fn(),
-  }))
+const {
+  mockGetList,
+  mockSearchAssets,
+  mockCombineSearch,
+  mockSetRefreshFlag,
+  mockGetAssetTypes,
+  mockLogError,
+} = vi.hoisted(() => ({
+  mockGetList: vi.fn(),
+  mockSearchAssets: vi.fn(),
+  mockCombineSearch: vi.fn(),
+  mockSetRefreshFlag: vi.fn(),
+  mockGetAssetTypes: vi.fn(),
+  mockLogError: vi.fn(),
+}))
 
 const mockStore = {
   getList: mockGetList,
@@ -32,6 +39,10 @@ vi.mock('@/api/assetType', () => ({
   assetTypeAPI: {
     getAssetTypes: mockGetAssetTypes,
   },
+}))
+
+vi.mock('@/utils/logger', () => ({
+  logError: mockLogError,
 }))
 
 import { useAssetListConfig } from '../useAssetListConfig'
@@ -61,7 +72,7 @@ describe('useAssetListConfig', () => {
     // 【A-9】初始为空，动态拉取 AssetType 后填充（type_name → label，type_code → value）
     expect(typeSelect?.options).toEqual([])
     await config.loadAssetTypeOptions()
-    expect(mockGetAssetTypes).toHaveBeenCalledWith({ page: 1, page_size: 1000 })
+    expect(mockGetAssetTypes).toHaveBeenCalledWith({ page: 1, page_size: 100 })
     // computed 在选项更新后重建数组，需重新取值断言
     const typeSelectAfterLoad = config.searchFields.value.find(
       (f) => f.key === 'asset_type_category',
@@ -86,6 +97,48 @@ describe('useAssetListConfig', () => {
 
     const typeSelect = config.searchFields.value.find((f) => f.key === 'asset_type_category')
     expect(typeSelect?.options).toEqual([])
+  })
+
+  it('loadAssetTypeOptions 在 count 超过单页返回条数时告警截断', async () => {
+    mockGetAssetTypes.mockResolvedValue({
+      count: 150,
+      next: 'next-page-url',
+      previous: null,
+      results: [
+        { type_code: 'AT_W2', type_name: '笔记本' },
+        { type_code: 'AT_W3', type_name: '台式机' },
+      ],
+    })
+    const config = useAssetListConfig()
+
+    await config.loadAssetTypeOptions()
+
+    expect(mockLogError).toHaveBeenCalledWith(
+      'composables/useAssetListConfig',
+      '资产类型共 150 条，超过单页返回上限，分类下拉仅展示前 2 条',
+    )
+    const typeSelect = config.searchFields.value.find((f) => f.key === 'asset_type_category')
+    expect(typeSelect?.options).toEqual([
+      { label: '笔记本', value: 'AT_W2' },
+      { label: '台式机', value: 'AT_W3' },
+    ])
+  })
+
+  it('loadAssetTypeOptions 在未发生截断时不告警', async () => {
+    mockGetAssetTypes.mockResolvedValue({
+      count: 2,
+      next: null,
+      previous: null,
+      results: [
+        { type_code: 'AT_W2', type_name: '笔记本' },
+        { type_code: 'AT_W3', type_name: '台式机' },
+      ],
+    })
+    const config = useAssetListConfig()
+
+    await config.loadAssetTypeOptions()
+
+    expect(mockLogError).not.toHaveBeenCalled()
   })
 
   it('storeConfig.store.getList 委托 assetStore 并返回分页结构', async () => {

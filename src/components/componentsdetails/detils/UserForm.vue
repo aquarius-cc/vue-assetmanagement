@@ -281,14 +281,21 @@ const loadUserData = async () => {
  */
 onMounted(async () => {
   if (!departmentStore.list || departmentStore.list.length === 0) {
-    await departmentStore.getList({ page: 1, page_size: 9999 })
+    await departmentStore.getList({ page: 1, page_size: 100 }) // 与后端 MAX_PAGE_SIZE 对齐，超限会被静默钳位
     /**
-     * - departmentStore 配置了 enablePagination: true, defaultPageSize: 10
-     * - 调用 departmentStore.getList() 不传参数 → 默认只加载 10 条
-     * - 访问过部门管理页面后，store 里可能有更多数据，所以再次进入时下拉框数据齐全
-     * 本质原因： 下拉框需要全量部门数据，但 getList() 带分页只返回 10 条。
-     * 所以直接传入 page: 1, page_size: 9999 来获取所有部门数据。
+     * - departmentStore 配置了 enablePagination: true, defaultPageSize: 20
+     * - 调用 departmentStore.getList() 不传参数 → 默认只加载 20 条
+     * 本质原因： 下拉框需要全量部门数据，但 getList() 带分页只返回单页。
+     * 后端 MAX_PAGE_SIZE 硬上限为 100，原传 9999 会被静默钳位为 100，故直接取上限 100；
+     * 部门总数超过 100 时下拉仍会缺项，由下方 pagination.total 检测并告警。
      */
+    const totalDepartments = departmentStore.pagination.total
+    if (totalDepartments > departmentStore.list.length) {
+      logError(
+        'components/componentsdetails/detils/UserForm',
+        `部门共 ${totalDepartments} 条，超过单页返回上限，部门下拉仅展示前 ${departmentStore.list.length} 条`,
+      )
+    }
   }
   await loadUserData()
 })

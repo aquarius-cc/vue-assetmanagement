@@ -25,6 +25,8 @@
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { assetAPI } from '@/api/asset'
+import { scanAPI } from '@/api/scan'
+import type { PublicScanAsset } from '@/types/scan'
 import type {
   Asset,
   AssetDetail,
@@ -113,6 +115,22 @@ interface AssetStore extends EntityStore<AssetDetail, PaginationQuery> {
    * @returns 关联合同
    */
   getContractByAssetCode: (asset_code: string) => Promise<Contract>
+
+  /**
+   * 查询公开扫码资产信息（免登录白名单端点）
+   * 代理 scanAPI.fetchPublicScanAsset，供扫码页经 store 层调用
+   * @param recordcode 资产记录编码
+   * @returns 资产公开信息
+   */
+  fetchPublicScanAsset: (recordcode: string) => Promise<PublicScanAsset>
+
+  /**
+   * 构造资产二维码图片 URL
+   * 二维码由 <img src> 直接加载，不经 request 实例，仅构造 URL 字符串
+   * @param recordcode 资产记录编码
+   * @returns 二维码图片的完整 URL
+   */
+  getQrCodeImageUrl: (recordcode: string) => string
 }
 
 const baseAssetStoreDef = createEntityStore<AssetDetail, PaginationQuery>('asset', {
@@ -252,6 +270,22 @@ export const useAssetStore = (): AssetStore => {
      */
     extendedStore.getContractByAssetCode = async (asset_code: string) => {
       return assetAPI.getContractByAssetCode(asset_code)
+    }
+
+    /**
+     * 查询公开扫码资产信息
+     * 代理 scanAPI.fetchPublicScanAsset（免登录白名单端点）
+     */
+    extendedStore.fetchPublicScanAsset = async (recordcode: string) => {
+      return scanAPI.fetchPublicScanAsset(recordcode)
+    }
+
+    /**
+     * 构造资产二维码图片 URL
+     * 代理 assetAPI.getQrCodeImageUrl，端点定义唯一保留在 api 层
+     */
+    extendedStore.getQrCodeImageUrl = (recordcode: string) => {
+      return assetAPI.getQrCodeImageUrl(recordcode)
     }
 
     return extendedStore

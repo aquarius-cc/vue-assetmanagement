@@ -26,6 +26,10 @@ vi.mock('axios', () => ({
   isAxiosError: vi.fn((err: unknown) => err instanceof Error && 'response' in err),
 }))
 
+vi.mock('@/api/config', () => ({
+  BASE_URL: 'https://api.test/api/v1',
+}))
+
 import { assetAPI } from '@/api/asset'
 
 describe('assetAPI', () => {
@@ -143,5 +147,12 @@ describe('assetAPI', () => {
     expect(mockRequest.post).toHaveBeenCalledWith('/assets/assets/batch-create/', {
       items: [{ asset_name: 'X' }],
     })
+  })
+
+  it('getQrCodeImageUrl returns BASE_URL-prefixed image URL without HTTP call', () => {
+    expect(assetAPI.getQrCodeImageUrl('RC001')).toBe(
+      'https://api.test/api/v1/assets/RC001/qr-code-image/',
+    )
+    expect(mockRequest.get).not.toHaveBeenCalled()
   })
 })

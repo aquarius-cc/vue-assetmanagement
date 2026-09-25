@@ -83,27 +83,19 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Iphone } from '@element-plus/icons-vue'
-import { get } from '@/api/request'
+import type { PublicScanAsset } from '@/types/scan'
 import { isAxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
 import { getPhysicalGradeDisplay } from '@/utils/Format'
 import { useAuthStore } from '@/stores/auth'
+import { useAssetStore } from '@/stores/assetStore'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import { logError } from '@/utils/logger'
-
-// 【R4-04 公开白名单】与后端 public_scan_view 的 data dict 严格对齐（后端为唯一契约源）
-interface PublicScanAsset {
-  asset_code: string
-  asset_name: string
-  asset_specification: string | null
-  asset_brand: string | null
-  asset_current_status: string
-  physical_grade: string | null
-}
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const assetStore = useAssetStore()
 const loading = ref(true)
 const asset = ref<PublicScanAsset | null>(null)
 const recordcode = computed(() => route.params.recordcode as string)
@@ -124,22 +116,14 @@ const fetchAsset = async () => {
   loading.value = true
   loadError.value = false // [修复] 重置错误状态
   try {
-    // 后端路由：/api/v1/assets/public/scan/{recordcode}/（baseURL=/api/v1，故此处带 /assets 前缀）
-    const res = await get<PublicScanAsset>(`/assets/public/scan/${recordcode.value}/`)
-    // [修复] 手动校验业务 code（此接口未使用 unwrapResponse）
-    if (res.code !== 0) {
-      ElMessage.error(res.message || '查询失败')
-      loadError.value = true
-      return
-    }
-    asset.value = res.data as PublicScanAsset
+    asset.value = await assetStore.fetchPublicScanAsset(recordcode.value)
   } catch (err) {
     logError('views/ScanAssetView', '获取资产信息失败:', err)
     // [修复] 分类处理：404 = 资产不存在（保持 null），其他 = 加载失败
     if (isAxiosError(err) && err.response?.status === 404) {
       // 404：asset 保持 null，模板走"未找到资产"分支
     } else if (!isAxiosError(err)) {
-      // 非 AxiosError（理论不会出现，因为未用 unwrapResponse，但防御性处理）
+      // 非 AxiosError：unwrapResponse 在业务 code !== 0 时抛出的 Error
       ElMessage.error((err as Error).message || '获取资产信息失败')
       loadError.value = true
     } else {

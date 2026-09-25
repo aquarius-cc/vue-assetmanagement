@@ -220,7 +220,7 @@ const addBatchItem = () => {
 const fetchAllData = async () => {
   isLoading.value = true
   try {
-    allData.value = await assetTypeStore.getList({ page: 1, page_size: 9999 })
+    allData.value = await assetTypeStore.getList({ page: 1, page_size: 100 }) // 与后端 MAX_PAGE_SIZE 对齐，超限会被静默钳位
 
     // 如果当前有选中的分类，刷新其信息
     if (selectedType.value) {

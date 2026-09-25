@@ -22,6 +22,7 @@
  *   - axios: 错误处理
  */
 import { request, unwrapResponse } from '@/api/index'
+import { BASE_URL } from '@/api/config'
 import { isAxiosError } from 'axios'
 import type {
   Asset,
@@ -345,5 +346,16 @@ export const assetAPI = {
         items,
       }),
     )
+  },
+
+  /**
+   * 获取资产二维码图片 URL
+   * GET /api/v1/assets/{recordcode}/qr-code-image/
+   * 二维码由 <img src> 直接加载，不经 request 实例，故此处仅构造 URL 字符串
+   * @param recordcode 资产记录码
+   * @returns 二维码图片的完整 URL
+   */
+  getQrCodeImageUrl: (recordcode: string): string => {
+    return `${BASE_URL}/assets/${recordcode}/qr-code-image/`
   },
 }

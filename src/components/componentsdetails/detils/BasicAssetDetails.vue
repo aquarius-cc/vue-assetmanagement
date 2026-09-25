@@ -148,7 +148,6 @@ import type { ColumnConfig } from '@/utils/excelExporter'
 import { formatDate, getAssetStatusText } from '@/utils/Format'
 import { usePermission } from '@/composables/usePermission'
 import { useAssetStatusChecks } from '@/composables/useAssetStatus'
-import { BASE_URL } from '@/api/config'
 import { logError } from '@/utils/logger'
 // import { useOperationGuard } from '@/composables/useOperationGuard'
 
@@ -286,7 +285,7 @@ onMounted(async () => {
 
   // CRIT-6: 生成二维码 URL
   if (assetDetail.value?.recordcode) {
-    qrCodeUrl.value = `${BASE_URL}/assets/${assetDetail.value.recordcode}/qr-code-image/`
+    qrCodeUrl.value = assetStore.getQrCodeImageUrl(assetDetail.value.recordcode)
   }
 })
 

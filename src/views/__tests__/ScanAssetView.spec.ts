@@ -19,14 +19,17 @@ vi.mock('@/stores/auth', () => ({
   }),
 }))
 
-// 公开接口 mock（手动校验 code 的 get）
-const getMock = vi.fn()
-vi.mock('@/api/request', () => ({
-  get: (...args: unknown[]) => getMock(...args),
+// 公开接口 mock：组件经 assetStore.fetchPublicScanAsset 访问（FE-01 分层，组件不直连 api）
+const fetchPublicScanAssetMock = vi.fn()
+vi.mock('@/stores/assetStore', () => ({
+  useAssetStore: () => ({
+    fetchPublicScanAsset: fetchPublicScanAssetMock,
+  }),
 }))
 
+const { elMessageError } = vi.hoisted(() => ({ elMessageError: vi.fn() }))
 vi.mock('element-plus', () => ({
-  ElMessage: { success: vi.fn(), warning: vi.fn(), error: vi.fn() },
+  ElMessage: { success: vi.fn(), warning: vi.fn(), error: elMessageError },
 }))
 
 const stubs = {
@@ -68,17 +71,17 @@ describe('ScanAssetView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     pushMock.mockReset()
-    getMock.mockReset()
+    fetchPublicScanAssetMock.mockReset()
     mockIsLoggedIn = false
   })
 
   it('未登录：展示公开 6 字段白名单', async () => {
-    getMock.mockResolvedValue({ code: 0, data: PUBLIC_ASSET })
+    fetchPublicScanAssetMock.mockResolvedValue(PUBLIC_ASSET)
 
     const wrapper = mount(ScanAssetView, mountOptions)
     await flushPromises()
 
-    expect(getMock).toHaveBeenCalledWith('/assets/public/scan/REC-2024-0001/')
+    expect(fetchPublicScanAssetMock).toHaveBeenCalledWith('REC-2024-0001')
     // 6 字段全部渲染
     expect(wrapper.text()).toContain('A001')
     expect(wrapper.text()).toContain('测试资产')
@@ -91,7 +94,7 @@ describe('ScanAssetView', () => {
   })
 
   it('未登录：展示「登录查看完整信息」引导按钮，点击跳登录带 redirect', async () => {
-    getMock.mockResolvedValue({ code: 0, data: PUBLIC_ASSET })
+    fetchPublicScanAssetMock.mockResolvedValue(PUBLIC_ASSET)
 
     const wrapper = mount(ScanAssetView, mountOptions)
     await flushPromises()
@@ -115,13 +118,13 @@ describe('ScanAssetView', () => {
       name: 'BasicAssetDetails',
       query: { code: 'REC-2024-0001' },
     })
-    expect(getMock).not.toHaveBeenCalled()
+    expect(fetchPublicScanAssetMock).not.toHaveBeenCalled()
     // 直达后本组件不渲染资产内容
     expect(wrapper.find('.el-descriptions').exists()).toBe(false)
   })
 
   it('加载失败：展示错误分支与重试', async () => {
-    getMock.mockRejectedValue({ isAxiosError: true, response: { status: 500 } })
+    fetchPublicScanAssetMock.mockRejectedValue({ isAxiosError: true, response: { status: 500 } })
 
     const wrapper = mount(ScanAssetView, mountOptions)
     await flushPromises()
@@ -132,11 +135,21 @@ describe('ScanAssetView', () => {
   })
 
   it('404：展示「未找到资产」分支', async () => {
-    getMock.mockRejectedValue({ isAxiosError: true, response: { status: 404 } })
+    fetchPublicScanAssetMock.mockRejectedValue({ isAxiosError: true, response: { status: 404 } })
 
     const wrapper = mount(ScanAssetView, mountOptions)
     await flushPromises()
 
     expect(wrapper.text()).toContain('未找到资产')
+  })
+
+  it('业务 code 非 0：unwrapResponse 抛出的 Error 走 ElMessage 提示并进入错误分支', async () => {
+    fetchPublicScanAssetMock.mockRejectedValue(new Error('资产不存在'))
+
+    const wrapper = mount(ScanAssetView, mountOptions)
+    await flushPromises()
+
+    expect(elMessageError).toHaveBeenCalledWith('资产不存在')
+    expect(wrapper.text()).toContain('加载失败')
   })
 })
