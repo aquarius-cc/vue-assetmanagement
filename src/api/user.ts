@@ -17,6 +17,7 @@
  */
 import { request, unwrapResponse } from '@/api/index'
 import { logError } from '@/utils/logger'
+import type { BlobDownload } from '@/api/request'
 import type {
   EmployeeListResponse,
   EmployeeExtended,
@@ -188,5 +189,21 @@ export const userAPI = {
         300000,
       ),
     )
+  },
+
+  /**
+   * 服务端导出员工列表（xlsx）
+   *
+   * 可见性由后端 EmployeeViewSet.get_queryset() 决定，与列表接口一致；
+   * 导出权限走 CanExportExcel 矩阵（regular_user 403）。
+   * 导出列不含手机号（后端最小化 PII）。
+   *
+   * @param params 可选分批参数。省略 limit/offset 时为全量导出，
+   *   总行数超过 EXPORT_MAX_ROWS 会被后端拒绝（400）；
+   *   传 limit/offset 则走分批导出，limit 被钳制到 EXPORT_MAX_ROWS。
+   * @returns 文件内容 + 响应头（含 X-Export-Max-Rows / X-Export-Total-Count）
+   */
+  exportExcel: (params?: Record<string, unknown>): Promise<BlobDownload> => {
+    return request.getBlob('/users/employees/export/', params, 'employees.xlsx')
   },
 }

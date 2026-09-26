@@ -236,6 +236,33 @@ const getOperationTypeText = (type: string | null | undefined): string => {
   return operationTypeMapping[type] || type
 }
 
+// ===== 筛选条件组装（列表与导出共用，DR-1） =====
+/**
+ * 把筛选表单 + 日期范围组装为后端查询参数。
+ *
+ * 列表与导出**必须**调用同一个函数：若两处各写一份，
+ * 将来新增筛选项只改一处就会导致「列表看不到但被导出」，
+ * 导出结果将不可信。故收敛到此（DR-1）。
+ *
+ * @param overrides 额外参数（如分页参数、排序），优先级高于表单值
+ * @returns 后端查询参数（空值字段自动剔除）
+ */
+const buildQueryParams = (overrides: Record<string, unknown> = {}): Record<string, unknown> => {
+  const merged: Record<string, unknown> = { ...overrides }
+
+  if (filterForm.asset_code) merged.asset_code = filterForm.asset_code
+  if (filterForm.operation_type) merged.operation_type = filterForm.operation_type
+  if (filterForm.operator_jobcode) merged.operator_jobcode = filterForm.operator_jobcode
+
+  if (dateRange.value?.[0]) merged.start_date = dateRange.value[0]
+  if (dateRange.value?.[1]) merged.end_date = dateRange.value[1]
+
+  // 默认按操作时间倒序
+  if (!merged.ordering) merged.ordering = '-operation_time'
+
+  return merged
+}
+
 // ===== SmartListContainer 配置 =====
 /**
  * Store 配置对象
@@ -254,36 +281,8 @@ const storeConfig = computed<PaginationSearchConfig<OperationLog>>(() => ({
      * @returns 包含 count 和 results 的响应对象
      */
     getList: async (params) => {
-      // 合并筛选条件到查询参数
-      const mergedParams: Record<string, unknown> = { ...params }
-
-      // 添加资产编码筛选
-      if (filterForm.asset_code) {
-        mergedParams.asset_code = filterForm.asset_code
-      }
-
-      // 添加操作类型筛选
-      if (filterForm.operation_type) {
-        mergedParams.operation_type = filterForm.operation_type
-      }
-
-      // 添加操作人筛选
-      if (filterForm.operator_jobcode) {
-        mergedParams.operator_jobcode = filterForm.operator_jobcode
-      }
-
-      // 添加日期范围筛选
-      if (dateRange.value && dateRange.value[0]) {
-        mergedParams.start_date = dateRange.value[0]
-      }
-      if (dateRange.value && dateRange.value[1]) {
-        mergedParams.end_date = dateRange.value[1]
-      }
-
-      // 默认按操作时间倒序
-      if (!mergedParams.ordering) {
-        mergedParams.ordering = '-operation_time'
-      }
+      // 合并筛选条件到查询参数（与导出共用 buildQueryParams，DR-1）
+      const mergedParams = buildQueryParams(params)
 
       const response = await operationLogStore.getList(mergedParams as PaginationQuery)
       return {
@@ -411,7 +410,15 @@ watch(
 )
 
 // ===== 导出 Excel（组合式函数，DR-5 物理提取）=====
-const handleExportExcel = createOperationLogExcelExport(operationLogStore, getOperationTypeText)
+/**
+ * 导出走服务端，筛选条件与列表共用 buildQueryParams()，
+ * 保证「列表所见」与「导出所得」是同一个集合。
+ */
+const handleExportExcel = createOperationLogExcelExport({
+  list: operationLogStore.list,
+  pagination: operationLogStore.pagination,
+  getFilters: () => buildQueryParams(),
+})
 
 /**
  * 遮罩层点击返回

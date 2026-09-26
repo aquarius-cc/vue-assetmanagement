@@ -1,16 +1,19 @@
-﻿import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+﻿/**
+ * 操作日志导出 composable 测试（服务端导出路径）
+ *
+ * 锁定的不变量：**导出请求参数必须等于列表当前生效的筛选条件**
+ * （getFilters 的返回值原样透传）。若两处筛选逻辑漂移，
+ * 会出现「列表看不到的行被导出」，导出结果将不可信。
+ */
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { OperationLog } from '@/types/operationlog'
 import { createOperationLogExcelExport } from '../useOperationLogExcelExport'
 
 const mocks = vi.hoisted(() => ({
   elMessage: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
-  elMessageBox: Object.assign(
-    vi.fn(async () => 'confirm'),
-    {
-      confirm: vi.fn(async () => 'confirm'),
-    },
-  ),
-  exportToExcel: vi.fn(async () => undefined),
+  elMessageBox: Object.assign(vi.fn(), { confirm: vi.fn() }),
+  exportExcel: vi.fn(),
+  downloadBlob: vi.fn(),
 }))
 
 vi.mock('element-plus', () => ({
@@ -18,27 +21,16 @@ vi.mock('element-plus', () => ({
   ElMessageBox: mocks.elMessageBox,
 }))
 
-vi.mock('@/utils/excelExporter', () => ({
-  exportToExcel: mocks.exportToExcel,
+vi.mock('@/api/operationLog', () => ({
+  operationLogAPI: { exportExcel: mocks.exportExcel },
 }))
 
-function driveExportToExcel() {
-  mocks.exportToExcel.mockImplementation(
-    async (cfg: {
-      data?: OperationLog[]
-      columns?: Array<{ key: string; formatter?: (v: unknown) => unknown }>
-    }) => {
-      if (cfg.data && cfg.columns) {
-        cfg.data.forEach((row) => {
-          cfg.columns.forEach((col) => {
-            if (col.formatter) col.formatter(row[col.key] as string)
-          })
-        })
-      }
-      return undefined
-    },
-  )
-}
+vi.mock('@/utils/fileDownload', () => ({
+  downloadBlob: mocks.downloadBlob,
+  XLSX_MIME: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+}))
+
+const EXPORT_MAX_ROWS = 10_000
 
 function makeLog(id: number): OperationLog {
   return {
@@ -60,102 +52,138 @@ function makeLog(id: number): OperationLog {
   }
 }
 
-function setup(options: { total?: number; all?: OperationLog[] } = {}) {
+function blobResult(headers: Record<string, string> = {}) {
+  return {
+    blob: new Blob(['xlsx']),
+    headers,
+    filename: 'operation_logs.xlsx',
+  }
+}
+
+function setup(options: { total?: number; filters?: Record<string, unknown> } = {}) {
   const store = {
     list: [makeLog(1)],
     pagination: { total: options.total ?? 1 },
-    getList: vi.fn(async () => options.all ?? []),
+    getFilters: vi.fn(() => options.filters ?? {}),
   }
-  const getTypeText = vi.fn((type: string | null | undefined) => (type === 'out' ? '出库' : '未知'))
-  const handleExportExcel = createOperationLogExcelExport(store, getTypeText)
-  return { store, getTypeText, handleExportExcel }
+  return { store, handleExportExcel: createOperationLogExcelExport(store) }
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.elMessageBox.mockResolvedValue('confirm')
+  mocks.exportExcel.mockResolvedValue(blobResult())
   mocks.elMessageBox.confirm.mockResolvedValue('confirm')
 })
 
-afterEach(() => {
-  vi.restoreAllMocks()
-})
+describe('createOperationLogExcelExport（服务端导出）', () => {
+  it('把 getFilters 的筛选条件原样透传给导出接口', async () => {
+    const filters = {
+      asset_code: 'A001',
+      operation_type: 'out',
+      start_date: '2025-01-01',
+      end_date: '2025-01-31',
+      ordering: '-operation_time',
+    }
+    const { store, handleExportExcel } = setup({ total: 5, filters })
 
-describe('createOperationLogExcelExport', () => {
-  it('确认导出时使用当前列表数据', async () => {
-    const { store, handleExportExcel } = setup()
-    mocks.elMessageBox.mockResolvedValueOnce('confirm')
     await handleExportExcel()
-    expect(mocks.exportToExcel).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: store.list,
-        fileName: '操作日志列表_当前页面_1条.xlsx',
-        sheetName: '操作日志列表',
-      }),
-    )
-    expect(store.getList).not.toHaveBeenCalled()
+
+    expect(store.getFilters).toHaveBeenCalled()
+    expect(mocks.exportExcel).toHaveBeenCalledWith(filters)
   })
 
-  it('当前页导出触发列格式化（操作类型与时间）', async () => {
-    const { handleExportExcel, getTypeText } = setup()
-    driveExportToExcel()
-    mocks.elMessageBox.mockResolvedValueOnce('confirm')
-    await handleExportExcel()
-    expect(getTypeText).toHaveBeenCalledWith('out')
-  })
-
-  it('选择取消时导出全部数据（总量不超过阈值）', async () => {
-    const { store, handleExportExcel } = setup({
-      total: 5,
-      all: [makeLog(1), makeLog(2)],
+  it('下载服务端返回的文件并用文件名保存', async () => {
+    const { handleExportExcel } = setup({ total: 3 })
+    const blob = new Blob(['xlsx'])
+    mocks.exportExcel.mockResolvedValue({
+      blob,
+      headers: { 'x-export-total-count': '3' },
+      filename: 'operation_logs.xlsx',
     })
-    mocks.elMessageBox.mockRejectedValueOnce('cancel')
+
     await handleExportExcel()
-    expect(mocks.elMessage.info).toHaveBeenCalledWith('正在准备全部操作日志数据，请稍候...')
-    expect(store.getList).toHaveBeenCalledWith({ page: 1, page_size: 5 })
-    expect(mocks.exportToExcel).toHaveBeenCalledWith(
-      expect.objectContaining({ fileName: '操作日志列表_全部_2条.xlsx' }),
-    )
+
+    expect(mocks.downloadBlob).toHaveBeenCalledWith(blob, 'operation_logs.xlsx')
+    expect(mocks.elMessage.success).toHaveBeenCalledWith('操作日志导出成功，共 3 条')
   })
 
-  it('总量超过阈值且确认继续时导出全部', async () => {
-    const { store, handleExportExcel } = setup({
-      total: 2000,
-      all: [makeLog(1), makeLog(2)],
-    })
-    mocks.elMessageBox.mockRejectedValueOnce('cancel')
-    mocks.elMessageBox.confirm.mockResolvedValueOnce('confirm')
+  it('总行数为 0 时不发起请求', async () => {
+    const { handleExportExcel } = setup({ total: 0 })
+
     await handleExportExcel()
-    expect(mocks.elMessage.info).toHaveBeenCalledWith('正在准备全部操作日志数据，请稍候...')
-    expect(store.getList).toHaveBeenCalledWith({ page: 1, page_size: 2000 })
-    expect(mocks.exportToExcel).toHaveBeenCalledWith(
-      expect.objectContaining({ fileName: '操作日志列表_全部_2条.xlsx' }),
-    )
+
+    expect(mocks.elMessage.warning).toHaveBeenCalledWith('暂无操作日志数据可导出')
+    expect(mocks.exportExcel).not.toHaveBeenCalled()
   })
 
-  it('总量超过阈值但取消时中止导出', async () => {
-    const { store, handleExportExcel } = setup({ total: 2000 })
-    mocks.elMessageBox.mockRejectedValueOnce('cancel')
+  it('大数据量（>1000）需二次确认，取消则中止', async () => {
+    const { handleExportExcel } = setup({ total: 2000 })
     mocks.elMessageBox.confirm.mockRejectedValueOnce('cancel')
+
     await handleExportExcel()
-    expect(store.getList).not.toHaveBeenCalled()
-    expect(mocks.exportToExcel).not.toHaveBeenCalled()
+
+    expect(mocks.elMessageBox.confirm).toHaveBeenCalledWith(
+      expect.stringContaining('数据量较大'),
+      '导出确认',
+      expect.anything(),
+    )
+    expect(mocks.exportExcel).not.toHaveBeenCalled()
   })
 
-  it('获取全部数据失败时提示错误', async () => {
-    const { store, handleExportExcel } = setup({ total: 2000 })
-    mocks.elMessageBox.mockRejectedValueOnce('cancel')
-    store.getList.mockRejectedValueOnce(new Error('boom'))
+  it('超过服务端上限时改为 limit=EXPORT_MAX_ROWS 分批导出', async () => {
+    const { handleExportExcel } = setup({ total: EXPORT_MAX_ROWS + 1 })
+
     await handleExportExcel()
-    expect(mocks.elMessage.error).toHaveBeenCalledWith('获取全部数据失败，请重试')
-    expect(mocks.exportToExcel).not.toHaveBeenCalled()
+
+    expect(mocks.elMessageBox.confirm).toHaveBeenCalledWith(
+      expect.stringContaining(`超过单次导出上限 ${EXPORT_MAX_ROWS} 条`),
+      '超出导出上限',
+      expect.anything(),
+    )
+    expect(mocks.exportExcel).toHaveBeenCalledWith({ limit: EXPORT_MAX_ROWS })
+    expect(mocks.downloadBlob).toHaveBeenCalled()
   })
 
-  it('点关闭对话框时中止导出', async () => {
-    const { store, handleExportExcel } = setup()
-    mocks.elMessageBox.mockRejectedValueOnce('close')
+  it('超过上限且用户取消时中止导出', async () => {
+    const { handleExportExcel } = setup({ total: EXPORT_MAX_ROWS + 1 })
+    mocks.elMessageBox.confirm.mockRejectedValueOnce('cancel')
+
     await handleExportExcel()
-    expect(store.getList).not.toHaveBeenCalled()
-    expect(mocks.exportToExcel).not.toHaveBeenCalled()
+
+    expect(mocks.exportExcel).not.toHaveBeenCalled()
+    expect(mocks.downloadBlob).not.toHaveBeenCalled()
+  })
+
+  it('分批参数与筛选条件合并透传', async () => {
+    const { handleExportExcel } = setup({
+      total: EXPORT_MAX_ROWS + 1,
+      filters: { operation_type: 'out' },
+    })
+
+    await handleExportExcel()
+
+    expect(mocks.exportExcel).toHaveBeenCalledWith({
+      operation_type: 'out',
+      limit: EXPORT_MAX_ROWS,
+    })
+  })
+
+  it('接口失败时记录日志且不触发下载', async () => {
+    const { handleExportExcel } = setup({ total: 3 })
+    mocks.exportExcel.mockRejectedValueOnce(new Error('boom'))
+
+    await handleExportExcel()
+
+    expect(mocks.downloadBlob).not.toHaveBeenCalled()
+    expect(mocks.elMessage.success).not.toHaveBeenCalled()
+  })
+
+  it('响应头缺少行数时回落到 totalCount', async () => {
+    const { handleExportExcel } = setup({ total: 7 })
+    mocks.exportExcel.mockResolvedValue(blobResult())
+
+    await handleExportExcel()
+
+    expect(mocks.elMessage.success).toHaveBeenCalledWith('操作日志导出成功，共 7 条')
   })
 })

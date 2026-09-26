@@ -1,79 +1,45 @@
 /**
- * 用户列表 Excel 导出（DR-1：列配置 + 通用导出组装，流程收敛至 useExcelExport）
+ * 员工列表 Excel 导出（服务端导出）
  *
- * store 实例以参数注入；部门映射以闭包供列 formatter 使用；范围选择/
- * 大数据确认/全量拉取等流程全部委托通用 exportList。
+ * 【为什么改为服务端导出】原实现在浏览器侧用 ExcelJS 组装全量数据：
+ * 需用 `getList({ page_size: total })` 把全部员工拉进内存，受分页上限 100
+ * 钳制，需 N 次请求；改为后端写盘 + 流式回传后浏览器只收到一个 xlsx。
+ *
+ * 【两处行为变更，均为收敛而非新增】
+ * 1. 导出列不含手机号：后端 export_columns 刻意排除 employee_phone
+ *    （批量落盘行为，最小化 PII 外泄面）。原前端列里有「电话」列。
+ * 2. 不再需要 departmentStore：部门名称由后端沿关联字段带出，
+ *    前端无需再拉全量部门 code 到 name 的映射表。
+ *
+ * 【可见性】由后端 EmployeeViewSet.get_queryset() 决定，与列表一致；
+ * 导出权限走 CanExportExcel 矩阵（regular_user 403）。
+ *
+ * 【已知限制 BF-047】本批导出**不带筛选条件**：后端员工导出未接收
+ * department_code / employee_status / search，与列表的筛选态不对齐。
+ * 原因有二：① 列表搜索态由 SmartListContainer 内部持有，组件侧取不到；
+ * ② 后端 EmployeeViewSet 导出未接 request 级过滤（已批准范围不含此项）。
+ * 故这里刻意不提供 getFilters 入口 —— 与其留一个「看起来生效其实不生效」
+ * 的参数，不如显式声明限制并登记待办。
  */
-import { useExcelExport } from '@/composables/useExcelExport'
-import { USER_STATUS_INPUT_MAPPING } from '@/utils/Format'
-import type { ColumnConfig } from '@/utils/excelExporter'
+import { useServerExcelExport } from '@/composables/useServerExcelExport'
+import { userAPI } from '@/api/user'
 import type { EmployeeExtended } from '@/types/user'
 
 /** 用户导出依赖的 store 最小接口 */
-interface UserExportStores {
-  userStore: {
-    list: EmployeeExtended[]
-    pagination: { total: number }
-    getList: (params: { page: number; page_size: number }) => Promise<EmployeeExtended[]>
-  }
-  departmentStore: {
-    list: Array<{ department_code: string; department_name: string }>
-  }
+interface UserExportStore {
+  list: EmployeeExtended[]
+  pagination: { total: number }
 }
 
 /** 创建用户列表导出函数 handleExportExcel() */
-export function createUserExcelExport({ userStore, departmentStore }: UserExportStores) {
-  const { exportList } = useExcelExport()
+export function createUserExcelExport(userStore: UserExportStore) {
+  const { exportFromServer } = useServerExcelExport()
 
   return async function handleExportExcel() {
-    // 创建部门映射，用于导出时显示部门名称（列 formatter 闭包消费）
-    const departmentMapping = departmentStore.list.reduce<Record<string, string>>((acc, dept) => {
-      acc[dept.department_code] = dept.department_name
-      return acc
-    }, {})
-
-    // 定义导出列配置
-    const exportColumns: ColumnConfig<EmployeeExtended>[] = [
-      { title: '姓名', key: 'employee_name', default: '未填写' },
-      { title: '工号', key: 'employee_jobcode', default: '未设置' },
-      {
-        title: '状态',
-        key: 'employee_status',
-        default: '未知',
-        formatter: (value: unknown) =>
-          USER_STATUS_INPUT_MAPPING[String(value)] || String(value) || '未知',
-      },
-      { title: '电话', key: 'employee_phone', default: '未填写' },
-      { title: '位置', key: 'employee_location', default: '未填写' },
-      { title: '部门代码', key: 'employee_department_code', default: 'JTGS' },
-      {
-        title: '部门',
-        key: 'employee_department_name',
-        default: '无部门',
-        formatter: (value: unknown, row: EmployeeExtended) => {
-          // 如果员工数据中有完整的部门对象，则使用其名称
-          if (
-            value &&
-            typeof value === 'object' &&
-            'department_name' in value &&
-            (value as { department_name?: string }).department_name
-          ) {
-            return (value as { department_name: string }).department_name
-          }
-          // 否则通过部门代码查找部门名称
-          return departmentMapping[row.employee_department_code] || '无部门'
-        },
-      },
-      { title: '描述', key: 'employee_description', default: '无' },
-    ]
-
-    await exportList<EmployeeExtended>({
-      entityName: '用户',
-      columns: exportColumns,
-      currentData: userStore.list,
+    await exportFromServer({
+      entityName: '员工',
       totalCount: userStore.pagination.total,
-      fetchAllData: () => userStore.getList({ page: 1, page_size: userStore.pagination.total }),
-      sheetName: '用户列表',
+      fetchExport: (params) => userAPI.exportExcel(params),
     })
   }
 }

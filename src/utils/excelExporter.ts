@@ -11,6 +11,7 @@
  * @dependsOn
  *   - element-plus (ElMessage, ElMessageBox)
  *   - @/utils/Format (formatDate)
+ *   - @/utils/fileDownload (downloadBlob / XLSX_MIME)
  *   - exceljs
  */
 
@@ -18,6 +19,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatDate } from '@/utils/Format'
 import ExcelJS from 'exceljs'
 import { logError } from '@/utils/logger'
+import { XLSX_MIME, downloadBlob } from '@/utils/fileDownload'
 
 // 定义通用的列配置接口
 export interface ColumnConfig<T = unknown> {
@@ -89,26 +91,13 @@ export const exportToExcel = async <T>(config: ExcelExportConfig<T>): Promise<vo
       worksheet.addRow(rowData)
     })
 
-    // 6. 生成文件并触发下载
+    // 6. 生成文件并触发下载（下载样板收敛至 utils/fileDownload，DR-4）
     const fileName = config.fileName.endsWith('.xlsx')
       ? config.fileName
       : `${config.fileName}_${formatDate(new Date())}.xlsx`
 
-    // 生成 buffer
     const buffer = await workbook.xlsx.writeBuffer()
-
-    // 创建 Blob 并触发下载
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = fileName
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    downloadBlob(new Blob([buffer], { type: XLSX_MIME }), fileName)
 
     ElMessage.success(config.successMessage || '导出成功')
   } catch (error: unknown) {

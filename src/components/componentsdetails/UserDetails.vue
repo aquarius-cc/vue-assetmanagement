@@ -123,7 +123,6 @@ import type { SmartListContainerExpose } from '@/types/common'
 import type { EmployeeExtended } from '@/types/user'
 import BindAuthUserDialog from '@/components/system/BindAuthUserDialog.vue'
 import { useUserStore } from '@/stores/userStore'
-import { useDepartmentStore } from '@/stores/departmentStore'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import { userDetailsColumns as columns } from './userDetails.columns'
 import { createUserExcelExport } from '@/composables/useUserExcelExport'
@@ -132,7 +131,6 @@ import { createUserExcelExport } from '@/composables/useUserExcelExport'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
-const departmentStore = useDepartmentStore()
 
 /**
  * SmartListContainer 组件引用
@@ -392,7 +390,7 @@ const handleMaskBack = () => {
 }
 
 // ===== 导出 Excel（组合式函数，DR-5 物理提取）=====
-const handleExportExcel = createUserExcelExport({ userStore, departmentStore })
+const handleExportExcel = createUserExcelExport(userStore)
 </script>
 
 <style lang="scss" scoped src="./UserDetails.scss"></style>

@@ -1,63 +1,50 @@
 /**
- * 操作日志 Excel 导出（DR-1：列配置 + 通用导出组装，流程收敛至 useExcelExport）
+ * 操作日志 Excel 导出（服务端导出）
  *
- * store 与操作类型文本函数以参数注入；范围选择/大数据确认/全量拉取等
- * 流程全部委托通用 exportList，本模块仅保留实体差异：列配置 + 组装参数。
+ * 【为什么改为服务端导出】原实现在浏览器侧用 ExcelJS 组装全量数据：
+ * 需用 `getList({ page_size: total })` 把全部记录拉进内存，受分页上限 100
+ * 钳制，导出 1 万条要打 100 个来回；改为后端写盘 + 流式回传后，
+ * 浏览器只收到一个 xlsx 文件。
+ *
+ * 【行级可见性】不在前端二次过滤：前端只拿到了当前页数据，
+ * 在前端过滤会漏行。部门隔离由后端 Selector 强制（见
+ * apps/assetmanagement/selectors/operation_log_selector.py），
+ * 导出集合恒等于该用户可见集合。
+ *
+ * 操作类型到中文文本的映射由后端 `export_columns` 的 `display_map`
+ * 承担（单一事实来源），保证导出列与列表列语义一致。
  */
-import { useExcelExport } from '@/composables/useExcelExport'
-import { formatDateTimeFull } from '@/utils/Format'
-import type { ColumnConfig } from '@/utils/excelExporter'
+import { useServerExcelExport } from '@/composables/useServerExcelExport'
+import { operationLogAPI } from '@/api/operationLog'
 import type { OperationLog } from '@/types/operationlog'
 
 /** 导出依赖的 store 最小接口 */
 export interface OperationLogExportStore {
   list: OperationLog[]
   pagination: { total: number }
-  getList(params?: Record<string, unknown>): Promise<OperationLog[]>
+  /**
+   * 取当前生效的筛选条件。
+   *
+   * 刻意是**函数**而非值：筛选表单是响应式的，调用时才求值才能拿到
+   * 用户此刻的选择。且必须与列表 getList 用同一份组装逻辑（DR-1），
+   * 否则「列表看不到的行」会被导出，结果不可信。
+   */
+  getFilters: () => Record<string, unknown>
 }
 
 /**
  * 创建操作日志导出函数 handleExportExcel()
- * @param store - 操作日志 store 实例
- * @param getTypeText - 操作类型值 → 中文文本 的转换函数（与列表展示一致）
+ * @param store 操作日志 store 最小接口（提供 getFilters）
  */
-export function createOperationLogExcelExport(
-  store: OperationLogExportStore,
-  getTypeText: (type: string | null | undefined) => string,
-) {
-  const { exportList } = useExcelExport()
+export function createOperationLogExcelExport(store: OperationLogExportStore) {
+  const { exportFromServer } = useServerExcelExport()
 
   return async function handleExportExcel() {
-    const exportColumns: ColumnConfig<OperationLog>[] = [
-      {
-        title: '操作类型',
-        key: 'operation_type',
-        default: '',
-        formatter: (val) => getTypeText(val as string),
-      },
-      { title: '资产编码', key: 'asset_code', default: '' },
-      { title: '资产名称', key: 'asset_name', default: '' },
-      { title: '资产规格', key: 'asset_specification', default: '' },
-      { title: '操作人', key: 'operator_name', default: '' },
-      { title: '操作人工号', key: 'operator_jobcode', default: '' },
-      {
-        title: '操作时间',
-        key: 'operation_time',
-        default: '',
-        // 【A-3】审计场景统一秒级精度
-        formatter: (val) => formatDateTimeFull((val as string | null) ?? null) || '',
-      },
-      { title: '描述', key: 'description', default: '' },
-      { title: 'IP地址', key: 'ip_address', default: '' },
-    ]
-
-    await exportList<OperationLog>({
+    await exportFromServer({
       entityName: '操作日志',
-      columns: exportColumns,
-      currentData: store.list,
       totalCount: store.pagination.total,
-      fetchAllData: () => store.getList({ page: 1, page_size: store.pagination.total }),
-      sheetName: '操作日志列表',
+      params: store.getFilters(),
+      fetchExport: (params) => operationLogAPI.exportExcel(params),
     })
   }
 }

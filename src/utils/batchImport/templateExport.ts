@@ -7,6 +7,7 @@
 import ExcelJS from 'exceljs'
 import { ElMessage } from 'element-plus'
 import { logError } from '@/utils/logger'
+import { XLSX_MIME, downloadBlob } from '@/utils/fileDownload'
 
 /**
  * 模板单元格值：字符串与数值原样保留，缺失/空值统一补空字符串
@@ -40,19 +41,9 @@ export async function downloadExcelTemplate(
     // 设置列宽
     worksheet.columns = headers.map(() => ({ width: 20 }))
 
-    // 生成并下载文件
+    // 生成并下载文件（下载样板收敛至 utils/fileDownload，DR-4）
     const buffer = await workbook.xlsx.writeBuffer()
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = fileName
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    downloadBlob(new Blob([buffer], { type: XLSX_MIME }), fileName)
 
     ElMessage.success('模板下载成功')
   } catch (error) {

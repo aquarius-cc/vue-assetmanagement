@@ -8,8 +8,10 @@
  *   - put: PUT 请求方法
  *   - patch: PATCH 请求方法
  *   - del: DELETE 请求方法
+ *   - getBlob: 二进制下载通道（服务端导出）
  *   - unwrapResponse: 响应解包函数
  *   - ApiResponse: 统一响应类型定义
+ *   - BlobDownload / ExportResponseHeaders: 导出下载结果类型
  * @description
  *   双认证通道（与后端 authentication.py 契约一致，DR-1）：
  *   - bearer 通道（移动端）：Authorization: Bearer 头
@@ -22,6 +24,7 @@
  *   - api/cache.ts: MemoryCache
  *   - api/config.ts: 全局常量
  *   - utils/tokenCrypto / tokenRefresh / device / csrf / requestErrors
+ *   - utils/fileDownload: resolveDownloadFilename（Content-Disposition 解析）
  */
 
 import axios, {
@@ -34,12 +37,13 @@ import { ElMessage } from 'element-plus'
 import { MemoryCache } from '@/api/cache'
 import { getDecryptedToken, clearAllAuthTokens } from '@/utils/tokenCrypto'
 import { generateTraceId } from '@/utils/traceId'
-import { BASE_URL, TIMEOUT, MAX_REFRESH_RETRY_COUNT } from '@/api/config'
+import { BASE_URL, TIMEOUT, MAX_REFRESH_RETRY_COUNT, EXPORT_TIMEOUT } from '@/api/config'
 import { detectAuthChannel } from '@/utils/device'
 import { refreshAccessToken, MissingRefreshTokenError } from '@/utils/tokenRefresh'
 import { isTransientError } from '@/utils/requestErrors'
 import { getCsrfToken } from '@/utils/csrf'
 import { logError, logWarn } from '@/utils/logger'
+import { resolveDownloadFilename } from '@/utils/fileDownload'
 
 // ---------- 扩展 Axios 类型，添加自定义属性 _retry ----------
 declare module 'axios' {
@@ -238,6 +242,31 @@ function notifyApiError(
   ElMessage.error(`请求配置错误: ${error.message}`)
 }
 
+/**
+ * 导出请求（responseType=blob）失败时，错误响应体**也是 Blob**。
+ *
+ * 直接把 Blob 丢给 pickErrorMessage 会取不到 detail/message，
+ * 用户只能看到笼统的「请求失败」——而导出失败原因（超限 400、
+ * 无导出权限 403、筛选非法 400）恰恰都在 JSON 体里。故必须读出
+ * 文本并解析为 JSON。
+ */
+async function readBlobErrorData(error: unknown): Promise<unknown> {
+  if (!isAxiosError(error)) return undefined
+  if (error.config?.responseType !== 'blob') return error.response?.data
+
+  const data: unknown = error.response?.data
+  if (!(data instanceof Blob)) return data
+  const text = await data.text()
+  try {
+    return JSON.parse(text) as unknown
+  } catch {
+    // 非 JSON（如网关 HTML 错误页）：pickErrorMessage 取不到结构化字段，
+    // 但原始文本要留痕以便排查（OC-2）。
+    logWarn('api/request', `导出错误响应非 JSON，原文: ${text.slice(0, 200)}`)
+    return undefined
+  }
+}
+
 // ======================== Axios 实例 ========================
 
 const api: AxiosInstance = axios.create({
@@ -304,7 +333,7 @@ api.interceptors.response.use(
       return handleUnauthorized(error)
     }
 
-    notifyApiError(status, error.response?.data, error)
+    notifyApiError(status, await readBlobErrorData(error), error)
     return Promise.reject(error)
   },
 )
@@ -404,6 +433,58 @@ export async function patch<T>(url: string, data?: unknown): Promise<ApiResponse
 export async function del<T>(url: string): Promise<ApiResponse<T>> {
   const response = await api.delete<ApiResponse<T>>(url)
   return response.data
+}
+
+// ======================== 二进制（导出）通道 ========================
+
+/** 服务端导出响应头（axios 归一化后的可读头） */
+export type ExportResponseHeaders = Record<string, string>
+
+/** Blob 下载结果 */
+export interface BlobDownload {
+  /** 文件内容 */
+  blob: Blob
+  /** 归一化响应头：用于读 X-Export-Max-Rows / X-Export-Total-Count / Content-Disposition */
+  headers: ExportResponseHeaders
+  /** 文件名：优先取服务端 Content-Disposition，取不到则用 fallbackFilename */
+  filename: string
+}
+
+/**
+ * 下载二进制文件（Excel 导出等）。
+ *
+ * 与 {@link get} 的差异：
+ * 1. responseType=blob —— 不走 JSON 解包，拿到原始文件流；
+ * 2. 使用 EXPORT_TIMEOUT 而非 TIMEOUT —— 导出是写盘+流式回传，耗时量级不同；
+ * 3. 不进 MemoryCache —— 二进制缓存无收益且会占内存；
+ * 4. 不返回 ApiResponse —— 成功响应体是文件，不是 {code,data,message}。
+ *
+ * 失败时错误体也是 Blob，由 {@link readBlobErrorData} 在拦截器中解析回
+ * JSON 错误信息并提示，调用方只需 try/catch。
+ *
+ * @param url 接口路径（相对 BASE_URL）
+ * @param params 查询参数（null/undefined 自动剔除）
+ * @param fallbackFilename 服务端未暴露 Content-Disposition 时的兜底文件名（建议纯 ASCII）
+ */
+export async function getBlob(
+  url: string,
+  params?: Record<string, unknown>,
+  fallbackFilename = 'export.xlsx',
+): Promise<BlobDownload> {
+  const paramsObj = params
+    ? Object.fromEntries(Object.entries(params).filter(([, v]) => v != null))
+    : undefined
+  const response = await api.get<Blob>(url, {
+    params: paramsObj,
+    responseType: 'blob',
+    timeout: EXPORT_TIMEOUT,
+  })
+  const headers: ExportResponseHeaders = { ...(response.headers as ExportResponseHeaders) }
+  return {
+    blob: response.data,
+    headers,
+    filename: resolveDownloadFilename(headers['content-disposition'], fallbackFilename),
+  }
 }
 
 // ======================== 解包工具 ========================
