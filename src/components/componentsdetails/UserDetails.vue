@@ -112,7 +112,7 @@
 defineOptions({ name: 'UserDetails' })
 
 // ===== 导入顺序：Vue 核心 → 第三方库 → @/ 内部模块 =====
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { showErrorMessage, getAxiosStatus } from '@/utils/errorHandler'
@@ -122,7 +122,7 @@ import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import type { SmartListContainerExpose } from '@/types/common'
 import type { EmployeeExtended } from '@/types/user'
 import BindAuthUserDialog from '@/components/system/BindAuthUserDialog.vue'
-import { useUserStore } from '@/stores/userStore'
+import { useUserStore, setUserCurrentKeyword } from '@/stores/userStore'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import { userDetailsColumns as columns } from './userDetails.columns'
 import { createUserExcelExport } from '@/composables/useUserExcelExport'
@@ -239,6 +239,14 @@ const storeConfig: PaginationSearchConfig<EmployeeExtended> = {
         results: response.results as EmployeeExtended[],
       }
     },
+    /**
+     * 搜索态变更同步（BF-047）
+     *
+     * 把当前搜索词写入 store 的模块级状态，供导出 composable 转发给后端，
+     * 使「搜索后导出」导出行集合 = 搜索结果行集合。清空搜索时同样回调空串，
+     * 导出自动回到全量口径。
+     */
+    onSearchStateChange: (keyword: string) => setUserCurrentKeyword(keyword),
   },
   defaultPageSize: 20,
   messages: {
@@ -247,6 +255,15 @@ const storeConfig: PaginationSearchConfig<EmployeeExtended> = {
     invalidPage: '页码超出范围，已跳转至最后一页',
   },
 }
+
+// ===== 生命周期：清理模块级搜索词 =====
+/**
+ * 组件卸载时清空 store 中的模块级搜索词（BF-047）
+ *
+ * currentKeyword 为模块级状态，生命周期长于本组件。若不清理，离开本页后
+ * 再次进入（列表回到全量口径、搜索框为空）时导出会带上上一次的残留搜索词。
+ */
+onBeforeUnmount(() => setUserCurrentKeyword(''))
 
 // ===== 路由监听：控制子路由遮罩 =====
 /**

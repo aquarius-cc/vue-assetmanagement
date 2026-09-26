@@ -4,6 +4,9 @@
  * 相对旧版的语义变更：不再有「当前页/全部」二选一，也不再需要
  * departmentStore（部门名由后端带出）。本文件锁定新契约：
  * 只发起一次服务端导出请求，下载服务端返回的文件。
+ *
+ * 【BF-047】搜索态下导出行集合须等于当前可见行集合，故断言搜索词被转发为
+ * `keyword` 查询参数；普通列表态（空搜索词）不带该参数。
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { EmployeeExtended } from '@/types/user'
@@ -14,6 +17,8 @@ const mocks = vi.hoisted(() => ({
   elMessageBox: Object.assign(vi.fn(), { confirm: vi.fn() }),
   exportExcel: vi.fn(),
   downloadBlob: vi.fn(),
+  // 模拟 userStore 的模块级搜索词（只读 Ref 语义）
+  currentKeyword: { value: '' as string },
 }))
 
 vi.mock('element-plus', () => ({
@@ -23,6 +28,10 @@ vi.mock('element-plus', () => ({
 
 vi.mock('@/api/user', () => ({
   userAPI: { exportExcel: mocks.exportExcel },
+}))
+
+vi.mock('@/stores/userStore', () => ({
+  useUserCurrentKeyword: () => mocks.currentKeyword,
 }))
 
 vi.mock('@/utils/fileDownload', () => ({
@@ -48,7 +57,8 @@ function makeEmp(jobcode: string, name: string): EmployeeExtended {
   }
 }
 
-function setup(overrides: { total?: number } = {}) {
+function setup(overrides: { total?: number; keyword?: string } = {}) {
+  mocks.currentKeyword.value = overrides.keyword ?? ''
   const userStore = {
     list: [makeEmp('J001', '张三')],
     pagination: { page: 1, total: overrides.total ?? 200 },
@@ -62,6 +72,7 @@ function blobResult(headers: Record<string, string> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.currentKeyword.value = ''
   mocks.exportExcel.mockResolvedValue(blobResult())
   mocks.elMessageBox.confirm.mockResolvedValue('confirm')
 })
@@ -149,5 +160,64 @@ describe('createUserExcelExport（服务端导出）', () => {
 
     expect(mocks.downloadBlob).not.toHaveBeenCalled()
     expect(mocks.elMessage.success).not.toHaveBeenCalled()
+  })
+})
+
+// --------------------------------------------------------------------------
+// BF-047：搜索态导出须与当前可见行集合一致
+// --------------------------------------------------------------------------
+
+describe('createUserExcelExport（BF-047 搜索态对齐）', () => {
+  it('搜索态转发当前搜索词为 keyword 参数', async () => {
+    const { handleExportExcel } = setup({ total: 12, keyword: '张三' })
+
+    await handleExportExcel()
+
+    expect(mocks.exportExcel).toHaveBeenCalledWith({ keyword: '张三' })
+  })
+
+  it('普通列表态不传 keyword（导全量）', async () => {
+    const { handleExportExcel } = setup({ total: 12, keyword: '' })
+
+    await handleExportExcel()
+
+    expect(mocks.exportExcel).toHaveBeenCalledWith({})
+  })
+
+  it('搜索词与超限 limit 叠加，互不覆盖', async () => {
+    const { handleExportExcel } = setup({ total: EXPORT_MAX_ROWS + 1, keyword: '张三' })
+
+    await handleExportExcel()
+
+    expect(mocks.exportExcel).toHaveBeenCalledWith({
+      keyword: '张三',
+      limit: EXPORT_MAX_ROWS,
+    })
+  })
+
+  it('搜索态导出的条数提示取搜索结果总数', async () => {
+    const { handleExportExcel } = setup({ total: 12, keyword: '张三' })
+
+    await handleExportExcel()
+
+    expect(mocks.elMessage.success).toHaveBeenCalledWith('员工导出成功，共 12 条')
+  })
+
+  it('搜索态命中 store 的实时搜索词（导出时读取，非创建时快照）', async () => {
+    const { handleExportExcel } = setup({ total: 12 })
+    mocks.currentKeyword.value = '李四'
+
+    await handleExportExcel()
+
+    expect(mocks.exportExcel).toHaveBeenCalledWith({ keyword: '李四' })
+  })
+
+  it('搜索态总行数为 0 时同样不发起请求', async () => {
+    const { handleExportExcel } = setup({ total: 0, keyword: '查无此人' })
+
+    await handleExportExcel()
+
+    expect(mocks.exportExcel).not.toHaveBeenCalled()
+    expect(mocks.elMessage.warning).toHaveBeenCalledWith('暂无员工数据可导出')
   })
 })

@@ -175,6 +175,54 @@ describe('usePaginationSearch', () => {
     })
   })
 
+  // BF-047：当前搜索词的单一事实来源（供导出等消费方读取）
+  describe('onSearchStateChange', () => {
+    const setupWithNotifier = (onSearchStateChange = vi.fn()) => {
+      const mockSearch = vi.fn().mockResolvedValue({ count: 1, results: [{ id: 1 }] })
+      const instance = usePaginationSearch({
+        store: mockStore,
+        search: { performSearch: mockSearch, onSearchStateChange },
+      })
+      return { ...instance, onSearchStateChange }
+    }
+
+    it('搜索时上报当前搜索词', async () => {
+      const { performSearch, onSearchStateChange } = setupWithNotifier()
+
+      await performSearch('张三')
+
+      expect(onSearchStateChange).toHaveBeenCalledWith('张三')
+    })
+
+    it('清空搜索（空串）时上报空串，使消费方回到全量口径', async () => {
+      const { performSearch, onSearchStateChange } = setupWithNotifier()
+
+      await performSearch('张三')
+      await performSearch('')
+
+      expect(onSearchStateChange).toHaveBeenLastCalledWith('')
+    })
+
+    it('reset 清空搜索态时同样上报空串', async () => {
+      const { performSearch, resetToFirstPage, onSearchStateChange } = setupWithNotifier()
+
+      await performSearch('张三')
+      await resetToFirstPage()
+
+      expect(onSearchStateChange).toHaveBeenLastCalledWith('')
+    })
+
+    it('未配置回调时不报错（向后兼容）', async () => {
+      const mockSearch = vi.fn().mockResolvedValue({ count: 0, results: [] })
+      const { performSearch } = usePaginationSearch({
+        store: mockStore,
+        search: { performSearch: mockSearch },
+      })
+
+      await expect(performSearch('test')).resolves.not.toThrow()
+    })
+  })
+
   describe('handleSizeChange', () => {
     it('updates page size and reloads data', async () => {
       const { handleSizeChange, pageSize } = usePaginationSearch({

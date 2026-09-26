@@ -18,6 +18,7 @@
  *   - stores/createEntityStore: 实体 Store 工厂
  *   - types/user: 员工相关类型定义
  */
+import { ref, type Ref } from 'vue'
 import { createEntityStore } from '@/stores/createEntityStore'
 import { userAPI } from '@/api/user'
 import type {
@@ -32,6 +33,35 @@ import { ElMessage } from 'element-plus'
 import type { EmployeeBatchCreateResult } from '@/api/user'
 
 export type { EmployeeBatchCreateResult } from '@/api/user'
+
+/**
+ * 员工列表当前搜索词（模块级单一事实来源，BF-047）
+ *
+ * 【为什么放在 store 而不是组件内 ref】导出的取行口径必须与用户当前看到的
+ * 列表一致，而搜索词由 SmartListContainer 内部持有、组件侧取不到。放在
+ * 模块级可让「写」（UserDetails.vue 监听搜索态）与「读」（useUserExcelExport
+ * 转发导出参数）共享同一份状态，DR-1：搜索词只解析一次。
+ *
+ * 【写入来源】唯一入口是 usePaginationSearchState 的 onSearchStateChange 回调
+ * （含清空搜索态），故不需各页面自建 watch 镜像。
+ *
+ * 【与 total 的关系】搜索态下 onSearchStateChange 在**请求发出前**回调，
+ * 而 pagination.total 由搜索响应的 updateTotal 在**响应回来后**回写为搜索
+ * 结果总数。故导出时读到的 total 已是搜索结果总数，导出提示条数与实际导出
+ * 行数天然一致（不存在"提示 N 条、导出 M 条"的错位）。
+ */
+const currentKeyword = ref('')
+
+/** 读取员工列表当前搜索词（只读，外部不可直接改写） */
+export const useUserCurrentKeyword = (): Readonly<Ref<string>> => currentKeyword
+
+/**
+ * 设置员工列表当前搜索词
+ * @param keyword 搜索词；空串/纯空白表示回到普通列表态
+ */
+export const setUserCurrentKeyword = (keyword: string): void => {
+  currentKeyword.value = keyword.trim()
+}
 
 /**
  * 批量创建员工

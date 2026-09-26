@@ -11,18 +11,21 @@
  * 2. 不再需要 departmentStore：部门名称由后端沿关联字段带出，
  *    前端无需再拉全量部门 code 到 name 的映射表。
  *
- * 【可见性】由后端 EmployeeViewSet.get_queryset() 决定，与列表一致；
+ * 【可见性】由后端 EmployeeViewSet.get_export_queryset() 决定，默认与列表同源；
  * 导出权限走 CanExportExcel 矩阵（regular_user 403）。
  *
- * 【已知限制 BF-047】本批导出**不带筛选条件**：后端员工导出未接收
- * department_code / employee_status / search，与列表的筛选态不对齐。
- * 原因有二：① 列表搜索态由 SmartListContainer 内部持有，组件侧取不到；
- * ② 后端 EmployeeViewSet 导出未接 request 级过滤（已批准范围不含此项）。
- * 故这里刻意不提供 getFilters 入口 —— 与其留一个「看起来生效其实不生效」
- * 的参数，不如显式声明限制并登记待办。
+ * 【筛选口径 BF-047 已闭环】本批导出**跟随当前可见范围**：
+ * 搜索态转发 store 的当前搜索词（后端 /users/employees/export/ 与列表、/search/
+ * 共用 `_filtered_employee_queryset` 口径），普通列表态不带参数导全量。
+ * 搜索词由 usePaginationSearchState.onSearchStateChange 单点写入 userStore
+ * （含清空搜索态），故此处只读不解析，DR-1。
+ *
+ * 【仍存限制 BF-048】导出为**全公司口径**，未做行级数据权限过滤：
+ * 有导出权限的部门经理可导出全部员工档案。属独立安全待办，不在此处伪装成已修复。
  */
 import { useServerExcelExport } from '@/composables/useServerExcelExport'
 import { userAPI } from '@/api/user'
+import { useUserCurrentKeyword } from '@/stores/userStore'
 import type { EmployeeExtended } from '@/types/user'
 
 /** 用户导出依赖的 store 最小接口 */
@@ -34,12 +37,16 @@ interface UserExportStore {
 /** 创建用户列表导出函数 handleExportExcel() */
 export function createUserExcelExport(userStore: UserExportStore) {
   const { exportFromServer } = useServerExcelExport()
+  const currentKeyword = useUserCurrentKeyword()
 
   return async function handleExportExcel() {
+    const keyword = currentKeyword.value
     await exportFromServer({
       entityName: '员工',
       totalCount: userStore.pagination.total,
       fetchExport: (params) => userAPI.exportExcel(params),
+      // limit/offset 由 useServerExcelExport 按 EXPORT_MAX_ROWS 叠加，此处只补业务筛选参数
+      params: keyword ? { keyword } : {},
     })
   }
 }

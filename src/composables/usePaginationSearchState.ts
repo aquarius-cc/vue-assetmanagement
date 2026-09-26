@@ -25,6 +25,18 @@ export interface SearchConfig<T> {
     page: number,
     page_size: number,
   ) => Promise<{ count: number; results: T[] }>
+  /**
+   * 搜索态变更回调（可选，DRY：当前搜索词的单一事实来源）
+   *
+   * 在 search.value 的每一次真实变更后调用（含 performSearch / performSearchWithParams /
+   * clearSearch），参数为变更后的搜索词（空串表示已回到普通列表态）。
+   *
+   * 【为什么需要】页面若要感知"当前搜索词"（如 BF-047 让导出对齐搜索态），
+   * 只能在 performSearch 里写一次赋值——但 performSearch 收不到空串（内部提前
+   * 走 loadList 分支），clearSearch 更是完全不经过它，导致清空后搜索词残留。
+   * 由本模块统一派发可避免各页面各写一份 watch 镜像（DR-1/DR-2）。
+   */
+  onSearchStateChange?: (keyword: string) => void
 }
 
 interface SearchStateOptions<T> {
@@ -49,6 +61,11 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
   const getPage = () => readReactive<number>(currentPage)
   const getSize = () => readReactive<number>(pageSize)
 
+  /** 派发搜索态变更（DRY：唯一出口，保证各出口的搜索词一致） */
+  const notifySearchState = (keyword: string) => {
+    searchConfig?.onSearchStateChange?.(keyword)
+  }
+
   /** 单关键词搜索 */
   const performSearch = async (keyword: string = search.value) => {
     if (!searchConfig) {
@@ -59,6 +76,7 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
       return
     }
     search.value = keyword
+    notifySearchState(keyword)
 
     if (!keyword.trim()) {
       searchResults.value = []
@@ -99,6 +117,7 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
 
     searchParams.value = { ...params }
     search.value = params.keyword || ''
+    notifySearchState(search.value)
 
     const hasParams = Object.values(params).some((v) => v && v.trim())
     if (!hasParams) {
@@ -140,6 +159,7 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
     searchResults.value = []
     searchTotal.value = 0
     searchParams.value = {}
+    notifySearchState('')
   }
 
   return {

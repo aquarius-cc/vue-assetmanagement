@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useUserStore, batchCreateUsers } from '../userStore'
+import {
+  useUserStore,
+  batchCreateUsers,
+  useUserCurrentKeyword,
+  setUserCurrentKeyword,
+} from '../userStore'
 
 vi.mock('@/api/user', () => ({
   userAPI: {
@@ -330,6 +335,35 @@ describe('UserStore', () => {
       vi.mocked(userAPI.batchCreateUsers).mockRejectedValue(new Error('批量创建失败'))
 
       await expect(batchCreateUsers([])).rejects.toThrow('批量创建失败')
+    })
+  })
+
+  // BF-047：当前搜索词为模块级状态（导出等消费方需与列表共享同一份）
+  describe('当前搜索词（BF-047）', () => {
+    it('默认应为空串（普通列表态）', () => {
+      setUserCurrentKeyword('')
+      expect(useUserCurrentKeyword().value).toBe('')
+    })
+
+    it('应记录搜索词', () => {
+      setUserCurrentKeyword('张三')
+      expect(useUserCurrentKeyword().value).toBe('张三')
+    })
+
+    it('应去除首尾空白，避免导出带上无效搜索词', () => {
+      setUserCurrentKeyword('  李四  ')
+      expect(useUserCurrentKeyword().value).toBe('李四')
+    })
+
+    it('纯空白应归一化为空串（回到全量口径）', () => {
+      setUserCurrentKeyword('   ')
+      expect(useUserCurrentKeyword().value).toBe('')
+    })
+
+    it('重复设置应覆盖旧值，不累积', () => {
+      setUserCurrentKeyword('张三')
+      setUserCurrentKeyword('王五')
+      expect(useUserCurrentKeyword().value).toBe('王五')
     })
   })
 })
