@@ -373,6 +373,61 @@ describe('usePaginationSearch', () => {
 
       expect(mockSearch).toHaveBeenCalled()
     })
+
+    /**
+     * D1 回归：未实现 performSearchWithParams 时，**禁止**把任意筛选值当搜索词。
+     *
+     * 旧实现 `params.keyword || Object.values(params).find(非空)` 会把
+     * `department_code` 当 keyword 发给搜索端点，而后端 keyword 匹配员工昵称，
+     * 结果集必然错误且无任何提示。
+     */
+    it('非关键字筛选不得被当成搜索词，回落为列表加载', async () => {
+      const mockSearch = vi.fn().mockResolvedValue({ count: 0, results: [] })
+
+      const { performSearchWithParams, searchParams } = usePaginationSearch({
+        store: mockStore,
+        search: {
+          performSearch: mockSearch,
+        },
+      })
+
+      await performSearchWithParams({ department_code: 'DEPT-F1' })
+
+      expect(mockSearch).not.toHaveBeenCalled()
+      expect(mockStore.getList).toHaveBeenCalledWith({ page: 1, page_size: 20 })
+      expect(searchParams.value).toEqual({})
+    })
+
+    it('keyword 与筛选并存时只取 keyword 作为搜索词', async () => {
+      const mockSearch = vi.fn().mockResolvedValue({ count: 0, results: [] })
+
+      const { performSearchWithParams } = usePaginationSearch({
+        store: mockStore,
+        search: {
+          performSearch: mockSearch,
+        },
+      })
+
+      await performSearchWithParams({ keyword: '张三', department_code: 'DEPT-F1' })
+
+      expect(mockSearch).toHaveBeenCalledWith('张三', 1, 20)
+    })
+
+    it('keyword 仅空白时同样回落为列表，不拿其他筛选值凑数', async () => {
+      const mockSearch = vi.fn().mockResolvedValue({ count: 0, results: [] })
+
+      const { performSearchWithParams } = usePaginationSearch({
+        store: mockStore,
+        search: {
+          performSearch: mockSearch,
+        },
+      })
+
+      await performSearchWithParams({ keyword: '   ', status: 'active' })
+
+      expect(mockSearch).not.toHaveBeenCalled()
+      expect(mockStore.getList).toHaveBeenCalledWith({ page: 1, page_size: 20 })
+    })
   })
 
   describe('storeLoading', () => {

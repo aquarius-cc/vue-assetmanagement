@@ -105,6 +105,38 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
     }
   }
 
+  /** 清空搜索结果（不含搜索框与上报名单，由调用方决定） */
+  const resetSearchState = () => {
+    searchResults.value = []
+    searchTotal.value = 0
+    searchParams.value = {}
+  }
+
+  /**
+   * 未实现 performSearchWithParams 时的回落（D1）
+   *
+   * 只能按 keyword 搜索。原实现是 `params.keyword || Object.values(params).find(非空) || ''`，
+   * 即把**任意筛选值当搜索词**：只传 department_code 时会发出 `?keyword=DEPT-F1`，
+   * 而后端 `keyword` 匹配的是员工昵称（与 `search` 字段名也不是一回事，见 BF-050 遗留），
+   * 筛选值被当搜索词，结果集必然是错的，且无任何提示。
+   *
+   * 改为只上报真正的 keyword；无 keyword 时如实回落为列表加载并告警，
+   * 由接入方补 performSearchWithParams。禁止反向操作：把筛选值塞进 keyword
+   * 去迁就缺失的实现。
+   */
+  const fallbackSearchWithoutMultiParam = async (params: Record<string, string>) => {
+    const keyword = params.keyword?.trim() || ''
+    if (keyword) {
+      return performSearch(keyword)
+    }
+    logWarn(
+      'composables/usePaginationSearchState',
+      '[usePaginationSearch] 非关键字筛选需实现 performSearchWithParams，已回落为列表加载',
+    )
+    resetSearchState()
+    return loadList(1, getSize())
+  }
+
   /** 多参数搜索 */
   const performSearchWithParams = async (params: Record<string, string>) => {
     if (!searchConfig) {
@@ -121,35 +153,32 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
 
     const hasParams = Object.values(params).some((v) => v && v.trim())
     if (!hasParams) {
-      searchResults.value = []
-      searchTotal.value = 0
-      searchParams.value = {}
+      resetSearchState()
       return loadList(1, getSize())
     }
 
-    if (searchConfig.performSearchWithParams) {
-      try {
-        isSearching.value = true
-        const response = await searchConfig.performSearchWithParams(params, getPage(), getSize())
-        searchResults.value = response.results || []
-        searchTotal.value = response.count ?? 0
-        updateTotal(response.count)
-      } catch (error) {
-        logError(
-          'composables/usePaginationSearchState',
-          '[usePaginationSearch] Search failed:',
-          error,
-        )
-        ElMessage.error(messages.searchFailed)
-        searchResults.value = []
-        searchTotal.value = 0
-        throw error
-      } finally {
-        isSearching.value = false
-      }
-    } else {
-      const keyword = params.keyword || Object.values(params).find((v) => v && v.trim()) || ''
-      await performSearch(keyword)
+    if (!searchConfig.performSearchWithParams) {
+      return fallbackSearchWithoutMultiParam(params)
+    }
+
+    try {
+      isSearching.value = true
+      const response = await searchConfig.performSearchWithParams(params, getPage(), getSize())
+      searchResults.value = response.results || []
+      searchTotal.value = response.count ?? 0
+      updateTotal(response.count)
+    } catch (error) {
+      logError(
+        'composables/usePaginationSearchState',
+        '[usePaginationSearch] Search failed:',
+        error,
+      )
+      ElMessage.error(messages.searchFailed)
+      searchResults.value = []
+      searchTotal.value = 0
+      throw error
+    } finally {
+      isSearching.value = false
     }
   }
 
