@@ -60,6 +60,20 @@ export default defineConfigWithVueTs(
   // API 必须经 store 层消费。增量规则——仅约束新代码, 存量直连文件
   // 登记于下方 legacy-direct-api-files 豁免块, 迁移完毕后逐个移除。
   // infra 例外: @/api/config(BASE_URL 常量)、@/api/request、@/api/index(request 助手)
+  //
+  // 【为何 composable 不在本规则的 files 内——有意为之, 非遗漏】
+  // composable 在本项目中被定位为**API 适配层**: 它把「端点 + 参数 + 响应取值」
+  // 封装成可复用的有状态操作(如 useEmployeeSuggestionFetcher 直接调 employeeAPI
+  // 并归一 results)。此时它就是 store 与视图之间那一层适配器, 若强制其再绕
+  // store, 会为 10 个单端点 composable 各造一个只做透传的 store 方法——
+  // 纯粹的转发层, 反而增加跳转层级与重复面。
+  //
+  // 判定标准(供后续新增 composable 参照):
+  //   允许 —— 只封装单个/少数端点调用, 做参数默认值与响应归一, 无跨域业务编排;
+  //   违规 —— 编排多个端点、串联业务流程、承载状态机, 此时它已是业务层而非适配层,
+  //           应下沉进 store/service。
+  // 现状 10 个 composable 均属「允许」一类, 审计记录见
+  // Rules_Fiels/Duplicate_Codes/complete-patterns.md(A-45 决策)。
   {
     name: 'app/store-layer-no-direct-api',
     files: ['src/components/**/*.vue', 'src/views/**/*.vue'],

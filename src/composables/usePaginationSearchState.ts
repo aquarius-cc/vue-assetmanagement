@@ -117,8 +117,17 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
    *
    * 只能按 keyword 搜索。原实现是 `params.keyword || Object.values(params).find(非空) || ''`，
    * 即把**任意筛选值当搜索词**：只传 department_code 时会发出 `?keyword=DEPT-F1`，
-   * 而后端 `keyword` 匹配的是员工昵称（与 `search` 字段名也不是一回事，见 BF-050 遗留），
-   * 筛选值被当搜索词，结果集必然是错的，且无任何提示。
+   * 而部门代码不在 `keyword` 的匹配范围内，筛选值被当搜索词，结果集必然是错的，
+   * 且无任何提示。
+   *
+   * 【后端两套搜索口径（A-44 遗留③，已由 OpenAPI 说明权威化）】
+   * - `?keyword=` **宽**：4 个员工文本字段 + 关联部门名称 + 中文状态别名
+   *   （`EmployeeSelector.search_employees`）
+   * - `?search=` **窄**：仅姓名/工号/电话三个字段，不含部门名称与状态别名
+   *   （DRF `SearchFilter` 按 `search_fields`）
+   *
+   * 二者在 `/search/`、`/export/` 上同传为 **AND（交集）**。改本注释时以
+   * `apps/usermanagement/employee_search.py` 与基线里的参数描述为准，勿凭字段名推断。
    *
    * 改为只上报真正的 keyword；无 keyword 时如实回落为列表加载并告警，
    * 由接入方补 performSearchWithParams。禁止反向操作：把筛选值塞进 keyword
