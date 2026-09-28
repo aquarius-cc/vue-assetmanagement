@@ -7,10 +7,6 @@ vi.mock('@/utils/Format', () => ({
   formatNumber: vi.fn((v: string | number) => String(v)),
   getStatusDisplay: vi.fn((v: string | undefined) => (v ? `status_${v}` : '')),
   contractTypeMapping: { purchase: '采购合同', lease: '租赁合同' } as Record<string, string>,
-  contractSettlementStatusMapping: { settled: '已结算', pending: '未结算' } as Record<
-    string,
-    string
-  >,
   storageMapping: { warehouse: '仓库', office: '办公区' } as Record<string, string>,
 }))
 

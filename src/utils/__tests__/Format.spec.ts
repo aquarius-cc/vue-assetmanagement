@@ -8,9 +8,7 @@ import {
   formatNumber,
   contractiInfoFormate,
   assetCurrentStatusMapping,
-  assetTypeMapping,
   contractTypeMapping,
-  contractSettlementStatusMapping,
   storageMapping,
   userStatusMapping,
   getStatusDisplay,
@@ -210,28 +208,12 @@ describe('Format', () => {
     })
   })
 
-  describe('assetTypeMapping', () => {
-    it('contains all required type mappings', () => {
-      expect(assetTypeMapping).toHaveProperty('hardware', '硬件')
-      expect(assetTypeMapping).toHaveProperty('software', '软件')
-      expect(assetTypeMapping).toHaveProperty('lowvalue', '低值易耗')
-      expect(assetTypeMapping).toHaveProperty('other', '其他')
-    })
-  })
-
   describe('contractTypeMapping', () => {
     it('maps all contract types', () => {
       expect(contractTypeMapping.tender_procurement).toBe('招标采购合同')
       expect(contractTypeMapping.service).toBe('服务合同')
       expect(contractTypeMapping.information_construction).toBe('信息化建设合同')
       expect(contractTypeMapping.direct_procurement).toBe('直接采购合同')
-    })
-  })
-
-  describe('contractSettlementStatusMapping', () => {
-    it('maps settlement statuses', () => {
-      expect(contractSettlementStatusMapping.pending).toBe('待结算')
-      expect(contractSettlementStatusMapping.settled).toBe('已结算')
     })
   })
 

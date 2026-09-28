@@ -118,17 +118,14 @@ export type WasteAssetListResponse = PaginatedResponse<WasteAsset>
 
 /**
  * 报废资产统计接口
+ * 对应后端 GET /api/v1/assets/waste-assets/statistics/ 响应（waste_asset_view.py
+ * WasteAssetStatisticsDataSchema：total_waste / current_year_count / monthly_distribution）
  */
 export interface WasteAssetStats {
-  /** 总报废资产数 */
-  total_waste_assets: number
-  /** 本年报废数 */
-  this_year_waste: number
-  /** 月度报废统计 */
-  monthly_waste: Array<{
-    /** 月份 */
-    month: number
-    /** 数量 */
-    count: number
-  }>
+  /** 已报废总数 */
+  total_waste: number
+  /** 本年度报废数量 */
+  current_year_count: number
+  /** 本年度每月报废数量：{月份: 数量} */
+  monthly_distribution: Record<string, number>
 }

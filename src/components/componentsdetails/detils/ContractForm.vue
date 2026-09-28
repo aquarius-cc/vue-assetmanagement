@@ -186,13 +186,20 @@
           <!-- 已支付金额-->
           <el-col :xs="24" :sm="24" :md="12">
             <el-form-item label="已支付金额" prop="amount_paid">
-              <el-input-number
-                v-model="contractForm.amount_paid"
-                :min="0"
-                :precision="2"
-                placeholder="请输入已支付金额"
-                style="width: 100%"
-              />
+              <el-tooltip
+                :disabled="!isEdit"
+                content="编辑态不可直接改已支付金额，请通过「付款记录」新增/删除/审核"
+                placement="top"
+              >
+                <el-input-number
+                  v-model="contractForm.amount_paid"
+                  :min="0"
+                  :precision="2"
+                  :disabled="isEdit"
+                  placeholder="请输入已支付金额"
+                  style="width: 100%"
+                />
+              </el-tooltip>
             </el-form-item>
           </el-col>
         </el-row>
@@ -388,6 +395,12 @@ const submitForm = () => {
       settlemented_price: Number(contractForm.settlemented_price),
       initial_check_date: safeFormatDate(contractForm.initial_check_date),
       final_check_date: safeFormatDate(contractForm.final_check_date),
+    }
+    // 【BF-055】amount_paid 在创建入口的语义是「期初已付金额」，后端会将其规范化为
+    // 一条 approved 期初付款记录，此前此处未传导致该输入被静默丢弃（决策 2a）。
+    // 编辑态不得传：后端 Update 侧三字段已全部 read_only，改金额须走付款记录端点。
+    if (!isEdit.value) {
+      submitData.amount_paid = Number(contractForm.amount_paid) || 0
     }
     // 编辑模式必须携带 recordcode，后端按 recordcode 定位更新（勿用 contract_code）
     if ((route.query.code as string) && isEdit.value) {

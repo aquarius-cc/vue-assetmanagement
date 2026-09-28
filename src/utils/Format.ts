@@ -9,8 +9,7 @@
  *   - formatNumber: 数字千分位格式化
  *   - contractiInfoFormate: 合同信息上传数据格式化
  *   - assetCurrentStatusMapping: 资产状态枚举映射
- *   - assetStatusMapping: 资产状态映射别名
- *   - contractTypeMapping / contractSettlementStatusMapping / assetTypeMapping / storageMapping / userStatusMapping: 各类业务枚举映射
+ *   - contractTypeMapping / storageMapping / userStatusMapping: 各类业务枚举映射
  *   - getStatusDisplay: 用户状态中文显示
  *   - physicalGradeMapping / getPhysicalGradeDisplay: 资产物理成色映射与显示
  *   - USER_STATUS_INPUT_MAPPING / USER_STATUS_DISPLAY_MAPPING: 用户状态双向映射
@@ -211,9 +210,6 @@ export function getAssetStatusText(status?: string | null): string {
   return getAssetStatusTextFromStatusMapping(status)
 }
 
-// 资产状态映射（作为assetCurrentStatusMapping的别名）
-const assetStatusMapping: Record<string, string> = assetCurrentStatusMapping
-
 // // 资产使用状态映射// const assetUsingStatusMapping: Record<string, string> = {
 //   idle: '闲置',
 //   in_use: '在用',
@@ -228,31 +224,6 @@ const contractTypeMapping: Record<string, string> = {
   service: '服务合同',
   information_construction: '信息化建设合同',
   direct_procurement: '直接采购合同',
-}
-
-/**
- * @deprecated 合同八状态中文标签已收敛至 src/utils/statusMapping.ts 的 CONTRACT_STATUS_MAP，
- * 本映射仅保留"结算状态"旧语义（pending/settling_up/settled），供既有测试锚点兼容。
- * 新代码请使用 getContractStatusText / getContractStatusTagType。
- */
-const contractSettlementStatusMapping: Record<string, string> = {
-  purchasing: '供货中',
-  pending: '待结算',
-  settling_up: '结算中',
-  settled: '已结算',
-}
-
-/**
- * @deprecated 【A-9】后端 AssetType.type_code 是自由文本树形编码（如 "AT_W2"），
- * 本枚举（hardware/software/lowvalue/other）是虚构分类，与真实数据不符：
- * 列表分类列展示与搜索下拉均已改为动态数据源（asset_type_name / 动态拉取 AssetType）。
- * 保留仅为既有引用兼容，禁止在新代码中使用。
- */
-const assetTypeMapping: Record<string, string> = {
-  hardware: '硬件',
-  software: '软件',
-  lowvalue: '低值易耗',
-  other: '其他',
 }
 
 const storageMapping: Record<string, string> = {
@@ -476,11 +447,8 @@ export {
   // typeCasting,
   // assetAppearanceMapping,
   assetCurrentStatusMapping,
-  assetStatusMapping,
   // assetUsingStatusMapping,
   contractTypeMapping,
-  contractSettlementStatusMapping,
-  assetTypeMapping,
   storageMapping,
   userStatusMapping,
   getStatusDisplay,
