@@ -1,6 +1,6 @@
 # 资产管理系统后端 API 文档
 
-> 适用版本：Django 6.0.5 + Django REST Framework 3.15+  
+> 适用版本：Django 6.0.8 + Django REST Framework 3.17.2+  
 > 更新日期：2026 年 05 月 08 日
 
 ---
