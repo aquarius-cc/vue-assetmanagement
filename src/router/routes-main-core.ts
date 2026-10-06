@@ -41,6 +41,23 @@ export const routesMainCore: RouteRecordRaw[] = [
     },
     children: [
       {
+        // 【L-1 落地】分组展开入口（/main/assetdetails/grouped）：静态段 'grouped'
+        // 在 vue-router 4 评分中高于下方动态段 `:asset_code?`，故必命中本路由。
+        // 刻意不设 keepAlive：扁平/分组两条路由渲染同一组件（name 均
+        // 'AssetContentDetails'），MainView 的 <keep-alive :include> 按组件 name
+        // 匹配，本路由若入缓存会复用以扁平模式初始化的实例（setup 期捕获
+        // enableGrouping=false），分组模式将失效；不入缓存则每次全新挂载即捕获 true。
+        path: 'grouped',
+        name: 'AssetGroupedContent',
+        component: () => import('@/components/componentsdetails/AssetContentDetails.vue'),
+        props: { enableGrouping: true },
+        meta: {
+          title: '资产分组展开',
+          requiresAuth: true,
+          showPageHeader: true,
+        },
+      },
+      {
         // path: 'details', // 空路径作为默认子路由
         path: ':asset_code?', // 空路径作为默认子路由
         name: 'AssetContentDetails',

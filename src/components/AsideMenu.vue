@@ -41,6 +41,7 @@
               <span>资产管理</span>
             </template>
             <el-menu-item index="/main/assetdetails">资产详情</el-menu-item>
+            <el-menu-item index="/main/assetdetails/grouped">资产分组展开</el-menu-item>
             <el-menu-item index="/main/assetform">资产录入</el-menu-item>
             <el-menu-item index="/main/outassetdetails">资产出库</el-menu-item>
             <el-menu-item index="/main/recycleassetdetails">资产回收</el-menu-item>

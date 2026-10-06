@@ -8,19 +8,22 @@
  *   核心契约：
  *   - 缓存语义：组内翻页 **append** 不 replace；同一 group_key 缓存命中时零请求
  *   - R-1 组键透传：`group_key` 原样回传，前端不解析、不重建、不补 null
- *   - 筛选白名单：仅后端 PASS_THROUGH_FILTER_PATHS 的三个非组键筛选可透传；
- *     `contract_code` / `no_contract` 已在 group_key 内表达，剔除以免与组键取交集得空集
+ *   - 筛选白名单：仅 `GROUPED_PASS_THROUGH_KEYS`（9 键，≡ 后端
+ *     `PASS_THROUGH_FILTER_PATHS`）的筛选可透传；`contract_code` / `no_contract`
+ *     已在 group_key 内表达，剔除以免与组键取交集得空集
  *
  * @callers
  *   - composables/useGroupedAssetList: 分组展开表格列表状态（F2 主入口）
  * @dependsOn
  *   - api/asset: getGroupChildren（FR-3 API 收敛唯一入口）
+ *   - constants/assetGroupedFilters: 透传白名单单一来源
  *   - utils/logger: logError
  */
 import { ref, type Ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { assetAPI } from '@/api/asset'
 import { logError } from '@/utils/logger'
+import { GROUPED_PASS_THROUGH_KEYS } from '@/constants/assetGroupedFilters'
 import type { AssetDetail, AssetGroupChildQueryParams, AssetGroupQueryParams } from '@/types/asset'
 
 /** 组内明细缓存条目 */
@@ -33,12 +36,8 @@ export interface GroupChildrenCacheEntry {
   items: AssetDetail[]
 }
 
-/** 组内可透传的非组键筛选白名单（SC-4 白名单；与后端 PASS_THROUGH_FILTER_PATHS 一致） */
-const PASS_THROUGH_KEYS = [
-  'asset_current_status',
-  'asset_type_recordcode',
-  'asset_storage_recordcode',
-] as const
+/** 组内可透传的非组键筛选白名单（SC-4 白名单；单一来源见 constants/assetGroupedFilters） */
+const PASS_THROUGH_KEYS = GROUPED_PASS_THROUGH_KEYS
 
 /** 缓存 Composable 配置项 */
 export interface GroupChildrenCacheOptions {

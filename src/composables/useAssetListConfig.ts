@@ -8,48 +8,45 @@
  * @dependsOn
  *   - composables/usePaginationSearch: 分页搜索框架
  *   - composables/useExcelExport: Excel 导出列配置引用
+ *   - composables/useAssetSearchOptions: 搜索栏下拉选项数据源
+ *   - constants/assetGroupedFilters: 分组筛选键白名单与字段剔除口径
  *   - stores/assetStore: 资产数据与搜索 API
  *   - utils/excelExporter: 列配置类型
  *   - utils/Format: 状态/类型映射
- *   - utils/logger: 资产类型截断告警日志
  *   - types/common: 搜索字段配置类型
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import type { SearchFieldConfig } from '@/types/common'
 import { useAssetStore } from '@/stores/assetStore'
 import type { AssetDetail } from '@/types/asset'
 import { assetCurrentStatusMapping } from '@/utils/Format'
-import { logError } from '@/utils/logger'
-import { assetTypeAPI } from '@/api/assetType'
+import { useAssetSearchOptions } from '@/composables/useAssetSearchOptions'
+import { isGroupedFieldDropped } from '@/constants/assetGroupedFilters'
 
-export function useAssetListConfig() {
+/** 资产列表配置入参 */
+export interface AssetListConfigOptions {
+  /**
+   * 分组展开模式开关（缺省 false，与组件 prop 同口径）
+   *
+   * true 时才加载仓库下拉选项：平铺主列表无仓库筛选字段，无条件加载等于
+   * 每次进入资产页多一次无用请求。
+   */
+  enableGrouping?: boolean
+}
+
+export function useAssetListConfig(options: AssetListConfigOptions = {}) {
   const assetStore = useAssetStore()
+  const {
+    assetTypeOptions,
+    assetTypeRecordcodeOptions,
+    storageOptions,
+    loadAssetTypeOptions,
+    loadStorageOptions,
+  } = useAssetSearchOptions({ enableGrouping: options.enableGrouping ?? false })
 
   // ===== 搜索栏字段配置 =====
-  // 【A-9】资产分类选项改为动态拉取后端真实数据：AssetType.type_code 是自由文本树形编码
-  // （如 "AT_W2"），旧的硬编码枚举（hardware/software/lowvalue/other）与后端不符，
-  // 导致分类搜索永远空结果。后端 combine_search 的 asset_type_category 精确匹配 AssetType.type_code。
-  const assetTypeOptions = ref<Array<{ label: string; value: string }>>([])
-
-  const loadAssetTypeOptions = async () => {
-    try {
-      const res = await assetTypeAPI.getAssetTypes({ page: 1, page_size: 100 }) // 与后端 MAX_PAGE_SIZE 对齐，超限会被静默钳位
-      if (res.count > res.results.length) {
-        logError(
-          'composables/useAssetListConfig',
-          `资产类型共 ${res.count} 条，超过单页返回上限，分类下拉仅展示前 ${res.results.length} 条`,
-        )
-      }
-      assetTypeOptions.value = res.results.map((t) => ({ label: t.type_name, value: t.type_code }))
-    } catch {
-      // 拉取失败时保持空选项，不影响列表主流程
-    }
-  }
-
-  onMounted(loadAssetTypeOptions)
-
   const searchFields = computed<SearchFieldConfig[]>(() => [
     { key: 'asset_code', label: '编码', type: 'text', placeholder: '资产编码', span: 4 },
     { key: 'asset_name', label: '名称', type: 'text', placeholder: '资产名称', span: 4 },
@@ -86,6 +83,33 @@ export function useAssetListConfig() {
       span: 4,
     },
     { key: 'asset_contract', label: '合同编码', type: 'text', placeholder: '合同编码', span: 4 },
+  ])
+
+  /**
+   * 分组展开模式的搜索字段集（9 项）
+   *
+   * 与平铺 `searchFields`（8 项）的差异只有两处，均为分组端点的值空间要求：
+   *   ① 剔除 `asset_type_category`（见 constants/assetGroupedFilters 的剔除理由：
+   *      与 `asset_type_recordcode` 同表近义，同屏两个下拉会选出矛盾组合得空集）
+   *   ② 新增 `asset_type_recordcode` / `asset_storage_recordcode` 两个下拉
+   * 其余 7 项**直接复用平铺定义**（不复制第二份字面量，DR-1）。
+   */
+  const groupedSearchFields = computed<SearchFieldConfig[]>(() => [
+    ...searchFields.value.filter((field) => !isGroupedFieldDropped(field.key)),
+    {
+      key: 'asset_type_recordcode',
+      label: '资产类型',
+      type: 'select',
+      options: assetTypeRecordcodeOptions.value,
+      span: 4,
+    },
+    {
+      key: 'asset_storage_recordcode',
+      label: '仓库',
+      type: 'select',
+      options: storageOptions.value,
+      span: 4,
+    },
   ])
 
   // ===== SmartListContainer store 配置 =====
@@ -185,10 +209,14 @@ export function useAssetListConfig() {
 
   return {
     searchFields,
+    /** 【B 批】分组展开模式的搜索字段集（9 项，剔除分类键、新增类型/仓库键） */
+    groupedSearchFields,
     storeConfig,
     exportColumns,
     assetStore,
     /** 【A-9】资产分类下拉选项加载（页面 onMounted 自动调用，测试中可手动 await） */
     loadAssetTypeOptions,
+    /** 【B 批】仓库下拉选项加载（仅 `enableGrouping=true` 时 onMounted 自动调用） */
+    loadStorageOptions,
   }
 }

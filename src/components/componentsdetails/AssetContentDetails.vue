@@ -6,6 +6,7 @@
 @dependsOn
   - composables/useAssetListConfig: 资产列表配置（分页、搜索、导出列）
   - composables/useExcelExport: Excel导出功能
+  - constants/assetGroupedFilters: 分组筛选键映射单一来源（9 键白名单）
   - stores/assetStore: 资产数据管理
   - components/commoncomponents/SmartListContainer: 数据管理容器
   - components/commoncomponents/CommonList: 列表展示组件
@@ -15,7 +16,7 @@
   <div class="asset-details-root">
     <SearchBar
       ref="searchBarRef"
-      :fields="searchFields"
+      :fields="activeSearchFields"
       @search="handleSearch"
       @reset="handleSearchReset"
     />
@@ -126,7 +127,7 @@
 <script lang="ts" setup>
 defineOptions({ name: 'AssetContentDetails' })
 
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
@@ -140,6 +141,7 @@ import type { SmartListContainerExpose } from '@/types/common'
 import { useAssetListConfig } from '@/composables/useAssetListConfig'
 import { useExcelExport } from '@/composables/useExcelExport'
 import type { AssetDetail, AssetGroupQueryParams, AssetGroupSummary } from '@/types/asset'
+import { GROUPED_FILTER_KEY_MAP } from '@/constants/assetGroupedFilters'
 import { logError } from '@/utils/logger'
 
 /** 分组展开表格对外暴露的方法（`defineExpose` 形态） */
@@ -153,17 +155,25 @@ interface GroupedAssetTableExpose {
  *
  * @property enableGrouping 分组展开模式开关，**默认 false**。
  *   false → 既有平铺列表（`SmartListContainer` + `CommonList`）路径，分组相关代码零执行；
- *   true  → `GroupedAssetTable` 汇总/明细双层结构。
+ *   true  → `GroupedAssetTable` 汇总/明细双层结构，搜索栏切换为分组字段集（9 项）。
  */
 interface Props {
   enableGrouping?: boolean
 }
 
-withDefaults(defineProps<Props>(), { enableGrouping: false })
+const props = withDefaults(defineProps<Props>(), { enableGrouping: false })
 
 const router = useRouter()
 const route = useRoute()
-const { searchFields, storeConfig, exportColumns, assetStore } = useAssetListConfig()
+const { searchFields, groupedSearchFields, storeConfig, exportColumns, assetStore } =
+  useAssetListConfig({
+    enableGrouping: props.enableGrouping,
+  })
+
+/** 搜索栏字段集随模式切换：平铺 8 项 / 分组 9 项（值空间不同，见 useAssetListConfig） */
+const activeSearchFields = computed(() =>
+  props.enableGrouping ? groupedSearchFields.value : searchFields.value,
+)
 
 const smartListRef = ref<SmartListContainerExpose | null>(null)
 const groupedTableRef = ref<GroupedAssetTableExpose | null>(null)
@@ -224,14 +234,13 @@ const columns: TableColumn[] = [
 ]
 
 // ===== 搜索栏事件 =====
-// 【分组模式筛选映射】分组端点只认 4 个筛选键（B-3 白名单），而 SearchBar 的
-// searchFields 是平铺列表口径（8 键）。此处只映射语义一致者，其余键**刻意丢弃** ——
-// 透传后端不认的键会被静默忽略，误传 `contract_code` 之类还会与 group_key 内嵌合同号冲突。
-const GROUPED_FILTER_KEY_MAP = {
-  asset_current_status: 'asset_current_status',
-  asset_contract: 'contract_code',
-} as const
-
+// 【分组模式筛选映射】SearchBar 的字段集已按 `enableGrouping` 切换，但键名到分组端点
+// 参数名的映射仍需在此收敛：键集单一来源是 `GROUPED_FILTER_KEY_MAP`（9 键同名透传 +
+// `asset_contract → contract_code` 唯一改名键），**不重复列举第二份白名单**（DR-1）。
+//
+// 未在映射表内的键**刻意丢弃**：透传后端不认的键会被 DRF 静默忽略（无报错、筛选
+// 无声失效）；`contract_code` 另有一层含义——它已编码进 `group_key` 首元素，误传会
+// 与组键取交集得空集（R-1，故组内明细端点不声明该参数）。
 const toGroupedFilters = (params: Record<string, string>): AssetGroupQueryParams => {
   const filters: Record<string, string> = {}
   Object.entries(GROUPED_FILTER_KEY_MAP).forEach(([from, to]) => {

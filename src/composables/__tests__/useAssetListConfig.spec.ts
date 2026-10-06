@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 
 const {
   mockGetList,
@@ -6,6 +7,7 @@ const {
   mockCombineSearch,
   mockSetRefreshFlag,
   mockGetAssetTypes,
+  mockGetStorages,
   mockLogError,
 } = vi.hoisted(() => ({
   mockGetList: vi.fn(),
@@ -13,6 +15,7 @@ const {
   mockCombineSearch: vi.fn(),
   mockSetRefreshFlag: vi.fn(),
   mockGetAssetTypes: vi.fn(),
+  mockGetStorages: vi.fn(),
   mockLogError: vi.fn(),
 }))
 
@@ -38,6 +41,12 @@ vi.mock('@/utils/Format', () => ({
 vi.mock('@/api/assetType', () => ({
   assetTypeAPI: {
     getAssetTypes: mockGetAssetTypes,
+  },
+}))
+
+vi.mock('@/api/storage', () => ({
+  storageAPI: {
+    getStorages: mockGetStorages,
   },
 }))
 
@@ -114,7 +123,7 @@ describe('useAssetListConfig', () => {
     await config.loadAssetTypeOptions()
 
     expect(mockLogError).toHaveBeenCalledWith(
-      'composables/useAssetListConfig',
+      'composables/useAssetSearchOptions',
       '资产类型共 150 条，超过单页返回上限，分类下拉仅展示前 2 条',
     )
     const typeSelect = config.searchFields.value.find((f) => f.key === 'asset_type_category')
@@ -224,4 +233,143 @@ describe('useAssetListConfig', () => {
     // 【A-9】分类列取 asset_type_name（AssetListSerializer 反规范输出）
     expect(exportColumns.find((c) => c.key === 'asset_type_name')?.title).toBe('资产分类')
   })
+
+  // ===== 【B 批】分组筛选字段集 =====
+  describe('groupedSearchFields（分组模式 9 项）', () => {
+    /** 携带 recordcode 的资产类型响应（平铺 / 分组两侧值空间同源） */
+    const ASSET_TYPES = [
+      { type_code: 'AT_W2', type_name: '笔记本', recordcode: 'ASSETTYPE-001' },
+      { type_code: 'AT_W3', type_name: '台式机', recordcode: 'ASSETTYPE-002' },
+      // 故意缺 recordcode：不应产出 value=undefined 的分组下拉项
+      { type_code: 'AT_W4', type_name: '投影仪' },
+    ]
+
+    it('字段集为 9 项：平铺 8 项剔除分类键后 + 类型 recordcode + 仓库', async () => {
+      mockGetAssetTypes.mockResolvedValue(pagedOf(ASSET_TYPES))
+      mockGetStorages.mockResolvedValue(
+        pagedOf([{ recordcode: 'STORAGE-001', storage_name: '主仓库' }]),
+      )
+      const config = useAssetListConfig()
+      await config.loadAssetTypeOptions()
+      await config.loadStorageOptions()
+
+      const keys = config.groupedSearchFields.value.map((f) => f.key)
+      expect(keys).toHaveLength(9)
+      expect(keys).not.toContain('asset_type_category')
+      expect(keys).toContain('asset_type_recordcode')
+      expect(keys).toContain('asset_storage_recordcode')
+      // 平铺口径保持 8 项零变化（回归）
+      expect(config.searchFields.value.map((f) => f.key)).toHaveLength(8)
+      expect(config.searchFields.value.map((f) => f.key)).toContain('asset_type_category')
+    })
+
+    it('同一次类型拉取派生两种值空间：分类取 type_code、分组取 recordcode', async () => {
+      mockGetAssetTypes.mockResolvedValue(pagedOf(ASSET_TYPES))
+      const config = useAssetListConfig()
+
+      await config.loadAssetTypeOptions()
+
+      expect(mockGetAssetTypes).toHaveBeenCalledTimes(1)
+      const typeCategory = config.searchFields.value.find((f) => f.key === 'asset_type_category')
+      expect(typeCategory?.options).toEqual([
+        { label: '笔记本', value: 'AT_W2' },
+        { label: '台式机', value: 'AT_W3' },
+        { label: '投影仪', value: 'AT_W4' },
+      ])
+      const typeRecordcode = config.groupedSearchFields.value.find(
+        (f) => f.key === 'asset_type_recordcode',
+      )
+      // 缺 recordcode 的条目被剔除：value=undefined 的选项会让 el-select 匹配失效
+      expect(typeRecordcode?.options).toEqual([
+        { label: '笔记本', value: 'ASSETTYPE-001' },
+        { label: '台式机', value: 'ASSETTYPE-002' },
+      ])
+    })
+
+    it('仓库下拉 value 取 Storage.recordcode（非 storage_code，后端 FK to_field 口径）', async () => {
+      mockGetStorages.mockResolvedValue(
+        pagedOf([
+          { recordcode: 'STORAGE-001', storage_code: 'WH-1', storage_name: '主仓库' },
+          { recordcode: 'STORAGE-002', storage_code: 'WH-2', storage_name: '分仓库' },
+        ]),
+      )
+      const config = useAssetListConfig()
+
+      await config.loadStorageOptions()
+
+      expect(mockGetStorages).toHaveBeenCalledWith({ page: 1, page_size: 100 })
+      const storageSelect = config.groupedSearchFields.value.find(
+        (f) => f.key === 'asset_storage_recordcode',
+      )
+      expect(storageSelect?.options).toEqual([
+        { label: '主仓库', value: 'STORAGE-001' },
+        { label: '分仓库', value: 'STORAGE-002' },
+      ])
+    })
+
+    it('仓库选项截断时告警（单页上限 100）', async () => {
+      mockGetStorages.mockResolvedValue({ ...pagedOf([]), count: 150, results: [] })
+      const config = useAssetListConfig()
+
+      await config.loadStorageOptions()
+
+      expect(mockLogError).toHaveBeenCalledWith(
+        'composables/useAssetSearchOptions',
+        '仓库共 150 条，超过单页返回上限，仓库下拉仅展示前 0 条',
+      )
+    })
+
+    it('仓库选项拉取失败时保持空选项（不影响列表主流程）', async () => {
+      mockGetStorages.mockRejectedValue(new Error('network'))
+      const config = useAssetListConfig()
+
+      await config.loadStorageOptions()
+
+      const storageSelect = config.groupedSearchFields.value.find(
+        (f) => f.key === 'asset_storage_recordcode',
+      )
+      expect(storageSelect?.options).toEqual([])
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+
+    it('仓库选项仅在 enableGrouping=true 时随 onMounted 自动加载', async () => {
+      mockGetAssetTypes.mockResolvedValue(pagedOf(ASSET_TYPES))
+      mockGetStorages.mockResolvedValue(pagedOf([]))
+
+      mountHost()
+      await flushPromises()
+      expect(mockGetAssetTypes).toHaveBeenCalledTimes(1)
+      expect(mockGetStorages).not.toHaveBeenCalled()
+
+      mockGetStorages.mockClear()
+      mockGetAssetTypes.mockClear()
+      mountHost({ enableGrouping: true })
+      await flushPromises()
+      expect(mockGetAssetTypes).toHaveBeenCalledTimes(1)
+      expect(mockGetStorages).toHaveBeenCalledTimes(1)
+    })
+  })
 })
+
+/** 单页响应信封（仅本文件的 B 批用例使用） */
+function pagedOf(results: unknown[]) {
+  return {
+    count: results.length,
+    next: null,
+    previous: null,
+    results,
+    total_pages: 1,
+    page: 1,
+    page_size: 100,
+  }
+}
+
+/** 挂载一个只调用 composable 的宿主组件，使 onMounted 真正执行 */
+function mountHost(options: Parameters<typeof useAssetListConfig>[0] = {}) {
+  return mount({
+    setup() {
+      useAssetListConfig(options)
+      return () => null
+    },
+  })
+}

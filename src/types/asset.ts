@@ -325,31 +325,49 @@ export type AssetListSimpleResponse = PaginatedResponse<AssetSimpleReturn>
  *
  * 注意：参数名是 `*_recordcode` 而非 `asset_type` / `asset_storage`（与 AssetQueryParams 不同），
  * 因分组筛选发生在聚合前的精确匹配上。
+ *
+ * 【C 批，9 键】模糊 5 键走 `icontains`，精确 4 键按 FK `to_field="recordcode"` 匹配。
+ * ⚠️ `asset_type_category` 与 `asset_type_recordcode` 值空间不同：前者取
+ * `AssetType.type_code`，后者取 `AssetType.recordcode`。
  */
 export interface AssetGroupQueryParams {
   /** 页码（默认 1） */
   page?: number
   /** 每页条数（默认 20） */
   page_size?: number
-  /** 资产状态 (in_store/in_use/damaged/scrapped...) */
+  /** 资产状态 (in_store/in_use/damaged/scrapped...) 精确 */
   asset_current_status?: string
-  /** 资产类型 recordcode */
+  /** 资产类型 recordcode 精确（值取 AssetType.recordcode，非 type_code） */
   asset_type_recordcode?: string
-  /** 仓库 recordcode */
+  /** 仓库 recordcode 精确（值取 Storage.recordcode，非 storage_code） */
   asset_storage_recordcode?: string
-  /** 合同编码 */
+  /** 合同编码精确（**仅汇总端点**；组内明细端点不声明，见 group_key 说明） */
   contract_code?: string
-  /** 无合同哨兵筛选（true=仅无合同资产） */
+  /** 无合同哨兵筛选（true=仅无合同资产；**仅汇总端点**，且与 contract_code 互斥） */
   no_contract?: boolean
+  /** 资产编码模糊（C 批） */
+  asset_code?: string
+  /** 资产名称模糊（C 批） */
+  asset_name?: string
+  /** 品牌模糊（C 批） */
+  asset_brand?: string
+  /** 型号规格模糊（C 批） */
+  asset_specification?: string
+  /** 合同名称模糊（C 批，跨 Contract.contract_name） */
+  asset_contract_name?: string
+  /** 资产类型分类精确（C 批，值取 AssetType.type_code；分组 UI 不提供该键输入） */
+  asset_type_category?: string
   /** 索引签名（对齐 AssetQueryParams；api 层 request 的 params 形参要求 Record） */
   [key: string]: string | number | boolean | null | undefined
 }
 
 /**
- * 组内明细查询参数（对齐后端 PASS_THROUGH_FILTER_PATHS）
+ * 组内明细查询参数（对齐后端 PASS_THROUGH_FILTER_PATHS，9 个非组键筛选）
  *
  * `group_key` 由后端序列化下发的 JSON 字符串，前端**原样回传**，
  * 禁止解析/重建/补 null（后端 `parse_group_key` 是解码侧唯一实现）。
+ *
+ * 前端白名单单一来源：`constants/assetGroupedFilters` 的 `GROUPED_PASS_THROUGH_KEYS`。
  */
 export interface AssetGroupChildQueryParams extends AssetGroupQueryParams {
   /** 组键 JSON 字符串（必填） */

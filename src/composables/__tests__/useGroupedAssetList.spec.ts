@@ -309,6 +309,44 @@ describe('useGroupedAssetList', () => {
       })
     })
 
+    it('9 个非组键筛选逐字透传给组内明细端点，contract_code/no_contract 不外泄', async () => {
+      const api = useGroupedAssetList()
+      await api.search({
+        asset_current_status: 'in_use',
+        asset_type_recordcode: 'T01',
+        asset_storage_recordcode: 'S01',
+        asset_type_category: 'AT_W2',
+        asset_code: 'ZC001',
+        asset_name: '笔记本',
+        asset_brand: 'Lenovo',
+        asset_specification: 'X1',
+        asset_contract_name: '框架合同',
+        contract_code: 'HT2024-001',
+        no_contract: true,
+      })
+      vi.clearAllMocks()
+
+      await api.toggleExpand(GROUP_MULTI)
+
+      expect(mockGetGroupChildren).toHaveBeenCalledWith({
+        group_key: GROUP_MULTI,
+        page: 1,
+        page_size: 20,
+        asset_current_status: 'in_use',
+        asset_type_recordcode: 'T01',
+        asset_storage_recordcode: 'S01',
+        asset_type_category: 'AT_W2',
+        asset_code: 'ZC001',
+        asset_name: '笔记本',
+        asset_brand: 'Lenovo',
+        asset_specification: 'X1',
+        asset_contract_name: '框架合同',
+      })
+      const sent = mockGetGroupChildren.mock.calls[0][0]
+      expect(sent).not.toHaveProperty('contract_code')
+      expect(sent).not.toHaveProperty('no_contract')
+    })
+
     it('reports error and keeps cache empty when children request fails', async () => {
       mockGetGroupChildren.mockRejectedValue(new Error('Network error'))
       const api = useGroupedAssetList()

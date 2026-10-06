@@ -113,6 +113,20 @@ describe('Router Configuration', () => {
     expect(assetRoute.meta.title).toBe('资产管理')
   })
 
+  it('should have assetdetails/grouped route with enableGrouping true and no keepAlive', async () => {
+    const { capturedConfig } = await loadRouter()
+    const mainRoute = capturedConfig.routes.find((r: any) => r.path === '/main')
+    const assetRoute = mainRoute.children.find((r: any) => r.path === 'assetdetails')
+    const groupedRoute = assetRoute.children.find((r: any) => r.path === 'grouped')
+    expect(groupedRoute).toBeDefined()
+    expect(groupedRoute.name).toBe('AssetGroupedContent')
+    expect(groupedRoute.props).toEqual({ enableGrouping: true })
+    expect(groupedRoute.meta.title).toBe('资产分组展开')
+    expect(groupedRoute.meta.showPageHeader).toBe(true)
+    // 与扁平页共享组件 name，若入 keep-alive 缓存会复用旧模式实例，故必须无 keepAlive
+    expect(groupedRoute.meta.keepAlive).toBeUndefined()
+  })
+
   it('should have scan route with requiresAuth: false', async () => {
     const { capturedConfig } = await loadRouter()
     const scanRoute = capturedConfig.routes.find((r: any) => r.path === '/scan/:recordcode')

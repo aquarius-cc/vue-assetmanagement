@@ -14,9 +14,20 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-const { mockRemoveBatch, mockExcelExport } = vi.hoisted(() => ({
+const {
+  mockRemoveBatch,
+  mockExcelExport,
+  mockGroupedSearch,
+  mockGroupedRefresh,
+  mockSmartSearchWithParams,
+  mockSmartReset,
+} = vi.hoisted(() => ({
   mockRemoveBatch: vi.fn(),
   mockExcelExport: vi.fn(),
+  mockGroupedSearch: vi.fn(),
+  mockGroupedRefresh: vi.fn(),
+  mockSmartSearchWithParams: vi.fn(),
+  mockSmartReset: vi.fn(),
 }))
 
 vi.mock('vue-router', () => ({
@@ -24,14 +35,23 @@ vi.mock('vue-router', () => ({
   useRoute: () => ({ matched: [{ name: 'AssetContentDetails' }] }),
 }))
 
-vi.mock('@/composables/useAssetListConfig', () => ({
-  useAssetListConfig: () => ({
-    searchFields: [],
-    storeConfig: {},
-    exportColumns: [],
-    assetStore: { removeBatch: mockRemoveBatch, pagination: { total: 3 } },
-  }),
-}))
+/**
+ * 字段集用哨兵对象而非真实字段：本文件只断言「组件把 composable 返回的哪一个字段集
+ * 绑给了 SearchBar」（接线正确性），字段集的真实构成（9 项 / 剔除分类键）由
+ * `useAssetListConfig.spec.ts` 的 groupedSearchFields 用例负责——避免测试断言自身 mock。
+ */
+vi.mock('@/composables/useAssetListConfig', async () => {
+  const { ref } = await import('vue')
+  return {
+    useAssetListConfig: () => ({
+      searchFields: ref([{ key: 'FLAT_SENTINEL' }]),
+      groupedSearchFields: ref([{ key: 'GROUPED_SENTINEL' }]),
+      storeConfig: {},
+      exportColumns: [],
+      assetStore: { removeBatch: mockRemoveBatch, pagination: { total: 3 } },
+    }),
+  }
+})
 
 vi.mock('@/composables/useExcelExport', () => ({
   useExcelExport: () => ({ handleExportExcel: mockExcelExport }),
@@ -59,6 +79,10 @@ const SmartListContainerStub = {
   </div>`,
   data() {
     return { rows: ROWS }
+  },
+  methods: {
+    searchWithParams: mockSmartSearchWithParams,
+    reset: mockSmartReset,
   },
 }
 
@@ -89,11 +113,17 @@ const globalMount = {
   directives: { loading: {} },
   stubs: {
     SmartListContainer: SmartListContainerStub,
-    SearchBar: { name: 'SearchBar', template: '<div class="search-bar" />' },
+    SearchBar: {
+      name: 'SearchBar',
+      props: ['fields'],
+      emits: ['search', 'reset'],
+      template: '<div class="search-bar" />',
+    },
     'router-view': { template: '<div />' },
     GroupedAssetTable: {
       name: 'GroupedAssetTable',
       props: ['detailColumns'],
+      methods: { search: mockGroupedSearch, refresh: mockGroupedRefresh },
       template: '<div class="grouped" />',
     },
     'el-table': ElTableStub,
@@ -175,5 +205,103 @@ describe('AssetContentDetails · 分组开关与列集回归', () => {
       .findAll('.el-table-column')
       .find((c) => c.attributes('data-label') === '单价')
     expect(priceColumn!.attributes('data-prop')).toBe('asset_purchase_price')
+  })
+
+  // ===== 【B 批】筛选字段集接线 + 分组筛选映射 =====
+  describe('B 批 · 搜索栏字段集接线', () => {
+    it('缺省（平铺）：SearchBar 收到 useAssetListConfig 的 searchFields 引用', () => {
+      const wrapper = mountDetails()
+      const fields = wrapper.findComponent({ name: 'SearchBar' }).props('fields')
+      expect(fields).toEqual([{ key: 'FLAT_SENTINEL' }])
+    })
+
+    it('enableGrouping=true：SearchBar 改绑 groupedSearchFields 引用', () => {
+      const wrapper = mountDetails({ enableGrouping: true })
+      const fields = wrapper.findComponent({ name: 'SearchBar' }).props('fields')
+      expect(fields).toEqual([{ key: 'GROUPED_SENTINEL' }])
+      expect(fields).not.toEqual([{ key: 'FLAT_SENTINEL' }])
+    })
+  })
+
+  describe('B 批 · 分组筛选映射 toGroupedFilters', () => {
+    /** 9 个非组键 + 唯一改名键，覆盖 GROUPED_FILTER_KEY_MAP 的全部入口 */
+    const NINE_KEYS = {
+      asset_code: 'ZC001',
+      asset_name: '笔记本',
+      asset_brand: '联想',
+      asset_specification: 'X1',
+      asset_current_status: 'in_store',
+      asset_contract_name: '框架合同',
+      asset_type_category: 'AT_W2',
+      asset_type_recordcode: 'ASSETTYPE-001',
+      asset_storage_recordcode: 'STORAGE-001',
+    }
+
+    it('9 键映射为分组端点参数（asset_contract → contract_code 唯一改名）', async () => {
+      const wrapper = mountDetails({ enableGrouping: true })
+      wrapper.findComponent({ name: 'SearchBar' }).vm.$emit('search', {
+        ...NINE_KEYS,
+        asset_contract: 'HT2024-001',
+      })
+      await wrapper.vm.$nextTick()
+
+      expect(mockGroupedSearch).toHaveBeenCalledWith({
+        asset_code: 'ZC001',
+        asset_name: '笔记本',
+        asset_brand: '联想',
+        asset_specification: 'X1',
+        asset_current_status: 'in_store',
+        asset_contract_name: '框架合同',
+        asset_type_category: 'AT_W2',
+        asset_type_recordcode: 'ASSETTYPE-001',
+        asset_storage_recordcode: 'STORAGE-001',
+        contract_code: 'HT2024-001',
+      })
+      expect(mockSmartSearchWithParams).not.toHaveBeenCalled()
+    })
+
+    it('映射表外的键被丢弃（DRF 会静默忽略，导致筛选无声失效）', async () => {
+      const wrapper = mountDetails({ enableGrouping: true })
+      wrapper.findComponent({ name: 'SearchBar' }).vm.$emit('search', {
+        keyword: '机',
+        no_contract: 'true',
+        group_key: 'X',
+      })
+      await wrapper.vm.$nextTick()
+
+      expect(mockGroupedSearch).toHaveBeenCalledWith({})
+    })
+
+    it('空串/未填的键不入参（后端将空串视为未传，避免误过滤）', async () => {
+      const wrapper = mountDetails({ enableGrouping: true })
+      wrapper.findComponent({ name: 'SearchBar' }).vm.$emit('search', {
+        asset_code: 'ZC001',
+        asset_name: '',
+        asset_brand: undefined,
+      })
+      await wrapper.vm.$nextTick()
+
+      expect(mockGroupedSearch).toHaveBeenCalledWith({ asset_code: 'ZC001' })
+    })
+
+    it('分组 reset 调用 groupedTable.search() 无参，不走平铺 reset', async () => {
+      const wrapper = mountDetails({ enableGrouping: true })
+      wrapper.findComponent({ name: 'SearchBar' }).vm.$emit('reset')
+      await wrapper.vm.$nextTick()
+
+      expect(mockGroupedSearch).toHaveBeenCalledTimes(1)
+      expect(mockGroupedSearch).toHaveBeenCalledWith()
+      expect(mockSmartReset).not.toHaveBeenCalled()
+    })
+
+    it('平铺模式：参数原样交给平铺列表，不经过分组映射', async () => {
+      const wrapper = mountDetails()
+      const params = { asset_type_category: 'AT_W2' }
+      wrapper.findComponent({ name: 'SearchBar' }).vm.$emit('search', params)
+      await wrapper.vm.$nextTick()
+
+      expect(mockSmartSearchWithParams).toHaveBeenCalledWith(params)
+      expect(mockGroupedSearch).not.toHaveBeenCalled()
+    })
   })
 })
