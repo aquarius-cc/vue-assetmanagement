@@ -1,10 +1,10 @@
 
 ---
 
-### 📄 文档 3：前端子引擎 `/vue-assetmanagement/AGENTS.md` (v9.7.0)
+### 📄 文档 3：前端子引擎 `/vue-assetmanagement/AGENTS.md` (v9.8.0)
 
 # 前端 AI 执行子引擎配置 (Frontend Engine)
-> 版本：v9.7.0 | 最后更新：2026-09-21
+> 版本：v9.8.0 | 最后更新：2026-10-05
 > 职责：Vue 3 组件开发、设计令牌执行、UI 交互逻辑、前端测试门禁、组件规模与复杂度管控
 
 ## §1 核心执行协议
@@ -26,7 +26,8 @@
   2. `npm run lint` — ESLint 代码风格检查，确保代码规范。
   3. `npm run format:check` — Prettier 格式化检查，确保代码风格统一。
 - **复杂度门禁**：代码完成后，必须运行 `eslint . --ext .vue,.ts --rule "complexity: ['error', 10]"`，若超标则触发 `[HALT]`。（若未配置 ESLint 复杂度规则，须在审计票中人工核验函数行数/嵌套深度）。
-- **测试门禁**：代码完成后，**必须**运行 `vitest --coverage --threshold 80`，并单独检查 Store 层覆盖率 ≥ 90%。若未通过，触发 `[HALT]` 并补充测试用例。
+- **测试门禁**：代码完成后，**必须**运行 `npm run test:coverage`（即 `vitest run --coverage`），并单独检查 Store 层覆盖率 ≥ 90%。阈值由 `vitest.config.ts` 的 `coverage.thresholds` 强制（整体 80 / `src/stores/**` 90），不达标即判失败。若未通过，触发 `[HALT]` 并补充测试用例。
+  > ⚠️ **勿再使用 `--threshold` CLI 参数**：vitest 4 已移除该参数，`vitest --coverage --threshold 80` 实测报 `CACError: Unknown option '--threshold'`。详见 `Rules_Fiels/frontend-testing-rules.md` §六。
 - **变异测试**：必须运行 `npm run test:mutate`（`@stryker-mutator/vitest-runner` v10，参见 T16）并确保变异通过率 ≥ 80%。
 - **复用规则索引**：编码前必须检查是否存在可复用的组件/Composables/Utils，详细复用规范见 `../Rules_Fiels/frontend-business-rules.md` 第四节（FR-1 ~ FR-4）。
 - **规模规则索引**：组件行数、Composable 规模、模板嵌套深度、Store 文件规模等量化红线见 `../Rules_Fiels/frontend-business-rules.md` 第四节（FR-5 ~ FR-8）。
@@ -108,6 +109,7 @@
 - 涉及全局 CSS 变量命名空间变更，可能影响其他端 → 上报根级。
 
 ## §5 变更日志
+- **v9.8.0 (2026-10-05)**：§1.3 测试门禁命令勘误——`vitest --coverage --threshold 80` → `npm run test:coverage`。**根因**：vitest 4 已移除 `--threshold` CLI 参数，原命令实测报 `CACError: Unknown option '--threshold'`（exit 1），照抄即门禁假红。**阈值效力不变**：`vitest.config.ts` 的 `coverage.thresholds`（整体 80 / `src/stores/**` 90）自动强制，不达标仍判失败——**本次只修命令串，未动任何阈值**，故不触发根级 §5.4 沙盒期。历史关联：`docs/compose/specs/2026-07-06-rules-files-fix-plan.md:314` 曾挂待办想改成 vitest 3 的 `--coverage.threshold=80`（vitest 4 同样失效）且从未销项，本条为其正确取代。依据根级 §5.2，经人工审批后应用。
 - **v9.7.0 (2026-09-21)**：规模规则索引同步 FR-8——`stores/*.ts`（非 `use*.ts`）规模上限 500 逻辑行（`Rules_Fiels/frontend-business-rules.md` 第四节 FR-8，guard `check_frontend_invariants.py` stores 段严格模式，无台账豁免），索引 `FR-5 ~ FR-7` → `FR-5 ~ FR-8`。依据 §4 本地自适应，经人工审批后应用。
 - **v9.6.0 (2026-09-17)**：修复变异测试命令无法落地问题——`npx vitest --mutate` 依赖的 `vitest-mutant` / `@vitest/mutate` 在 npm 均不存在，经根级 §5 人工审批改用 `@stryker-mutator/vitest-runner` v10，命令改为 `npm run test:mutate`（与 frontend-testing-rules.md T16 v1.6 对齐）。
 

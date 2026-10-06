@@ -60,7 +60,7 @@ describe('auth store', () => {
 
 npm run test           # 单次运行所有测试
 npx vitest --watch     # 监视模式
-npx vitest --coverage  # 覆盖率报告
+npm run test:coverage  # 覆盖率报告（阈值由 vitest.config.ts 自动强制）
 
 ## 5. 测试分层
 
