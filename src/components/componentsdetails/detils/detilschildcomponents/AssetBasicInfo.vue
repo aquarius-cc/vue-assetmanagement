@@ -49,11 +49,12 @@
     </el-form-item>
   </el-col>
   <el-col :xs="24" :sm="24" :md="12">
-    <el-form-item label="采购数量" prop="asset_purchase_number">
+    <el-form-item label="录入数量" prop="asset_purchase_number">
       <el-input-number
         v-model="form.asset_purchase_number"
         :min="1"
-        placeholder="请输入采购数量"
+        :placeholder="isEditMode ? '录入后不可修改' : '一次录入 N 台，将生成 N 条资产记录'"
+        :disabled="isEditMode"
         style="width: 100%"
       />
     </el-form-item>

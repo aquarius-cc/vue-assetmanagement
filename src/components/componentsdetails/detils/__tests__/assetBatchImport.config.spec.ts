@@ -85,22 +85,22 @@ describe('assetImportConfig 基础配置', () => {
       expect(result.errors.asset_purchase_price).toBe('单价必须是有效数字且不小于0')
     })
 
-    it('采购数量非数字时失败', () => {
+    it('录入数量非数字时失败', () => {
       const result = assetImportConfig.validateItem(makeAssetRow({ asset_purchase_number: 'abc' }))
       expect(result.valid).toBe(false)
-      expect(result.errors.asset_purchase_number).toBe('采购数量必须是正整数')
+      expect(result.errors.asset_purchase_number).toBe('录入数量必须是正整数')
     })
 
-    it('采购数量为 0 时失败', () => {
+    it('录入数量为 0 时失败', () => {
       const result = assetImportConfig.validateItem(makeAssetRow({ asset_purchase_number: 0 }))
       expect(result.valid).toBe(false)
-      expect(result.errors.asset_purchase_number).toBe('采购数量必须是正整数')
+      expect(result.errors.asset_purchase_number).toBe('录入数量必须是正整数')
     })
 
-    it('采购数量非整数时失败', () => {
+    it('录入数量非整数时失败', () => {
       const result = assetImportConfig.validateItem(makeAssetRow({ asset_purchase_number: 1.5 }))
       expect(result.valid).toBe(false)
-      expect(result.errors.asset_purchase_number).toBe('采购数量必须是正整数')
+      expect(result.errors.asset_purchase_number).toBe('录入数量必须是正整数')
     })
 
     it('入库日期格式错误时失败', () => {

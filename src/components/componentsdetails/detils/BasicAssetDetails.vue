@@ -310,7 +310,7 @@ const detailExportColumns: ColumnConfig<AssetDetail>[] = [
     formatter: (v) => String(v ?? '0'),
   },
   {
-    title: '采购数量',
+    title: '实物数量',
     key: 'asset_purchase_number',
     default: '0',
     formatter: (v) => String(v ?? '0'),

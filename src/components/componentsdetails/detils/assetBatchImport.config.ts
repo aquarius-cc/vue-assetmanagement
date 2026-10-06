@@ -3,7 +3,8 @@
  *
  * 后端规则变更说明：
  * - asset_code 由后端自动生成，前端无需传递
- * - asset_purchase_number > 1 时，后端创建多条 Asset 记录
+ * - asset_purchase_number 是「录入倍数」：入参 N 时后端 fan-out 创建 N 条 Asset 记录，
+ *   且每条落库记录的该字段恒为 1（实物台数），保证「录入倍数 ≡ 汇总条数 ≡ Σ实物数量」
  */
 import type { AssetCreateForm } from '@/types/asset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
@@ -21,7 +22,7 @@ export const assetImportConfig: BatchImportConfig<AssetExcelRow, AssetCreateForm
     品牌: 'asset_brand',
     单位: 'asset_unit',
     单价: 'asset_purchase_price',
-    采购数量: 'asset_purchase_number',
+    录入数量: 'asset_purchase_number',
     采购日期: 'asset_purchase_date',
     质保期: 'asset_warranty_period',
     入库日期: 'asset_entry_date',
@@ -72,10 +73,10 @@ export const assetImportConfig: BatchImportConfig<AssetExcelRow, AssetCreateForm
       errors.asset_purchase_price = '单价必须是有效数字且不小于0'
     }
 
-    // 采购数量校验
+    // 录入数量校验
     const quantity = Number(item.asset_purchase_number)
     if (isNaN(quantity) || !Number.isInteger(quantity) || quantity < 1) {
-      errors.asset_purchase_number = '采购数量必须是正整数'
+      errors.asset_purchase_number = '录入数量必须是正整数'
     }
 
     // 入库日期格式
@@ -171,7 +172,7 @@ export const assetHeaderExamples: HeaderExample[] = [
     remark: '数字，≥0',
   },
   {
-    headerName: '采购数量',
+    headerName: '录入数量',
     field: 'asset_purchase_number',
     required: true,
     example: '2',

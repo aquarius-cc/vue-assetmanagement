@@ -4,7 +4,8 @@
 
   后端规则变更说明：
   - asset_code 由后端自动生成，前端无需传递
-  - asset_purchase_number > 1 时，后端创建多条 Asset 记录
+  - asset_purchase_number 是「录入倍数」：入参 N 时后端 fan-out 创建 N 条 Asset 记录，
+    且每条落库记录的该字段恒为 1（实物台数）
   - 返回 List[AssetDetail]，统一数组格式（单条时长度为1）
   - 编码格式：ASSET-{asset_type_category}-{type_code}-{YYYYMMDD}-{random}-{seq}
 
@@ -52,7 +53,9 @@
       <!-- 数据预览表格 -->
       <div v-if="previewData.length > 0" class="preview-table">
         <h3 class="section-title">
-          数据预览 ({{ previewData.length }} 条，有效 {{ validDataCount }} 条)
+          数据预览（{{ previewData.length }} 行，有效 {{ validDataCount }} 行，合计
+          {{ validAssetCount }}
+          条资产）
         </h3>
         <el-table :data="paginatedPreviewData" border stripe max-height="500">
           <el-table-column label="验证" width="80" align="center">
@@ -71,7 +74,7 @@
           <el-table-column label="资产名称" prop="data.asset_name" min-width="120" />
           <el-table-column label="规格型号" prop="data.asset_specification" min-width="100" />
           <el-table-column label="单价" prop="data.asset_purchase_price" width="100" />
-          <el-table-column label="采购数量" prop="data.asset_purchase_number" width="100" />
+          <el-table-column label="录入数量" prop="data.asset_purchase_number" width="100" />
           <el-table-column label="入库日期" prop="data.asset_entry_date" width="110" />
           <el-table-column label="资产分类编码" prop="data.asset_type" width="120" />
           <el-table-column label="合同编码" prop="data.asset_contract" width="120" />
@@ -105,8 +108,8 @@
         :notices="[
           '资产编码由系统自动生成，Excel 中可留空，无需填写',
           '资产名称长度 2-100 个字符，必填',
-          '规格型号、单价、采购数量、入库日期、资产分类编码为必填',
-          '单价和采购数量必须为有效数字，采购日期和入库日期格式为：YYYY-MM-DD',
+          '规格型号、单价、录入数量、入库日期、资产分类编码为必填',
+          '单价和录入数量必须为有效数字，采购日期和入库日期格式为：YYYY-MM-DD',
           '新旧状态可选值：newly / used / damaged / waste',
           '当前状态可选值：in_store / recycled_pending / in_use / damaged / scrapped',
           'Excel 首行必须与「表头说明」中的中文列名完全一致',
@@ -122,7 +125,7 @@
           :disabled="validDataCount === 0"
           @click="handleSubmit"
         >
-          提交有效数据 ({{ validDataCount }} 条)
+          提交有效数据（{{ validDataCount }} 行 / {{ validAssetCount }} 条资产）
         </el-button>
         <el-button @click="handleClear">清空</el-button>
         <el-button type="info" @click="goBack">返回</el-button>
@@ -134,7 +137,7 @@
 <script lang="ts" setup>
 defineOptions({ name: 'AssetBatchImport' })
 
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile, UploadInstance } from 'element-plus'
 import { Upload } from '@element-plus/icons-vue'
@@ -173,6 +176,26 @@ const {
   handleFileChange: rawHandleFileChange,
   clearData,
 } = useBatchImport<AssetExcelRow, AssetCreateForm>(importConfig)
+
+// ===== 资产条数口径（「行」与「条」必须分开表述，W-5）=====
+/**
+ * 有效行将生成的资产条数 = Σ(有效行的录入数量)。
+ *
+ * 依据 AssetService.create_asset 的 @transaction.atomic：单行 fan-out 全有或全无，
+ * 故「该行成功」必然意味着「录入数量 N 条全部落库」，前端据此推算条数是准确的，
+ * 无需后端在响应中额外返回 created_count（避免跨端契约变更）。
+ *
+ * 数值来自 Excel，asset_purchase_number 为字符串，需 Number() 且对
+ * 非法值兜底为 1，与后端 min_value=1 及 assetBatchImport.config 的正整数校验对齐。
+ */
+const validAssetCount = computed(() =>
+  previewData.value
+    .filter((row) => row.validationStatus === 'success')
+    .reduce((sum, row) => {
+      const n = Number(row.data.asset_purchase_number)
+      return sum + (Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1)
+    }, 0),
+)
 
 // ===== 预览表格分页（公共组合式函数，DR-1 收敛）=====
 const {
@@ -216,7 +239,7 @@ const handleExportTemplate = async () => {
     品牌: '戴尔',
     单位: '台',
     单价: '35000',
-    采购数量: '2',
+    录入数量: '2',
     采购日期: '2025-01-10',
     质保年限: '3',
     入库日期: '2025-01-15',
@@ -287,7 +310,8 @@ const handleSubmit = async () => {
               row.submitStatus = 'success'
             }
           })
-          ElMessage.warning(`导入完成：部分数据验证失败，请查看错误详情`)
+          // 序列化层校验失败 → 整请求 400,后端零创建,此处必须明确「未创建任何资产」
+          ElMessage.warning(`导入完成：部分数据验证失败，未创建任何资产，请查看错误详情`)
           return
         }
       }
@@ -317,12 +341,26 @@ const handleSubmit = async () => {
       router.go(-1)
     }
 
+    // 实际生成的资产条数:仅累加成功行的录入数量。
+    // fail_count === 0 时所有有效行均成功,结果等于 validAssetCount。
+    // 必须排除失败行,否则会把未创建的行的录入数量计入总数(误导性虚高)。
+    const failedIndexes = new Set(result.fail_items.map((failed) => failed.index))
+    const successAssetCount = validRows.reduce((sum, row, idx) => {
+      if (failedIndexes.has(idx)) return sum
+      const n = Number(row.data.asset_purchase_number)
+      return sum + (Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1)
+    }, 0)
+
     if (result.fail_count === 0) {
-      ElMessage.success(`全部导入成功！共 ${result.success_count} 条`)
+      ElMessage.success(
+        `全部导入成功！成功 ${result.success_count} 行，生成 ${successAssetCount} 条资产`,
+      )
       // 通知父页面刷新数据
       assetStore.setRefreshFlag(true)
     } else {
-      ElMessage.warning(`导入完成：成功 ${result.success_count} 条，失败 ${result.fail_count} 条`)
+      ElMessage.warning(
+        `导入完成：成功 ${result.success_count} 行（生成 ${successAssetCount} 条资产），失败 ${result.fail_count} 行`,
+      )
     }
   } catch (error) {
     const msg = extractErrorMessage(error)

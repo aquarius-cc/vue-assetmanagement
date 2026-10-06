@@ -166,7 +166,7 @@ export function useAssetListConfig() {
       default: '',
       formatter: (v: unknown) => String(v ?? '0'),
     },
-    { title: '采购数量', key: 'asset_purchase_number', default: '' },
+    { title: '实物数量', key: 'asset_purchase_number', default: '' },
     { title: '采购日期', key: 'asset_purchase_date', default: '' },
     { title: '质保期（年）', key: 'asset_warranty_period', default: '0' },
     { title: '录入日期', key: 'asset_entry_date', default: '' },

@@ -171,6 +171,15 @@ const getAssetCreateForm = computed(() => {
 
 const rules = assetFormRules
 
+// 编辑载荷:asset_purchase_number 是「录入倍数」,仅在创建时生效。
+// 后端已将其列入 ASSET_UPDATE_IMMUTABLE_FIELDS,编辑时提交该字段会被
+// FIELD_NOT_ALLOWED 拒掉(400),因此编辑载荷必须剔除 —— 这是后端禁改的强制配套。
+const getAssetUpdateForm = computed(() => {
+  const payload: Record<string, unknown> = { ...getAssetCreateForm.value }
+  delete payload.asset_purchase_number
+  return payload
+})
+
 // 基础数据加载
 const associations = useAssetFormAssociations(assetTypeStore, contractStore, storageStore)
 
@@ -301,7 +310,7 @@ const submitForm = () => {
           return
         }
         await assetStore.update({
-          ...getAssetCreateForm.value,
+          ...getAssetUpdateForm.value,
           recordcode,
         } as unknown as Partial<AssetDetail>)
         ElMessage.success('更新成功')
@@ -369,9 +378,11 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 .asset-form {
+  height: 100%;
+  overflow-y: auto;
   padding: 24px;
   .box-card {
-    height: 100%;
+    // height: 100%  // 已移除：卡片高度由内容撑开，避免 el-card overflow:hidden 裁切表单内容
   }
   .card-header {
     display: flex;
