@@ -1,9 +1,16 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "testRunner": "vitest",
+  "cleanTempDir": "always",
   "coverageAnalysis": "perTest",
   "reporters": ["clear-text", "progress", "html"],
-  "mutate": ["src/stores/**/*.ts"],
+  "mutate": [
+    "src/stores/**/*.ts",
+    "src/composables/useGroup*.ts",
+    "!src/stores/**/*.spec.ts",
+    "!src/stores/**/__tests__/**/*.ts",
+    "!src/stores/**/*.test.ts"
+  ],
   "thresholds": {
     "high": 80,
     "low": 60,

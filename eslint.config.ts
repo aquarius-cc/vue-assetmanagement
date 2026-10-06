@@ -41,6 +41,19 @@ export default defineConfigWithVueTs(
     'graphify-out/**', // 忽略 graphify 输出
     '.agents/skills/impeccable/**', // 忽略 impeccable 技能目录
     'node_modules/**',
+    // Stryker 变异测试的 sandbox 工作区。**本条是主防线，不可删。**
+    // 机理：sandbox 副本路径形如 .stryker-tmp/sandbox-XXX/src/...，不在
+    // tsconfig.app.json 的 include（["env.d.ts","src/**/*","src/**/*.vue"]）内，
+    // 故 typescript-eslint 的 projectService（@vue/eslint-config-typescript
+    // v14 为 projectService:true）openClientFile 失败，每个误lint 文件各报一次，
+    // 累计 1208 errors（实测）。注意并非 tsconfigRootDir「多候选」——它是单值。
+    // 为何不能依赖 stryker 自清：cleanTempDir 仅在进程内JS 异常路径生效
+    // （stryker.js catch 分支比对 !== 'always' 才保留清理）；被 SIGTERM/SIGINT
+    // 或 CI timeout-minutes 强杀时走 unexpected-exit-handler → process.exit()，
+    // 而 process.exit() 不执行 async finally，故 TemporaryDirectory.dispose()
+    // 根本不会被调用——本次残留正是超时被杀所致。故 cleanTempDir:"always"
+    // （stryker.config.json）只覆盖异常路径，此 ignore 行覆盖信号路径，二者互补。
+    '.stryker-tmp/**',
   ]),
 
   pluginVue.configs['flat/essential'],
