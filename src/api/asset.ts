@@ -10,6 +10,7 @@
  *   - composables/useScrapableAssets: 可报废资产列表
  *   - composables/useWastedAssets: 已报废资产列表
  *   - composables/useExportableAssets: 可导出资产列表
+ *   - composables/useGroupedAssetList: 资产分组展开表格列表状态
  *   - views/AssetLogsView: 资产日志视图
  *   - views/ScanAssetView: 资产扫描视图
  *   - views/RepairDoneView: 维修完成视图
@@ -33,6 +34,10 @@ import type {
   AssetListResponse,
   AssetQueryParams,
   AssetListSimpleResponse,
+  AssetGroupQueryParams,
+  AssetGroupChildQueryParams,
+  AssetGroupedListResponse,
+  AssetGroupChildListResponse,
 } from '@/types/asset'
 import type { Contract } from '@/types/contract'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
@@ -357,5 +362,43 @@ export const assetAPI = {
    */
   getQrCodeImageUrl: (recordcode: string): string => {
     return `${BASE_URL}/assets/${recordcode}/qr-code-image/`
+  },
+
+  /**
+   * 获取资产分组汇总列表（F1）
+   * GET /api/v1/assets/grouped/
+   * 对应后端 AssetViewSet.grouped action
+   *
+   * 【R-1】`group_key` 由本接口下发，前端不得解析/重建/补 null；
+   * 需取明细时经 getGroupChildren 原样回传，解码侧唯一实现在后端
+   * `asset_grouped_selector.parse_group_key`。
+   *
+   * 【数量语义】`asset_count` ≡ 组内实物条数（非录入倍数 N），零计算。
+   *
+   * @param params page / page_size / asset_current_status / asset_type_recordcode
+   *               / asset_storage_recordcode / contract_code / no_contract
+   */
+  getGroupedAssets: (params?: AssetGroupQueryParams): Promise<AssetGroupedListResponse> => {
+    return unwrapResponse(request.get<AssetGroupedListResponse>('/assets/grouped/', params))
+  },
+
+  /**
+   * 获取单个分组的组内明细（F1）
+   * GET /api/v1/assets/group_children/
+   * 对应后端 AssetViewSet.group_children action
+   *
+   * 【R-1】`group_key` 必须原样回传汇总端点下发的字符串（含 JSON null 位），
+   * 前端零解析、零拼装。后端错误契约：非法 group_key → 400、
+   * 合法但无命中 → 200/count=0、页码越界 → 404。
+   *
+   * 【透传筛选】contract_code / no_contract 已在 group_key 内表达，
+   * 此处只应传状态/类型/仓库三个非组键筛选（后端 PASS_THROUGH_FILTER_PATHS）。
+   *
+   * @param params group_key（必填）+ 透传筛选 + page / page_size（组内默认 20）
+   */
+  getGroupChildren: (params: AssetGroupChildQueryParams): Promise<AssetGroupChildListResponse> => {
+    return unwrapResponse(
+      request.get<AssetGroupChildListResponse>('/assets/group_children/', params),
+    )
   },
 }

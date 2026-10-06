@@ -6,6 +6,7 @@
 @dependsOn
   - components/CommonListActions: 操作按钮列
   - components/CommonListColumn: 列定义渲染
+  - element-plus: ElTable.toggleRowSelection（受控选中；EP 2.13.7 签名 row, selected?, ignoreSelectable?）
 -->
 <template>
   <div class="common-list">
@@ -24,7 +25,13 @@
         @selection-change="handleSelectionChange"
       >
         <!-- 多选列：当 enableSelection 为 true 时显示 -->
-        <el-table-column v-if="enableSelection" type="selection" width="55" align="center" />
+        <el-table-column
+          v-if="enableSelection"
+          type="selection"
+          width="55"
+          align="center"
+          :reserve-selection="isSelectionControlled"
+        />
 
         <!-- 动态列渲染 -->
         <template v-for="column in columns" :key="column.prop || column.label">
@@ -81,7 +88,7 @@
 </template>
 
 <script setup lang="ts" generic="T extends object">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import type { ElTable } from 'element-plus'
 import CommonListColumn from './CommonListColumn.vue'
 import CommonListActions from './CommonListActions.vue'
@@ -110,6 +117,13 @@ interface Props {
   actionColumnWidth?: number | string
   enableSelection?: boolean
   rowKey?: string
+  /**
+   * 受控选中键（可选，默认 undefined = 非受控）。
+   * 传入后本组件进入受控模式：按 rowKey 与本数组同步 el-table 勾选态，
+   * 使外部（如分组展开表格的组级三态）可反向驱动明细行勾选。
+   * 不传时行为与既有调用方完全一致（非受控，选中态由 el-table 自行维护）。
+   */
+  selectedKeys?: string[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -207,6 +221,8 @@ const handleCurrentChange = (page: number) => {
 }
 
 const handleSelectionChange = (rows: T[]) => {
+  // 受控同步期间屏蔽回抛，避免「外部改 selectedKeys → toggleRowSelection → 回抛 → 再改」的环
+  if (isSyncingSelection) return
   emit('selectionChange', rows)
 }
 
@@ -219,6 +235,40 @@ const handleRowDelete = (row: Record<string, unknown>, index: number) => {
 const handleRowDetail = (row: Record<string, unknown>, index: number) => {
   emit('detail', row as T, index)
 }
+
+// ===== 受控选中（selectedKeys） =====
+// EP 2.13.7 签名（table.vue.d.ts:718）：toggleRowSelection(row, selected?, ignoreSelectable?)
+// 第三参 ignoreSelectable=true 表示跳过 selectable 判定，此处恒传 true 以免受 selectable 约束
+const isSelectionControlled = computed(() => props.selectedKeys !== undefined)
+let isSyncingSelection = false
+
+/** 按 props.selectedKeys 同步 el-table 勾选态（逐行显式置位，不依赖 diff 推断） */
+const applySelectedKeys = async () => {
+  const table = tableRef.value
+  if (!table || !isSelectionControlled.value) return
+  // el-table 需先完成 data 渲染，toggleRowSelection 才能命中行
+  await nextTick()
+  const keys = new Set(props.selectedKeys ?? [])
+  isSyncingSelection = true
+  try {
+    props.data.forEach((row) => {
+      const key = getRowKey(row)
+      const shouldSelect = key !== undefined && keys.has(String(key))
+      table.toggleRowSelection(row, shouldSelect, true)
+    })
+  } finally {
+    isSyncingSelection = false
+  }
+}
+
+watch(() => props.selectedKeys, applySelectedKeys, { deep: true })
+watch(() => props.data, applySelectedKeys)
+// 【为何不能用 immediate】`immediate: true` 会在 setup 阶段同步执行，此时 `tableRef` 仍为 null，
+// `applySelectedKeys` 首行即 return —— 首屏受控选中永远不生效（分组表格刷新后勾选态丢失）。
+// 故改由 onMounted 兜底首屏同步，watch 只负责后续变更。
+onMounted(() => {
+  void applySelectedKeys()
+})
 
 // ===== 暴露方法 =====
 defineExpose({

@@ -9,6 +9,9 @@
  *   - AssetSimpleReturn/Asset/AssetDetail/AssetListItem: 资产数据接口
  *   - AssetQueryParams: 资产查询参数
  *   - AssetListResponse/AssetListSimpleResponse: 资产列表响应
+ *   - AssetGroupQueryParams/AssetGroupChildQueryParams: 分组汇总/组内明细查询参数
+ *   - AssetGroupSummary: 分组汇总行（8 字段，对齐 AssetGroupSummarySerializer）
+ *   - AssetGroupedListResponse/AssetGroupChildListResponse: 分组汇总/组内明细分页响应
  *   - AssetStatistics: 资产统计接口
  *   - AssetImportForm/ValidatedAssetImportData: 业务表单接口
  * @callers
@@ -70,7 +73,11 @@ export enum PhysicalGrade {
  *
  * 后端规则变更说明（2024年XX月）：
  * - asset_code 由后端自动生成，前端无需传递
- * - 当 asset_purchase_number > 1 时，后端创建多条 Asset 记录并返回 List[AssetDetail]
+ * - asset_purchase_number 是「录入倍数」：入参 N 表示一次录入 N 台，
+ *   后端 fan-out 创建 N 条 Asset 记录并返回 List[AssetDetail]（长度 N）
+ * - 每条落库记录的 asset_purchase_number 恒为 1（实物台数），
+ *   因此返回值长度不可用入参 N 反推，需以返回数组实际长度为准
+ * - 录入倍数仅创建时生效：编辑载荷必须剔除该字段，否则后端返回 FIELD_NOT_ALLOWED
  * - 同一批次的编码共享相同的随机字符串，序号连续递增
  *
  * 必填: asset_name, asset_purchase_price, asset_entry_date, asset_type_code
@@ -105,7 +112,7 @@ export interface AssetCreateForm {
   asset_specification?: string | null
   /** 资产单位（可选） */
   asset_unit?: string | null
-  /** 资产购买数量（默认1） */
+  /** 录入数量（默认1）：一次录入 N 台将生成 N 条记录；仅创建时生效，编辑须剔除 */
   asset_purchase_number?: number
   /** 保修期（年，默认0） */
   asset_warranty_period?: number | null
@@ -314,6 +321,72 @@ export type AssetListResponse = PaginatedResponse<AssetDetail>
 export type AssetListSimpleResponse = PaginatedResponse<AssetSimpleReturn>
 
 /**
+ * 分组汇总查询参数（对齐后端 AssetGroupedSelector.SUMMARY_FILTER_PATHS）
+ *
+ * 注意：参数名是 `*_recordcode` 而非 `asset_type` / `asset_storage`（与 AssetQueryParams 不同），
+ * 因分组筛选发生在聚合前的精确匹配上。
+ */
+export interface AssetGroupQueryParams {
+  /** 页码（默认 1） */
+  page?: number
+  /** 每页条数（默认 20） */
+  page_size?: number
+  /** 资产状态 (in_store/in_use/damaged/scrapped...) */
+  asset_current_status?: string
+  /** 资产类型 recordcode */
+  asset_type_recordcode?: string
+  /** 仓库 recordcode */
+  asset_storage_recordcode?: string
+  /** 合同编码 */
+  contract_code?: string
+  /** 无合同哨兵筛选（true=仅无合同资产） */
+  no_contract?: boolean
+  /** 索引签名（对齐 AssetQueryParams；api 层 request 的 params 形参要求 Record） */
+  [key: string]: string | number | boolean | null | undefined
+}
+
+/**
+ * 组内明细查询参数（对齐后端 PASS_THROUGH_FILTER_PATHS）
+ *
+ * `group_key` 由后端序列化下发的 JSON 字符串，前端**原样回传**，
+ * 禁止解析/重建/补 null（后端 `parse_group_key` 是解码侧唯一实现）。
+ */
+export interface AssetGroupChildQueryParams extends AssetGroupQueryParams {
+  /** 组键 JSON 字符串（必填） */
+  group_key: string
+}
+
+/**
+ * 分组汇总行（对齐后端 AssetGroupSummarySerializer 8 字段）
+ *
+ * 契约不变量 I-1：`asset_count` ≡ 该组 `asset_codes.length` ≡ 组内明细条数。
+ */
+export interface AssetGroupSummary {
+  /** 组键 JSON 字符串（含 null 位，原样回传明细端点） */
+  group_key: string
+  /** 合同编码（无合同哨兵组为 null，前端渲染 "—"） */
+  contract_code: string | null
+  /** 资产名称（组键组成部分，非空） */
+  asset_name: string
+  /** 规格（可空） */
+  asset_specification: string | null
+  /** 品牌（可空） */
+  asset_brand: string | null
+  /** 组内资产条数（数量语义：恒等于实物条数，非录入倍数 N） */
+  asset_count: number
+  /** 金额展示串（后端聚合格式化，前端零计算） */
+  price_display: string
+  /** 组内全部 asset_code（级联三态勾选用） */
+  asset_codes: string[]
+}
+
+/** 分组汇总分页响应 */
+export type AssetGroupedListResponse = PaginatedResponse<AssetGroupSummary>
+
+/** 组内明细分页响应 */
+export type AssetGroupChildListResponse = PaginatedResponse<AssetDetail>
+
+/**
  * 资产统计接口
  */
 export interface AssetStatistics {
@@ -355,8 +428,8 @@ export interface AssetImportForm {
   单位: string
   /** 单价 */
   单价: string | number
-  /** 采购数量 */
-  采购数量: string | number
+  /** 录入数量 */
+  录入数量: string | number
   /** 采购日期 */
   采购日期: string | null
   /** 质保期(年) */

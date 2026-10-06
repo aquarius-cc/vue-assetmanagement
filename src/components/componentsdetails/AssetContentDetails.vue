@@ -21,7 +21,34 @@
     />
 
     <div class="table-container">
+      <template v-if="enableGrouping">
+        <GroupedAssetTable
+          ref="groupedTableRef"
+          :detail-columns="columns"
+          @delete-group="handleDeleteGroup"
+        >
+          <template #asset_current_status="{ row }">
+            <StatusTag :status="row.asset_current_status" />
+          </template>
+
+          <template #asset_type_name="{ row }">
+            <!-- 【A-9】数据源为 AssetListSerializer 反规范输出的 asset_type_name（分类名称） -->
+            <AssetTypeTag :type-name="row.asset_type_name" />
+          </template>
+
+          <template #contract_code="{ row }">
+            <span>{{ getContractCode(row.contract_code || '') }}</span>
+          </template>
+
+          <!-- 【D-2】实物数量 = 渲染常数 1，与行数据无关 -->
+          <template #physical_quantity>
+            <span>1</span>
+          </template>
+        </GroupedAssetTable>
+      </template>
+
       <SmartListContainer
+        v-else
         ref="smartListRef"
         :store-config="storeConfig"
         :auto-load="true"
@@ -58,14 +85,16 @@
 
             <template #asset_type_name="{ row }">
               <!-- 【A-9】数据源为 AssetListSerializer 反规范输出的 asset_type_name（分类名称） -->
-              <el-tag v-if="row.asset_type_name" type="info">
-                {{ row.asset_type_name }}
-              </el-tag>
-              <span v-else>-</span>
+              <AssetTypeTag :type-name="row.asset_type_name" />
             </template>
 
             <template #contract_code="{ row }">
               <span>{{ getContractCode(row.contract_code || '') }}</span>
+            </template>
+
+            <!-- 【D-2】实物数量 = 渲染常数 1，与行数据无关 -->
+            <template #physical_quantity>
+              <span>1</span>
             </template>
           </CommonList>
 
@@ -102,20 +131,42 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
+import GroupedAssetTable from '@/components/GroupedAssetTable.vue'
+import AssetTypeTag from '@/components/commoncomponents/AssetTypeTag.vue'
 import SearchBar from '@/components/commoncomponents/SearchBar.vue'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import type { TableColumn } from '@/types/list'
 import type { SmartListContainerExpose } from '@/types/common'
 import { useAssetListConfig } from '@/composables/useAssetListConfig'
 import { useExcelExport } from '@/composables/useExcelExport'
-import type { AssetDetail } from '@/types/asset'
+import type { AssetDetail, AssetGroupQueryParams, AssetGroupSummary } from '@/types/asset'
 import { logError } from '@/utils/logger'
+
+/** 分组展开表格对外暴露的方法（`defineExpose` 形态） */
+interface GroupedAssetTableExpose {
+  search: (filters?: AssetGroupQueryParams) => Promise<void>
+  refresh: () => Promise<void>
+}
+
+/**
+ * 组件属性
+ *
+ * @property enableGrouping 分组展开模式开关，**默认 false**。
+ *   false → 既有平铺列表（`SmartListContainer` + `CommonList`）路径，分组相关代码零执行；
+ *   true  → `GroupedAssetTable` 汇总/明细双层结构。
+ */
+interface Props {
+  enableGrouping?: boolean
+}
+
+withDefaults(defineProps<Props>(), { enableGrouping: false })
 
 const router = useRouter()
 const route = useRoute()
 const { searchFields, storeConfig, exportColumns, assetStore } = useAssetListConfig()
 
 const smartListRef = ref<SmartListContainerExpose | null>(null)
+const groupedTableRef = ref<GroupedAssetTableExpose | null>(null)
 const isChildRouteActive = ref(false)
 
 // ===== 辅助函数 =====
@@ -158,15 +209,70 @@ const columns: TableColumn[] = [
     align: 'center',
     slotName: 'contract_code',
   },
+  { prop: 'asset_purchase_price', label: '单价', width: 120, align: 'right' },
+  // 【D-2 数量语义】「实物数量」是渲染常数 1，**刻意不绑 asset_purchase_number**：
+  // create 一次录入 N 台会 fan-out 成 N 条记录、每条实物台数恒为 1（后端 W-2 落库恒 1）。
+  // 若绑字段，录入 3 台会每行显 3，看起来像 9 台实物 —— 比不显示更糟。
+  {
+    type: 'custom',
+    prop: 'physical_quantity',
+    label: '实物数量',
+    width: 110,
+    align: 'center',
+    slotName: 'physical_quantity',
+  },
 ]
 
 // ===== 搜索栏事件 =====
+// 【分组模式筛选映射】分组端点只认 4 个筛选键（B-3 白名单），而 SearchBar 的
+// searchFields 是平铺列表口径（8 键）。此处只映射语义一致者，其余键**刻意丢弃** ——
+// 透传后端不认的键会被静默忽略，误传 `contract_code` 之类还会与 group_key 内嵌合同号冲突。
+const GROUPED_FILTER_KEY_MAP = {
+  asset_current_status: 'asset_current_status',
+  asset_contract: 'contract_code',
+} as const
+
+const toGroupedFilters = (params: Record<string, string>): AssetGroupQueryParams => {
+  const filters: Record<string, string> = {}
+  Object.entries(GROUPED_FILTER_KEY_MAP).forEach(([from, to]) => {
+    const value = params[from]
+    if (value) filters[to] = value
+  })
+  return filters as AssetGroupQueryParams
+}
+
 const handleSearch = (params: Record<string, string>) => {
+  if (groupedTableRef.value) {
+    void groupedTableRef.value.search(toGroupedFilters(params))
+    return
+  }
   smartListRef.value?.searchWithParams(params)
 }
 
 const handleSearchReset = () => {
+  if (groupedTableRef.value) {
+    void groupedTableRef.value.search()
+    return
+  }
   smartListRef.value?.reset()
+}
+
+/** 分组模式删除：组内跨合同/分类，不存在「编辑组」语义，故仅提供组内批量删除 */
+const handleDeleteGroup = async (row: AssetGroupSummary) => {
+  try {
+    await ElMessageBox.confirm(
+      `确认删除「${row.asset_name || '-'}」组内 ${row.asset_count} 条资产？`,
+      '删除确认',
+      { type: 'warning', confirmButtonText: '确认删除', cancelButtonText: '取消' },
+    )
+    await assetStore.removeBatch(row.asset_codes)
+    ElMessage.success('删除成功')
+    await groupedTableRef.value?.refresh()
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') return
+    logError('components/AssetContentDetails', '[分组删除]', error)
+    ElMessage.error('删除失败')
+  }
 }
 
 // ===== 路由监听 =====
