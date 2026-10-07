@@ -49,11 +49,11 @@ const hasData = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
 }
 .distribution-chart {
-  flex: 1;
-  min-height: 240px;
+  /* 固定饼图高度，切断与卡片高度的互测反馈（双列下 height:100% 每轮 +30px 自激膨胀） */
+  flex: none;
+  height: 280px;
   width: 100%;
 }
 .el-empty {

@@ -40,8 +40,8 @@ const summaryColumns: TableColumn[] = [
   { prop: 'asset_name', label: '名称', width: 180, align: 'left' },
   { prop: 'asset_specification', label: '型号规格', width: 180, align: 'left' },
   { prop: 'asset_brand', label: '品牌', width: 120, align: 'center' },
-  { prop: 'asset_count', label: '数量', width: 90, align: 'center' },
-  { prop: 'price_display', label: '单价', width: 140, align: 'right' },
+  { prop: 'asset_count', label: '资产数量', width: 100, align: 'center' },
+  { prop: 'price_display', label: '单价区间', width: 140, align: 'right' },
 ]
 
 /**

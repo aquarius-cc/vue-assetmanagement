@@ -3,7 +3,8 @@
   "testRunner": "vitest",
   "cleanTempDir": "always",
   "coverageAnalysis": "perTest",
-  "reporters": ["clear-text", "progress", "html"],
+  "ignoreStatic": true,
+  "reporters": ["clear-text", "html", "json"],
   "mutate": [
     "src/stores/**/*.ts",
     "src/composables/useGroup*.ts",

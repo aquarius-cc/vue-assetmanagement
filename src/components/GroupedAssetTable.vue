@@ -27,6 +27,7 @@
       :data="summaries"
       :row-key="getGroupKey"
       :expand-row-keys="expandedKeys"
+      :row-class-name="summaryRowClass"
       border
       fit
       @expand-change="onExpandChange"
@@ -105,12 +106,32 @@
         :align="col.align"
         :show-overflow-tooltip="true"
       >
-        <template #default="{ row }">{{ summaryCell(row, col.prop) }}</template>
+        <template #default="{ row }">
+          <!-- 数量列做行内视觉锚点：主色胶囊，聚合语义一眼可辨 -->
+          <el-tag
+            v-if="col.prop === 'asset_count'"
+            type="primary"
+            effect="dark"
+            size="small"
+            disable-transitions
+          >
+            {{ summaryCell(row, col.prop) }}
+          </el-tag>
+          <!-- 合同号空值：文本本体保持 "—"（F5 用例 6），语义提示走原生 title，样式仅 class -->
+          <span
+            v-else-if="col.prop === 'contract_code'"
+            :class="{ 'summary-contract--empty': !row.contract_code }"
+            :title="row.contract_code ? undefined : '无合同'"
+            >{{ summaryCell(row, col.prop) }}</span
+          >
+          <template v-else>{{ summaryCell(row, col.prop) }}</template>
+        </template>
       </el-table-column>
 
       <el-table-column label="操作" fixed="right" width="140" align="center">
         <template #default="{ row }">
-          <el-button link type="danger" @click="emit('deleteGroup', row)">
+          <!-- 文字保留（F5 用例 13）；常态灰、hover 危险色，收敛常驻红噪音 -->
+          <el-button link class="group-delete-btn" @click="emit('deleteGroup', row)">
             删除组内 {{ row.asset_count }} 条
           </el-button>
         </template>
@@ -175,6 +196,10 @@ const { summaryColumns, shouldShowChildPagination, displayContractCode } = useGr
 /** el-table 行键：group_key 原样透传（F2 已持有，不解析不重建） */
 const getGroupKey = (row: AssetGroupSummary): string => row.group_key
 
+/** 汇总行 class：聚合行加粗（明细保持常规字重）+ 展开态淡主色底 */
+const summaryRowClass = ({ row }: { row: AssetGroupSummary }): string =>
+  expandedKeys.value.includes(row.group_key) ? 'summary-row summary-row--expanded' : 'summary-row'
+
 /** 汇总序号：跨汇总页的全局口径 */
 const summaryIndexOf = (index: number): number =>
   (currentPage.value - 1) * pageSize.value + index + 1
@@ -238,16 +263,55 @@ defineExpose({ search: searchGrouped, refresh: () => search() })
 </script>
 
 <style scoped>
+/* 汇总行：聚合语义加粗；展开态淡主色底（:deep 穿透 EP 内部 tr/td） */
+.grouped-asset-table :deep(.summary-row > td.el-table__cell) {
+  font-weight: 600;
+}
+
+.grouped-asset-table :deep(.summary-row--expanded > td.el-table__cell) {
+  background-color: var(--color-primary-lighter);
+}
+
+/* 合同号：无合同哨兵组灰斜体（文本本体仍为 "—"，语义提示走 title） */
+.summary-contract--empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* 展开区卡片化：浅底 + 左主色竖条 + 圆角，与汇总行形成层级边界 */
 .group-children {
+  padding: 16px;
+  background: var(--gradient-card-highlight);
+  border-left: 4px solid var(--color-primary-light);
+  border-radius: 8px;
+}
+
+/* EP 展开单元格默认 padding 20px 50px，收敛以对齐卡片左缘 */
+.grouped-asset-table :deep(td.el-table__expanded-cell) {
   padding: 12px 16px;
 }
 
+/* 组内分页条：卡片底信息条（类名与文案格式为 F5 用例锚点，勿改） */
 .child-pagination {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 12px;
-  padding-top: 12px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background-color: var(--background-color-lighter);
+  border-radius: 4px;
+}
+
+.child-pagination__text {
+  color: var(--text-secondary);
+}
+
+/* 操作列：常态灰、hover 危险色（走 EP 变量，零 !important） */
+.group-delete-btn {
+  --el-button-text-color: var(--text-secondary);
+  --el-button-hover-link-text-color: var(--color-danger);
+  --el-button-active-color: var(--color-danger-dark);
 }
 
 .grouped-asset-table__pagination {
