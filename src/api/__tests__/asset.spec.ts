@@ -131,8 +131,65 @@ describe('assetAPI', () => {
   })
 
   it('getAssetTimeline calls GET /assets/assets/{code}/timeline/', async () => {
+    mockRequest.get.mockResolvedValueOnce({ code: 0, data: [], message: '' })
     await assetAPI.getAssetTimeline('A001')
     expect(mockRequest.get).toHaveBeenCalledWith('/assets/assets/A001/timeline/')
+  })
+
+  // 【A2 映射回归】后端 operation_log_selector.get_asset_status_timeline 返回
+  // time/operation/operator/description/before_status/after_status，
+  // 前端 AssetTimelineItem 消费 status/timestamp/operator_name —— 映射必须收敛在 API 层唯一出口
+  it('getAssetTimeline 将后端 raw 字段映射为 AssetTimelineItem', async () => {
+    mockRequest.get.mockResolvedValueOnce({
+      code: 0,
+      message: '',
+      data: [
+        {
+          time: '2026-10-04T10:00:00+08:00',
+          operation: '创建',
+          operator: '张三',
+          description: '新增资产',
+          before_status: null,
+          after_status: 'in_store',
+        },
+      ],
+    })
+
+    await expect(assetAPI.getAssetTimeline('A001')).resolves.toEqual([
+      {
+        status: 'in_store',
+        timestamp: '2026-10-04T10:00:00+08:00',
+        description: '新增资产',
+        operator_name: '张三',
+      },
+    ])
+  })
+
+  it('getAssetTimeline after_status 为空时回退 before_status', async () => {
+    mockRequest.get.mockResolvedValueOnce({
+      code: 0,
+      message: '',
+      data: [
+        {
+          time: '2026-10-05T09:00:00+08:00',
+          operation: '出库',
+          operator: '李四',
+          description: '领用出库',
+          before_status: 'in_store',
+          after_status: null,
+        },
+      ],
+    })
+
+    const res = await assetAPI.getAssetTimeline('A001')
+    expect(res[0].status).toBe('in_store')
+    expect(res[0].timestamp).toBe('2026-10-05T09:00:00+08:00')
+    expect(res[0].operator_name).toBe('李四')
+  })
+
+  it('getAssetTimeline data 非数组时降级为空数组（Array.isArray 兜底）', async () => {
+    mockRequest.get.mockResolvedValueOnce({ code: 0, data: {}, message: '' })
+    await expect(assetAPI.getAssetTimeline('A001')).resolves.toEqual([])
   })
 
   it('batchDeleteAssets calls POST /assets/assets/batch-delete/', async () => {

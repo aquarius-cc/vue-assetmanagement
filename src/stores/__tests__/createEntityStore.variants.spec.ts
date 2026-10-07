@@ -149,9 +149,7 @@ describe('createEntityStore 变异杀灭补测', () => {
     it('无参与空对象请求应视为同一防重键', async () => {
       const store = makeStore<TestEntity>('var-key-same', api)
       let resolveFn!: (v: ListResponse<TestEntity>) => void
-      api.getList.mockReturnValueOnce(
-        new Promise<ListResponse<TestEntity>>((r) => (resolveFn = r)),
-      )
+      api.getList.mockReturnValueOnce(new Promise<ListResponse<TestEntity>>((r) => (resolveFn = r)))
 
       const p1 = store.getList()
       const p2 = store.getList({})
@@ -203,14 +201,23 @@ describe('createEntityStore 变异杀灭补测', () => {
 
     const invalidCases: Array<[string, unknown]> = [
       ['result 为 null', null],
-      ['total 非数字', { total: 'x', success_count: 1, fail_count: 0, success_ids: [], fail_items: [] }],
+      [
+        'total 非数字',
+        { total: 'x', success_count: 1, fail_count: 0, success_ids: [], fail_items: [] },
+      ],
       [
         'success_count 非数字',
         { total: 1, success_count: 'x', fail_count: 0, success_ids: [], fail_items: [] },
       ],
       ['fail_count 缺失', { total: 1, success_count: 1, success_ids: [], fail_items: [] }],
-      ['success_ids 非数组', { total: 1, success_count: 1, fail_count: 0, success_ids: 'x', fail_items: [] }],
-      ['fail_items 非数组', { total: 1, success_count: 1, fail_count: 0, success_ids: [], fail_items: 'x' }],
+      [
+        'success_ids 非数组',
+        { total: 1, success_count: 1, fail_count: 0, success_ids: 'x', fail_items: [] },
+      ],
+      [
+        'fail_items 非数组',
+        { total: 1, success_count: 1, fail_count: 0, success_ids: [], fail_items: 'x' },
+      ],
     ]
 
     invalidCases.forEach(([label, payload]) => {
@@ -272,7 +279,9 @@ describe('createEntityStore 变异杀灭补测', () => {
         ],
       })
       await store.removeBatch(['1', '2', '3', '4', '5'])
-      expect(mockElMessage.warning).toHaveBeenCalledWith('成功删除 1 条，4 条失败（2: e2; 3: e3; 4: e4 等4条）')
+      expect(mockElMessage.warning).toHaveBeenCalledWith(
+        '成功删除 1 条，4 条失败（2: e2; 3: e3; 4: e4 等4条）',
+      )
     })
 
     it('全部失败时应输出错误文案', async () => {

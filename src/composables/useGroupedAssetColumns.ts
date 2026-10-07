@@ -18,9 +18,6 @@
 import type { TableColumn } from '@/types/list'
 import type { AssetGroupSummary } from '@/types/asset'
 
-/** 组内分页条阈值：仅 `asset_count` 超过此值才显示（决策 6 / F5 用例 12） */
-export const CHILD_PAGINATION_THRESHOLD = 100
-
 /** 组内分页条可选页长 */
 export const CHILD_PAGE_SIZE_OPTIONS = [20, 50, 100] as const
 
@@ -34,21 +31,28 @@ export const NULL_DISPLAY = '—'
  * `group_key`（缓存 / 展开标识）与 `asset_codes`（级联勾选数据源）**不是展示列**，
  * 前者由 F2 持有、后者由选择集持有。故实际渲染 6 列（§4.1 字段说明已列明二者用途）。
  * 勾选列与序号列不在此列集内 —— 由 F3 自持并 `fixed="left"`（决策 8）。
+ *
+ * 【批次 E 列宽策略】数据列用 min-width（配合主表 fit 铺满容器，剩余宽度按比例
+ * 摊给长文本列）；数值列（资产数量）保留 width 固定窄宽 + 居中，避免胶囊被拉宽。
  */
 const summaryColumns: TableColumn[] = [
-  { prop: 'contract_code', label: '合同号', width: 150, align: 'center' },
-  { prop: 'asset_name', label: '名称', width: 180, align: 'left' },
-  { prop: 'asset_specification', label: '型号规格', width: 180, align: 'left' },
-  { prop: 'asset_brand', label: '品牌', width: 120, align: 'center' },
+  { prop: 'contract_code', label: '合同号', minWidth: 150, align: 'center' },
+  { prop: 'asset_name', label: '名称', minWidth: 180, align: 'left' },
+  { prop: 'asset_specification', label: '型号规格', minWidth: 180, align: 'left' },
+  { prop: 'asset_brand', label: '品牌', minWidth: 120, align: 'center' },
   { prop: 'asset_count', label: '资产数量', width: 100, align: 'center' },
-  { prop: 'price_display', label: '单价区间', width: 140, align: 'right' },
+  { prop: 'price_display', label: '单价区间', minWidth: 140, align: 'right' },
 ]
 
 /**
- * 组内分页条是否可见：仅超长组显示（决策 6 / F5 用例 12）
+ * 组内分页条是否可见：组内条数超过当前页长才需要追加入口（决策 6 / F5 用例 12）
+ *
+ * BF-073 修正：旧判据 `asset_count > 100`（常量阈值）与实际页长（默认 20）脱钩，
+ * 21~100 条组只显首页 20 条且无「加载下一页」，后续数据不可达；
+ * 改为与 `childPageSize` 对齐后，页长切换（20/50/100）下判据恒等于「还有下一页」。
  */
-export function shouldShowChildPagination(row: AssetGroupSummary): boolean {
-  return row.asset_count > CHILD_PAGINATION_THRESHOLD
+export function shouldShowChildPagination(row: AssetGroupSummary, pageSize: number): boolean {
+  return row.asset_count > pageSize
 }
 
 /**
@@ -71,7 +75,6 @@ export function useGroupedAssetColumns() {
     summaryColumns,
     shouldShowChildPagination,
     displayContractCode,
-    CHILD_PAGINATION_THRESHOLD,
     CHILD_PAGE_SIZE_OPTIONS,
   }
 }

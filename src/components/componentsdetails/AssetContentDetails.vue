@@ -27,6 +27,9 @@
           ref="groupedTableRef"
           :detail-columns="columns"
           @delete-group="handleDeleteGroup"
+          @child-edit="handleEdit"
+          @child-delete="handleDelete"
+          @child-detail="handleDetail"
         >
           <template #asset_current_status="{ row }">
             <StatusTag :status="row.asset_current_status" />
@@ -307,6 +310,17 @@ const handleEdit = (row: AssetDetail) => {
   })
 }
 
+/** 分组子行「详细」：与平铺页 CommonListActions 的 detail-route-name='BasicAssetDetails' 同契约 */
+const handleDetail = (row: AssetDetail) => {
+  if (!row.recordcode) {
+    ElMessage.error('记录编码不存在，无法查看详情')
+    return
+  }
+  router.push({ name: 'BasicAssetDetails', query: { code: row.recordcode } }).catch((err) => {
+    ElMessage.error(`跳转失败: ${err.message || '未知错误'}`)
+  })
+}
+
 const handleDelete = (row: AssetDetail) => {
   if (!row.recordcode) {
     ElMessage.error('记录编码不存在，无法删除')
@@ -320,7 +334,12 @@ const handleDelete = (row: AssetDetail) => {
     .then(() => assetStore.remove(row.recordcode))
     .then(() => {
       ElMessage.success('资产删除成功')
-      smartListRef.value?.refresh()
+      // 分组模式刷新分组表格（goToChildPage 覆盖式分页），平铺模式刷新通用列表
+      if (props.enableGrouping) {
+        groupedTableRef.value?.refresh()
+      } else {
+        smartListRef.value?.refresh()
+      }
     })
     .catch((error) => {
       if (error !== 'cancel') ElMessage.error(`删除失败: ${error.message || '未知错误'}`)

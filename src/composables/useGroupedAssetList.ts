@@ -57,6 +57,7 @@ export interface GroupedAssetListReturn {
   isLoadingChildren: (groupKey: string) => boolean
   hasMoreChildren: (groupKey: string) => boolean
   loadMoreChildren: (groupKey: string) => Promise<void>
+  goToChildPage: (groupKey: string, page: number) => Promise<void>
   isGroupChecked: (groupKey: string) => boolean
   isGroupIndeterminate: (groupKey: string) => boolean
   toggleGroupSelection: (groupKey: string) => void
@@ -160,6 +161,7 @@ export function useGroupedAssetList(options: GroupedAssetListOptions = {}): Grou
     isLoadingChildren: cache.isLoadingChildren,
     hasMoreChildren: cache.hasMoreChildren,
     loadMoreChildren: cache.loadMoreChildren,
+    goToChildPage: cache.goToChildPage,
     isGroupChecked: selection.isGroupChecked,
     isGroupIndeterminate: selection.isGroupIndeterminate,
     toggleGroupSelection: selection.toggleGroupSelection,

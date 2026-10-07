@@ -38,6 +38,7 @@ import type {
   AssetGroupChildQueryParams,
   AssetGroupedListResponse,
   AssetGroupChildListResponse,
+  AssetTimelineItem,
 } from '@/types/asset'
 import type { Contract } from '@/types/contract'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
@@ -64,14 +65,18 @@ interface AssetHistoryItem {
 }
 
 /**
- * [LR-01] 资产状态时间线页
- * 对应 GET /api/v1/assets/assets/{asset_code}/timeline/ 返回的每条记录
+ * 后端 AssetStatusTimelineView 的原始条目。
+ * 来源：operation_log_selector.get_asset_status_timeline（operation_log_selector.py:88-96），
+ * 返回键为 time / operation / operator / description / before_status / after_status。
+ * 仅作 API 层映射源，禁止视图层直接消费。
  */
-interface AssetTimelineItem {
-  status: string
-  timestamp: string
-  description: string
-  operator_name: string
+interface RawTimelineItem {
+  time: string
+  operation: string
+  operator: string
+  description: string | null
+  before_status: string | null
+  after_status: string | null
 }
 
 /**
@@ -313,13 +318,23 @@ export const assetAPI = {
   /**
    * 获取资产状态变更时间线
    * 对应 spec.md: GET /api/assets/assets/{code}/timeline/
-   * @param asset_code 资产编码
-   * @returns 状态时间线数据
+   *
+   * 【字段映射收敛于此（DR-1 唯一出口）】后端返回 raw 键（time/operator/before_status/
+   * after_status），视图层消费 AssetTimelineItem（timestamp/operator_name/status），
+   * 映射仅在本函数做一次，避免各调用点散改。
+   * @param asset_code 资产编码（与 detail 路由的 recordcode 取键契约不同，勿混用）
+   * @returns 状态时间线数据；data 非数组时降级为空数组
    */
-  getAssetTimeline: (asset_code: string): Promise<AssetTimelineItem[]> => {
-    return unwrapResponse(
-      request.get<AssetTimelineItem[]>(`/assets/assets/${asset_code}/timeline/`),
+  getAssetTimeline: async (asset_code: string): Promise<AssetTimelineItem[]> => {
+    const items = await unwrapResponse(
+      request.get<RawTimelineItem[]>(`/assets/assets/${asset_code}/timeline/`),
     )
+    return (Array.isArray(items) ? items : []).map((item) => ({
+      status: item.after_status ?? item.before_status ?? '',
+      timestamp: item.time,
+      description: item.description ?? '',
+      operator_name: item.operator ?? '',
+    }))
   },
 
   /**

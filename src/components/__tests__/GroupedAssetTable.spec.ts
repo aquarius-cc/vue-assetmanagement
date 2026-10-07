@@ -4,7 +4,7 @@
  * 覆盖 F5 矩阵中归属组件层的用例：
  *   1 / 11 组级三态与明细勾选反向驱动
  *   6  无合同哨兵组渲染「—」而非裸 null
- *   12 组内分页条仅 asset_count > 100 可见
+ *   12 组内分页条仅 asset_count > page_size 可见（BF-073 修正后口径）
  *   13 冻结列（勾选 + 序号 fixed=left，操作 fixed=right）
  *   14 group_key 内嵌 null 位往返不崩
  *   明细插槽透传（F3 把 $slots 转发给明细 CommonList）
@@ -40,6 +40,7 @@ vi.mock('element-plus', async () => {
 vi.mock('@/utils/logger', () => ({ logError: mockLogError }))
 
 import GroupedAssetTable from '../GroupedAssetTable.vue'
+import GroupedAssetChildTable from '../asset/GroupedAssetChildTable.vue'
 import type { AssetDetail, AssetGroupSummary, PaginatedResponse } from '@/types/asset'
 import type { TableColumn } from '@/types/list'
 
@@ -131,6 +132,14 @@ const DETAIL_COLUMNS: TableColumn[] = [
   { prop: 'asset_name', label: '名称', width: 180, align: 'left' },
   {
     type: 'custom',
+    prop: 'asset_current_status',
+    label: '当前状态',
+    width: 130,
+    align: 'center',
+    slotName: 'asset_current_status',
+  },
+  {
+    type: 'custom',
     prop: 'physical_quantity',
     label: '实物数量',
     width: 110,
@@ -185,6 +194,16 @@ const SUMMARY_LARGE = makeSummary({
   asset_brand: null,
   asset_count: 120,
   asset_codes: Array.from({ length: 120 }, (_, i) => `ZS${i}`),
+})
+/** 21~100 缺口档代表（BF-073）：50 条组在旧阈值下分页条不渲染 */
+const SUMMARY_MID = makeSummary({
+  group_key: '["HT2024-003","交换机",null,null]',
+  contract_code: 'HT2024-003',
+  asset_name: '交换机',
+  asset_specification: null,
+  asset_brand: null,
+  asset_count: 50,
+  asset_codes: Array.from({ length: 50 }, (_, i) => `ZM${i}`),
 })
 
 function mountTable() {
@@ -255,9 +274,11 @@ describe('GroupedAssetTable · F3 组件层', () => {
     const columns = wrapper.findAll('.el-table-column')
     const fixedLeft = columns.filter((c) => c.attributes('data-fixed') === 'left')
     expect(fixedLeft.length).toBeGreaterThanOrEqual(2)
+    // 汇总操作列 + 子表操作列均 fixed=right（嵌套子表后共 2 处）；
+    // right[0] 可能是子表「编辑/删除/详细」列，汇总「删除组内」列按文本定位
     const right = columns.filter((c) => c.attributes('data-fixed') === 'right')
-    expect(right).toHaveLength(1)
-    expect(right[0].text()).toContain('删除组内')
+    expect(right.length).toBeGreaterThanOrEqual(2)
+    expect(right.some((c) => c.text().includes('删除组内'))).toBe(true)
   })
 
   it('用例1：组级勾选反向驱动明细行勾选（CommonList 受控选中）', async () => {
@@ -303,9 +324,10 @@ describe('GroupedAssetTable · F3 组件层', () => {
     await summaryGroupCheckbox(wrapper, 0).find('input').setValue(true)
     await flush()
 
-    // 明细侧取消 1 条 → CommonList emit selection-change → F3 setGroupSelection → 组级转半选
-    const detailList = wrapper.findAllComponents({ name: 'CommonList' })[0]
-    detailList.vm.$emit('selection-change', [
+    // 明细侧取消 1 条 → GroupedAssetChildTable emit selection-change → F3 setGroupSelection → 组级转半选
+    const childTable = wrapper.findComponent(GroupedAssetChildTable)
+    expect(childTable.exists()).toBe(true)
+    childTable.vm.$emit('selection-change', [
       { recordcode: 'RC-ZC001', asset_code: 'ZC001' },
       { recordcode: 'RC-ZC002', asset_code: 'ZC002' },
     ])
@@ -316,49 +338,55 @@ describe('GroupedAssetTable · F3 组件层', () => {
     expect(box.attributes('data-indeterminate')).toBe('true')
   })
 
-  it('用例12：asset_count=120 的组显示组内分页条', async () => {
+  it('用例12：asset_count=120 的组显示组内真分页器（el-pagination）', async () => {
     mockGetGroupedAssets.mockResolvedValue(paged([SUMMARY_MULTI, SUMMARY_LARGE]))
     mockGetGroupChildren.mockResolvedValue(paged([]))
     const wrapper = mountTable()
     await flush()
     await expandGroup(wrapper, SUMMARY_LARGE)
-    expect(wrapper.find('.child-pagination').exists()).toBe(true)
-    expect(wrapper.find('.child-pagination').text()).toContain('/ 120')
+    // 真分页：分页器由子组件 .child-pager 承担（旧「加载更多」已移除）
+    expect(wrapper.find('.child-pager .el-pagination').exists()).toBe(true)
   })
 
-  it('用例12：组内分页条在 asset_count <= 100 时不渲染', async () => {
+  it('用例12：组内分页器在 asset_count <= page_size（20）时不渲染', async () => {
     mockGetGroupedAssets.mockResolvedValue(paged([SUMMARY_MULTI]))
     mockGetGroupChildren.mockResolvedValue(paged([]))
     const wrapper = mountTable()
     await flush()
     await expandGroup(wrapper, SUMMARY_MULTI)
-    expect(wrapper.find('.child-pagination').exists()).toBe(false)
+    expect(wrapper.find('.child-pager .el-pagination').exists()).toBe(false)
   })
 
-  it('用例4：点击「加载下一页」按 page=2 追加而非替换（append 语义）', async () => {
+  it('用例12（BF-073 回归）：asset_count=50 的组（21~100 档）显示分页器，后续数据可达', async () => {
+    // 缺口实证：旧阈值 >100 下该组只显首页 20 条且无翻页入口，21~50 条不可达
+    mockGetGroupedAssets.mockResolvedValue(paged([SUMMARY_MID]))
+    mockGetGroupChildren.mockResolvedValue(
+      paged(
+        Array.from({ length: 20 }, (_, i) => makeDetail(`ZM${i}`)),
+        50,
+      ),
+    )
+    const wrapper = mountTable()
+    await flush()
+    await expandGroup(wrapper, SUMMARY_MID)
+    expect(wrapper.find('.child-pager .el-pagination').exists()).toBe(true)
+  })
+
+  it('用例4：翻页走覆盖式分页（page-change → goToChildPage，page=2 请求）', async () => {
     const page1 = Array.from({ length: 20 }, (_, i) => makeDetail(`ZP${i}`))
-    const page2 = Array.from({ length: 20 }, (_, i) => makeDetail(`ZQ${i}`))
     mockGetGroupedAssets.mockResolvedValue(paged([SUMMARY_LARGE]))
-    mockGetGroupChildren
-      .mockResolvedValueOnce(paged(page1, 120))
-      .mockResolvedValueOnce(paged(page2, 120))
+    mockGetGroupChildren.mockResolvedValue(paged(page1, 120))
 
     const wrapper = mountTable()
     await flush()
     await expandGroup(wrapper, SUMMARY_LARGE)
 
-    // 首屏 20 条 → 第 1 页
-    expect(wrapper.find('.child-pagination').text()).toContain('已加载 20 / 120 条（第 1 页）')
-
-    const moreButton = wrapper
-      .findAll('.child-pagination .el-button')
-      .find((b) => b.text().includes('加载下一页'))
-    expect(moreButton).toBeDefined()
-    await moreButton!.trigger('click')
+    // 子组件 emit page-change(2) → F3 调 goToChildPage(group_key, 2) → 请求 page=2（覆盖式）
+    const childTable = wrapper.findComponent(GroupedAssetChildTable)
+    expect(childTable.exists()).toBe(true)
+    childTable.vm.$emit('page-change', 2)
     await flush()
 
-    // 追加后 40 条、第 2 页；且第二个请求带 page=2
-    expect(wrapper.find('.child-pagination').text()).toContain('已加载 40 / 120 条（第 2 页）')
     expect(mockGetGroupChildren).toHaveBeenLastCalledWith(
       expect.objectContaining({ group_key: KEY_LARGE, page: 2 }),
     )
@@ -374,18 +402,34 @@ describe('GroupedAssetTable · F3 组件层', () => {
     expect(wrapper.text()).toContain('投影仪')
   })
 
-  it('明细插槽透传：physical_quantity 插槽由 F3 转交给明细 CommonList', async () => {
+  it('明细插槽透传：asset_current_status 插槽由 F3 转交给子表（白名单列）', async () => {
+    // 9 列精简后白名单不含 physical_quantity（原透传用例失去对象，改为验证存留插槽）
+    mockGetGroupedAssets.mockResolvedValue(paged([SUMMARY_MULTI]))
     const wrapper = mountTable()
     await flush()
-    expect(wrapper.findAll('.qty-probe').length).toBeGreaterThan(0)
+    await expandGroup(wrapper, SUMMARY_MULTI)
+    const childTable = wrapper.findComponent(GroupedAssetChildTable)
+    expect(childTable.exists()).toBe(true)
+    // F3 把 $slots 透传给子表，子表对 asset_current_status 列优先走插槽渲染
+    expect(childTable.props('columns').map((c: TableColumn) => c.prop)).toContain(
+      'asset_current_status',
+    )
   })
 
-  it('明细列集由 prop 注入，不在 F3 内重复定义（DR-1）', async () => {
+  it('明细列集白名单过滤后传入子表，不在 F3 内重复定义（DR-1）', async () => {
     const wrapper = mountTable()
     await flush()
     await expandGroup(wrapper, SUMMARY_MULTI)
     const labels = wrapper.findAll('.el-table-column').map((c) => c.attributes('data-label'))
+    // 白名单 6 项透传：唯一记录码/编码/名称在列
     expect(labels).toContain('唯一记录码')
-    expect(labels).toContain('实物数量')
+    expect(labels).toContain('编码')
+    expect(labels).toContain('名称')
+    // 精简项不在子表列集：资产分类/实物数量被白名单剔除
+    expect(labels).not.toContain('实物数量')
+    // 子表自持结构列：序号/数量/操作
+    expect(labels).toContain('序号')
+    expect(labels).toContain('数量')
+    expect(labels).toContain('操作')
   })
 })

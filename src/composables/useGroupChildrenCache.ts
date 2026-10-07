@@ -59,6 +59,7 @@ export interface GroupChildrenCacheReturn {
   setExpanded: (groupKey: string, expanded: boolean) => Promise<void>
   toggleExpand: (groupKey: string) => Promise<void>
   loadMoreChildren: (groupKey: string) => Promise<void>
+  goToChildPage: (groupKey: string, page: number) => Promise<void>
   reset: () => void
 }
 
@@ -105,7 +106,9 @@ export function useGroupChildrenCache(
 
   const isLoadingChildren = (groupKey: string): boolean => loadingKeys.value.includes(groupKey)
 
-  /** 已加载到的组内页码（明细序号双口径用；未加载过按第 1 页） */
+  /** 当前展示页码（覆盖式分页下表示当前展示页；append 模式下表示已加载到的最大页）
+   * @note 覆盖式分页（append=false）启用后，语义为「当前展示页（current display page）」。
+   */
   const childrenPage = (groupKey: string): number => childrenMap.value.get(groupKey)?.page ?? 1
 
   /** 是否还有下一页：已加载页数 * 每页 < 组内总数 */
@@ -186,6 +189,17 @@ export function useGroupChildrenCache(
     await fetchChildren(groupKey, entry ? entry.page + 1 : 1, true)
   }
 
+  /**
+   * 跳转到指定子明细页（覆盖式分页）
+   * @description 使用 append=false 覆盖写入，确保每页仅渲染当前页数据（解决“加载更多”append 拼接导致的多页一起渲染问题）。
+   * @note childrenPage 在覆盖式写入后表示「当前展示页（current display page）」，不再严格等同于「已加载最大页（max loaded page）」。
+   *       该语义变更仅适用于分组子表真分页场景。
+   */
+  async function goToChildPage(groupKey: string, page: number): Promise<void> {
+    if (!groupKey) return
+    await fetchChildren(groupKey, page, false)
+  }
+
   return {
     expandedKeys,
     childrenOf,
@@ -197,6 +211,7 @@ export function useGroupChildrenCache(
     setExpanded,
     toggleExpand,
     loadMoreChildren,
+    goToChildPage,
     reset,
   }
 }

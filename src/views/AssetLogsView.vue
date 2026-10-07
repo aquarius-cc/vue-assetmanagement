@@ -69,16 +69,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { Document } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useAssetStore } from '@/stores'
-import type { AssetDetail } from '@/types/asset'
+import type { AssetDetail, AssetTimelineItem } from '@/types/asset'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
-import { logError } from '@/utils/logger'
-
-interface TimelineItem {
-  status: string
-  timestamp: string
-  description: string
-  operator_name: string
-}
+import { logError, logWarn } from '@/utils/logger'
 
 const route = useRoute()
 const router = useRouter()
@@ -86,23 +79,32 @@ const assetStore = useAssetStore()
 const loading = ref(true)
 const asset = ref<AssetDetail | null>(null)
 const assetCode = computed(() => route.params.code as string)
-const timeline = ref<TimelineItem[]>([])
+const timeline = ref<AssetTimelineItem[]>([])
 
 onMounted(async () => {
   if (!assetCode.value) return
+
+  // 1) 资产详情：取键契约为 recordcode（asset_view.py:57 lookup_field="recordcode"）
   try {
-    const [assetResult, timelineResult] = await Promise.all([
-      assetStore.getById(assetCode.value),
-      assetStore.getAssetTimeline(assetCode.value),
-    ])
-    asset.value = assetResult
-    timeline.value = timelineResult || []
+    asset.value = await assetStore.getById(assetCode.value)
   } catch (err) {
-    logError('views/AssetLogsView', '获取资产状态日志失败:', err)
+    logError('views/AssetLogsView', '获取资产详情失败:', err)
     ElMessage.error('获取资产信息失败，请稍后重试')
-  } finally {
-    loading.value = false
   }
+
+  // 2) 状态时间线：取键契约为 asset_code（urls.py:82 / operation_log_selector.py:82），
+  //    由详情结果派生——单一 route.params.code 无法同时满足两个契约，故串行而非并行；
+  //    详情缺失（null）时不发无意义请求
+  if (asset.value) {
+    try {
+      timeline.value = (await assetStore.getAssetTimeline(asset.value.asset_code)) ?? []
+    } catch (err) {
+      logWarn('views/AssetLogsView', '获取状态日志失败，按空时间线渲染:', { err })
+      timeline.value = []
+    }
+  }
+
+  loading.value = false
 })
 </script>
 

@@ -281,6 +281,23 @@ export interface AssetListItem extends Asset {
   asset_manager_name?: string
 }
 
+// ==================== 状态时间线接口 ====================
+
+/**
+ * [LR-01] 资产状态时间线页条目（前端消费形态）
+ * 对应 GET /api/v1/assets/assets/{asset_code}/timeline/
+ *
+ * 后端原始条目为 time / operation / operator / description / before_status / after_status
+ * （operation_log_selector.py:88-96），由 api/asset.ts getAssetTimeline 统一映射，
+ * 映射仅在 API 层做一次（DR-1），视图层只消费本形态。
+ */
+export interface AssetTimelineItem {
+  status: string
+  timestamp: string
+  description: string
+  operator_name: string
+}
+
 // ==================== 查询参数接口 ====================
 
 /**

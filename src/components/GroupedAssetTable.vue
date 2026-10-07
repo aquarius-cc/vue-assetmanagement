@@ -35,42 +35,27 @@
       <el-table-column type="expand" width="48" align="center">
         <template #default="scope">
           <div class="group-children">
-            <CommonList
-              :data="childrenOf(scope.row.group_key)"
-              :columns="detailColumns"
+            <!-- 真·分页子表（批次 E）：页驱动 + 受控勾选 + 层级序号，列集白名单过滤（DR-1） -->
+            <GroupedAssetChildTable
+              :rows="childrenOf(scope.row.group_key)"
+              :columns="childColumns"
+              :group-index="summaryIndexOf(scope.$index)"
+              :total="scope.row.asset_count ?? 0"
               :current-page="childrenPage(scope.row.group_key)"
               :page-size="childPageSize"
-              :total="scope.row.asset_count"
               :loading="isLoadingChildren(scope.row.group_key)"
-              :enable-selection="true"
               :selected-keys="selectedCodes"
-              :enable-search="false"
-              :enable-edit="false"
-              :enable-delete="false"
-              :show-actions="false"
-              :show-pagination="false"
-              row-key="asset_code"
+              @edit="(row: AssetDetail) => emit('childEdit', row)"
+              @delete="(row: AssetDetail) => emit('childDelete', row)"
+              @detail="(row: AssetDetail) => emit('childDetail', row)"
+              @page-change="(page: number) => goToChildPage(scope.row.group_key, page)"
               @selection-change="(rows: AssetDetail[]) => onChildSelectionChange(scope.row, rows)"
             >
+              <!-- 透传状态 Tag 等明细插槽（列集精简后仅存的白名单插槽继续生效） -->
               <template v-for="(_, name) in $slots" #[name]="slotProps">
                 <slot :name="name" v-bind="slotProps ?? {}" />
               </template>
-            </CommonList>
-
-            <div v-if="shouldShowChildPagination(scope.row)" class="child-pagination">
-              <span class="child-pagination__text">
-                已加载 {{ childrenOf(scope.row.group_key).length }} /
-                {{ scope.row.asset_count }} 条（第 {{ childrenPage(scope.row.group_key) }} 页）
-              </span>
-              <el-button
-                v-if="hasMoreChildren(scope.row.group_key)"
-                size="small"
-                :loading="isLoadingChildren(scope.row.group_key)"
-                @click="loadMoreChildren(scope.row.group_key)"
-              >
-                加载下一页
-              </el-button>
-            </div>
+            </GroupedAssetChildTable>
           </div>
         </template>
       </el-table-column>
@@ -103,6 +88,7 @@
         :prop="col.prop"
         :label="col.label"
         :width="col.width"
+        :min-width="col.minWidth"
         :align="col.align"
         :show-overflow-tooltip="true"
       >
@@ -110,6 +96,7 @@
           <!-- 数量列做行内视觉锚点：主色胶囊，聚合语义一眼可辨 -->
           <el-tag
             v-if="col.prop === 'asset_count'"
+            class="asset-count-tag"
             type="primary"
             effect="dark"
             size="small"
@@ -151,7 +138,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import CommonList from './commoncomponents/CommonList.vue'
+import GroupedAssetChildTable from './asset/GroupedAssetChildTable.vue'
 import { useGroupedAssetList } from '@/composables/useGroupedAssetList'
 import { NULL_DISPLAY, useGroupedAssetColumns } from '@/composables/useGroupedAssetColumns'
 import type { TableColumn } from '@/types/list'
@@ -163,9 +150,14 @@ interface Props {
   detailColumns: TableColumn[]
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
-const emit = defineEmits<{ (e: 'deleteGroup', row: AssetGroupSummary): void }>()
+const emit = defineEmits<{
+  (e: 'deleteGroup', row: AssetGroupSummary): void
+  (e: 'childEdit', row: AssetDetail): void
+  (e: 'childDelete', row: AssetDetail): void
+  (e: 'childDetail', row: AssetDetail): void
+}>()
 
 const {
   summaries,
@@ -180,18 +172,37 @@ const {
   search,
   changePage,
   setExpanded,
+  goToChildPage,
   childrenOf,
   childrenPage,
   isLoadingChildren,
-  hasMoreChildren,
-  loadMoreChildren,
   isGroupChecked,
   isGroupIndeterminate,
   toggleGroupSelection,
   setGroupSelection,
 } = useGroupedAssetList()
 
-const { summaryColumns, shouldShowChildPagination, displayContractCode } = useGroupedAssetColumns()
+const { summaryColumns, displayContractCode } = useGroupedAssetColumns()
+
+/**
+ * 子表列集：白名单过滤（DR-1 视图选择，非第二定义源）
+ *
+ * 目标稿 9 列 = 勾选 + 序号 + 6 项透传 + 数量(恒1) + 操作；其中勾选/序号/数量/操作
+ * 由 GroupedAssetChildTable 自持，故仅需从明细列集中过滤出 6 项数据列。
+ * 剔除：资产分类、实物数量（实物数量在子区语义为恒 1，由数量列承担）。
+ */
+const CHILD_WHITELIST = new Set([
+  'recordcode',
+  'asset_code',
+  'asset_name',
+  'asset_specification',
+  'asset_brand',
+  'asset_current_status',
+])
+
+const childColumns = computed<TableColumn[]>(() =>
+  props.detailColumns.filter((col) => col.prop !== undefined && CHILD_WHITELIST.has(col.prop)),
+)
 
 /** el-table 行键：group_key 原样透传（F2 已持有，不解析不重建） */
 const getGroupKey = (row: AssetGroupSummary): string => row.group_key
@@ -278,7 +289,8 @@ defineExpose({ search: searchGrouped, refresh: () => search() })
   font-style: italic;
 }
 
-/* 展开区卡片化：浅底 + 左主色竖条 + 圆角，与汇总行形成层级边界 */
+/* 展开区卡片化：浅底 + 左主色竖条 + 圆角，与汇总行形成层级边界
+   （子表自身 .child-wrap 已有浅灰底，此处仅保留卡片外框） */
 .group-children {
   padding: 16px;
   background: var(--gradient-card-highlight);
@@ -291,25 +303,25 @@ defineExpose({ search: searchGrouped, refresh: () => search() })
   padding: 12px 16px;
 }
 
-/* 组内分页条：卡片底信息条（类名与文案格式为 F5 用例锚点，勿改） */
-.child-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 12px;
-  padding: 8px 12px;
-  background-color: var(--background-color-lighter);
-  border-radius: 4px;
+/* 组内分页条样式已随「加载更多」交互移除（批次 E 真分页由子组件 .child-pager 承担） */
+
+/* 数量胶囊：EP 默认 --el-color-primary（#409eff）白字仅 3.05:1 不达 AA；
+   改走项目令牌 --color-primary（#2b5fd7，白字 5.65:1）。
+   暗色下 --color-primary 为 #4a90e2（白字 3.29:1 同样不达标），改取
+   --color-primary-dark（暗色 #2b5fd7，5.65:1），两主题均达 4.5:1 */
+.asset-count-tag {
+  --el-tag-bg-color: var(--color-primary);
 }
 
-.child-pagination__text {
-  color: var(--text-secondary);
+:global(html.dark) .asset-count-tag {
+  --el-tag-bg-color: var(--color-primary-dark);
 }
 
-/* 操作列：常态灰、hover 危险色（走 EP 变量，零 !important） */
+/* 操作列：常态灰、hover 危险色（走 EP 变量，零 !important）
+   常态取 --text-regular（#606266，白底 5.9:1 AA 达标）；--text-secondary
+   （#909399）仅 2.84:1 不达标，见 audit 2026-10-07 对比度项 */
 .group-delete-btn {
-  --el-button-text-color: var(--text-secondary);
+  --el-button-text-color: var(--text-regular);
   --el-button-hover-link-text-color: var(--color-danger);
   --el-button-active-color: var(--color-danger-dark);
 }

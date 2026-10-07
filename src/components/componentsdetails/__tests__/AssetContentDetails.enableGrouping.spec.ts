@@ -58,14 +58,33 @@ vi.mock('@/composables/useExcelExport', () => ({
 }))
 
 import AssetContentDetails from '../AssetContentDetails.vue'
+import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import type { AssetDetail } from '@/types/asset'
 import type { TableColumn } from '@/types/list'
 
-/** 3 条记录，asset_purchase_number 均为 3（= 一次录入 3 台 fan-out） */
+/** 3 条记录，asset_purchase_number 均为 3（= 一次录入 3 台 fan-out）；asset_current_status 必填，见状态列用例 */
 const ROWS: AssetDetail[] = [
-  { recordcode: 'RC-1', asset_code: 'ZC001', asset_name: '笔记本', asset_purchase_number: 3 },
-  { recordcode: 'RC-2', asset_code: 'ZC002', asset_name: '笔记本', asset_purchase_number: 3 },
-  { recordcode: 'RC-3', asset_code: 'ZC003', asset_name: '笔记本', asset_purchase_number: 3 },
+  {
+    recordcode: 'RC-1',
+    asset_code: 'ZC001',
+    asset_name: '笔记本',
+    asset_purchase_number: 3,
+    asset_current_status: 'in_store',
+  },
+  {
+    recordcode: 'RC-2',
+    asset_code: 'ZC002',
+    asset_name: '笔记本',
+    asset_purchase_number: 3,
+    asset_current_status: 'in_store',
+  },
+  {
+    recordcode: 'RC-3',
+    asset_code: 'ZC003',
+    asset_name: '笔记本',
+    asset_purchase_number: 3,
+    asset_current_status: 'in_store',
+  },
 ] as AssetDetail[]
 
 const SmartListContainerStub = {
@@ -205,6 +224,22 @@ describe('AssetContentDetails · 分组开关与列集回归', () => {
       .findAll('.el-table-column')
       .find((c) => c.attributes('data-label') === '单价')
     expect(priceColumn!.attributes('data-prop')).toBe('asset_purchase_price')
+  })
+
+  /**
+   * 夹具回归（CT-4）：ROWS 必须携带 asset_current_status，否则真实 StatusTag 收到
+   * undefined 并打出 `[StatusTag] Invalid status "undefined"`（降级显示原始值，不抛错）。
+   * 断言因此落在 props 上，而非期待组件崩溃。
+   */
+  it('状态列 StatusTag 收到真值 status（防 Invalid status "undefined" 告警）', () => {
+    const wrapper = mountDetails()
+    const tags = wrapper.findAllComponents(StatusTag)
+    expect(tags).toHaveLength(3)
+    for (const tag of tags) {
+      expect(typeof tag.props('status')).toBe('string')
+      expect(tag.props('status')).toBeTruthy()
+    }
+    expect(tags[0].text()).toBe('在库')
   })
 
   // ===== 【B 批】筛选字段集接线 + 分组筛选映射 =====
