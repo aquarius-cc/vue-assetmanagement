@@ -24,7 +24,7 @@
 ## 本次验证中额外修复的问题
 1. 移除了 `ContactsView.vue` 中未使用的 `departmentTreeRef` 变量
 2. 修复了 `auth.spec.ts` 测试文件中 `setEncryptedToken` 变量引用错误
-3. 更新了 ESLint 配置，添加了 `.agents/skills/impeccable/**` 到忽略列表
+3. 更新了 ESLint 配置，添加了 `.opencode/skills/impeccable/**` 到忽略列表（旧 `.agents/skills/impeccable/**` Codex 版已被 v4.5.0 opencode 发行版取代并删除）
 
 ## 修复的文件
 - `src/views/ContactsView.vue` - 移除未使用的变量

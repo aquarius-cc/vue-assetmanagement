@@ -39,7 +39,7 @@ export default defineConfigWithVueTs(
     'everything-claude-code/**', // 忽略整个工具目录
     '.trae/**', // 忽略 .trae 工具目录
     'graphify-out/**', // 忽略 graphify 输出
-    '.agents/skills/impeccable/**', // 忽略 impeccable 技能目录
+    '.opencode/skills/impeccable/**', // 忽略 impeccable 技能目录（v4.5.0 opencode 发行版）
     'node_modules/**',
     // Stryker 变异测试的 sandbox 工作区。**本条是主防线，不可删。**
     // 机理：sandbox 副本路径形如 .stryker-tmp/sandbox-XXX/src/...，不在
