@@ -23,7 +23,7 @@ const resolveRowKey = (row: Row, rowKey: unknown): string => {
 
 const ElTableStub = {
   name: 'ElTable',
-  props: ['data', 'rowKey', 'loading'],
+  props: ['data', 'rowKey', 'loading', 'height'],
   emits: ['selection-change'],
   provide(this: { data: Row[]; rowKey: unknown }) {
     return { __rows: this.data ?? [] }

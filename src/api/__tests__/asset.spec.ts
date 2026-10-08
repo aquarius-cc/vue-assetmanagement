@@ -208,7 +208,7 @@ describe('assetAPI', () => {
 
   it('getQrCodeImageUrl returns BASE_URL-prefixed image URL without HTTP call', () => {
     expect(assetAPI.getQrCodeImageUrl('RC001')).toBe(
-      'https://api.test/api/v1/assets/RC001/qr-code-image/',
+      'https://api.test/api/v1/assets/assets/RC001/qr-code-image/',
     )
     expect(mockRequest.get).not.toHaveBeenCalled()
   })

@@ -32,7 +32,8 @@
           @child-detail="handleDetail"
         >
           <template #asset_current_status="{ row }">
-            <StatusTag :status="row.asset_current_status" />
+            <StatusTag v-if="row.asset_current_status" :status="row.asset_current_status" />
+            <span v-else class="status-empty">—</span>
           </template>
 
           <template #asset_type_name="{ row }">
@@ -84,7 +85,8 @@
             @selection-change="slotProps.handleSelectionChange"
           >
             <template #asset_current_status="{ row }">
-              <StatusTag :status="row.asset_current_status" />
+              <StatusTag v-if="row.asset_current_status" :status="row.asset_current_status" />
+              <span v-else class="status-empty">—</span>
             </template>
 
             <template #asset_type_name="{ row }">

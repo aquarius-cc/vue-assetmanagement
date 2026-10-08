@@ -370,13 +370,15 @@ export const assetAPI = {
 
   /**
    * 获取资产二维码图片 URL
-   * GET /api/v1/assets/{recordcode}/qr-code-image/
+   * GET /api/v1/assets/assets/{recordcode}/qr-code-image/
    * 二维码由 <img src> 直接加载，不经 request 实例，故此处仅构造 URL 字符串
+   * 注：双 assets 段 = config 挂载点(api/v1/assets/) + router 注册前缀(^assets/)，
+   *     与 reverse('assets-qr-code-image') 及本文件其余 /assets/assets/ 端点一致
    * @param recordcode 资产记录码
    * @returns 二维码图片的完整 URL
    */
   getQrCodeImageUrl: (recordcode: string): string => {
-    return `${BASE_URL}/assets/${recordcode}/qr-code-image/`
+    return `${BASE_URL}/assets/assets/${recordcode}/qr-code-image/`
   },
 
   /**

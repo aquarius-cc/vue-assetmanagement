@@ -7,6 +7,9 @@
  *   15 数量语义回归：录入台数 asset_purchase_number=3 的 3 条记录，「实物数量」列每行恒显 1，
  *      **不得**显 3（否则读起来像 9 台实物）
  *   16 唯一记录码：recordcode 列存在且仅一列
+ *   17 状态列缺值防御（CT-4 回归屏障）：row.asset_current_status 缺失时 StatusTag 不实例化
+ *      （v-if 守卫）、渲染 "—" 占位、零 Invalid status logWarn——平铺槽（SmartList 路径）
+ *      与分组槽（GroupedAssetTable $slots 透传语义，即真实 GAT:45-47 转发）各锁一条。
  *
  * 【为何用真实 CommonList】用例 15 的断言对象是 AssetContentDetails 自有的
  * `physical_quantity` 插槽；桩掉 CommonList 就测不到它，测试会「绿而无效」。
@@ -21,6 +24,8 @@ const {
   mockGroupedRefresh,
   mockSmartSearchWithParams,
   mockSmartReset,
+  mockLogWarn,
+  mockLogError,
 } = vi.hoisted(() => ({
   mockRemoveBatch: vi.fn(),
   mockExcelExport: vi.fn(),
@@ -28,6 +33,8 @@ const {
   mockGroupedRefresh: vi.fn(),
   mockSmartSearchWithParams: vi.fn(),
   mockSmartReset: vi.fn(),
+  mockLogWarn: vi.fn(),
+  mockLogError: vi.fn(),
 }))
 
 vi.mock('vue-router', () => ({
@@ -56,6 +63,15 @@ vi.mock('@/composables/useAssetListConfig', async () => {
 vi.mock('@/composables/useExcelExport', () => ({
   useExcelExport: () => ({ handleExportExcel: mockExcelExport }),
 }))
+
+/**
+ * logger 部分 mock：logWarn/logError 收敛为 spy（断言 Invalid status 告警），其余导出
+ * （logInfo/resetTraceId 等）保持真实实现——本文件模块图引用面未知，importOriginal 兜底。
+ */
+vi.mock('@/utils/logger', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/logger')>()
+  return { ...actual, logWarn: mockLogWarn, logError: mockLogError }
+})
 
 import AssetContentDetails from '../AssetContentDetails.vue'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
@@ -87,6 +103,16 @@ const ROWS: AssetDetail[] = [
   },
 ] as AssetDetail[]
 
+/**
+ * 可变行源：缺值用例在挂载前替换，beforeEach 复位。桩 SmartListContainer 的 data 与
+ * __rows provide 均在挂载期读取此引用，故改写后挂载即生效（夹具本体 ROWS 不动，
+ * 既有「asset_current_status 必填」用例语义不受污染）。
+ */
+let activeRows: AssetDetail[] = ROWS
+
+/** 可变子行源：分组槽用例经 GroupedAssetTable 桩透传渲染（复刻真实 GAT 的 $slots 转发） */
+let activeChildRows: AssetDetail[] = []
+
 const SmartListContainerStub = {
   name: 'SmartListContainer',
   props: ['storeConfig'],
@@ -97,7 +123,7 @@ const SmartListContainerStub = {
       :performSearch="() => {}" :handleSelectionChange="() => {}" />
   </div>`,
   data() {
-    return { rows: ROWS }
+    return { rows: activeRows }
   },
   methods: {
     searchWithParams: mockSmartSearchWithParams,
@@ -143,7 +169,17 @@ const globalMount = {
       name: 'GroupedAssetTable',
       props: ['detailColumns'],
       methods: { search: mockGroupedSearch, refresh: mockGroupedRefresh },
-      template: '<div class="grouped" />',
+      computed: {
+        /** 读模块级 activeChildRows（挂载期求值），语义对齐真实 GAT:45-47 的 $slots 转发 */
+        childRows(): AssetDetail[] {
+          return activeChildRows
+        },
+      },
+      template: `<div class="grouped">
+        <div v-for="(row, i) in childRows" :key="i" class="grouped-child-row">
+          <slot name="asset_current_status" :row="row" />
+        </div>
+      </div>`,
     },
     'el-table': ElTableStub,
     'el-table-column': ElTableColumnStub,
@@ -163,7 +199,7 @@ const globalMount = {
 /** 行数据经 provide 注入桩 el-table-column，使每列能按行渲染（复刻 EP 列渲染语义） */
 const rowProvider = {
   install(app: { provide: (key: string, value: unknown) => void }) {
-    app.provide('__rows', ROWS)
+    app.provide('__rows', activeRows)
   },
 }
 
@@ -175,6 +211,8 @@ const columnCells = (wrapper: ReturnType<typeof mountDetails>, label: string) =>
 
 beforeEach(() => {
   vi.clearAllMocks()
+  activeRows = ROWS
+  activeChildRows = []
 })
 
 describe('AssetContentDetails · 分组开关与列集回归', () => {
@@ -240,6 +278,39 @@ describe('AssetContentDetails · 分组开关与列集回归', () => {
       expect(tag.props('status')).toBeTruthy()
     }
     expect(tags[0].text()).toBe('在库')
+  })
+
+  // ===== BF 批 · 状态列缺值防御（CT-4 回归屏障，先红后绿）=====
+  it('行缺 asset_current_status：平铺槽不实例化 StatusTag、渲染占位、零 Invalid status 告警', () => {
+    activeRows = ROWS.map((r, i) =>
+      i === 1 ? { ...r, asset_current_status: undefined as unknown as string } : r,
+    )
+    const wrapper = mountDetails()
+
+    expect(wrapper.findAllComponents(StatusTag)).toHaveLength(2)
+    expect(wrapper.findAll('.status-empty')).toHaveLength(1)
+    expect(wrapper.findAll('.status-empty')[0].text()).toBe('—')
+    expect(mockLogWarn).not.toHaveBeenCalledWith(
+      expect.any(String),
+      expect.stringContaining('Invalid status'),
+    )
+  })
+
+  it('子行缺 asset_current_status：分组槽（$slots 透传语义）不实例化 StatusTag、零告警', () => {
+    activeChildRows = [
+      { ...ROWS[0], asset_code: 'G1' },
+      { ...ROWS[1], asset_code: 'G2', asset_current_status: undefined as unknown as string },
+    ]
+    const wrapper = mountDetails({ enableGrouping: true })
+
+    expect(wrapper.find('.grouped').exists()).toBe(true)
+    expect(wrapper.findAllComponents(StatusTag)).toHaveLength(1)
+    expect(wrapper.findAll('.status-empty')).toHaveLength(1)
+    expect(wrapper.findAll('.status-empty')[0].text()).toBe('—')
+    expect(mockLogWarn).not.toHaveBeenCalledWith(
+      expect.any(String),
+      expect.stringContaining('Invalid status'),
+    )
   })
 
   // ===== 【B 批】筛选字段集接线 + 分组筛选映射 =====

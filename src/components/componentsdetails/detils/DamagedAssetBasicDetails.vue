@@ -245,7 +245,6 @@ const handleExport = async () => {
   padding: 24px;
   box-sizing: border-box;
   width: 100%;
-  min-height: 100vh;
   background-color: var(--background-color);
 }
 

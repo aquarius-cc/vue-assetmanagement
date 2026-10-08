@@ -22,108 +22,111 @@
 -->
 <template>
   <div class="grouped-asset-table">
-    <el-table
-      v-loading="summaryLoading"
-      :data="summaries"
-      :row-key="getGroupKey"
-      :expand-row-keys="expandedKeys"
-      :row-class-name="summaryRowClass"
-      border
-      fit
-      @expand-change="onExpandChange"
-    >
-      <el-table-column type="expand" width="48" align="center">
-        <template #default="scope">
-          <div class="group-children">
-            <!-- 真·分页子表（批次 E）：页驱动 + 受控勾选 + 层级序号，列集白名单过滤（DR-1） -->
-            <GroupedAssetChildTable
-              :rows="childrenOf(scope.row.group_key)"
-              :columns="childColumns"
-              :group-index="summaryIndexOf(scope.$index)"
-              :total="scope.row.asset_count ?? 0"
-              :current-page="childrenPage(scope.row.group_key)"
-              :page-size="childPageSize"
-              :loading="isLoadingChildren(scope.row.group_key)"
-              :selected-keys="selectedCodes"
-              @edit="(row: AssetDetail) => emit('childEdit', row)"
-              @delete="(row: AssetDetail) => emit('childDelete', row)"
-              @detail="(row: AssetDetail) => emit('childDetail', row)"
-              @page-change="(page: number) => goToChildPage(scope.row.group_key, page)"
-              @selection-change="(rows: AssetDetail[]) => onChildSelectionChange(scope.row, rows)"
-            >
-              <!-- 透传状态 Tag 等明细插槽（列集精简后仅存的白名单插槽继续生效） -->
-              <template v-for="(_, name) in $slots" #[name]="slotProps">
-                <slot :name="name" v-bind="slotProps ?? {}" />
-              </template>
-            </GroupedAssetChildTable>
-          </div>
-        </template>
-      </el-table-column>
-
-      <el-table-column width="55" fixed="left" align="center">
-        <template #header>
-          <el-checkbox
-            :model-value="allChecked"
-            :indeterminate="allIndeterminate"
-            @change="onToggleAll"
-          />
-        </template>
-        <template #default="{ row }">
-          <el-checkbox
-            :model-value="isGroupChecked(row.group_key)"
-            :indeterminate="isGroupIndeterminate(row.group_key)"
-            @click.stop
-            @change="toggleGroupSelection(row.group_key)"
-          />
-        </template>
-      </el-table-column>
-
-      <el-table-column label="序号" width="80" fixed="left" align="center">
-        <template #default="{ $index }">{{ summaryIndexOf($index) }}</template>
-      </el-table-column>
-
-      <el-table-column
-        v-for="col in summaryColumns"
-        :key="col.prop"
-        :prop="col.prop"
-        :label="col.label"
-        :width="col.width"
-        :min-width="col.minWidth"
-        :align="col.align"
-        :show-overflow-tooltip="true"
+    <div class="grouped-asset-table__body">
+      <el-table
+        v-loading="summaryLoading"
+        :data="summaries"
+        :row-key="getGroupKey"
+        :expand-row-keys="expandedKeys"
+        :row-class-name="summaryRowClass"
+        border
+        fit
+        height="100%"
+        @expand-change="onExpandChange"
       >
-        <template #default="{ row }">
-          <!-- 数量列做行内视觉锚点：主色胶囊，聚合语义一眼可辨 -->
-          <el-tag
-            v-if="col.prop === 'asset_count'"
-            class="asset-count-tag"
-            type="primary"
-            effect="dark"
-            size="small"
-            disable-transitions
-          >
-            {{ summaryCell(row, col.prop) }}
-          </el-tag>
-          <!-- 合同号空值：文本本体保持 "—"（F5 用例 6），语义提示走原生 title，样式仅 class -->
-          <span
-            v-else-if="col.prop === 'contract_code'"
-            :class="{ 'summary-contract--empty': !row.contract_code }"
-            :title="row.contract_code ? undefined : '无合同'"
-            >{{ summaryCell(row, col.prop) }}</span
-          >
-          <template v-else>{{ summaryCell(row, col.prop) }}</template>
-        </template>
-      </el-table-column>
+        <el-table-column type="expand" width="48" align="center">
+          <template #default="scope">
+            <div class="group-children">
+              <!-- 真·分页子表（批次 E）：页驱动 + 受控勾选 + 层级序号，列集白名单过滤（DR-1） -->
+              <GroupedAssetChildTable
+                :rows="childrenOf(scope.row.group_key)"
+                :columns="childColumns"
+                :group-index="summaryIndexOf(scope.$index)"
+                :total="scope.row.asset_count ?? 0"
+                :current-page="childrenPage(scope.row.group_key)"
+                :page-size="childPageSize"
+                :loading="isLoadingChildren(scope.row.group_key)"
+                :selected-keys="selectedCodes"
+                @edit="(row: AssetDetail) => emit('childEdit', row)"
+                @delete="(row: AssetDetail) => emit('childDelete', row)"
+                @detail="(row: AssetDetail) => emit('childDetail', row)"
+                @page-change="(page: number) => goToChildPage(scope.row.group_key, page)"
+                @selection-change="(rows: AssetDetail[]) => onChildSelectionChange(scope.row, rows)"
+              >
+                <!-- 透传状态 Tag 等明细插槽（列集精简后仅存的白名单插槽继续生效） -->
+                <template v-for="(_, name) in $slots" #[name]="slotProps">
+                  <slot :name="name" v-bind="slotProps ?? {}" />
+                </template>
+              </GroupedAssetChildTable>
+            </div>
+          </template>
+        </el-table-column>
 
-      <el-table-column label="操作" fixed="right" width="140" align="center">
-        <template #default="{ row }">
-          <!-- 文字保留（F5 用例 13）；常态灰、hover 危险色，收敛常驻红噪音 -->
-          <el-button link class="group-delete-btn" @click="emit('deleteGroup', row)">
-            删除组内 {{ row.asset_count }} 条
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+        <el-table-column width="55" fixed="left" align="center">
+          <template #header>
+            <el-checkbox
+              :model-value="allChecked"
+              :indeterminate="allIndeterminate"
+              @change="onToggleAll"
+            />
+          </template>
+          <template #default="{ row }">
+            <el-checkbox
+              :model-value="isGroupChecked(row.group_key)"
+              :indeterminate="isGroupIndeterminate(row.group_key)"
+              @click.stop
+              @change="toggleGroupSelection(row.group_key)"
+            />
+          </template>
+        </el-table-column>
+
+        <el-table-column label="序号" width="80" fixed="left" align="center">
+          <template #default="{ $index }">{{ summaryIndexOf($index) }}</template>
+        </el-table-column>
+
+        <el-table-column
+          v-for="col in summaryColumns"
+          :key="col.prop"
+          :prop="col.prop"
+          :label="col.label"
+          :width="col.width"
+          :min-width="col.minWidth"
+          :align="col.align"
+          :show-overflow-tooltip="true"
+        >
+          <template #default="{ row }">
+            <!-- 数量列做行内视觉锚点：主色胶囊，聚合语义一眼可辨 -->
+            <el-tag
+              v-if="col.prop === 'asset_count'"
+              class="asset-count-tag"
+              type="primary"
+              effect="dark"
+              size="small"
+              disable-transitions
+            >
+              {{ summaryCell(row, col.prop) }}
+            </el-tag>
+            <!-- 合同号空值：文本本体保持 "—"（F5 用例 6），语义提示走原生 title，样式仅 class -->
+            <span
+              v-else-if="col.prop === 'contract_code'"
+              :class="{ 'summary-contract--empty': !row.contract_code }"
+              :title="row.contract_code ? undefined : '无合同'"
+              >{{ summaryCell(row, col.prop) }}</span
+            >
+            <template v-else>{{ summaryCell(row, col.prop) }}</template>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="操作" fixed="right" width="140" align="center">
+          <template #default="{ row }">
+            <!-- 文字保留（F5 用例 13）；常态灰、hover 危险色，收敛常驻红噪音 -->
+            <el-button link class="group-delete-btn" @click="emit('deleteGroup', row)">
+              删除组内 {{ row.asset_count }} 条
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <el-pagination
       v-model:current-page="currentPage"
@@ -274,6 +277,23 @@ defineExpose({ search: searchGrouped, refresh: () => search() })
 </script>
 
 <style scoped>
+/* 根盒定高 + 纵向 flex：__body 表格区自滚、分页条常驻；
+   overflow:hidden 为保险（极端态下溢出绝不外泄进父 .table-container） */
+.grouped-asset-table {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 表格滚动区：flex:1 撑满除分页外的剩余高度（basis 0 → 分页永不被挤压），
+   表内 el-table height="100%" 钉住横向滚动条于可视底边 */
+.grouped-asset-table__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
 /* 汇总行：聚合语义加粗；展开态淡主色底（:deep 穿透 EP 内部 tr/td） */
 .grouped-asset-table :deep(.summary-row > td.el-table__cell) {
   font-weight: 600;
@@ -328,6 +348,7 @@ defineExpose({ search: searchGrouped, refresh: () => search() })
 
 .grouped-asset-table__pagination {
   display: flex;
+  flex-shrink: 0;
   justify-content: flex-end;
   padding-top: 16px;
 }

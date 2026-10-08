@@ -54,7 +54,7 @@ const resolveRowKey = (row: Row, rowKey: unknown): string => {
 
 const ElTableStub = {
   name: 'ElTable',
-  props: ['data', 'rowKey', 'loading', 'expandRowKeys'],
+  props: ['data', 'rowKey', 'loading', 'expandRowKeys', 'height'],
   emits: ['expand-change'],
   provide(this: { data: Row[]; rowKey: unknown; expandRowKeys?: string[] }) {
     return {
@@ -259,6 +259,19 @@ beforeEach(() => {
 })
 
 describe('GroupedAssetTable · F3 组件层', () => {
+  // 回归屏障（CT-4）：汇总表必须 height="100%" 且由 __body 包裹层承载，
+  // 否则 EP 根 fit-content → 横向条锚在内容最底端（埋底），或表格吃满根高把分页条顶出（D-1）。
+  it('汇总表钉 height="100%"，且存在 __body 自滚包裹层', async () => {
+    const wrapper = mountTable()
+    await flush()
+    expect(wrapper.findComponent({ name: 'ElTable' }).props('height')).toBe('100%')
+    expect(wrapper.find('.grouped-asset-table__body').exists()).toBe(true)
+    // 分页条仍是根的直接子节点（流内、flex-shrink:0 由样式保障）
+    expect(wrapper.find('.grouped-asset-table > .grouped-asset-table__pagination').exists()).toBe(
+      true,
+    )
+  })
+
   it('用例6：无合同哨兵组合同号渲染「—」，不出现裸 null', async () => {
     const wrapper = mountTable()
     await flush()

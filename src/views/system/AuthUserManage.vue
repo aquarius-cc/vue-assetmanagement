@@ -342,7 +342,9 @@ onMounted(() => {
 <style scoped>
 .authuser-manage {
   padding: 24px;
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   background: var(--background-color);
 }
 

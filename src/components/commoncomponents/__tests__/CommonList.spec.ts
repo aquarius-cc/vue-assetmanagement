@@ -39,7 +39,7 @@ const CommonListActionsStub = {
 
 const ElTableStub = {
   name: 'ElTable',
-  props: ['data', 'rowKey', 'loading'],
+  props: ['data', 'rowKey', 'loading', 'height'],
   emits: ['selection-change'],
   template: '<div class="el-table"><slot /></div>',
 }
@@ -104,6 +104,13 @@ describe('CommonList', () => {
     it('hides pagination when showPagination is false', () => {
       const wrapper = mountList({ props: { showPagination: false } })
       expect(wrapper.findComponent({ name: 'ElPagination' }).exists()).toBe(false)
+    })
+
+    // 回归屏障（CT-4）：表格必须设 height="100%"，否则 EP 根为 fit-content，
+    // 横向滚动条锚定在内容最底端被埋（须滚到底才能拖动）。
+    it('bounds el-table height so the horizontal scrollbar stays visible', () => {
+      const wrapper = mountList()
+      expect(wrapper.findComponent({ name: 'ElTable' }).props('height')).toBe('100%')
     })
 
     it('renders selection column only when enableSelection is true', () => {

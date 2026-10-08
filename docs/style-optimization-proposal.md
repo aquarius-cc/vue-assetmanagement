@@ -2,9 +2,9 @@
 
 > 基于对项目全部 40+ 个组件的逐一审查，按照 `FRONTEND.md` 规范和 `AGENTS.md` 红线要求整理。
 >
-> **状态：** 仅建议方案，暂不进行代码调整。
+> **状态：** 仅建议方案，暂不进行代码调整。（2026-10-08 更新：§6.3 双滚动条与新增 §4.7 列表页横向滚动条埋底已落地修复，详见各条「修复记录」，登记 BF-075。）
 >
-> 日期：2026-06-01
+> 日期：2026-06-01（最后更新：2026-10-08）
 
 ---
 
@@ -270,6 +270,19 @@ min-height: 100vh;
 
 ---
 
+### 4.7 列表页 el-table 横向滚动条埋底（P1 · 布局缺陷）✅ 已修复（2026-10-08）
+
+**涉及文件：** `CommonList.vue`（覆盖 16 个 `<CommonList` 列表页）、`GroupedAssetTable.vue`、`GroupedAssetChildTable.vue` 及各自 spec
+
+**现状（修复前）：** el-table 未钉 `height`/`max-height` 时 EP 根为 `fit-content`（EP `table.scss:15`），body-wrapper 高度 = 内容全高，而 `.el-scrollbar__bar.is-horizontal` 为 `position:absolute; bottom:2px`（`scrollbar.scss:57-81`）——纵向滚动发生在祖先容器上，横向条却锚在内容最底端，必须滚到页面末尾才能拖动。
+
+**修复记录（2026-10-08，登记 BF-075）：**
+1. **16 个列表页**：单一咽喉点 `CommonList.vue` el-table 钉 `height="100%"`（EP 包装无参照系扣减，`style-helper.mjs:191`），纵向滚动收敛到 `.table-container` 内部。
+2. **分组汇总表**：根盒 `height:100%; display:flex; flex-direction:column; overflow:hidden` + `__body` 包裹层 `flex:1; min-height:0; overflow:auto` + el-table `height="100%"` + 分页条 `flex-shrink:0`（方案 A + 两行保险；弃用百分比 `max-height`——EP `style-helper.mjs:193` 的 `calc` 双重扣减会产生约表头高度的死带）。
+3. **分组子表**：`max-height="500"` 数值路径（无百分比参照系缺陷），`.child-pager` 兄弟节点自然下流。
+
+---
+
 ## 五、表单页问题
 
 ### 5.1 双列布局缺少响应式适配
@@ -352,13 +365,17 @@ min-height: 100vh;
 
 ---
 
-### 6.3 `min-height: 100vh` 在嵌套路由中导致双重滚动条
+### 6.3 `min-height: 100vh` 在嵌套路由中导致双重滚动条 ✅ 已修复（2026-10-08）
 
-**涉及文件：** `BasicAssetDetails.vue`、`ContractOfDetails.vue`、`OperationLogDetail.vue`、`WasteAssetBasicDetails.vue`、`DamagedAssetBasicDetails.vue` 等
+**涉及文件：** `common-forms.scss`（detail-container mixin）、`DamagedAssetBasicDetails.vue`、`HardDiskSNBasicDetails.vue`、`OperationLogDetail.vue`、`OutAssetBasicDetails.vue`、`RecycleAssetBasicDetails.vue`、`WasteAssetBasicDetails.vue`、`UnregisteredAssetBasicDetails.scss`、`BasicAssetDetails.scss`（`ContractOfDetails.vue` 经 mixin 间接生效）
 
-**现状：** 这些详情页被包裹在 `AssetDetails.vue`（有 `height: 100%` + `overflow-y: auto`）中，同时自身又设置 `min-height: 100vh`，可能导致双重滚动条。
+**现状（修复前）：** 这些详情页被包裹在 `AssetDetails.vue`（有 `height: 100%` + `overflow-y: auto`）中，同时自身又设置 `min-height: 100vh`，导致双重滚动条。
 
-**建议：** 嵌套路由内的详情页移除 `min-height: 100vh`，改用 `min-height: 100%` 或依赖父容器的高度。
+**修复记录（2026-10-08，登记 BF-075）：**
+1. `common-forms.scss` detail-container mixin（:127）`min-height: 100vh` → `min-height: 100%`——8 处 `@include detail-container()` 站点统一生效。
+2. 删除 7 处与 mixin 重复的本地 `min-height: 100vh` 覆盖（6 个详情 .vue + `UnregisteredAssetBasicDetails.scss`）。
+3. `BasicAssetDetails.scss`（无 mixin include 的手工复刻块，:7）`100vh` → `100%`。
+4. 同批关联修复：`RoleManage.vue` / `AuthUserManage.vue` 的 `min-height:100vh` 改为 `flex:1; min-height:0; overflow-y:auto`——两页路由均带 `showPageHeader:true`（`routes-main-system.ts:156/:168`），`height:100%` 会被页头兄弟节点顶出裁剪，故取 flex 等价形。
 
 ---
 
@@ -511,7 +528,7 @@ min-height: 100vh;
 | **P0（必须修复）** | 可访问性 | 1 | `outline: none` 全局移除 |
 | **P0（必须修复）** | 功能缺陷 | 1 | `UserForm.vue` 验证规则字段名不匹配 |
 | **P1（高优先级）** | 视觉一致性 | 6 | Less/SCSS 混用、公共样式引用不统一、按钮类型/顺序不统一 |
-| **P1（高优先级）** | 布局缺陷 | 3 | `98vw` 溢出、`100vh` 移动端问题、双重滚动条 |
+| **P1（高优先级）** | 布局缺陷 | 3 | `98vw` 溢出、`100vh` 移动端问题、双重滚动条（双重滚动条已于 2026-10-08 修复，见 6.3；列表页横向滚动条埋底同批修复，新增记录见 4.7） |
 | **P1（高优先级）** | 架构统一 | 3 | `StorageDetails` 架构落后、导出逻辑不统一、子路由判断不统一 |
 | **P2（中优先级）** | 代码质量 | 4 | 注释残留、死代码、console.log、`!important` 滥用 |
 | **P2（中优先级）** | 交互一致性 | 3 | 遮罩返回行为、表单模式参数、重置按钮显示 |

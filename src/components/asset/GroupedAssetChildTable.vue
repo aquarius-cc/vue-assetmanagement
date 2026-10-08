@@ -33,6 +33,7 @@
       size="small"
       :border="false"
       fit
+      max-height="500"
       @selection-change="handleSelectionChange"
     >
       <!-- 受控勾选列 -->
@@ -85,7 +86,7 @@
     <!-- 真分页：仅超过单页容量时显示 -->
     <div v-if="total > pageSize" class="child-pager">
       <el-pagination
-        small
+        size="small"
         background
         layout="prev, pager, next, total"
         :total="total"
