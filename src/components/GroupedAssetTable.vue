@@ -10,20 +10,24 @@
     （明细列集单一定义源仍在 AssetContentDetails.columns，见 useGroupedAssetColumns）。
 
     【展开态受控，非自持】
-    `:expand-row-keys="expandedKeys"` + `@expand-change="setExpanded"` —— 展开真相源在 F2。
-    EP 侧核对：`style-helper.mjs` 以 `watchEffect` 把 `props.expandRowKeys` 推入 store，
+    `:expand-row-keys="expandedKeys"` + `@expand-change="onExpandChange"` —— 展开真相源在 F2。
+    EP 侧核对（element-plus@2.13.7 实证）：`style-helper.mjs` 以 `watchEffect` 把
+    `props.expandRowKeys` 推入 store（`setExpandRowKeys` **全量替换**），
     `tree.mjs#updateTreeData(true)` 只写 treeData、**不 emit** `expand-change`，
     故「EP 点箭头 → setExpanded → expandRowKeys 变化 → EP 重算」无回环。
-    正因 EP 先改自身 state 再 emit，此处必须调 `setExpanded`（置位）而非 `toggleExpand`（翻转）。
+    ⚠️ `expand.mjs#toggleRowExpansion` emit 的第二参是**行对象数组**（非 boolean）：
+    必须按「该行是否在数组内」判定置位/置位 false，否则折叠点击无法移除 key，
+    全量重放时旧组复活（连带展开，BF-078 回归用例 16 锁定）。
 
     【明细序号双口径】
     汇总序号 = `(currentPage-1)*pageSize + $index + 1`（跨汇总页全局）；
     明细序号由 CommonList 按传入的 `childrenPage` 计算（组内局部，追加加载后为 21..40）。
 -->
 <template>
-  <div class="grouped-asset-table">
+  <div ref="rootRef" class="grouped-asset-table">
     <div class="grouped-asset-table__body">
       <el-table
+        ref="summaryTableRef"
         v-loading="summaryLoading"
         :data="summaries"
         :row-key="getGroupKey"
@@ -34,7 +38,29 @@
         height="100%"
         @expand-change="onExpandChange"
       >
-        <el-table-column type="expand" width="48" align="center">
+        <!-- 列序（BF-078）：勾选 → 展开 → 序号。
+             ⚠️ 声明序仅在 fixed-left 组内生效：EP（store/watcher.mjs updateColumns）
+             按 [fixed-left] + [非 fixed] + [fixed-right] 重排，故三列必须全部
+             fixed="left"，否则展开列沉入非 fixed 组，可见序退化为勾选→序号→展开。 -->
+        <el-table-column width="55" fixed="left" align="center">
+          <template #header>
+            <el-checkbox
+              :model-value="allChecked"
+              :indeterminate="allIndeterminate"
+              @change="onToggleAll"
+            />
+          </template>
+          <template #default="{ row }">
+            <el-checkbox
+              :model-value="isGroupChecked(row.group_key)"
+              :indeterminate="isGroupIndeterminate(row.group_key)"
+              @click.stop
+              @change="toggleGroupSelection(row.group_key)"
+            />
+          </template>
+        </el-table-column>
+
+        <el-table-column type="expand" width="48" fixed="left" align="center">
           <template #default="scope">
             <div class="group-children">
               <!-- 真·分页子表（批次 E）：页驱动 + 受控勾选 + 层级序号，列集白名单过滤（DR-1） -->
@@ -59,24 +85,6 @@
                 </template>
               </GroupedAssetChildTable>
             </div>
-          </template>
-        </el-table-column>
-
-        <el-table-column width="55" fixed="left" align="center">
-          <template #header>
-            <el-checkbox
-              :model-value="allChecked"
-              :indeterminate="allIndeterminate"
-              @change="onToggleAll"
-            />
-          </template>
-          <template #default="{ row }">
-            <el-checkbox
-              :model-value="isGroupChecked(row.group_key)"
-              :indeterminate="isGroupIndeterminate(row.group_key)"
-              @click.stop
-              @change="toggleGroupSelection(row.group_key)"
-            />
           </template>
         </el-table-column>
 
@@ -140,10 +148,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import GroupedAssetChildTable from './asset/GroupedAssetChildTable.vue'
 import { useGroupedAssetList } from '@/composables/useGroupedAssetList'
+import { useGroupedSessionRestore } from '@/composables/useGroupedSessionRestore'
 import { NULL_DISPLAY, useGroupedAssetColumns } from '@/composables/useGroupedAssetColumns'
+import type { GroupedPageSnapshot } from '@/stores/groupedAssetSession'
 import type { TableColumn } from '@/types/list'
 import type { AssetDetail, AssetGroupQueryParams, AssetGroupSummary } from '@/types/asset'
 import type { CheckboxValueType } from 'element-plus'
@@ -151,6 +161,12 @@ import type { CheckboxValueType } from 'element-plus'
 interface Props {
   /** 明细列集：由 AssetContentDetails 传入（列集单一定义源，见 useGroupedAssetColumns） */
   detailColumns: TableColumn[]
+  /**
+   * 会话恢复水合载荷（BF-078 需求3）：非空时 onMounted 走 restore 而非首载 search。
+   * 由父级 AssetContentDetails 在 setup 期从 groupedAssetSession store 读取并摘旗，
+   * 本组件不直接依赖 pinia（保持组件可独立挂载测试）。
+   */
+  initialSnapshot?: GroupedPageSnapshot | null
 }
 
 const props = defineProps<Props>()
@@ -254,8 +270,21 @@ const summaryCell = (row: AssetGroupSummary, prop?: string): string | number => 
   return value ?? NULL_DISPLAY
 }
 
-const onExpandChange = (row: AssetGroupSummary, expanded: boolean): void => {
-  void setExpanded(row.group_key, expanded)
+const onExpandChange = (row: AssetGroupSummary, payload: readonly unknown[] | boolean): void => {
+  const key = getGroupKey(row)
+  // EP 真实载荷 = 行对象数组（expand.mjs `expandRows.slice()`）；数组恒真，按元素判定该行是否在列。
+  // 旧实现按 boolean 接收 → 折叠点击无法移除 key → 下次 setExpandRowKeys 全量重放时旧组复活
+  // （连带展开，BF-078）。兼容 boolean 形态（tree 路径/桩）作防御。
+  // typeof 先排除 boolean（Array.isArray 对 readonly 数组无法反向收窄，会残留联合型）。
+  const expandedNow =
+    typeof payload === 'boolean'
+      ? payload
+      : payload.some((item) =>
+          typeof item === 'object' && item !== null
+            ? getGroupKey(item as AssetGroupSummary) === key
+            : String(item) === key,
+        )
+  void setExpanded(key, expandedNow)
 }
 
 /** 明细勾选 → 重建该组选中态（只动本组，平铺集中其他组不受影响） */
@@ -266,14 +295,52 @@ const onChildSelectionChange = (row: AssetGroupSummary, rows: AssetDetail[]): vo
   )
 }
 
+/** 汇总滚动容器 / 根节点（BF-078 需求3：滚动位采集与回放） */
+const rootRef = ref<HTMLElement | null>(null)
+const summaryTableRef = ref<{ setScrollTop?: (top?: number) => void } | null>(null)
+
+const { restore } = useGroupedSessionRestore({
+  search,
+  changePage,
+  setExpanded,
+  goToChildPage,
+  selectedCodes,
+})
+
+/**
+ * 会话快照采集：页码 / 展开态 / 子表页码 / 选中集 / 滚动位。
+ * 筛选条件由父级 AssetContentDetails 持有（SearchBar 归父级），此处不重复采集。
+ * 滚动位读 EP 表格滚动容器的 DOM scrollTop（EP 未公开 getter，写侧走 setScrollTop API）。
+ */
+const captureSession = (): Omit<GroupedPageSnapshot, 'filters'> => ({
+  page: currentPage.value,
+  expandedKeys: [...expandedKeys.value],
+  childPages: Object.fromEntries(expandedKeys.value.map((key) => [key, childrenPage(key)])),
+  selectedCodes: [...selectedCodes.value],
+  scrollTop: rootRef.value?.querySelector('.el-scrollbar__wrap')?.scrollTop ?? 0,
+})
+
+/** 会话水合：按 useGroupedSessionRestore 顺序契约灌回，完成后回放滚动位 */
+const restoreSession = async (snapshot: GroupedPageSnapshot): Promise<void> => {
+  await restore(snapshot)
+  if (snapshot.scrollTop > 0) {
+    await nextTick()
+    summaryTableRef.value?.setScrollTop?.(snapshot.scrollTop)
+  }
+}
+
 onMounted(() => {
-  void search()
+  void (props.initialSnapshot ? restoreSession(props.initialSnapshot) : search())
 })
 
 /** 供 AssetContentDetails 的既有 SearchBar 复用触发筛选 */
 const searchGrouped = (filters?: AssetGroupQueryParams): Promise<void> => search(filters)
 
-defineExpose({ search: searchGrouped, refresh: () => search() })
+defineExpose({
+  search: searchGrouped,
+  refresh: () => search(),
+  captureSession,
+})
 </script>
 
 <style scoped>

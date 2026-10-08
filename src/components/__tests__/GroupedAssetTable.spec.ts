@@ -7,6 +7,10 @@
  *   12 组内分页条仅 asset_count > page_size 可见（BF-073 修正后口径）
  *   13 冻结列（勾选 + 序号 fixed=left，操作 fixed=right）
  *   14 group_key 内嵌 null 位往返不崩
+ *   15 汇总列序 = 勾选 → 展开 → 序号（BF-078 需求1；按 EP fixed 重排口径断言真实可见序，非声明序）
+ *   16 折叠 A 后展开 B，A 不复活（BF-078 需求2 onExpandChange 归一化，不连带展开）
+ *   17~19 会话快照三连：captureSession 采集形状 / initialSnapshot 水合回放顺序 /
+ *        滚动位 setScrollTop 回放（BF-078 需求3 返回状态恢复）
  *   明细插槽透传（F3 把 $slots 转发给明细 CommonList）
  *   明细列集由 prop 注入（DR-1：列集单一定义源在 AssetContentDetails）
  *
@@ -65,11 +69,13 @@ const ElTableStub = {
     }
   },
   methods: {
-    // 受控模式勾选态由 CommonList 按 selectedKeys 计算，桩只需提供实例方法位；
+    // 受控模式勾选态由 CommonList 的 selectedKeys 计算，桩只需提供实例方法位；
     // 调参正确性由 CommonList.selection.spec.ts 精确断言，不在本文件重复覆盖。
     toggleRowSelection: vi.fn(),
     toggleAllSelection: vi.fn(),
     clearSelection: vi.fn(),
+    // BF-078 需求3：水合完成后回放滚动位的公开 API 位（真 EP 由 useScrollbar 提供）
+    setScrollTop: vi.fn(),
   },
   template: '<div class="el-table"><slot /></div>',
 }
@@ -222,10 +228,19 @@ const flush = async () => {
 /**
  * 展开指定组：走 EP 的 `expand-change` 事件通道（即用户点箭头的真实路径），
  * 而非直接改 F2 内部状态 —— 这样同时覆盖 F3 的 `onExpandChange` → `setExpanded` 链路。
+ * 载荷形态与 element-plus@2.13.7 `expand.mjs#toggleRowExpansion` 实证一致：
+ * 第二参为**行对象数组**（展开后含该行），非 boolean（BF-078）。
  */
 const expandGroup = async (wrapper: ReturnType<typeof mountTable>, row: AssetGroupSummary) => {
   const summaryTable = wrapper.findAllComponents({ name: 'ElTable' })[0]
-  summaryTable.vm.$emit('expand-change', row, true)
+  summaryTable.vm.$emit('expand-change', row, [row])
+  await flush()
+}
+
+/** 折叠指定组：同 EP 真实载荷 —— 折叠后第二参数组已不含该行（空数组即全折叠） */
+const collapseGroup = async (wrapper: ReturnType<typeof mountTable>, row: AssetGroupSummary) => {
+  const summaryTable = wrapper.findAllComponents({ name: 'ElTable' })[0]
+  summaryTable.vm.$emit('expand-change', row, [])
   await flush()
 }
 
@@ -284,6 +299,8 @@ describe('GroupedAssetTable · F3 组件层', () => {
   it('用例13：勾选列与序号列 fixed=left，操作列 fixed=right', async () => {
     const wrapper = mountTable()
     await flush()
+    // 显式展开一个组，使子表（含 fixed=right 操作列）进入 DOM（BF-078 单条组不再自动展开）
+    await expandGroup(wrapper, SUMMARY_MULTI)
     const columns = wrapper.findAll('.el-table-column')
     const fixedLeft = columns.filter((c) => c.attributes('data-fixed') === 'left')
     expect(fixedLeft.length).toBeGreaterThanOrEqual(2)
@@ -294,8 +311,54 @@ describe('GroupedAssetTable · F3 组件层', () => {
     expect(right.some((c) => c.text().includes('删除组内'))).toBe(true)
   })
 
+  it('用例15：汇总列序 = 勾选 → 展开 → 序号（BF-078 列序需求，EP 重排口径）', async () => {
+    const wrapper = mountTable()
+    await flush()
+    const columns = wrapper.findAll('.el-table-column')
+    // EP 真实渲染序 ≠ 声明序：store/watcher.mjs updateColumns 把列重排为
+    // [fixed-left 组（声明序）] + [非 fixed 组（声明序）] + [fixed-right 组]，
+    // 表头（convertToRows(originColumns)）与表体同走该序；桩按声明序渲染 DOM，
+    // 故本用例在断言前按 EP 规则重排，锁的是「真实可见序」。
+    // 语义边界（BF-078 二轮回填同注）：本用例把 EP 重排规则镜像进测试，
+    // 防的是「改回声明序 / 去掉 fixed」类回归；EP 升级若改重排语义，
+    // 本用例防不住——最终裁决以浏览器目验为准。
+    const epOrder = [
+      ...columns.filter((c) => c.attributes('data-fixed') === 'left'),
+      ...columns.filter((c) => !c.attributes('data-fixed')),
+      ...columns.filter((c) => c.attributes('data-fixed') === 'right'),
+    ]
+    const expandDecl = columns.find((c) => c.attributes('data-type') === 'expand')
+    expect(expandDecl).toBeDefined()
+    // 展开列必须声明 fixed=left，否则 EP 把它沉到非 fixed 组、可见序变为勾选→序号→展开
+    expect(expandDecl!.attributes('data-fixed')).toBe('left')
+    const checkboxPos = epOrder.findIndex((c) => c.find('.el-checkbox').exists())
+    const expandPos = epOrder.findIndex((c) => c.attributes('data-type') === 'expand')
+    const indexPos = epOrder.findIndex((c) => c.attributes('data-label') === '序号')
+    expect(checkboxPos).toBeGreaterThanOrEqual(0)
+    // 勾选 → 展开：展开紧邻勾选右侧（EP 重排后）
+    expect(expandPos).toBe(checkboxPos + 1)
+    // 展开 → 序号：序号紧邻展开右侧（EP 重排后）
+    expect(indexPos).toBe(expandPos + 1)
+  })
+
+  it('用例16：折叠 A 后展开 B，A 不复活（BF-078 连带展开回归）', async () => {
+    mockGetGroupedAssets.mockResolvedValue(paged([SUMMARY_MULTI, SUMMARY_SENTINEL]))
+    const wrapper = mountTable()
+    await flush()
+    const summaryTable = wrapper.findAllComponents({ name: 'ElTable' })[0]
+
+    await expandGroup(wrapper, SUMMARY_MULTI)
+    expect(summaryTable.props('expandRowKeys')).toEqual([KEY_MULTI])
+
+    await collapseGroup(wrapper, SUMMARY_MULTI)
+    expect(summaryTable.props('expandRowKeys')).toEqual([])
+
+    await expandGroup(wrapper, SUMMARY_SENTINEL)
+    expect(summaryTable.props('expandRowKeys')).toEqual([KEY_SENTINEL])
+  })
+
   it('用例1：组级勾选反向驱动明细行勾选（CommonList 受控选中）', async () => {
-    // 只保留多资产组：单条组会被 F2 自动展开，导致存在两个明细表格难以定位
+    // 只保留多资产组：本用例聚焦多资产组级联，单一明细表格便于定位（单条组默认折叠后亦无自动展开干扰，BF-078）
     mockGetGroupedAssets.mockResolvedValue(paged([SUMMARY_MULTI]))
     const wrapper = mountTable()
     await flush()
@@ -409,6 +472,7 @@ describe('GroupedAssetTable · F3 组件层', () => {
     mockGetGroupedAssets.mockResolvedValue(paged([SUMMARY_SENTINEL]))
     const wrapper = mountTable()
     await flush()
+    await expandGroup(wrapper, SUMMARY_SENTINEL)
     expect(mockGetGroupChildren).toHaveBeenCalledWith(
       expect.objectContaining({ group_key: KEY_SENTINEL }),
     )
@@ -444,5 +508,83 @@ describe('GroupedAssetTable · F3 组件层', () => {
     expect(labels).toContain('序号')
     expect(labels).toContain('数量')
     expect(labels).toContain('操作')
+  })
+})
+
+describe('GroupedAssetTable · 会话快照采集与水合（BF-078 需求3）', () => {
+  it('用例17：captureSession 采集页码/展开态/子表页码/选中集/滚动位，不含筛选', async () => {
+    const wrapper = mountTable()
+    await flush()
+    await expandGroup(wrapper, SUMMARY_MULTI)
+
+    // 滚动位采集走根节点下 EP 滚动容器的 DOM scrollTop（jsdom 无布局，defineProperty 注入）
+    const wrap = document.createElement('div')
+    wrap.className = 'el-scrollbar__wrap'
+    Object.defineProperty(wrap, 'scrollTop', { value: 123, configurable: true })
+    wrapper.element.appendChild(wrap)
+
+    const captured = (
+      wrapper.vm as unknown as { captureSession: () => Record<string, unknown> }
+    ).captureSession()
+    expect(captured).toEqual({
+      page: 1,
+      expandedKeys: [KEY_MULTI],
+      childPages: { [KEY_MULTI]: 1 },
+      selectedCodes: [],
+      scrollTop: 123,
+    })
+    expect('filters' in captured).toBe(false)
+  })
+
+  it('用例18：initialSnapshot 水合——search(存档筛选,页1) → changePage(存档页2) → 展开/子页/选中集回放', async () => {
+    const wrapper = mount(GroupedAssetTable, {
+      props: {
+        detailColumns: DETAIL_COLUMNS,
+        initialSnapshot: {
+          filters: { asset_current_status: 'in_store' },
+          page: 2,
+          expandedKeys: [KEY_MULTI],
+          childPages: { [KEY_MULTI]: 2 },
+          selectedCodes: ['ZC001'],
+          scrollTop: 0,
+        },
+      },
+      global: globalMount,
+    })
+    await flush()
+
+    expect(mockGetGroupedAssets).toHaveBeenCalledTimes(2)
+    expect(mockGetGroupedAssets.mock.calls[0]?.[0]).toMatchObject({ page: 1 })
+    const lastCall = mockGetGroupedAssets.mock.calls.at(-1)?.[0] as Record<string, unknown>
+    expect(lastCall).toMatchObject({ asset_current_status: 'in_store', page: 2 })
+    expect(wrapper.findAllComponents({ name: 'ElTable' })[0].props('expandRowKeys')).toEqual([
+      KEY_MULTI,
+    ])
+    expect(mockGetGroupChildren.mock.calls.some(([params]) => params.page === 2)).toBe(true)
+    const captured = (
+      wrapper.vm as unknown as { captureSession: () => { page: number; selectedCodes: string[] } }
+    ).captureSession()
+    expect(captured.page).toBe(2)
+    expect(captured.selectedCodes).toEqual(['ZC001'])
+  })
+
+  it('用例19：存档滚动位 > 0 时调用汇总表 setScrollTop 回放', async () => {
+    mount(GroupedAssetTable, {
+      props: {
+        detailColumns: DETAIL_COLUMNS,
+        initialSnapshot: {
+          filters: {},
+          page: 1,
+          expandedKeys: [],
+          childPages: {},
+          selectedCodes: [],
+          scrollTop: 123,
+        },
+      },
+      global: globalMount,
+    })
+    await flush()
+
+    expect(ElTableStub.methods.setScrollTop).toHaveBeenCalledWith(123)
   })
 })

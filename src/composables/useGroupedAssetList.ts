@@ -11,7 +11,7 @@
  *   - I-1 数量语义：`asset_count` ≡ `asset_codes.length` ≡ 组内明细条数，前端零计算
  *   - R-1 组键透传：`group_key` 原样回传，前端不解析、不重建、不补 null
  *   - 重置语义：筛选变更 / 汇总翻页 → 清空明细缓存 + 展开态；选中集按 asset_code 平铺留存
- *   - 单条组：`asset_count === 1` 自动展开（仅触发 F2，组件零特殊分支）
+ *   - 单条组：`asset_count === 1` **同样默认折叠**（BF-078 取消 F2 自动展开，一律由用户手动展开）
  *
  * @callers
  *   - components/assetmanagement/AssetGroupedExpandTable.vue（F3 表格组件，待落地）
@@ -94,15 +94,6 @@ export function useGroupedAssetList(options: GroupedAssetListOptions = {}): Grou
   const cache = useGroupChildrenCache({ childPageSize, getFilters: () => lastFilters })
   const selection = useGroupedAssetSelection(summaries)
 
-  /** 单条组自动展开：`asset_count === 1`；多资产组保持折叠 */
-  const autoExpandSingletons = async (): Promise<void> => {
-    for (const row of summaries.value) {
-      if (row.asset_count === 1 && !cache.isExpanded(row.group_key)) {
-        await cache.setExpanded(row.group_key, true)
-      }
-    }
-  }
-
   /** 拉取汇总分页 */
   const fetchSummaries = async (): Promise<void> => {
     summaryLoading.value = true
@@ -114,7 +105,6 @@ export function useGroupedAssetList(options: GroupedAssetListOptions = {}): Grou
       })
       summaries.value = response.results
       summaryTotal.value = response.count
-      await autoExpandSingletons()
     } catch (error) {
       logError('composables/useGroupedAssetList', '[分组汇总]', error)
       ElMessage.error('加载资产分组汇总失败')

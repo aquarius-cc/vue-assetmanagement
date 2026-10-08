@@ -152,7 +152,7 @@ export function useGroupChildrenCache(
     }
   }
 
-  /** 确保缓存存在（缓存命中零请求，供展开与自动展开共用） */
+  /** 确保缓存存在（缓存命中零请求，供展开使用） */
   const ensureChildren = async (groupKey: string): Promise<void> => {
     if (childrenMap.value.has(groupKey)) return
     await fetchChildren(groupKey, 1, false)

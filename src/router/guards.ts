@@ -7,7 +7,7 @@
  *   - @/router/index
  * @dependsOn
  *   - vue-router (Router, RouteLocationNormalized)
- *   - @/stores/auth, @/stores/app
+ *   - @/stores/auth, @/stores/app, @/stores/groupedAssetSession
  *   - @/utils/tokenCrypto (getDecryptedToken)
  *   - element-plus (ElMessage)
  */
@@ -15,6 +15,7 @@
 import type { Router, RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
+import { useGroupedAssetSession } from '@/stores/groupedAssetSession'
 import { ElMessage } from 'element-plus'
 import { ROLE_CODES, ROLE_HIERARCHY } from '@/constants/roles'
 import { logError } from '@/utils/logger'
@@ -186,6 +187,14 @@ export const setupAuthGuard = (router: Router) => {
 
     // 关闭页面加载状态
     appStore.setLoading(false)
+
+    // 分组页会话失效裁决（BF-078 需求3）：落点仍在 /main/assetdetails 子树内
+    // （form/detail 等兄弟记录也在该前缀下）→ 保留恢复旗，返回 /grouped 时水合；
+    // 出子树 → 快照整体作废，避免后续全新进入分组页时恢复陈旧状态。
+    const session = useGroupedAssetSession()
+    if (session.pendingRestore && !to.path.startsWith('/main/assetdetails')) {
+      session.clear()
+    }
   })
 }
 

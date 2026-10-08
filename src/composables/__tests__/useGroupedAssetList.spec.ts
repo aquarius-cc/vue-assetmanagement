@@ -27,9 +27,9 @@ import type { AssetDetail, AssetGroupSummary, PaginatedResponse } from '@/types/
 
 const mockElMessageError = vi.mocked(ElMessage.error)
 
-/** 多资产组（保持折叠，用于隔离自动展开的干扰） */
+/** 多资产组（保持折叠的基准组） */
 const GROUP_MULTI = '["HT2024-001","笔记本","ThinkPad X1","Lenovo"]'
-/** 无合同哨兵组 + 规格/品牌双 null（group_key null 位往返），asset_count 为 1 故亦用于自动展开断言 */
+/** 无合同哨兵组 + 规格/品牌双 null（group_key null 位往返），asset_count 为 1 故亦用于单条组默认折叠断言（BF-078） */
 const GROUP_SENTINEL = '[null,"投影仪",null,null]'
 
 function makeSummary(overrides: Partial<AssetGroupSummary> = {}): AssetGroupSummary {
@@ -195,16 +195,16 @@ describe('useGroupedAssetList', () => {
     })
   })
 
-  describe('singleton auto-expand', () => {
-    it('auto-expands and preloads groups with asset_count === 1', async () => {
+  describe('singleton stays collapsed (BF-078)', () => {
+    it('does not auto-expand groups with asset_count === 1', async () => {
       mockGetGroupedAssets.mockResolvedValue(paged([SUMMARY_MULTI, SUMMARY_SENTINEL], 2))
       const api = useGroupedAssetList()
 
       await api.search()
 
-      expect(api.expandedKeys.value).toEqual([GROUP_SENTINEL])
-      expect(api.isExpanded(GROUP_MULTI)).toBe(false)
-      expect(childrenCallsFor(GROUP_SENTINEL)).toHaveLength(1)
+      expect(api.expandedKeys.value).toEqual([])
+      expect(api.isExpanded(GROUP_SENTINEL)).toBe(false)
+      expect(mockGetGroupChildren).not.toHaveBeenCalled()
     })
 
     it('does not auto-expand groups with asset_count > 1', async () => {
@@ -215,6 +215,17 @@ describe('useGroupedAssetList', () => {
 
       expect(api.expandedKeys.value).toEqual([])
       expect(mockGetGroupChildren).not.toHaveBeenCalled()
+    })
+
+    it('single-asset group still expands manually on demand', async () => {
+      mockGetGroupedAssets.mockResolvedValue(paged([SUMMARY_SENTINEL], 1))
+      const api = useGroupedAssetList()
+      await api.search()
+
+      await api.toggleExpand(GROUP_SENTINEL)
+
+      expect(api.expandedKeys.value).toEqual([GROUP_SENTINEL])
+      expect(childrenCallsFor(GROUP_SENTINEL)).toHaveLength(1)
     })
   })
 

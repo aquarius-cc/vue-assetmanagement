@@ -42,11 +42,14 @@ export const routesMainCore: RouteRecordRaw[] = [
     children: [
       {
         // 【L-1 落地】分组展开入口（/main/assetdetails/grouped）：静态段 'grouped'
-        // 在 vue-router 4 评分中高于下方动态段 `:asset_code?`，故必命中本路由。
-        // 刻意不设 keepAlive：扁平/分组两条路由渲染同一组件（name 均
-        // 'AssetContentDetails'），MainView 的 <keep-alive :include> 按组件 name
-        // 匹配，本路由若入缓存会复用以扁平模式初始化的实例（setup 期捕获
-        // enableGrouping=false），分组模式将失效；不入缓存则每次全新挂载即捕获 true。
+        // 在 vue-router 评分中高于下方动态段 `:asset_code?`，故必命中本路由。
+        // 刻意不设 keepAlive（防御性保留；注意该配置当前实际不生效——MainView
+        // keep-alive include 名为 'AssetContentDetails'，该层实际渲染的 vnode
+        // __name 是 'AssetDetails'，永不匹配，登记见账本 BF-079 观察项）。
+        // 【复用真相·BF-078 需求3 二轮修正】分组/扁平互切的实例复用风险由
+        // AssetDetails 的 <router-view :key> 消解（vue-router h(ViewComponent)
+        // 不带 key，同组件同位置必复用、setup 不重跑）；key 取本容器直接子记录名，
+        // 见 AssetDetails.vue 与 AssetDetails.spec a/b 用例。
         path: 'grouped',
         name: 'AssetGroupedContent',
         component: () => import('@/components/componentsdetails/AssetContentDetails.vue'),

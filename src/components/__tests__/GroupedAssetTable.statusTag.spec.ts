@@ -171,10 +171,10 @@ function mountTable() {
   })
 }
 
-/** 走 EP expand-change 事件通道展开组（与 GroupedAssetTable.spec.ts 同路径） */
+/** 走 EP expand-change 事件通道展开组（与 GroupedAssetTable.spec.ts 同路径；载荷为行对象数组，element-plus@2.13.7 实证，BF-078） */
 const expandGroup = async (wrapper: ReturnType<typeof mountTable>, row: AssetGroupSummary) => {
   const summaryTable = wrapper.findAllComponents({ name: 'ElTable' })[0]
-  summaryTable.vm.$emit('expand-change', row, true)
+  summaryTable.vm.$emit('expand-change', row, [row])
   await flush()
 }
 

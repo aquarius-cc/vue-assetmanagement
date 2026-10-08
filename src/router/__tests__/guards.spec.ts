@@ -55,6 +55,12 @@ vi.mock('@/stores/app', () => ({
   useAppStore: vi.fn(() => mockAppStore),
 }))
 
+const mockSessionStore = { pendingRestore: false, clear: vi.fn() }
+
+vi.mock('@/stores/groupedAssetSession', () => ({
+  useGroupedAssetSession: vi.fn(() => mockSessionStore),
+}))
+
 describe('Router Guards', () => {
   let mockRouter: any
   let beforeEachCallback: any
@@ -72,6 +78,7 @@ describe('Router Guards', () => {
     mockAuthStore.authInitialized = true
     mockAuthStore.permissions = []
     mockAuthStore.permissionsLoaded = false
+    mockSessionStore.pendingRestore = false
 
     mockRouter = {
       beforeEach: vi.fn((cb: any) => {
@@ -265,6 +272,28 @@ describe('Router Guards', () => {
       setupAndCapture()
       afterEachCallback({ path: '/main', meta: {} })
       expect(mockSetLoading).toHaveBeenCalledWith(false)
+    })
+
+    // ===== BF-078 · 分组页会话失效裁决（需求3）=====
+    it('落点出 /main/assetdetails 子树且有待恢复旗 → 清空会话快照', () => {
+      mockSessionStore.pendingRestore = true
+      setupAndCapture()
+      afterEachCallback({ path: '/main', meta: {} })
+      expect(mockSessionStore.clear).toHaveBeenCalledTimes(1)
+    })
+
+    it('落点仍在 /main/assetdetails 子树（兄弟记录 form/detail 同前缀）→ 保留恢复旗', () => {
+      mockSessionStore.pendingRestore = true
+      setupAndCapture()
+      afterEachCallback({ path: '/main/assetdetails/RC-1/assetform', meta: {} })
+      expect(mockSessionStore.clear).not.toHaveBeenCalled()
+    })
+
+    it('无待恢复旗 → 不动会话', () => {
+      mockSessionStore.pendingRestore = false
+      setupAndCapture()
+      afterEachCallback({ path: '/main', meta: {} })
+      expect(mockSessionStore.clear).not.toHaveBeenCalled()
     })
   })
 

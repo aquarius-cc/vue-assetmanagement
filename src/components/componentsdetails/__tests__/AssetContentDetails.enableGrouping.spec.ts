@@ -10,6 +10,9 @@
  *   17 状态列缺值防御（CT-4 回归屏障）：row.asset_current_status 缺失时 StatusTag 不实例化
  *      （v-if 守卫）、渲染 "—" 占位、零 Invalid status logWarn——平铺槽（SmartList 路径）
  *      与分组槽（GroupedAssetTable $slots 透传语义，即真实 GAT:45-47 转发）各锁一条。
+ *   BF-078 需求3 会话保存与恢复 ×5：分组模式离开（筛选留存 + captureSession 快照并入 +
+ *      恢复旗置位）、平铺模式离开跳过、setup 期水合（有旗传 initialSnapshot 并摘旗）、
+ *      无旗传 null 走常规首载、平铺挂载遇旗不摘旗（分组→表单直跳，GAT 未挂载时快照必须留存）。
  *
  * 【为何用真实 CommonList】用例 15 的断言对象是 AssetContentDetails 自有的
  * `physical_quantity` 插槽；桩掉 CommonList 就测不到它，测试会「绿而无效」。
@@ -26,6 +29,8 @@ const {
   mockSmartReset,
   mockLogWarn,
   mockLogError,
+  mockLeaveHooks,
+  mockCaptureSession,
 } = vi.hoisted(() => ({
   mockRemoveBatch: vi.fn(),
   mockExcelExport: vi.fn(),
@@ -35,11 +40,18 @@ const {
   mockSmartReset: vi.fn(),
   mockLogWarn: vi.fn(),
   mockLogError: vi.fn(),
+  /** 被 vi.mock 工厂捕获的 onBeforeRouteLeave 回调（测试直接调用，模拟离开导航） */
+  mockLeaveHooks: { cb: null as null | (() => void) },
+  /** GroupedAssetTable 桩的 captureSession 返回值（测试注入） */
+  mockCaptureSession: vi.fn(),
 }))
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: vi.fn() }),
   useRoute: () => ({ matched: [{ name: 'AssetContentDetails' }] }),
+  onBeforeRouteLeave: (cb: () => void) => {
+    mockLeaveHooks.cb = cb
+  },
 }))
 
 /**
@@ -75,6 +87,8 @@ vi.mock('@/utils/logger', async (importOriginal) => {
 
 import AssetContentDetails from '../AssetContentDetails.vue'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
+import { createPinia } from 'pinia'
+import { useGroupedAssetSession } from '@/stores/groupedAssetSession'
 import type { AssetDetail } from '@/types/asset'
 import type { TableColumn } from '@/types/list'
 
@@ -167,8 +181,12 @@ const globalMount = {
     'router-view': { template: '<div />' },
     GroupedAssetTable: {
       name: 'GroupedAssetTable',
-      props: ['detailColumns'],
-      methods: { search: mockGroupedSearch, refresh: mockGroupedRefresh },
+      props: ['detailColumns', 'initialSnapshot'],
+      methods: {
+        search: mockGroupedSearch,
+        refresh: mockGroupedRefresh,
+        captureSession: mockCaptureSession,
+      },
       computed: {
         /** 读模块级 activeChildRows（挂载期求值），语义对齐真实 GAT:45-47 的 $slots 转发 */
         childRows(): AssetDetail[] {
@@ -203,14 +221,19 @@ const rowProvider = {
   },
 }
 
+/** 共享 pinia：组件 setup 期即调用 useGroupedAssetSession（无 pinia 会抛错），测试同实例读回 store */
+const pinia = createPinia()
+
 const mountDetails = (props: Record<string, unknown> = {}) =>
-  mount(AssetContentDetails, { props, global: { ...globalMount, plugins: [rowProvider] } })
+  mount(AssetContentDetails, { props, global: { ...globalMount, plugins: [rowProvider, pinia] } })
 
 const columnCells = (wrapper: ReturnType<typeof mountDetails>, label: string) =>
   wrapper.findAll(`.el-table-column[data-label="${label}"] .col-row`).map((c) => c.text())
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockLeaveHooks.cb = null
+  useGroupedAssetSession(pinia).clear()
   activeRows = ROWS
   activeChildRows = []
 })
@@ -408,6 +431,88 @@ describe('AssetContentDetails · 分组开关与列集回归', () => {
 
       expect(mockSmartSearchWithParams).toHaveBeenCalledWith(params)
       expect(mockGroupedSearch).not.toHaveBeenCalled()
+    })
+  })
+
+  // ===== BF-078 · 会话保存（需求3：返回状态恢复）=====
+  describe('分组页会话保存与恢复（BF-078 需求3）', () => {
+    it('分组模式离开：筛选留存 + captureSession 并入快照，恢复旗置位', async () => {
+      const wrapper = mountDetails({ enableGrouping: true })
+      wrapper.findComponent({ name: 'SearchBar' }).vm.$emit('search', {
+        asset_current_status: 'in_store',
+      })
+      await wrapper.vm.$nextTick()
+      mockCaptureSession.mockReturnValue({
+        page: 3,
+        expandedKeys: ['G1'],
+        childPages: { G1: 2 },
+        selectedCodes: ['ZC001'],
+        scrollTop: 50,
+      })
+
+      expect(mockLeaveHooks.cb).toBeTypeOf('function')
+      mockLeaveHooks.cb!()
+
+      const store = useGroupedAssetSession(pinia)
+      expect(store.pendingRestore).toBe(true)
+      expect(store.snapshot).toEqual({
+        filters: { asset_current_status: 'in_store' },
+        page: 3,
+        expandedKeys: ['G1'],
+        childPages: { G1: 2 },
+        selectedCodes: ['ZC001'],
+        scrollTop: 50,
+      })
+    })
+
+    it('平铺模式离开：钩子直接跳过，不写会话', () => {
+      mountDetails()
+      expect(mockLeaveHooks.cb).toBeTypeOf('function')
+      mockLeaveHooks.cb!()
+
+      const store = useGroupedAssetSession(pinia)
+      expect(store.pendingRestore).toBe(false)
+      expect(store.snapshot).toBeNull()
+      expect(mockCaptureSession).not.toHaveBeenCalled()
+    })
+
+    it('setup 期水合：store 有待恢复旗时向子表传 initialSnapshot 并立即摘旗', async () => {
+      const store = useGroupedAssetSession(pinia)
+      store.save({
+        filters: { asset_code: 'ZC001' },
+        page: 2,
+        expandedKeys: ['G1'],
+        childPages: {},
+        selectedCodes: [],
+        scrollTop: 0,
+      })
+
+      const wrapper = mountDetails({ enableGrouping: true })
+      const grouped = wrapper.findComponent({ name: 'GroupedAssetTable' })
+      expect(grouped.props('initialSnapshot')).toMatchObject({ page: 2, expandedKeys: ['G1'] })
+      expect(store.pendingRestore).toBe(false)
+    })
+
+    it('无恢复旗：向子表传 null，走常规首载 search', async () => {
+      const wrapper = mountDetails({ enableGrouping: true })
+      const grouped = wrapper.findComponent({ name: 'GroupedAssetTable' })
+      expect(grouped.props('initialSnapshot')).toBeNull()
+    })
+
+    it('平铺挂载（enableGrouping=false）遇恢复旗：不消费、不摘旗（分组→表单直跳）', () => {
+      const store = useGroupedAssetSession(pinia)
+      store.save({
+        filters: { asset_code: 'ZC001' },
+        page: 2,
+        expandedKeys: ['G1'],
+        childPages: {},
+        selectedCodes: [],
+        scrollTop: 0,
+      })
+      // 分组→表单直跳：新实例以平铺模式挂载（GAT 不渲染），快照无人可交
+      mountDetails()
+      expect(store.pendingRestore).toBe(true)
+      expect(store.snapshot).toMatchObject({ page: 2, expandedKeys: ['G1'] })
     })
   })
 })

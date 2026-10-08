@@ -26,6 +26,7 @@
         <GroupedAssetTable
           ref="groupedTableRef"
           :detail-columns="columns"
+          :initial-snapshot="initialSnapshot"
           @delete-group="handleDeleteGroup"
           @child-edit="handleEdit"
           @child-delete="handleDelete"
@@ -133,7 +134,7 @@
 defineOptions({ name: 'AssetContentDetails' })
 
 import { computed, ref, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
@@ -147,12 +148,14 @@ import { useAssetListConfig } from '@/composables/useAssetListConfig'
 import { useExcelExport } from '@/composables/useExcelExport'
 import type { AssetDetail, AssetGroupQueryParams, AssetGroupSummary } from '@/types/asset'
 import { GROUPED_FILTER_KEY_MAP } from '@/constants/assetGroupedFilters'
+import { useGroupedAssetSession, type GroupedPageSnapshot } from '@/stores/groupedAssetSession'
 import { logError } from '@/utils/logger'
 
 /** 分组展开表格对外暴露的方法（`defineExpose` 形态） */
 interface GroupedAssetTableExpose {
   search: (filters?: AssetGroupQueryParams) => Promise<void>
   refresh: () => Promise<void>
+  captureSession: () => Omit<GroupedPageSnapshot, 'filters'>
 }
 
 /**
@@ -183,6 +186,36 @@ const activeSearchFields = computed(() =>
 const smartListRef = ref<SmartListContainerExpose | null>(null)
 const groupedTableRef = ref<GroupedAssetTableExpose | null>(null)
 const isChildRouteActive = ref(false)
+
+// ===== 分组页会话（BF-078 需求3）=====
+/** 分组模式当前生效筛选（SearchBar → toGroupedFilters 产出，离开时随快照保存） */
+const lastGroupedFilters = ref<AssetGroupQueryParams>({})
+
+const session = useGroupedAssetSession()
+
+/**
+ * 水合入口：setup 期读取，非空即作为 prop 传给 GroupedAssetTable（onMounted 消费）。
+ * 仅分组落点（enableGrouping=true）可消费——分组→表单直跳时新实例以平铺模式挂载、
+ * GAT 不渲染，若此时摘旗则快照无人接手（BF-078 目验二轮修正）；
+ * 平铺挂载只读不摘，留待返回分组页再水合。
+ * 摘旗后快照本体留 store 供排障，出子树时由 guards afterEach 清空。
+ */
+const initialSnapshot =
+  props.enableGrouping && session.pendingRestore && session.snapshot ? session.snapshot : null
+if (initialSnapshot) session.clearPending()
+
+/**
+ * 快照保存：分组模式离开本路由记录时（grouped ↔ form/detail 为兄弟记录，必触发本钩子）。
+ * 落点存废由 guards afterEach 按 `/main/assetdetails` 前缀裁决：子树内保留、出子树清空。
+ * 平铺实例 enableGrouping=false 且无 groupedTableRef，直接跳过。
+ */
+onBeforeRouteLeave(() => {
+  if (!props.enableGrouping || !groupedTableRef.value) return
+  session.save({
+    filters: { ...lastGroupedFilters.value },
+    ...groupedTableRef.value.captureSession(),
+  })
+})
 
 // ===== 辅助函数 =====
 const getContractCode = (contract: unknown): string => {
@@ -257,7 +290,9 @@ const toGroupedFilters = (params: Record<string, string>): AssetGroupQueryParams
 
 const handleSearch = (params: Record<string, string>) => {
   if (groupedTableRef.value) {
-    void groupedTableRef.value.search(toGroupedFilters(params))
+    const filters = toGroupedFilters(params)
+    lastGroupedFilters.value = filters
+    void groupedTableRef.value.search(filters)
     return
   }
   smartListRef.value?.searchWithParams(params)
@@ -265,6 +300,7 @@ const handleSearch = (params: Record<string, string>) => {
 
 const handleSearchReset = () => {
   if (groupedTableRef.value) {
+    lastGroupedFilters.value = {}
     void groupedTableRef.value.search()
     return
   }
