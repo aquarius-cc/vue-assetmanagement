@@ -28,7 +28,11 @@ const globalMount = {
   directives: { loading: {} },
   stubs: {
     'el-table': ElTableStub,
-    'el-table-column': { name: 'ElTableColumn', template: '<div class="el-table-column" />' },
+    'el-table-column': {
+      name: 'ElTableColumn',
+      props: ['prop', 'label', 'showOverflowTooltip'],
+      template: '<div class="el-table-column" />',
+    },
     'el-pagination': { name: 'ElPagination', template: '<div class="el-pagination" />' },
     'el-button': { name: 'ElButton', template: '<button><slot /></button>' },
   },
@@ -73,5 +77,18 @@ describe('GroupedAssetChildTable · 高度约束回归（CT-4）', () => {
     expect(pager.exists()).toBe(true)
     expect(pager.attributes('size')).toBe('small')
     expect(pager.attributes('small')).toBeUndefined()
+  })
+})
+
+describe('GroupedAssetChildTable · 全列统一换行策略（CT-4 回归屏障，2026-10-08）', () => {
+  it('数据列不设 show-overflow-tooltip——EP .cell 默认折行（break-word 兜底），防截断回潮', () => {
+    const wrapper = mountChild()
+    const dataCols = wrapper
+      .findAllComponents({ name: 'ElTableColumn' })
+      .filter((c) => c.props('prop') !== undefined)
+    expect(dataCols.length).toBeGreaterThan(0)
+    for (const col of dataCols) {
+      expect(col.props('showOverflowTooltip')).toBeFalsy()
+    }
   })
 })
