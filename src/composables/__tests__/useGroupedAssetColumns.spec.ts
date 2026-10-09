@@ -4,7 +4,7 @@
  * 以单元级断言隔离 F4 的纯函数与汇总列集：
  *   - shouldShowChildPagination：页长边界（决策 6 / F5 用例 12，BF-073 修正后口径）
  *   - displayContractCode：无合同哨兵组 null → "—"（决策 2 / Q-3 / F5 用例 6）
- *   - summaryColumns：汇总列语义标签回归（资产数量 / 单价区间）
+ *   - summaryColumns：汇总列语义标签回归（资产数量 / 单价）
  *
  * 组件侧（GroupedAssetTable.spec.ts）只断言整体文本渲染，无法隔离纯函数边界；
  * 本篇钉住 `>` 边界与 `??` 空值分支，防止相关变异在渲染断言下幸存。
@@ -71,11 +71,11 @@ describe('useGroupedAssetColumns · F4 composable', () => {
   })
 
   describe('summaryColumns：汇总列语义标签回归', () => {
-    it('数量列标注「资产数量」、金额列标注「单价区间」', () => {
+    it('数量列标注「资产数量」、金额列标注「单价」', () => {
       const { summaryColumns } = useGroupedAssetColumns()
       const labelByProp = Object.fromEntries(summaryColumns.map((col) => [col.prop, col.label]))
       expect(labelByProp.asset_count).toBe('资产数量')
-      expect(labelByProp.price_display).toBe('单价区间')
+      expect(labelByProp.price_display).toBe('单价')
     })
   })
 })

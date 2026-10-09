@@ -39,6 +39,11 @@ export const NULL_DISPLAY = '—'
  * 父表一旦内容超宽自身出横滚，展开行（colspan 全表宽）右段被父滚动口裁出屏幕，
  * 子表固定操作列（sticky 钉子滚动口右缘）随之被遮挡且子表滚动条救不回。
  * 预算由 GroupedAssetTable.spec「列宽预算」用例读模板渲染 props 断言，加列/加宽即红。
+ *
+ * 【price_display 列名（BF-082，2026-10-09）】列名依需求基线（08 文档汇总区列名）为「单价」，
+ * 业务约定同组同价（分组键含合同+名称+规格+品牌 → 同采购价，GROUP_KEY_FIELDS 派生）；
+ * 若数据出现组内不一致，按验收标准（07/08）降级显示 `a~b` 区间串兜底，语义仍为「单价」，
+ * 格式化由后端 format_price 唯一实现（DR-1，单值/区间双态保留不删不改）。
  */
 const summaryColumns: TableColumn[] = [
   { prop: 'contract_code', label: '合同号', minWidth: 128, align: 'center' },
@@ -46,7 +51,7 @@ const summaryColumns: TableColumn[] = [
   { prop: 'asset_specification', label: '型号规格', minWidth: 144, align: 'left' },
   { prop: 'asset_brand', label: '品牌', minWidth: 96, align: 'center' },
   { prop: 'asset_count', label: '资产数量', width: 100, align: 'center' },
-  { prop: 'price_display', label: '单价区间', minWidth: 112, align: 'right' },
+  { prop: 'price_display', label: '单价', minWidth: 112, align: 'right' },
 ]
 
 /**
