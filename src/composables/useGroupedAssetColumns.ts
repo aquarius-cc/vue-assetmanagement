@@ -34,14 +34,19 @@ export const NULL_DISPLAY = '—'
  *
  * 【批次 E 列宽策略】数据列用 min-width（配合主表 fit 铺满容器，剩余宽度按比例
  * 摊给长文本列）；数值列（资产数量）保留 width 固定窄宽 + 居中，避免胶囊被拉宽。
+ *
+ * 【横滚阈值预算（BF-080，2026-10-09）】Σ 列宽 + GAT 结构列(55+48+64+140) ≤ 1031px：
+ * 父表一旦内容超宽自身出横滚，展开行（colspan 全表宽）右段被父滚动口裁出屏幕，
+ * 子表固定操作列（sticky 钉子滚动口右缘）随之被遮挡且子表滚动条救不回。
+ * 预算由 GroupedAssetTable.spec「列宽预算」用例读模板渲染 props 断言，加列/加宽即红。
  */
 const summaryColumns: TableColumn[] = [
-  { prop: 'contract_code', label: '合同号', minWidth: 150, align: 'center' },
-  { prop: 'asset_name', label: '名称', minWidth: 180, align: 'left' },
-  { prop: 'asset_specification', label: '型号规格', minWidth: 180, align: 'left' },
-  { prop: 'asset_brand', label: '品牌', minWidth: 120, align: 'center' },
+  { prop: 'contract_code', label: '合同号', minWidth: 128, align: 'center' },
+  { prop: 'asset_name', label: '名称', minWidth: 144, align: 'left' },
+  { prop: 'asset_specification', label: '型号规格', minWidth: 144, align: 'left' },
+  { prop: 'asset_brand', label: '品牌', minWidth: 96, align: 'center' },
   { prop: 'asset_count', label: '资产数量', width: 100, align: 'center' },
-  { prop: 'price_display', label: '单价区间', minWidth: 140, align: 'right' },
+  { prop: 'price_display', label: '单价区间', minWidth: 112, align: 'right' },
 ]
 
 /**

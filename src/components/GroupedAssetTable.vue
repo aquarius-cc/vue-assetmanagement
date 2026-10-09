@@ -88,7 +88,8 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="序号" width="80" fixed="left" align="center">
+        <!-- 64px：横滚阈值预算（BF-080 Σ≤1031），与子表序号同款；"12.100" 约 45px 余量充足 -->
+        <el-table-column label="序号" width="64" fixed="left" align="center">
           <template #default="{ $index }">{{ summaryIndexOf($index) }}</template>
         </el-table-column>
 
@@ -354,11 +355,15 @@ defineExpose({
 }
 
 /* 表格滚动区：flex:1 撑满除分页外的剩余高度（basis 0 → 分页永不被挤压），
-   表内 el-table height="100%" 钉住横向滚动条于可视底边 */
+   表内 el-table height="100%" 钉住横向滚动条于可视底边。
+   container-type: inline-size（BF-080 二轮）：让 .group-children 取 100cqw——
+   其值恒等于本容器内容盒宽 = EP 滚动口可视宽（本容器自身不横滚，内容恒 100%）。
+   inline-size 仅含行内轴，block 轴 flex:1/min-height:0 与分页链路不受影响 */
 .grouped-asset-table__body {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  container-type: inline-size;
 }
 
 /* 汇总行：聚合语义加粗；展开态淡主色底（:deep 穿透 EP 内部 tr/td） */
@@ -377,8 +382,15 @@ defineExpose({
 }
 
 /* 展开区卡片化：浅底 + 左主色竖条 + 圆角，与汇总行形成层级边界
-   （子表自身 .child-wrap 已有浅灰底，此处仅保留卡片外框） */
+   （子表自身 .child-wrap 已有浅灰底，此处仅保留卡片外框）
+   sticky + 100cqw（BF-080 二轮）：父表横滚时面板锚在滚动口左缘、宽收为可视宽，
+   使子表滚动口右缘恒在屏内 → 子表 sticky 操作列与父列同机制贴屏右，任意宽度不遮挡。
+   min() 双分支：宽屏（未横滚）取 100% = td 内容宽，与改前逐像素一致；窄屏取 100cqw。
+   border-box 由 global-reset.scss 全局保证 → 宽度含 padding16+border4，右缘零溢出 */
 .group-children {
+  position: sticky;
+  left: 0;
+  width: min(100cqw, 100%);
   padding: 16px;
   background: var(--gradient-card-highlight);
   border-left: 4px solid var(--color-primary-light);

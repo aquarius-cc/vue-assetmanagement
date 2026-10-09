@@ -80,7 +80,7 @@ describe('GroupedAssetChildTable · 高度约束回归（CT-4）', () => {
   })
 })
 
-describe('GroupedAssetChildTable · 全列统一换行策略（CT-4 回归屏障，2026-10-08）', () => {
+describe('GroupedAssetChildTable · 全列统一换行策略（CT-4 回归屏障，2026-10-09）', () => {
   it('数据列不设 show-overflow-tooltip——EP .cell 默认折行（break-word 兜底），防截断回潮', () => {
     const wrapper = mountChild()
     const dataCols = wrapper

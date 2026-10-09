@@ -22,6 +22,7 @@
 import { mount } from '@vue/test-utils'
 import { computed } from 'vue'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
+import gatSource from '../GroupedAssetTable.vue?raw'
 
 const { mockGetGroupedAssets, mockGetGroupChildren, mockLogError } = vi.hoisted(() => ({
   mockGetGroupedAssets: vi.fn(),
@@ -82,7 +83,7 @@ const ElTableStub = {
 
 const ElTableColumnStub = {
   name: 'ElTableColumn',
-  props: ['type', 'label', 'width', 'align', 'prop', 'fixed'],
+  props: ['type', 'label', 'width', 'minWidth', 'align', 'prop', 'fixed'],
   inject: ['__rows', '__expanded'],
   computed: {
     visibleRows(): Row[] {
@@ -586,5 +587,35 @@ describe('GroupedAssetTable · 会话快照采集与水合（BF-078 需求3）',
     await flush()
 
     expect(ElTableStub.methods.setScrollTop).toHaveBeenCalledWith(123)
+  })
+})
+
+describe('GroupedAssetTable · 列宽预算锁（BF-080 横滚阈值）', () => {
+  it('汇总表 Σ(列宽) ≤ 1031——父表不出横滚，子区固定操作列不被父滚动口裁掉', () => {
+    const wrapper = mountTable()
+    const cols = wrapper.findAllComponents({ name: 'ElTableColumn' })
+    expect(cols.length).toBeGreaterThan(0)
+    // 读模板真实渲染 props（非 composable 常量）：结构列（勾选55/展开48/序号64/操作140）
+    // 硬编码在模板字面量，与 composable 列集同口径计数——任一处加宽/回改/加列即红。
+    const total = cols.reduce((sum, col) => {
+      const width = Number(col.props('width') ?? 0)
+      const minWidth = Number(col.props('minWidth') ?? 0)
+      return sum + (Number.isFinite(width) ? width : 0) + (Number.isFinite(minWidth) ? minWidth : 0)
+    }, 0)
+    // 物理式：Σ1031 + 页面开销≈233px（侧栏200+主区16+滚动条17）→ 父横滚阈值≈1264px。
+    // 父表一旦横滚，展开行（colspan 全表宽）右段被父滚动口裁出屏幕，子表 sticky 操作列
+    // 钉在屏幕外的子滚动口右缘、子表滚动条只移内容救不回（BF-080 根因）。
+    // 1280/1366 常规窗口必须 Σ≤1031；加列、加宽、序号回 80 均推高阈值 → 本断言转红。
+    expect(total).toBeLessThanOrEqual(1031)
+  })
+})
+
+describe('GroupedAssetTable · 展开面板锚定锁（BF-080 二轮）', () => {
+  it('面板 sticky + 容器查询宽度三关键串在位（jsdom 无布局，真值由目验兜底）', () => {
+    // 结构锁：删改任一关键串（如把 min(100cqw,100%) 改回固定宽）即红；
+    // sticky/containment 的视觉行为 jsdom 无法验证，浏览器目验清单①-④为最终判据
+    expect(gatSource).toContain('container-type: inline-size')
+    expect(gatSource).toContain('position: sticky')
+    expect(gatSource).toContain('min(100cqw, 100%)')
   })
 })

@@ -40,13 +40,13 @@
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" />
 
       <!-- 序号列：层级化 groupIndex.组内全局序，跨页连贯（1.20 → 翻页 → 1.21） -->
-      <!-- 64px（2026-10-08 B1 轻压：80→64，"12.100" 约 45px + padding 余量充足） -->
+      <!-- 64px（2026-10-09 B1 轻压：80→64，"12.100" 约 45px + padding 余量充足） -->
       <el-table-column label="序号" width="64" align="center">
         <template #default="{ $index }">{{ hierarchicalIndex($index) }}</template>
       </el-table-column>
 
       <!-- 数据列：外部白名单过滤后透传（DR-1，不二次定义） -->
-      <!-- 换行策略（2026-10-08）：全列统一换行——不设 show-overflow-tooltip，
+      <!-- 换行策略（2026-10-09）：全列统一换行——不设 show-overflow-tooltip，
            EP .cell 默认 white-space:normal + overflow-wrap:break-word 自动折行
            （短码不折、超宽才折，零隐藏信息）；横向滚动仍由 min-width 总和决定，不受影响 -->
       <el-table-column
@@ -143,7 +143,7 @@ const emit = defineEmits<{
 const tableRef = ref<TableInstance>()
 
 /**
- * 嵌套面最小列宽适配（B1 轻压，2026-10-08）：横滚阈值 = Σmin-width + 页面开销(≈257px)。
+ * 嵌套面最小列宽适配（B1 轻压，2026-10-09）：横滚阈值 = Σmin-width + 页面开销(≈257px)。
  * 平铺列宽 1315px → 阈值 ~1572px，窗口稍缩即横滚；本表仅覆盖被压缩的 4 键，
  * 其余（recordcode 150 / asset_code 180，码列保整行不折）回退父列定义 col.width。
  * 属嵌套面视图适配（与 CHILD_WHITELIST 同模式），非第二列定义源（DR-1）。
