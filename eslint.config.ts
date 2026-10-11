@@ -28,6 +28,12 @@ export default defineConfigWithVueTs(
       ],
       // 禁止 console.log/debug（防调试代码遗留），保留 warn/error 用于错误处理
       'no-console': ['error', { allow: ['warn', 'error'] }],
+      // P1-4 复杂度债沙盒期：规则以 warn 级入配置（error 级会让存量 52 处
+      // complexity 违规直接让 `npm run lint`（frontend-lint 阻断作业）翻红）。
+      // 沙盒期 CI 仍以 ci.yml 的 frontend-complexity 作业（CLI --rule error 级 +
+      // continue-on-error）观测计数；存量归零后本行升 'error' 并撤 CI 容错。
+      // 非业务代码（scripts/、测试文件）经下方 complexity-exempt 块豁免。
+      complexity: ['warn', 10],
     },
   },
 
@@ -66,6 +72,16 @@ export default defineConfigWithVueTs(
     files: ['**/__tests__/**', '**/*.spec.ts', '**/*.test.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+
+  // P1-4：构建脚本与测试文件不计业务复杂度（complexity 对其关闭）。
+  // 用 override 而非 globalIgnores——globalIgnores 会连带跳过其他规则检查。
+  {
+    name: 'app/complexity-exempt',
+    files: ['scripts/**', '**/__tests__/**', '**/*.spec.ts', '**/*.test.ts'],
+    rules: {
+      complexity: 'off',
     },
   },
 
