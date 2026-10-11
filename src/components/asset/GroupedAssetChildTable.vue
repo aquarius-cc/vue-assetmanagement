@@ -21,9 +21,15 @@
     本组件不内建任何列定义，columns 由父组件从 AssetContentDetails 明细列集按
     白名单过滤后传入（过滤是视图选择，非第二定义源）。序号/数量/操作三列为
     结构列，由本组件自持。
+
+    【左固定四列 + 极窄回退（BF-083）】
+    常态固定 勾选→序号→唯一记录码→编码（EP 按 fixed 组重排，四列须同组才能保持
+    声明序，BF-078 先例）；容器宽 < 673px（左块449+操作160+数量64）时中间列无处
+    容身，全列（含操作）解除固定整表滑动。两态由 ResizeObserver 观察 .child-wrap
+    驱动，边界由 spec 672/673 用例锁死。
 -->
 <template>
-  <div class="child-wrap" :data-loading="loading">
+  <div ref="wrapRef" class="child-wrap" :data-loading="loading">
     <el-table
       ref="tableRef"
       v-loading="loading"
@@ -36,12 +42,18 @@
       max-height="500"
       @selection-change="handleSelectionChange"
     >
-      <!-- 受控勾选列 -->
-      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" />
+      <!-- 受控勾选列（BF-083：结构列随左固定组，声明序勾选→序号→码列在 fixed-left 组内保持） -->
+      <el-table-column
+        type="selection"
+        width="55"
+        align="center"
+        :fixed="fixedGroupLeft"
+        :reserve-selection="true"
+      />
 
       <!-- 序号列：层级化 groupIndex.组内全局序，跨页连贯（1.20 → 翻页 → 1.21） -->
       <!-- 64px（2026-10-09 B1 轻压：80→64，"12.100" 约 45px + padding 余量充足） -->
-      <el-table-column label="序号" width="64" align="center">
+      <el-table-column label="序号" width="64" align="center" :fixed="fixedGroupLeft">
         <template #default="{ $index }">{{ hierarchicalIndex($index) }}</template>
       </el-table-column>
 
@@ -56,6 +68,7 @@
         :label="col.label"
         :min-width="childMinWidth(col)"
         :align="col.align"
+        :fixed="dataColFixed(col)"
         :class-name="'highlight-col'"
       >
         <template #default="{ row }">
@@ -76,8 +89,8 @@
         <template #default>1</template>
       </el-table-column>
 
-      <!-- 操作列：编辑 / 删除 / 详细 -->
-      <el-table-column label="操作" fixed="right" width="160" align="center">
+      <!-- 操作列：编辑 / 删除 / 详细（BF-083：极窄态随全列一并解除固定） -->
+      <el-table-column label="操作" :fixed="fixedGroupRight" width="160" align="center">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="emit('edit', row)">编辑</el-button>
           <el-button link type="danger" size="small" @click="emit('delete', row)">删除</el-button>
@@ -102,8 +115,9 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import type { TableInstance } from 'element-plus'
+import { useContainerWidth } from '@/composables/useContainerWidth'
 import type { TableColumn } from '@/types/list'
 import type { AssetDetail } from '@/types/asset'
 
@@ -160,6 +174,41 @@ const CHILD_MIN_WIDTH: Record<string, number> = {
 const childMinWidth = (col: TableColumn): number | string | undefined =>
   CHILD_MIN_WIDTH[col.prop ?? ''] ?? col.width
 
+// ===== BF-083：左固定四列 + 极窄回退 =====
+/* 阈值算式：左固定块 449（勾选55 + 序号64 + 唯一记录码150 + 编码180，码列宽经
+ * detailColumns 白名单透传自 AssetContentDetails 列定义）+ 操作160 + 最小中间列
+ * （数量64）= 673。容器宽 < 673 → 中间列连数量列保底都放不下，固定列占满全宽
+ * 即退化态 → 全列（含操作）解除固定，整表滑动；≥ 673 恢复常态固定。
+ * ⚠️ 改模板列宽（55/64/160）或码列宽（150/180）须同步本常量，
+ * spec「BF-083」672/673 边界两态用例锁死阈值行为。 */
+const FIXED_LEFT_SUM = 55 + 64 + 150 + 180 // 449
+const FIXED_RIGHT_WIDTH = 160
+const MIN_MIDDLE_WIDTH = 64 // 数量列（最小中间列）
+const DEGRADE_THRESHOLD = FIXED_LEFT_SUM + FIXED_RIGHT_WIDTH + MIN_MIDDLE_WIDTH // 673
+
+/** 数据列中的左固定码列白名单（唯一记录码 / 编码，其余数据列恒居中间滑动区） */
+const LEFT_FIXED_DATA_PROPS = new Set(['recordcode', 'asset_code'])
+
+/** 子表滚动口容器（ResizeObserver 观察目标：.child-wrap 内容盒宽） */
+const wrapRef = ref<HTMLElement | null>(null)
+const { containerWidth } = useContainerWidth(wrapRef)
+
+/** 常态：左固定组 `'left'`；极窄：undefined（EP 对 undefined 视为非固定，重排回声明序） */
+const fixedGroupLeft = computed<'left' | undefined>(() =>
+  containerWidth.value < DEGRADE_THRESHOLD ? undefined : 'left',
+)
+const fixedGroupRight = computed<'right' | undefined>(() =>
+  containerWidth.value < DEGRADE_THRESHOLD ? undefined : 'right',
+)
+
+/** 数据列 fixed：仅左固定组激活且为码列时固定（v-for 分支，BF-083） */
+const dataColFixed = (col: TableColumn): 'left' | undefined =>
+  fixedGroupLeft.value !== undefined &&
+  col.prop !== undefined &&
+  LEFT_FIXED_DATA_PROPS.has(col.prop)
+    ? 'left'
+    : undefined
+
 /** el-table 行键：asset_code（与现状 selection 键一致） */
 const getRowKey = (row: AssetDetail): string => row.asset_code ?? ''
 
@@ -213,13 +262,10 @@ defineExpose({ refreshSelection: applySelectedKeys })
   border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
+/* 行/表头底色禁设 transparent：EP 固定格 background:inherit 自 tr/th 取底，
+   透底即横滚重影（BF-083 目验实证）；源码锁 spec 禁回，表头保留字重 */
 .child-table :deep(.el-table__header th) {
-  background: transparent;
   font-weight: 600;
-}
-
-.child-table :deep(.el-table__row) {
-  background: transparent;
 }
 
 .child-table :deep(.el-table__cell) {

@@ -12,6 +12,7 @@
     align="center"
     :min-width="actionColumnWidth || 'auto'"
     label="操作"
+    :fixed="fixed"
   >
     <!-- 表头搜索框 -->
     <template #header>
@@ -63,6 +64,7 @@
 
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
+import type { PropType } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { logError } from '@/utils/logger'
@@ -76,6 +78,11 @@ const props = defineProps({
   actionColumnWidth: {
     type: [Number, String],
     default: 'auto',
+  },
+  /** 固定列位：右侧固定；极窄降级时父组件传 undefined 解除（整表滑动）。
+   * 无 default——显式传 undefined 会回落 default，降级即失效（Vue prop 语义）。 */
+  fixed: {
+    type: String as PropType<'right' | undefined>,
   },
   enableSearch: {
     type: Boolean,

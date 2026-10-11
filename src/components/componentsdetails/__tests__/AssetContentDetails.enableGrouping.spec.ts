@@ -65,7 +65,13 @@ vi.mock('@/composables/useAssetListConfig', async () => {
     useAssetListConfig: () => ({
       searchFields: ref([{ key: 'FLAT_SENTINEL' }]),
       groupedSearchFields: ref([{ key: 'GROUPED_SENTINEL' }]),
-      storeConfig: {},
+      // BF-083 分组 refreshFlag watch 读取 storeConfig.store.refreshFlag（PaginationSearchConfig 嵌套形态）
+      storeConfig: {
+        store: {
+          refreshFlag: ref(false),
+          setRefreshFlag: vi.fn(),
+        },
+      },
       exportColumns: [],
       assetStore: { removeBatch: mockRemoveBatch, pagination: { total: 3 } },
     }),

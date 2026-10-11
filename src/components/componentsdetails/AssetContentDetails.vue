@@ -150,6 +150,7 @@ import type { AssetDetail, AssetGroupQueryParams, AssetGroupSummary } from '@/ty
 import { GROUPED_FILTER_KEY_MAP } from '@/constants/assetGroupedFilters'
 import { useGroupedAssetSession, type GroupedPageSnapshot } from '@/stores/groupedAssetSession'
 import { logError } from '@/utils/logger'
+import { readStoreValue } from '@/utils/reactiveAccess'
 
 /** 分组展开表格对外暴露的方法（`defineExpose` 形态） */
 interface GroupedAssetTableExpose {
@@ -217,6 +218,31 @@ onBeforeRouteLeave(() => {
   })
 })
 
+// ===== 刷新 Flag 监听（BF-083：分组路径缺失 refreshFlag 接驳）=====
+// 分组模式：保存成功后 AssetForm 置 true → usePaginationSearch watch → refreshCurrentPage（平铺路径已接通）。
+// 分组路径 GroupedAssetTable 独有：此处显式监听 refreshFlag，避免保存返回后不刷新。
+if (props.enableGrouping) {
+  let isRefreshing = false
+  watch(
+    () => readStoreValue<boolean>(storeConfig.store.refreshFlag!),
+    async (flag) => {
+      if (!flag || isRefreshing) return
+      isRefreshing = true
+      try {
+        await groupedTableRef.value?.refresh()
+      } catch (e) {
+        logError('components/AssetContentDetails', '[refreshFlag watch] refresh failed:', e)
+      } finally {
+        isRefreshing = false
+        // 复位 flag（与 usePaginationSearch finally 对称）：分组模式 SmartListContainer
+        // 不挂载、平铺复位路径不触发；不复位则第二次保存同值赋值不触发 watch，分组表不再刷新。
+        storeConfig.store.setRefreshFlag?.(false)
+      }
+    },
+    { immediate: false },
+  )
+}
+
 // ===== 辅助函数 =====
 const getContractCode = (contract: unknown): string => {
   if (typeof contract === 'object' && contract !== null && 'contract_code' in contract) {
@@ -227,10 +253,10 @@ const getContractCode = (contract: unknown): string => {
 
 // ===== 表格列配置 =====
 const columns: TableColumn[] = [
-  { type: 'index', label: '序号', width: 80, align: 'center' },
-  { prop: 'recordcode', label: '唯一记录码', width: 150, align: 'center' },
-  { prop: 'asset_code', label: '编码', width: 180, align: 'center' },
-  { prop: 'asset_name', label: '名称', width: 180, align: 'left' },
+  { type: 'index', label: '序号', width: 80, align: 'center', fixed: 'left' },
+  { prop: 'recordcode', label: '唯一记录码', width: 150, align: 'center', fixed: 'left' },
+  { prop: 'asset_code', label: '编码', width: 180, align: 'center', fixed: 'left' },
+  { prop: 'asset_name', label: '名称', width: 180, align: 'left', fixed: 'left' },
   { prop: 'asset_specification', label: '型号规格', width: 180, align: 'left' },
   { prop: 'asset_brand', label: '品牌', width: 120, align: 'center' },
   {

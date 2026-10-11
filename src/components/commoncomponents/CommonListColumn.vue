@@ -14,6 +14,7 @@
     :label="column.label"
     :min-width="column.width || 'auto'"
     :align="column.align || 'center'"
+    :fixed="column.fixed"
   >
     <template #default="scope">
       <div style="text-align: center; width: 100%">
@@ -28,6 +29,7 @@
     :label="column.label"
     :min-width="column.width || 'auto'"
     :align="column.align || 'center'"
+    :fixed="column.fixed"
   >
     <template #default="scope">
       <div :style="{ textAlign: column.align || 'center', width: '100%' }">
@@ -45,6 +47,7 @@
     :label="column.label"
     :min-width="column.width || 'auto'"
     :align="column.align || 'center'"
+    :fixed="column.fixed"
   />
 </template>
 

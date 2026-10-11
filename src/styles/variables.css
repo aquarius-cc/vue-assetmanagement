@@ -111,8 +111,8 @@
      禁止再写 :deep + !important 覆盖 EP 表格（C-10 收敛）。
      注：white-space 不设令牌——EP .cell 自有 white-space:normal 声明，th/td 层声明无效力；
      word-break EP 未声明、可继承，th/td 层覆盖真实生效。 */
-  --table-header-padding: 12px 12px;
-  --table-body-padding: 12px 12px;
+  --table-header-padding: 8px 12px;
+  --table-body-padding: 8px 12px;
   --table-header-word-break: normal;
   --table-body-word-break: normal;
   --table-header-bg: var(--card-background-light);

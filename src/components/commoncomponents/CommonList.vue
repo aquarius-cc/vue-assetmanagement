@@ -11,12 +11,13 @@
 <template>
   <div class="common-list">
     <!-- 表格容器 -->
-    <div class="table-container">
+    <div ref="tableWrapRef" class="table-container">
       <el-table
         ref="tableRef"
         :data="data"
         v-loading="loading"
         style="width: 100%"
+        :size="size"
         height="100%"
         :header-cell-style="{ textAlign: 'center' }"
         :cell-style="{ textAlign: 'center' }"
@@ -25,17 +26,18 @@
         :row-key="getRowKey"
         @selection-change="handleSelectionChange"
       >
-        <!-- 多选列：当 enableSelection 为 true 时显示 -->
+        <!-- 多选列：当 enableSelection 为 true 时显示（极窄降级时随全列解除固定） -->
         <el-table-column
           v-if="enableSelection"
           type="selection"
-          width="55"
+          :width="SELECTION_COLUMN_WIDTH"
           align="center"
+          :fixed="fixedDegraded ? undefined : 'left'"
           :reserve-selection="isSelectionControlled"
         />
 
-        <!-- 动态列渲染 -->
-        <template v-for="column in columns" :key="column.prop || column.label">
+        <!-- 动态列渲染（effectiveColumns：极窄降级时剥离全部 fixed） -->
+        <template v-for="column in effectiveColumns" :key="column.prop || column.label">
           <CommonListColumn :column="column" :current-page="currentPage" :page-size="pageSize">
             <!-- 透传自定义列插槽 -->
             <template v-for="(_, slotName) in $slots" :key="slotName" #[slotName]="slotProps">
@@ -44,11 +46,12 @@
           </CommonListColumn>
         </template>
 
-        <!-- 操作列：包含搜索框和操作按钮 -->
+        <!-- 操作列：包含搜索框和操作按钮（极窄降级时随全列解除固定） -->
         <CommonListActions
           ref="actionsRef"
           :show-actions="showActions"
           :action-column-width="actionColumnWidth"
+          :fixed="fixedDegraded ? undefined : 'right'"
           :enable-search="enableSearch"
           :search-placeholder="searchPlaceholder"
           :search="search"
@@ -93,6 +96,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import type { ElTable } from 'element-plus'
 import CommonListColumn from './CommonListColumn.vue'
 import CommonListActions from './CommonListActions.vue'
+import { useContainerWidth } from '@/composables/useContainerWidth'
 import type { TableColumn } from '@/types/list'
 
 interface Props {
@@ -125,6 +129,11 @@ interface Props {
    * 不传时行为与既有调用方完全一致（非受控，选中态由 el-table 自行维护）。
    */
   selectedKeys?: string[]
+  /**
+   * 子列表 size 设定（BF-083）：先例 GroupedAssetChildTable.vue:32 size="small"。
+   * 对齐子表统一紧凑形态，不影响列固定逻辑，减小滚动口高度。
+   */
+  size?: 'default' | 'small'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -144,6 +153,7 @@ const props = withDefaults(defineProps<Props>(), {
   actionColumnWidth: 'auto',
   enableSelection: false,
   rowKey: 'id',
+  size: 'small',
 })
 
 const emit = defineEmits<{
@@ -173,6 +183,49 @@ const localPageSize = computed({
   get: () => props.pageSize,
   set: (val: number) => emit('update:pageSize', val),
 })
+
+// ===== 列固定极窄降级（BF-083） =====
+/** 勾选列宽（模板 :width 同源引用） */
+const SELECTION_COLUMN_WIDTH = 55
+/** actionColumnWidth 非数值（'auto'）时的操作列估算宽 */
+const ACTION_WIDTH_FALLBACK = 180
+/** 非固定列无数值声明宽时的最小中间列保底 */
+const MIN_MIDDLE_FALLBACK = 60
+
+const tableWrapRef = ref<HTMLElement | null>(null)
+const { containerWidth } = useContainerWidth(tableWrapRef)
+
+/**
+ * 降级阈值 = 勾选宽 + 左固定列声明宽之和 + 操作宽 + 最小非固定列宽。
+ * 容器宽 < 阈值 → 固定列占满全宽即退化态，全列（含勾选/操作）解除固定整表滑动。
+ * 出处锚：AssetContentDetails 列配置（左固定 80+150+180，最小中间列实物数量 110），
+ * enableSelection + actionColumnWidth='auto' 时现值 755；列宽调整自动跟随
+ * （数值取自 columns prop，无需手改常量），spec 钉死 754 解固定 / 755 保持两态。
+ */
+const fixedDegradeThreshold = computed(() => {
+  const leftFixedSum = props.columns
+    .filter((col) => col.fixed === 'left' && typeof col.width === 'number')
+    .reduce((sum, col) => sum + (col.width as number), 0)
+  const actionWidth =
+    typeof props.actionColumnWidth === 'number' ? props.actionColumnWidth : ACTION_WIDTH_FALLBACK
+  const middleWidths = props.columns
+    .filter((col) => col.fixed !== 'left' && typeof col.width === 'number')
+    .map((col) => col.width as number)
+  const minMiddleWidth = middleWidths.length > 0 ? Math.min(...middleWidths) : MIN_MIDDLE_FALLBACK
+  return (
+    (props.enableSelection ? SELECTION_COLUMN_WIDTH : 0) +
+    leftFixedSum +
+    actionWidth +
+    minMiddleWidth
+  )
+})
+
+const fixedDegraded = computed(() => containerWidth.value < fixedDegradeThreshold.value)
+
+/** 降级时剥离全部 fixed（EP 对 undefined 视为非固定，重排回声明序） */
+const effectiveColumns = computed<TableColumn[]>(() =>
+  fixedDegraded.value ? props.columns.map((col) => ({ ...col, fixed: undefined })) : props.columns,
+)
 
 // ===== 方法 =====
 const ROW_KEY_FALLBACK_FIELDS = [
@@ -325,7 +378,8 @@ defineExpose({
 }
 
 .table-container :deep(.el-table__body td.el-table__cell) {
-  padding: var(--table-body-padding, 12px 12px);
+  /* BF-083 密度：收紧到子表先例（GroupedAssetChildTable.vue:226 padding: 6px 8px） */
+  padding: var(--table-body-padding, 6px 8px);
   color: var(--text-regular);
   word-break: var(--table-body-word-break, normal);
 }
