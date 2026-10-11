@@ -75,6 +75,8 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
       )
       return
     }
+    // 入口清参：关键词模式接管，保证 searchParams 与 search 互斥（refresh/翻页路由判据）
+    searchParams.value = {}
     search.value = keyword
     notifySearchState(keyword)
 

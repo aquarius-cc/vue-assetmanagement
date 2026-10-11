@@ -122,6 +122,20 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
     messages,
   })
 
+  // ===== 搜索态路由（BF-083：参数态 / 关键词态 / 列表态唯一分流） =====
+  // searchParams 与 search 互斥由入口保证：performSearch 清参、performSearchWithParams 全量覆写。
+  const hasParamsSearch = () => Object.values(searchParams.value).some((v) => v && v.trim())
+
+  const runActiveSearch = async () => {
+    if (hasParamsSearch()) {
+      await performSearchWithParams({ ...searchParams.value })
+    } else if (search.value.trim() && searchConfig) {
+      await performSearch(search.value)
+    } else {
+      await loadList(currentPage.value, pageSize.value)
+    }
+  }
+
   // ===== 表格数据 =====
   const tableData = computed(() => {
     const hasSearch =
@@ -141,36 +155,22 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
       currentPage.value = totalPages
     }
     await nextTick()
-    if (search.value.trim() && searchConfig) {
-      await performSearch(search.value)
-    } else {
-      await loadList(currentPage.value, pageSize.value)
-    }
+    await runActiveSearch()
   }
 
   const handleCurrentChange = async (newPage: number) => {
     currentPage.value = newPage
     await nextTick()
-    const searchQuery = search.value.trim()
-
-    if (searchQuery && searchConfig) {
-      await performSearch(searchQuery)
-      const totalPages = Math.ceil(searchTotal.value / pageSize.value)
-      if (newPage > totalPages && totalPages > 0) {
-        ElMessage.warning(`${messages.invalidPage}（${totalPages}）`)
-        currentPage.value = totalPages
-        await nextTick()
-        await performSearch(searchQuery)
-      }
-    } else {
-      await loadList(newPage, pageSize.value)
-      const totalPages = Math.ceil(total.value / pageSize.value)
-      if (newPage > totalPages && totalPages > 0) {
-        ElMessage.warning(`${messages.invalidPage}（${totalPages}）`)
-        currentPage.value = totalPages
-        await nextTick()
-        await loadList(totalPages, pageSize.value)
-      }
+    const useSearchResults = hasParamsSearch() || (!!search.value.trim() && !!searchConfig)
+    await runActiveSearch()
+    const totalPages = Math.ceil(
+      (useSearchResults ? searchTotal.value : total.value) / pageSize.value,
+    )
+    if (newPage > totalPages && totalPages > 0) {
+      ElMessage.warning(`${messages.invalidPage}（${totalPages}）`)
+      currentPage.value = totalPages
+      await nextTick()
+      await runActiveSearch()
     }
   }
 
@@ -180,11 +180,7 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
   }
 
   const refreshCurrentPage = async () => {
-    if (search.value.trim() && searchConfig) {
-      await performSearch(search.value)
-    } else {
-      await loadList(currentPage.value, pageSize.value)
-    }
+    await runActiveSearch()
   }
 
   // ===== store loading =====
