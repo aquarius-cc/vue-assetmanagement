@@ -253,33 +253,23 @@ const loadAssetDetail = async (recordcode: string) => {
     assetForm.asset_description = detail.asset_description ?? ''
     assetForm.asset_current_status = detail.asset_current_status ?? ''
 
-    // FK 字段：后端返回 _code 后缀，表单使用同名字段
-    assetForm.asset_type = detail.asset_type_code ?? ''
-    assetForm.asset_contract = detail.asset_contract_code ?? ''
-    assetForm.asset_storage = detail.asset_storage_code ?? ''
-    assetForm.asset_entry_person = detail.asset_entry_person_jobcode ?? ''
-    assetForm.asset_applicant = detail.asset_applicant_jobcode ?? ''
-    assetForm.asset_manager = detail.asset_manager_jobcode ?? ''
+    // 【BF-081】detail 路由由 AssetDetailSerializer 输出：仅嵌套关联对象
+    // （asset_type/asset_contract/asset_storage/asset_*_person），无平铺 _code/_jobcode 键。
+    // 编码与名称一律直读嵌套——修复前读平铺键恒为空，且经 Promise.all 反查关联端点（非 recordcode 定位，
+    // 必 404 后整块置空）。关联名称随嵌套对象一并返回，无需再发查询。
+    assetForm.asset_type = detail.asset_type?.type_code ?? ''
+    assetForm.asset_contract = detail.asset_contract?.contract_code ?? ''
+    assetForm.asset_storage = detail.asset_storage?.storage_code ?? ''
+    assetForm.asset_entry_person = detail.asset_entry_person?.employee_jobcode ?? ''
+    assetForm.asset_applicant = detail.asset_applicant?.employee_jobcode ?? ''
+    assetForm.asset_manager = detail.asset_manager?.employee_jobcode ?? ''
 
-    // 并行加载关联名称用于表单显示
-    const [at, st, ep, ap, mg, ct] = await Promise.all([
-      detail.asset_type_code ? assetTypeStore.getById(detail.asset_type_code) : null,
-      detail.asset_storage_code ? storageStore.getById(detail.asset_storage_code) : null,
-      detail.asset_entry_person_jobcode
-        ? userStore.getById(detail.asset_entry_person_jobcode)
-        : null,
-      detail.asset_applicant_jobcode ? userStore.getById(detail.asset_applicant_jobcode) : null,
-      detail.asset_manager_jobcode ? userStore.getById(detail.asset_manager_jobcode) : null,
-      detail.asset_contract_code
-        ? contractStore.getByName(detail.asset_contract_code).then((list) => list[0] ?? null)
-        : null,
-    ])
-    assetForm.asset_type_name = at?.type_name ?? ''
-    assetForm.asset_storage_name = st?.storage_name ?? ''
-    assetForm.asset_entry_person_name = ep?.employee_name ?? ''
-    assetForm.asset_applicant_name = ap?.employee_name ?? ''
-    assetForm.asset_manager_name = mg?.employee_name ?? ''
-    assetForm.asset_contract_name = ct?.contract_name ?? ''
+    assetForm.asset_type_name = detail.asset_type?.type_name ?? ''
+    assetForm.asset_storage_name = detail.asset_storage?.storage_name ?? ''
+    assetForm.asset_contract_name = detail.asset_contract?.contract_name ?? ''
+    assetForm.asset_entry_person_name = detail.asset_entry_person?.employee_name ?? ''
+    assetForm.asset_applicant_name = detail.asset_applicant?.employee_name ?? ''
+    assetForm.asset_manager_name = detail.asset_manager?.employee_name ?? ''
   } catch {
     ElMessage.error('无法加载资产详情，请检查网络连接后刷新页面重试')
   }

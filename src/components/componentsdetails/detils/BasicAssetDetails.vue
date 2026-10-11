@@ -144,8 +144,8 @@ import InfoCard from '@/components/commoncomponents/InfoCard.vue'
 import HardDiskSNCard from '@/components/commoncomponents/HardDiskSNCard.vue'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import type { AssetDetail } from '@/types/asset'
-import type { ColumnConfig } from '@/utils/excelExporter'
-import { formatDate, getAssetStatusText } from '@/utils/Format'
+import { getAssetStatusText } from '@/utils/Format'
+import { basicAssetDetailExportColumns } from './basicAssetDetailExport'
 import { usePermission } from '@/composables/usePermission'
 import { useAssetStatusChecks } from '@/composables/useAssetStatus'
 import { logError } from '@/utils/logger'
@@ -292,61 +292,7 @@ onMounted(async () => {
 // ===== 导出功能 =====
 const { exportDetail } = useExcelExport()
 
-/**
- * 导出列配置
- * @description 定义导出 Excel 时的列映射
- */
-const detailExportColumns: ColumnConfig<AssetDetail>[] = [
-  { title: '资产编码', key: 'asset_code', default: '' },
-  { title: '资产名称', key: 'asset_name', default: '' },
-  { title: '品牌', key: 'asset_brand', default: '' },
-  { title: '单位', key: 'asset_unit', default: '' },
-  { title: '型号规格', key: 'asset_specification', default: '' },
-  { title: '资产分类', key: 'asset_type_code', default: '' },
-  {
-    title: '单价',
-    key: 'asset_purchase_price',
-    default: '0',
-    formatter: (v) => String(v ?? '0'),
-  },
-  {
-    title: '实物数量',
-    key: 'asset_purchase_number',
-    default: '0',
-    formatter: (v) => String(v ?? '0'),
-  },
-  {
-    title: '采购日期',
-    key: 'asset_purchase_date',
-    default: '',
-    formatter: (v) => formatDate(v as string) || '',
-  },
-  {
-    title: '质保期',
-    key: 'asset_warranty_period',
-    default: '0',
-    formatter: (v) => String(v ?? '0'),
-  },
-  {
-    title: '录入日期',
-    key: 'asset_entry_date',
-    default: '',
-    formatter: (v) => formatDate(v as string) || '',
-  },
-  {
-    title: '当前使用状态',
-    key: 'asset_current_status',
-    default: '',
-    formatter: (v) => getCurrentStatusText(v as string),
-  },
-  { title: '录入人工号', key: 'asset_entry_person_jobcode', default: '' },
-  { title: '合同编码', key: 'asset_contract_code', default: '' },
-  { title: '申请人工号', key: 'asset_applicant_jobcode', default: '' },
-  { title: '保管人工号', key: 'asset_manager_jobcode', default: '' },
-  { title: '使用地点', key: 'asset_using_location', default: '' },
-  { title: '仓库编码', key: 'asset_storage_code', default: '' },
-  { title: '资产描述', key: 'asset_description', default: '' },
-]
+// 导出列配置见 ./basicAssetDetailExport（BF-081：嵌套关联列经 formatter 取值，便于单测覆盖）
 
 /**
  * 导出 Excel
@@ -358,7 +304,7 @@ const handleExportExcel = async () => {
   }
   await exportDetail(
     assetDetail.value,
-    detailExportColumns,
+    basicAssetDetailExportColumns,
     `资产_${assetDetail.value.asset_code}`,
     '资产详情',
   )
@@ -377,16 +323,18 @@ const handleBack = () => {
 /**
  * 跳转到编辑页
  * @description 点击编辑按钮，跳转到编辑页
+ * 【ID-2/取键契约】AssetForm 按 recordcode 定位详情（后端 lookup_field="recordcode"），
+ * 与本文件其余操作跳转（标记损坏/日志等）同一取键口径——传 asset_code 会 404（BF-081 连带）。
  */
 const handleEdit = () => {
-  if (!assetDetail.value?.asset_code) {
-    ElMessage.error('资产编码不存在，无法编辑')
+  if (!assetDetail.value?.recordcode) {
+    ElMessage.error('资产记录编码不存在，无法编辑')
     return
   }
   router
     .push({
       name: 'AssetForm',
-      query: { code: assetDetail.value.asset_code },
+      query: { code: assetDetail.value.recordcode },
     })
     .catch((err) => {
       ElMessage.error(`跳转到编辑页面失败: ${err.message || '未知错误'}`)
