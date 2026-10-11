@@ -51,6 +51,7 @@ describe('AssetStore', () => {
         count: 1,
         results: [
           {
+            recordcode: 'REC-AS-001',
             asset_code: 'AS-001',
             asset_name: '笔记本电脑',
             asset_current_status: 'in_store',
@@ -92,6 +93,7 @@ describe('AssetStore', () => {
   describe('创建记录', () => {
     it('应该调用API创建资产', async () => {
       const mockCreated = {
+        recordcode: 'REC-AS-001',
         asset_code: 'AS-001',
         asset_name: '笔记本电脑',
         asset_current_status: 'in_store',
@@ -125,6 +127,40 @@ describe('AssetStore', () => {
       await store.remove('AS-001')
 
       expect(assetAPI.deleteAsset).toHaveBeenCalledWith('AS-001')
+    })
+  })
+
+  describe('更新记录', () => {
+    it('data携带 recordcode 时应调用API更新并按 recordcode 同步实体【BF-081 idKey】', async () => {
+      const { assetAPI } = await import('@/api/asset')
+      vi.mocked(assetAPI.getAssets).mockResolvedValue({
+        count: 1,
+        results: [{ recordcode: 'REC-001', asset_code: 'AS-001', asset_name: '旧名称' }],
+      } as any)
+      await store.getList()
+      expect(store.list).toHaveLength(1)
+
+      const payload = { recordcode: 'REC-001', asset_name: '新名称' }
+      const mockUpdated = {
+        recordcode: 'REC-001',
+        asset_code: 'AS-001',
+        asset_name: '新名称',
+      }
+      vi.mocked(assetAPI.updateAsset).mockResolvedValue(mockUpdated as any)
+
+      await store.update(payload as any)
+
+      expect(assetAPI.updateAsset).toHaveBeenCalledWith(payload)
+      // 实体键为 recordcode：更新结果落到同一条实体上（键错位则列表不更新）
+      expect(store.list).toHaveLength(1)
+      expect(store.list[0].recordcode).toBe('REC-001')
+      expect(store.list[0].asset_name).toBe('新名称')
+    })
+
+    it('data 缺少 recordcode 时应抛出 Missing ID for update', async () => {
+      await expect(store.update({ asset_name: '无编码' } as any)).rejects.toThrow(
+        'Missing ID for update',
+      )
     })
   })
 
@@ -275,7 +311,11 @@ describe('AssetStore', () => {
 
   describe('获取详情', () => {
     it('应该调用getById获取资产详情', async () => {
-      const mockAsset = { asset_code: 'AS-001', asset_name: '笔记本电脑' }
+      const mockAsset = {
+        recordcode: 'REC-AS-001',
+        asset_code: 'AS-001',
+        asset_name: '笔记本电脑',
+      }
       const { assetAPI } = await import('@/api/asset')
       vi.mocked(assetAPI.getAssetByCode).mockResolvedValue(mockAsset as any)
 
@@ -401,6 +441,32 @@ describe('AssetStore', () => {
       vi.mocked(assetAPI.batchDeleteAssets).mockRejectedValue(new Error('批量删除失败'))
 
       await expect(store.removeBatch(['AS-001'])).rejects.toThrow('批量删除失败')
+    })
+
+    it('【BF-081 影响面】success_ids 为 asset_code 而实体键为 recordcode，批删不清内存实体（调用方 refresh 兜底）', async () => {
+      const { assetAPI } = await import('@/api/asset')
+      vi.mocked(assetAPI.getAssets).mockResolvedValue({
+        count: 2,
+        results: [
+          { recordcode: 'REC-001', asset_code: 'AS-001', asset_name: 'A' },
+          { recordcode: 'REC-002', asset_code: 'AS-002', asset_name: 'B' },
+        ],
+      } as any)
+      await store.getList()
+      expect(store.list).toHaveLength(2)
+
+      vi.mocked(assetAPI.batchDeleteAssets).mockResolvedValue({
+        total: 2,
+        success_count: 2,
+        fail_count: 0,
+        success_ids: ['AS-001', 'AS-002'],
+        fail_items: [],
+      } as any)
+
+      await store.removeBatch(['AS-001', 'AS-002'])
+
+      expect(assetAPI.batchDeleteAssets).toHaveBeenCalledWith(['AS-001', 'AS-002'])
+      expect(store.list).toHaveLength(2)
     })
   })
 

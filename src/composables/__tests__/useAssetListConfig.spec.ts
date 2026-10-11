@@ -234,6 +234,26 @@ describe('useAssetListConfig', () => {
     expect(exportColumns.find((c) => c.key === 'asset_type_name')?.title).toBe('资产分类')
   })
 
+  it('【BF-081】列表导出键名对齐 AssetListSerializer：合同/仓库改平铺键，工号列改人员姓名列', () => {
+    const { exportColumns } = useAssetListConfig()
+    const keys = exportColumns.map((c) => c.key)
+
+    // 合同/仓库：列表行输出的是 contract_code / storage_code（无 asset_ 前缀）
+    expect(exportColumns.find((c) => c.key === 'contract_code')?.title).toBe('合同编码')
+    expect(exportColumns.find((c) => c.key === 'storage_code')?.title).toBe('仓库编码')
+    // 人员：列表行仅输出 *_name，无工号字段，列名随数据改为姓名
+    expect(exportColumns.find((c) => c.key === 'entry_person_name')?.title).toBe('录入人姓名')
+    expect(exportColumns.find((c) => c.key === 'applicant_name')?.title).toBe('申请人姓名')
+    expect(exportColumns.find((c) => c.key === 'manager_name')?.title).toBe('保管人姓名')
+
+    expect(keys).not.toContain('asset_contract_code')
+    expect(keys).not.toContain('asset_storage_code')
+    expect(keys).not.toContain('asset_entry_person_jobcode')
+    expect(keys).not.toContain('asset_applicant_jobcode')
+    expect(keys).not.toContain('asset_manager_jobcode')
+    expect(keys).toHaveLength(19)
+  })
+
   // ===== 【B 批】分组筛选字段集 =====
   describe('groupedSearchFields（分组模式 9 项）', () => {
     /** 携带 recordcode 的资产类型响应（平铺 / 分组两侧值空间同源） */

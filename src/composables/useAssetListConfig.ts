@@ -198,12 +198,15 @@ export function useAssetListConfig(options: AssetListConfigOptions = {}) {
     // 【A-9】列表行由 AssetListSerializer 输出，asset_type_code 不在字段内（导出恒为空）；
     // 改为反规范输出的 asset_type_name（分类名称）
     { title: '资产分类', key: 'asset_type_name', default: '' },
-    { title: '录入人工号', key: 'asset_entry_person_jobcode', default: '' },
-    { title: '合同编码', key: 'asset_contract_code', default: '' },
-    { title: '申请人工号', key: 'asset_applicant_jobcode', default: '' },
-    { title: '保管人工号', key: 'asset_manager_jobcode', default: '' },
+    // 【BF-081】以下 5 列对齐 AssetListSerializer 实际输出字段（原平铺 asset_*_code/*_jobcode
+    // 不在列表行内，导出恒空）：合同/仓库取反规范编码列；列表行无工号数据（后端零改动前提），
+    // 人员 3 列改为输出对应姓名列，标题随数据改为「XX人姓名」。
+    { title: '录入人姓名', key: 'entry_person_name', default: '' },
+    { title: '合同编码', key: 'contract_code', default: '' },
+    { title: '申请人姓名', key: 'applicant_name', default: '' },
+    { title: '保管人姓名', key: 'manager_name', default: '' },
     { title: '使用地点', key: 'asset_using_location', default: '' },
-    { title: '仓库编码', key: 'asset_storage_code', default: '' },
+    { title: '仓库编码', key: 'storage_code', default: '' },
     { title: '资产描述', key: 'asset_description', default: '' },
   ]
 

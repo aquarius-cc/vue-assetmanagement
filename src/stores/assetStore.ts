@@ -51,9 +51,10 @@ type StrictQueryParams = {
  * @param params 查询参数
  * @returns 资产列表响应（包 count、results）
  *
- * 【ID-2/取键契约】继承自工厂的 getById/remove/update 定位键为 recordcode
- * （后端 AssetViewSet lookup_field="recordcode"）；batchDelete 定位键为 asset_code
- * （batch-delete 端点显式按 asset_code__in 处理）——两套键不可互换。
+ * 【ID-2/取键契约】idKey='recordcode'：getById/remove/update 定位键与实体键均为 recordcode
+ * （后端 AssetViewSet lookup_field="recordcode"，detail/list 行均输出该键）；batchDelete 定位键为
+ * asset_code（batch-delete 端点显式按 asset_code__in 处理）——两套键不可互换，批删后的实体清理
+ * 依赖调用方 refresh 重建（BF-081）。
  */
 interface AssetStore extends EntityStore<AssetDetail, PaginationQuery> {
   /**
@@ -134,7 +135,8 @@ interface AssetStore extends EntityStore<AssetDetail, PaginationQuery> {
 }
 
 const baseAssetStoreDef = createEntityStore<AssetDetail, PaginationQuery>('asset', {
-  idKey: 'asset_code',
+  // 【BF-081】对齐后端 lookup_field="recordcode"：update 缺此键会抛 Missing ID for update
+  idKey: 'recordcode',
   nameField: 'asset_name',
   displayName: '资产',
   api: {

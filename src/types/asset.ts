@@ -218,6 +218,16 @@ export interface Asset {
   asset_type_name?: string
   /** 资产分类编码（AssetListSerializer 反规范输出 asset_type_recordcode.type_code） */
   type_category?: string
+  /** 合同编码（AssetListSerializer 反规范输出 asset_contract_recordcode.contract_code，仅列表行有；BF-081） */
+  contract_code?: string
+  /** 仓库编码（AssetListSerializer 反规范输出 asset_storage_recordcode.storage_code，仅列表行有；BF-081） */
+  storage_code?: string
+  /** 录入人姓名（AssetListSerializer 反规范输出，仅列表行有；BF-081） */
+  entry_person_name?: string
+  /** 申请人姓名（AssetListSerializer 反规范输出，仅列表行有；BF-081） */
+  applicant_name?: string
+  /** 保管人姓名（AssetListSerializer 反规范输出，仅列表行有；BF-081） */
+  manager_name?: string
   /** 合同编码（外键） */
   asset_contract_code: string | null
   /** 购买日期 */
