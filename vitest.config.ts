@@ -28,18 +28,32 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/**/*.ts'],
+      include: ['src/**/*.ts', 'src/**/*.vue'],
       exclude: ['src/**/*.d.ts', 'src/**/__tests__/**', 'src/types/**', 'src/router/index.ts'],
       thresholds: {
-        statements: 80,
-        branches: 80,
-        functions: 80,
-        lines: 80,
+        // 【P2-2 分层棘轮】无前缀 key = 全局并集（含 .vue），会把 80 拖到 42% 直接假红。
+        // 故 ts 与 vue 两层各自设前缀阈值，不再设无前缀全局阈值。
+        'src/**/*.ts': {
+          statements: 80,
+          branches: 80,
+          functions: 80,
+          lines: 80,
+        },
         'src/stores/**/*.ts': {
           statements: 90,
           branches: 90,
           functions: 90,
           lines: 90,
+        },
+        // 【P2-2 分层棘轮】.vue 单独成层，阈值 N 取 2026-10-12 实测基线（含 .vue 后的实测值）。
+        // 棘轮语义 = 只升不降：覆盖率上移后需手工同步调高本块，回吐则 CI 红。
+        // 实测基线（120 个 .vue，绝大多数零覆盖）：语句 12.98 / 分支 11.66 / 函数 10.95 / 行 13.11。
+        // 四项均向下取到 0.1 粒度并留 ~0.1pt 余量，避免浮点噪声触发假红。
+        'src/**/*.vue': {
+          statements: 12.9,
+          branches: 11.6,
+          functions: 10.9,
+          lines: 13.0,
         },
       },
     },
