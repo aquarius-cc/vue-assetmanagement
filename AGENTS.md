@@ -1,10 +1,10 @@
 
 ---
 
-### 📄 文档 3：前端子引擎 `/vue-assetmanagement/AGENTS.md` (v9.8.0)
+### 📄 文档 3：前端子引擎 `/vue-assetmanagement/AGENTS.md` (v9.9.0)
 
 # 前端 AI 执行子引擎配置 (Frontend Engine)
-> 版本：v9.8.0 | 最后更新：2026-10-05
+> 版本：v9.9.0 | 最后更新：2026-10-12
 > 职责：Vue 3 组件开发、设计令牌执行、UI 交互逻辑、前端测试门禁、组件规模与复杂度管控
 
 ## §1 核心执行协议
@@ -25,7 +25,8 @@
   1. `npm run type-check` — TypeScript 类型检查（vue-tsc），确保无类型错误。
   2. `npm run lint` — ESLint 代码风格检查，确保代码规范。
   3. `npm run format:check` — Prettier 格式化检查，确保代码风格统一。
-- **复杂度门禁**：代码完成后，必须运行 `eslint . --ext .vue,.ts --rule "complexity: ['error', 10]"`，若超标则触发 `[HALT]`。（若未配置 ESLint 复杂度规则，须在审计票中人工核验函数行数/嵌套深度）。
+- **复杂度门禁**：代码完成后，**必须**运行 `npm run lint`（读 `eslint.config.ts`，`complexity: ['error', 10]`，脚本/测试经 `app/complexity-exempt` 豁免），若超标则触发 `[HALT]`。
+  > ⚠️ **勿再用 CLI `--rule "complexity: ['error', 10]"`**：该命令不读 flat config 的 override 块，会绕过豁免并对 `scripts/*.mjs`、`**/__tests__/*.spec.ts` 的非业务复杂度误报（BF-086 批5 实测 5 处）。CI 的 `frontend-complexity` 作业已同步改为 `npm run lint`（`.github/workflows/ci.yml:385-393`）。
 - **测试门禁**：代码完成后，**必须**运行 `npm run test:coverage`（即 `vitest run --coverage`），并单独检查 Store 层覆盖率 ≥ 90%。阈值由 `vitest.config.ts` 的 `coverage.thresholds` 强制（整体 80 / `src/stores/**` 90），不达标即判失败。若未通过，触发 `[HALT]` 并补充测试用例。
   > ⚠️ **勿再使用 `--threshold` CLI 参数**：vitest 4 已移除该参数，`vitest --coverage --threshold 80` 实测报 `CACError: Unknown option '--threshold'`。详见 `Rules_Fiels/frontend-testing-rules.md` §六。
 - **变异测试**：必须运行 `npm run test:mutate`（`@stryker-mutator/vitest-runner` v10，参见 T16）并确保变异通过率 ≥ 80%。
@@ -109,6 +110,7 @@
 - 涉及全局 CSS 变量命名空间变更，可能影响其他端 → 上报根级。
 
 ## §5 变更日志
+- **v9.9.0 (2026-10-12)**：§1.3 复杂度门禁命令勘误 + 升级为阻断级——原命令 `eslint . --ext .vue,.ts --rule "complexity: ['error', 10]"` 改为 `npm run lint`。**根因**：CLI `--rule` 不读 flat config 的 `app/complexity-exempt` override 块，会绕过豁免并对 `scripts/*.mjs`、`**/__tests__/*.spec.ts` 的非业务复杂度误报（BF-086 批5 同日双向实证：走 config = 0 误报，走 `--rule` = 5 误报）。**规则本身由 `warn` 升 `error`**（P1-4 存量清零后解除沙盒期，`eslint.config.ts:37`）；CI 的 `frontend-complexity` 作业同步撤除 step 级 `continue-on-error` 与 CLI `--rule` 覆盖，改跑 `npm run lint` 读 config（`.github/workflows/ci.yml:385-393`）。依据根级 §5.2，经人工审批后应用。
 - **v9.8.0 (2026-10-05)**：§1.3 测试门禁命令勘误——`vitest --coverage --threshold 80` → `npm run test:coverage`。**根因**：vitest 4 已移除 `--threshold` CLI 参数，原命令实测报 `CACError: Unknown option '--threshold'`（exit 1），照抄即门禁假红。**阈值效力不变**：`vitest.config.ts` 的 `coverage.thresholds`（整体 80 / `src/stores/**` 90）自动强制，不达标仍判失败——**本次只修命令串，未动任何阈值**，故不触发根级 §5.4 沙盒期。历史关联：`docs/compose/specs/2026-07-06-rules-files-fix-plan.md:314` 曾挂待办想改成 vitest 3 的 `--coverage.threshold=80`（vitest 4 同样失效）且从未销项，本条为其正确取代。依据根级 §5.2，经人工审批后应用。
 - **v9.7.0 (2026-09-21)**：规模规则索引同步 FR-8——`stores/*.ts`（非 `use*.ts`）规模上限 500 逻辑行（`Rules_Fiels/frontend-business-rules.md` 第四节 FR-8，guard `check_frontend_invariants.py` stores 段严格模式，无台账豁免），索引 `FR-5 ~ FR-7` → `FR-5 ~ FR-8`。依据 §4 本地自适应，经人工审批后应用。
 - **v9.6.0 (2026-09-17)**：修复变异测试命令无法落地问题——`npx vitest --mutate` 依赖的 `vitest-mutant` / `@vitest/mutate` 在 npm 均不存在，经根级 §5 人工审批改用 `@stryker-mutator/vitest-runner` v10，命令改为 `npm run test:mutate`（与 frontend-testing-rules.md T16 v1.6 对齐）。

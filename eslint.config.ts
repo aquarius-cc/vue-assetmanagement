@@ -28,12 +28,13 @@ export default defineConfigWithVueTs(
       ],
       // 禁止 console.log/debug（防调试代码遗留），保留 warn/error 用于错误处理
       'no-console': ['error', { allow: ['warn', 'error'] }],
-      // P1-4 复杂度债沙盒期：规则以 warn 级入配置（error 级会让存量 52 处
-      // complexity 违规直接让 `npm run lint`（frontend-lint 阻断作业）翻红）。
-      // 沙盒期 CI 仍以 ci.yml 的 frontend-complexity 作业（CLI --rule error 级 +
-      // continue-on-error）观测计数；存量归零后本行升 'error' 并撤 CI 容错。
-      // 非业务代码（scripts/、测试文件）经下方 complexity-exempt 块豁免。
-      complexity: ['warn', 10],
+      // P1-4 批5（BF-086）：存量清零后由 warn 升 error。
+      // 沙盒期（根级 §5.4）结束，规则正式阻断 `npm run lint`（frontend-lint）。
+      // ⚠️ CI 的 frontend-complexity 作业已同步撤除 CLI --rule 覆盖与 step 级
+      // continue-on-error——CLI --rule 会绕过下方 complexity-exempt 豁免块，
+      // 使 scripts/*.mjs 与测试 spec 的非业务复杂度误报为阻断（批5 实测 5 处）。
+      // 豁免块现为唯一豁免通道。
+      complexity: 'error',
     },
   },
 
@@ -77,6 +78,9 @@ export default defineConfigWithVueTs(
 
   // P1-4：构建脚本与测试文件不计业务复杂度（complexity 对其关闭）。
   // 用 override 而非 globalIgnores——globalIgnores 会连带跳过其他规则检查。
+  // 【批5 要点】升 error 后本块成为**唯一**豁免通道：CLI `--rule` 不读 flat config，
+  // 会绕过本块并对 scripts/*.mjs、**/__tests__/*.spec.ts 误报（批5 实测 5 处）。
+  // 因此 CI 一律走 `npm run lint`（读 config），禁止再用 CLI --rule 执行 complexity。
   {
     name: 'app/complexity-exempt',
     files: ['scripts/**', '**/__tests__/**', '**/*.spec.ts', '**/*.test.ts'],
