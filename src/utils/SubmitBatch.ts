@@ -13,7 +13,7 @@
  *   - axios (isAxiosError)
  */
 
-import { isAxiosError } from 'axios'
+import { isAxiosError, type AxiosError } from 'axios'
 import { logError } from '@/utils/logger'
 
 /** 失败项：包含原始数据和具体错误信息 */
@@ -44,40 +44,56 @@ export interface SubmitBatchOptions<T> {
  * 从错误对象中提取可读的错误信息
  * 优先级：Axios response.data.detail > response.data 字段错误 > error.message > 兜底
  */
-export function extractErrorMessage(error: unknown): string {
-  // 1. Axios 错误：优先取 response.data.detail 或字段级错误
-  if (isAxiosError(error)) {
-    const data = error.response?.data
-    if (data && typeof data === 'object') {
-      // DRF 常见格式：{ detail: "..." } 或 { detail: ["...", "..."] }
-      if ('detail' in data && data.detail != null) {
-        return Array.isArray(data.detail) ? data.detail.map(String).join('；') : String(data.detail)
-      }
-      // DRF 字段级错误：{ field_name: ["错误1", "错误2"] }
-      if ('message' in data && typeof data.message === 'string') {
-        return data.message
-      }
-      // 其他字段错误：遍历所有字段拼接
-      const fieldErrors = Object.entries(data)
-        .filter(([, v]) => v != null)
-        .map(([field, messages]) => {
-          const msgList = Array.isArray(messages) ? messages : [String(messages)]
-          return `${field}: ${msgList.join(', ')}`
-        })
-        .join('；')
-      if (fieldErrors) return fieldErrors
-    }
-    // HTTP 状态码兜底
-    return `请求失败 (${error.response?.status ?? '未知状态'})`
+// [P1-4] 下列 3 个内部助手为 extractErrorMessage 原逻辑原样下沉，未改任何判断/返回。
+
+/** DRF 常见格式：{ detail: "..." } 或 { detail: ["...", "..."] } */
+const formatDetailField = (detail: unknown): string | null => {
+  if (detail == null) return null
+  return Array.isArray(detail) ? detail.map(String).join('；') : String(detail)
+}
+
+/** 单个字段的错误消息列表格式化：数组直接用，标量转字符串数组 */
+const formatFieldMessages = (messages: unknown): string[] =>
+  Array.isArray(messages) ? messages : [String(messages)]
+
+/** DRF 字段级错误：{ field_name: ["错误1", "错误2"] } → `field: msg1, msg2；...` */
+const formatAllFieldErrors = (data: Record<string, unknown>): string | null => {
+  const fieldErrors = Object.entries(data)
+    .filter(([, v]) => v != null)
+    .map(([field, messages]) => `${field}: ${formatFieldMessages(messages).join(', ')}`)
+    .join('；')
+  return fieldErrors || null
+}
+
+/** 从 Axios 错误体提取 detail 或 message（命中返回字符串，否则 null） */
+const extractDetailOrMessage = (data: Record<string, unknown>): string | null => {
+  if ('detail' in data) {
+    const detail = formatDetailField(data.detail)
+    if (detail !== null) return detail
   }
+  if ('message' in data && typeof data.message === 'string') {
+    return data.message
+  }
+  return null
+}
 
-  // 2. 标准 Error 对象
+/** Axios 错误体提取：detail > message > 全字段拼接 > HTTP 状态码兜底 */
+const extractAxiosErrorMessage = (error: AxiosError): string => {
+  const data = error.response?.data
+  if (data && typeof data === 'object') {
+    const record = data as Record<string, unknown>
+    const direct = extractDetailOrMessage(record)
+    if (direct !== null) return direct
+    const fieldErrors = formatAllFieldErrors(record)
+    if (fieldErrors !== null) return fieldErrors
+  }
+  return `请求失败 (${error.response?.status ?? '未知状态'})`
+}
+
+export function extractErrorMessage(error: unknown): string {
+  if (isAxiosError(error)) return extractAxiosErrorMessage(error)
   if (error instanceof Error) return error.message
-
-  // 3. 字符串
   if (typeof error === 'string') return error
-
-  // 4. 兜底
   return '未知错误'
 }
 

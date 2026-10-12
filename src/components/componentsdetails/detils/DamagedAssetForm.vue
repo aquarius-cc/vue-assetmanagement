@@ -251,6 +251,9 @@ const formData = reactive<FormDataType>({
 
 const originalFormData = ref<FormDataType | null>(null)
 
+// ===== 空值兜底助手（P1-4 复杂度收敛：吸收 `||` 分支税，语义与原 `x || ''` 逐字等价）=====
+const orEmpty = (v: string | null | undefined): string => v || ''
+
 // ===== 提交数据（仅包含 API 需要的字段）=====
 // 【AGENTS规范】固定approval_status='pending'，不提交 approver
 // [HALT] FE-C2修复：字段名从 damaged_asset_code 改为 asset_recordcode，与后端Serializer对齐
@@ -307,19 +310,78 @@ const storageLinkage = useFormLinkage<Storage>({
 // 资产搜索组件回调（专属 ScrapableAssetsSearch，绕过 linkage composable 直接写 formData）
 const handleAssetSearchSelect = (asset: AssetDetail) => {
   formData.asset_name_display = asset.asset_name
-  formData.damaged_asset_code = asset.recordcode
+  formData.damaged_asset_code = orEmpty(asset.recordcode)
   if (asset.asset_storage) {
-    formData.storage_name_display = asset.asset_storage.storage_name || ''
-    formData.damaged_asset_storage_code = asset.asset_storage.storage_code || ''
+    formData.storage_name_display = orEmpty(asset.asset_storage.storage_name)
+    formData.damaged_asset_storage_code = orEmpty(asset.asset_storage.storage_code)
   }
   if (asset.asset_contract) {
-    formData.contract_name_display = asset.asset_contract.contract_name || ''
-    formData.damaged_asset_contract_code = asset.asset_contract.contract_code || ''
+    formData.contract_name_display = orEmpty(asset.asset_contract.contract_name)
+    formData.damaged_asset_contract_code = orEmpty(asset.asset_contract.contract_code)
   }
   ElMessage.success(`已选择资产${asset.asset_name}`)
 }
 
-// ===== 编辑模式：加载现有数捀=====
+/** 回填详情标量字段到表单（loadEditData 拆分之一） */
+const fillFormFromDetail = (
+  detail: NonNullable<Awaited<ReturnType<typeof damagedAssetStore.getById>>>,
+) => {
+  // [修复] damaged_asset_code 承载的是资产 recordcode（ASSET-xxx），后端序列化器输出字段为 asset_recordcode
+  formData.damaged_asset_code = orEmpty(detail.asset_recordcode)
+  formData.asset_name_display = orEmpty(detail.damaged_asset_name)
+  formData.damaged_asset_contract_code = orEmpty(detail.damaged_asset_contract_code)
+  formData.contract_name_display = orEmpty(detail.damaged_asset_contract_name)
+  formData.damaged_asset_storage_code = orEmpty(detail.damaged_asset_storage_code)
+  formData.storage_name_display = orEmpty(detail.damaged_asset_storage_name)
+  formData.damaged_asset_number = detail.damaged_asset_number
+  formData.damaged_date = orEmpty(detail?.damaged_date)
+  formData.damaged_asset_description = orEmpty(detail?.damaged_asset_description)
+}
+
+/** 名称缺失时的 Store 联动查询（每段失败不阻塞，loadEditData 拆分之二） */
+const lookupAssetName = async (recordcode: string) => {
+  try {
+    const asset = await assetStore.getById(recordcode)
+    if (asset) formData.asset_name_display = asset.asset_name
+  } catch {
+    // 查询失败不阻塞
+  }
+}
+
+const lookupContractName = async (code: string) => {
+  try {
+    const contract = (await contractStore.getByName(code))[0]
+    if (contract) formData.contract_name_display = contract.contract_name
+  } catch {
+    // 查询失败不阻塞
+  }
+}
+
+const lookupStorageName = async (code: string) => {
+  try {
+    const storage = await storageStore.getById(code)
+    if (storage) formData.storage_name_display = storage.storage_name
+  } catch {
+    // 查询失败不阻塞
+  }
+}
+
+/** 三个关联名称的联动补查（loadEditData 拆分之三） */
+const lookupMissingNames = async (
+  detail: NonNullable<Awaited<ReturnType<typeof damagedAssetStore.getById>>>,
+) => {
+  if (!detail.damaged_asset_name && detail.asset_recordcode) {
+    await lookupAssetName(detail.asset_recordcode)
+  }
+  if (!detail.damaged_asset_contract_name && detail.damaged_asset_contract_code) {
+    await lookupContractName(detail.damaged_asset_contract_code)
+  }
+  if (!detail.damaged_asset_storage_name && detail.damaged_asset_storage_code) {
+    await lookupStorageName(detail.damaged_asset_storage_code)
+  }
+}
+
+// ===== 编辑模式：加载现有数据=====
 const loadEditData = async (code: string) => {
   isLoading.value = true
   try {
@@ -329,44 +391,9 @@ const loadEditData = async (code: string) => {
       router.back()
       return
     }
-    // 回填表单数据
-    // [修复] damaged_asset_code 承载的是资产 recordcode（ASSET-xxx），后端序列化器输出字段为 asset_recordcode
-    formData.damaged_asset_code = detail.asset_recordcode || ''
-    formData.asset_name_display = detail.damaged_asset_name || ''
-    formData.damaged_asset_contract_code = detail.damaged_asset_contract_code || ''
-    formData.contract_name_display = detail.damaged_asset_contract_name || ''
-    formData.damaged_asset_storage_code = detail.damaged_asset_storage_code || ''
-    formData.storage_name_display = detail.damaged_asset_storage_name || ''
-    formData.damaged_asset_number = detail.damaged_asset_number
-    formData.damaged_date = detail.damaged_date || ''
-    formData.damaged_asset_description = detail.damaged_asset_description || ''
-
+    fillFormFromDetail(detail)
     // 如果后端未返回名称，尝试通过 Store 联动查询
-    if (!detail.damaged_asset_name && detail.asset_recordcode) {
-      try {
-        const asset = await assetStore.getById(detail.asset_recordcode)
-        if (asset) formData.asset_name_display = asset.asset_name
-      } catch {
-        // 查询失败不阻塞
-      }
-    }
-    if (!detail.damaged_asset_contract_name && detail.damaged_asset_contract_code) {
-      try {
-        const contract = (await contractStore.getByName(detail.damaged_asset_contract_code))[0]
-        if (contract) formData.contract_name_display = contract.contract_name
-      } catch {
-        // 查询失败不阻塞
-      }
-    }
-    if (!detail.damaged_asset_storage_name && detail.damaged_asset_storage_code) {
-      try {
-        const storage = await storageStore.getById(detail.damaged_asset_storage_code)
-        if (storage) formData.storage_name_display = storage.storage_name
-      } catch {
-        // 查询失败不阻塞
-      }
-    }
-
+    await lookupMissingNames(detail)
     originalFormData.value = JSON.parse(JSON.stringify(formData))
   } catch (error) {
     logError(
@@ -381,6 +408,28 @@ const loadEditData = async (code: string) => {
   }
 }
 
+/** 提交失败的用户提示（P1-4：从 submitForm 抽出，吸收 axios/Error 分支税） */
+const notifySubmitError = (error: unknown) => {
+  if (isAxiosError(error)) {
+    ElMessage.error(`操作失败${error.response?.data?.message || error.message}`)
+  } else if (error instanceof Error) {
+    ElMessage.error(`操作失败${error.message}`)
+  } else {
+    ElMessage.error('操作失败，请重试')
+  }
+  logError('components/componentsdetails/detils/DamagedAssetForm', '待报废资产提交失败', error)
+}
+
+/** 编辑模式是否发生实际变更（与原始快照逐键比对，无变更时阻止提交） */
+const hasEdits = (): boolean => {
+  if (!isEditMode.value || !originalFormData.value) return false
+  return Object.keys(formData).some(
+    (key) =>
+      (formData as Record<string, unknown>)[key] !==
+      (originalFormData.value as Record<string, unknown>)[key],
+  )
+}
+
 // ===== 提交表单 =====
 const submitForm = () => {
   formRef.value.validate(async (valid: boolean) => {
@@ -389,16 +438,9 @@ const submitForm = () => {
       return
     }
     // 编辑模式下检查是否有修改
-    if (isEditMode.value && originalFormData.value) {
-      const hasChanged = Object.keys(formData).some(
-        (key) =>
-          (formData as Record<string, unknown>)[key] !==
-          (originalFormData.value as Record<string, unknown>)[key],
-      )
-      if (!hasChanged) {
-        ElMessage.info('数据未修改，无需提交')
-        return
-      }
+    if (isEditMode.value && originalFormData.value && !hasEdits()) {
+      ElMessage.info('数据未修改，无需提交')
+      return
     }
     try {
       if (isEditMode.value) {
@@ -412,14 +454,7 @@ const submitForm = () => {
       damagedAssetStore.setRefreshFlag(true)
       router.push({ name: 'DamagedAssetDetails' })
     } catch (error: unknown) {
-      if (isAxiosError(error)) {
-        ElMessage.error(`操作失败${error.response?.data?.message || error.message}`)
-      } else if (error instanceof Error) {
-        ElMessage.error(`操作失败${error.message}`)
-      } else {
-        ElMessage.error('操作失败，请重试')
-      }
-      logError('components/componentsdetails/detils/DamagedAssetForm', '待报废资产提交失败', error)
+      notifySubmitError(error)
     }
   })
 }

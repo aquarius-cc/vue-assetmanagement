@@ -141,6 +141,28 @@ const ensureEmployeeCreateForm = (data: Partial<EmployeeExtended>): EmployeeCrea
   }
 }
 
+/** 校验并归一员工状态；非法则抛错，合法则返回归一值 */
+const normalizeEmployeeStatus = (raw: unknown, label: string): EmployeeStatus => {
+  const validStatus = String(raw)
+  if (Object.values(EmployeeStatus).includes(validStatus as EmployeeStatus)) {
+    return validStatus as EmployeeStatus
+  }
+  throw new Error(`员工状态【${raw}】${label}`)
+}
+
+/** 逐字段 trim 并写入 ensureData（仅当源值存在时） */
+const applyTrimmedField = <K extends keyof EmployeeUpdateForm>(
+  ensureData: EmployeeUpdateForm,
+  data: Partial<EmployeeExtended>,
+  key: K,
+) => {
+  const value = data[key as keyof EmployeeExtended]
+  if (value) {
+    ;(ensureData as unknown as Record<string, unknown>)[key] =
+      typeof value === 'string' ? value.trim() : value
+  }
+}
+
 /**
  * 辅助函数：确保更新数据合规
  * @param data 输入数据
@@ -149,23 +171,17 @@ const ensureEmployeeCreateForm = (data: Partial<EmployeeExtended>): EmployeeCrea
 const ensureEmployeeUpdateForm = (data: Partial<EmployeeExtended>): EmployeeUpdateForm => {
   const ensureData: EmployeeUpdateForm = {} as EmployeeUpdateForm
 
-  if (data.employee_jobcode) ensureData.employee_jobcode = data.employee_jobcode.trim()
-  if (data.employee_name) ensureData.employee_name = data.employee_name.trim()
+  applyTrimmedField(ensureData, data, 'employee_jobcode')
+  applyTrimmedField(ensureData, data, 'employee_name')
   if (data.employee_status) {
-    const validStatus = String(data.employee_status)
-    if (Object.values(EmployeeStatus).includes(validStatus as EmployeeStatus)) {
-      ensureData.employee_status = validStatus as EmployeeStatus
-    } else {
-      throw new Error(`员工状态【${data.employee_status}】不合法`)
-    }
+    ensureData.employee_status = normalizeEmployeeStatus(data.employee_status, '不合法')
   }
-  if (data.employee_phone) ensureData.employee_phone = data.employee_phone.trim()
-  if (data.employee_location) ensureData.employee_location = data.employee_location.trim()
+  applyTrimmedField(ensureData, data, 'employee_phone')
+  applyTrimmedField(ensureData, data, 'employee_location')
   if (data.employee_description !== undefined) {
     ensureData.employee_description = data.employee_description?.trim() || null
   }
-  if (data.employee_department_code)
-    ensureData.employee_department_code = data.employee_department_code.trim()
+  applyTrimmedField(ensureData, data, 'employee_department_code')
   // 排序顺序：可选字段，有值则透传，无值则不传（保持后端原值）
   if (data.sort_order !== undefined) ensureData.sort_order = data.sort_order
 

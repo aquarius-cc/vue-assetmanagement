@@ -57,6 +57,31 @@ export async function readExcelFile<T extends object>(
           return
         }
 
+        /** 判断是否为日期/时间列头 */
+        const isDateColumnHeader = (header: string): boolean => /日期|时间|date|time/i.test(header)
+
+        /** 将 Excel 日期序列号转换为 YYYY-MM-DD（超出合理范围或非法则原样返回） */
+        const excelSerialToDate = (value: number): string => {
+          if (!(value > 1 && value < 2958466)) return String(value)
+          const excelEpoch = new Date(Date.UTC(1899, 11, 30))
+          const dateValue = new Date(excelEpoch.getTime() + value * 24 * 60 * 60 * 1000)
+          if (isNaN(dateValue.getTime())) return String(value)
+          const y = dateValue.getUTCFullYear()
+          const m = String(dateValue.getUTCMonth() + 1).padStart(2, '0')
+          const d = String(dateValue.getUTCDate()).padStart(2, '0')
+          return `${y}-${m}-${d}`
+        }
+
+        /** 归一单元格值：Date → ISO；日期列数字 → YYYY-MM-DD；其余非空 → String().trim() */
+        const normalizeCellValue = (rawValue: unknown, header: string): unknown => {
+          if (rawValue instanceof Date) return toLocalISODate(rawValue)
+          if (typeof rawValue === 'number') {
+            return isDateColumnHeader(header) ? excelSerialToDate(rawValue) : rawValue
+          }
+          if (rawValue !== null && rawValue !== undefined) return String(rawValue).trim()
+          return rawValue
+        }
+
         const mappedData: T[] = []
         worksheet.eachRow((row, rowNumber) => {
           if (rowNumber === 1) return
@@ -74,27 +99,7 @@ export async function readExcelFile<T extends object>(
 
             const key = excelHeaderMap[header]
             if (key !== undefined) {
-              let value: unknown = cell.value
-
-              if (value instanceof Date) {
-                value = toLocalISODate(value)
-              } else if (typeof value === 'number') {
-                const isDateColumn = /日期|时间|date|time/i.test(header)
-                if (isDateColumn && value > 1 && value < 2958466) {
-                  const excelEpoch = new Date(Date.UTC(1899, 11, 30))
-                  const dateValue = new Date(excelEpoch.getTime() + value * 24 * 60 * 60 * 1000)
-                  if (!isNaN(dateValue.getTime())) {
-                    const y = dateValue.getUTCFullYear()
-                    const m = String(dateValue.getUTCMonth() + 1).padStart(2, '0')
-                    const d = String(dateValue.getUTCDate()).padStart(2, '0')
-                    value = `${y}-${m}-${d}`
-                  }
-                }
-              } else if (value !== null && value !== undefined) {
-                value = String(value).trim()
-              }
-
-              obj[key as string] = value
+              obj[key as string] = normalizeCellValue(cell.value, header)
             }
           })
 

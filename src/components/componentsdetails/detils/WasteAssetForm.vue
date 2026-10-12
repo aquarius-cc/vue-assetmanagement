@@ -145,6 +145,54 @@ const formData = reactive<FormDataType>({
   waste_asset_description: '',
 })
 
+/** 表单字符串字段兜底（吸收 `|| ''` 分支税，语义与原表达式逐字等价） */
+const orEmpty = (v: string | null | undefined): string => v || ''
+
+/** 回填详情标量字段到表单（loadDetailData 拆分之一） */
+const fillFormFromDetail = (
+  detail: NonNullable<Awaited<ReturnType<typeof wasteAssetStore.getById>>>,
+) => {
+  formData.waste_asset_code = orEmpty(detail.waste_asset_code)
+  formData.asset_name_display = orEmpty(detail.asset_name)
+  formData.waste_asset_contract_code = orEmpty(detail.waste_asset_contract_code)
+  formData.contract_name_display = orEmpty(detail.contract_name)
+  formData.waste_asset_number = detail.waste_asset_number || 1
+  formData.waste_asset_date = orEmpty(detail.waste_asset_date)
+  formData.waste_asset_description = orEmpty(detail.waste_asset_description)
+}
+
+/** 资产名称缺失时的 Store 联动查询（loadDetailData 拆分之二，失败不阻塞） */
+const lookupAssetName = async (code: string) => {
+  try {
+    const asset = await assetStore.getById(code)
+    if (asset) formData.asset_name_display = asset.asset_name
+  } catch {
+    // 查询失败不阻塞
+  }
+}
+
+/** 合同名称缺失时的 Store 联动查询（loadDetailData 拆分之三，失败不阻塞） */
+const lookupContractName = async (code: string) => {
+  try {
+    const contract = (await contractStore.getByName(code))[0]
+    if (contract) formData.contract_name_display = contract.contract_name
+  } catch {
+    // 查询失败不阻塞
+  }
+}
+
+/** 两个关联名称的联动补查（loadDetailData 拆分之四） */
+const lookupMissingNames = async (
+  detail: NonNullable<Awaited<ReturnType<typeof wasteAssetStore.getById>>>,
+) => {
+  if (!detail.asset_name && detail.waste_asset_code) {
+    await lookupAssetName(detail.waste_asset_code)
+  }
+  if (!detail.contract_name && detail.waste_asset_contract_code) {
+    await lookupContractName(detail.waste_asset_contract_code)
+  }
+}
+
 // ===== 加载详情数据 =====
 const loadDetailData = async (code: string) => {
   isLoading.value = true
@@ -155,32 +203,9 @@ const loadDetailData = async (code: string) => {
       router.back()
       return
     }
-    // 回填表单数据
-    formData.waste_asset_code = detail.waste_asset_code || ''
-    formData.asset_name_display = detail.asset_name || ''
-    formData.waste_asset_contract_code = detail.waste_asset_contract_code || ''
-    formData.contract_name_display = detail.contract_name || ''
-    formData.waste_asset_number = detail.waste_asset_number || 1
-    formData.waste_asset_date = detail.waste_asset_date || ''
-    formData.waste_asset_description = detail.waste_asset_description || ''
-
+    fillFormFromDetail(detail)
     // 如果后端未返回名称，尝试通过 Store 联动查询
-    if (!detail.asset_name && detail.waste_asset_code) {
-      try {
-        const asset = await assetStore.getById(detail.waste_asset_code)
-        if (asset) formData.asset_name_display = asset.asset_name
-      } catch {
-        // 查询失败不阻塞
-      }
-    }
-    if (!detail.contract_name && detail.waste_asset_contract_code) {
-      try {
-        const contract = (await contractStore.getByName(detail.waste_asset_contract_code))[0]
-        if (contract) formData.contract_name_display = contract.contract_name
-      } catch {
-        // 查询失败不阻塞
-      }
-    }
+    await lookupMissingNames(detail)
   } catch (error) {
     logError('components/componentsdetails/detils/WasteAssetForm', '加载已报废资产详情失败:', error)
     ElMessage.error('加载数据失败，请刷新重试')

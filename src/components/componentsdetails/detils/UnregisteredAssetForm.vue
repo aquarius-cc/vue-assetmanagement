@@ -288,6 +288,40 @@ const formData = reactive<FormDataType>({
 
 const originalFormData = ref<FormDataType | null>(null)
 
+// ===== P1-4 复杂度收敛助手（语义与原内联表达式逐字等价）=====
+
+/** 关联资产编码解析：detail.related_asset 可能是对象/字符串/空（loadEditData 内联三元收敛） */
+const resolveRelatedAssetCode = (v: unknown): string => {
+  if (typeof v === 'object' && v !== null) return (v as { code?: string }).code || ''
+  if (typeof v === 'string') return v
+  return ''
+}
+
+/** 表单字符串字段兜底（吸收 `|| ''` 分支税） */
+const orEmpty = (v: string | null | undefined): string => v || ''
+
+/** 编辑模式是否发生实际变更（与原始快照逐键比对，无变更时阻止提交） */
+const hasEdits = (): boolean => {
+  if (!isEditMode.value || !originalFormData.value) return false
+  return Object.keys(formData).some(
+    (key) =>
+      (formData as Record<string, unknown>)[key] !==
+      (originalFormData.value as Record<string, unknown>)[key],
+  )
+}
+
+/** 提交失败的用户提示（P1-4：从 submitForm 抽出，吸收 axios/Error 分支税） */
+const notifySubmitError = (error: unknown) => {
+  if (isAxiosError(error)) {
+    ElMessage.error(`操作失败${error.response?.data?.message || error.message}`)
+  } else if (error instanceof Error) {
+    ElMessage.error(`操作失败${error.message}`)
+  } else {
+    ElMessage.error('操作失败，请重试')
+  }
+  logError('components/componentsdetails/detils/UnregisteredAssetForm', '未登记资产提交失败', error)
+}
+
 // ===== 提交数据（仅包含 API 需要的字段）=====
 const submitData = computed<UnregisteredAssetCreateForm>(() => ({
   scenario_type: formData.scenario_type,
@@ -340,6 +374,28 @@ const {
   handleStorageCodeChange,
 } = useUnregisteredFormLinkage(formData, { assetStore, assetTypeStore, storageStore })
 
+/** 回填详情标量字段到表单（loadEditData 拆分之一） */
+const fillFormFromDetail = (
+  detail: NonNullable<Awaited<ReturnType<typeof unregisteredAssetStore.getById>>>,
+) => {
+  formData.scenario_type = orEmpty(detail.scenario_type)
+  formData.discovery_date = orEmpty(detail.discovery_date)
+  formData.discovery_location = orEmpty(detail.discovery_location)
+  formData.asset_name = orEmpty(detail.asset_name)
+  formData.asset_brand = orEmpty(detail.asset_brand)
+  formData.asset_specification = orEmpty(detail.asset_specification)
+  formData.asset_type_code =
+    typeof detail.unregistered_asset_type === 'string' ? detail.unregistered_asset_type : ''
+  formData.asset_type_code_display = formData.asset_type_code
+  formData.estimated_value = detail.estimated_value ? Number(detail.estimated_value) : null
+  formData.related_asset_code = orEmpty(resolveRelatedAssetCode(detail.related_asset))
+  formData.related_asset_code_display = formData.related_asset_code
+  formData.target_storage_code =
+    typeof detail.unregistered_asset_storage === 'string' ? detail.unregistered_asset_storage : ''
+  formData.target_storage_code_display = formData.target_storage_code
+  formData.handle_description = orEmpty(detail.handle_description)
+}
+
 // ===== 编辑模式：加载现有数据 =====
 const loadEditData = async (code: string) => {
   isLoading.value = true
@@ -350,30 +406,7 @@ const loadEditData = async (code: string) => {
       router.back()
       return
     }
-    // 回填表单数据
-    formData.scenario_type = detail.scenario_type || ''
-    formData.discovery_date = detail.discovery_date || ''
-    formData.discovery_location = detail.discovery_location || ''
-    formData.asset_name = detail.asset_name || ''
-    formData.asset_brand = detail.asset_brand || ''
-    formData.asset_specification = detail.asset_specification || ''
-    formData.asset_type_code =
-      typeof detail.unregistered_asset_type === 'string' ? detail.unregistered_asset_type : ''
-    formData.asset_type_code_display = formData.asset_type_code
-    formData.estimated_value = detail.estimated_value ? Number(detail.estimated_value) : null
-    const relatedAssetCode =
-      typeof detail.related_asset === 'object' && detail.related_asset !== null
-        ? detail.related_asset.code
-        : typeof detail.related_asset === 'string'
-          ? detail.related_asset
-          : ''
-    formData.related_asset_code = relatedAssetCode || ''
-    formData.related_asset_code_display = formData.related_asset_code
-    formData.target_storage_code =
-      typeof detail.unregistered_asset_storage === 'string' ? detail.unregistered_asset_storage : ''
-    formData.target_storage_code_display = formData.target_storage_code
-    formData.handle_description = detail.handle_description || ''
-
+    fillFormFromDetail(detail)
     originalFormData.value = JSON.parse(JSON.stringify(formData))
   } catch (error) {
     logError(
@@ -401,16 +434,9 @@ const submitForm = () => {
       return
     }
     // 编辑模式下检查是否有修改
-    if (isEditMode.value && originalFormData.value) {
-      const hasChanged = Object.keys(formData).some(
-        (key) =>
-          (formData as Record<string, unknown>)[key] !==
-          (originalFormData.value as Record<string, unknown>)[key],
-      )
-      if (!hasChanged) {
-        ElMessage.info('数据未修改，无需提交')
-        return
-      }
+    if (isEditMode.value && originalFormData.value && !hasEdits()) {
+      ElMessage.info('数据未修改，无需提交')
+      return
     }
     try {
       if (isEditMode.value) {
@@ -423,18 +449,7 @@ const submitForm = () => {
       unregisteredAssetStore.setRefreshFlag(true)
       router.push({ name: 'UnregisteredAssetDetails' })
     } catch (error: unknown) {
-      if (isAxiosError(error)) {
-        ElMessage.error(`操作失败${error.response?.data?.message || error.message}`)
-      } else if (error instanceof Error) {
-        ElMessage.error(`操作失败${error.message}`)
-      } else {
-        ElMessage.error('操作失败，请重试')
-      }
-      logError(
-        'components/componentsdetails/detils/UnregisteredAssetForm',
-        '未登记资产提交失败',
-        error,
-      )
+      notifySubmitError(error)
     }
   })
 }

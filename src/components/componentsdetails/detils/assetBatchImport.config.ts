@@ -10,6 +10,19 @@ import type { AssetCreateForm } from '@/types/asset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { AssetExcelRow } from '@/types/batch-import'
 import type { HeaderExample, ExampleColumn } from '@/utils/batchImportHelpers'
+import {
+  requireNonEmpty,
+  requireNonEmptyLength,
+  requireNumber,
+  requirePositiveInteger,
+  optionalDateRaw,
+  optionalNumber,
+  optionalEnum,
+  trimmedOrNull,
+} from '@/utils/batchImport/validation'
+
+/** 资产状态允许集（validateItem 枚举校验单一来源） */
+const ASSET_STATUSES = ['in_store', 'recycled_pending', 'in_use', 'damaged', 'scrapped'] as const
 
 // ===== 批量导入配置（对应AssetCreateForm） =====
 export const assetImportConfig: BatchImportConfig<AssetExcelRow, AssetCreateForm> = {
@@ -47,88 +60,86 @@ export const assetImportConfig: BatchImportConfig<AssetExcelRow, AssetCreateForm
     'asset_type',
     'asset_current_status',
   ],
-  // 单条数据验证
+  // 单条数据验证（P1-4：同构分支收敛至 batchImport/validation 原语，本体降为纯调用序列）
   validateItem: (item: AssetExcelRow) => {
     const errors: Record<string, string> = {}
 
-    // asset_code 改为可选（后端自动生成），移除必填校验和长度校验    // if (!item.asset_code?.toString().trim()) {
-    //   errors.asset_code = '资产编码不能为空'
-    // } else if (item.asset_code.length < 3 || item.asset_code.length > 50) {
-    //   errors.asset_code = '编码长度 3-50 个字符'
-    // }
+    // asset_code 改为可选（后端自动生成），无校验——历史注释保留在 excelHeaderMap 段
 
-    if (!item.asset_name?.trim()) {
-      errors.asset_name = '资产名称不能为空'
-    } else if (item.asset_name.length < 2 || item.asset_name.length > 100) {
-      errors.asset_name = '名称长度 2-100 个字符'
-    }
-
-    if (!item.asset_specification?.trim()) {
-      errors.asset_specification = '规格型号不能为空'
-    }
-
-    // 单价校验
-    const price = Number(item.asset_purchase_price)
-    if (isNaN(price) || price < 0) {
-      errors.asset_purchase_price = '单价必须是有效数字且不小于0'
-    }
-
-    // 录入数量校验
-    const quantity = Number(item.asset_purchase_number)
-    if (isNaN(quantity) || !Number.isInteger(quantity) || quantity < 1) {
-      errors.asset_purchase_number = '录入数量必须是正整数'
-    }
-
-    // 入库日期格式
-    if (item.asset_entry_date && !/^\d{4}-\d{2}-\d{2}$/.test(item.asset_entry_date)) {
-      errors.asset_entry_date = '入库日期格式应为 YYYY-MM-DD'
-    }
-
-    if (!item.asset_type?.trim()) {
-      errors.asset_type = '资产分类编码不能为空'
-    }
-
-    // 可选字段校验（如果有值）
-    if (item.asset_purchase_date && !/^\d{4}-\d{2}-\d{2}$/.test(item.asset_purchase_date)) {
-      errors.asset_purchase_date = '采购日期格式应为 YYYY-MM-DD'
-    }
-
-    if (item.asset_warranty_period) {
-      const period = Number(item.asset_warranty_period)
-      if (isNaN(period) || period < 0) {
-        errors.asset_warranty_period = '质保期必须是有效数字'
-      }
-    }
-
-    const validStatuses = ['in_store', 'recycled_pending', 'in_use', 'damaged', 'scrapped']
-    if (item.asset_current_status && !validStatuses.includes(item.asset_current_status)) {
-      errors.asset_current_status =
-        '当前状态值非法，可选：in_store / recycled_pending / in_use / damaged / scrapped'
-    }
+    requireNonEmptyLength(
+      item.asset_name,
+      'asset_name',
+      '资产名称不能为空',
+      2,
+      100,
+      '名称长度 2-100 个字符',
+      errors,
+    )
+    requireNonEmpty(item.asset_specification, 'asset_specification', '规格型号不能为空', errors)
+    requireNumber(
+      item.asset_purchase_price,
+      'asset_purchase_price',
+      '单价必须是有效数字且不小于0',
+      true,
+      errors,
+    )
+    requirePositiveInteger(
+      item.asset_purchase_number,
+      'asset_purchase_number',
+      '录入数量必须是正整数',
+      errors,
+    )
+    optionalDateRaw(
+      item.asset_entry_date,
+      'asset_entry_date',
+      '入库日期格式应为 YYYY-MM-DD',
+      errors,
+    )
+    requireNonEmpty(item.asset_type, 'asset_type', '资产分类编码不能为空', errors)
+    optionalDateRaw(
+      item.asset_purchase_date,
+      'asset_purchase_date',
+      '采购日期格式应为 YYYY-MM-DD',
+      errors,
+    )
+    optionalNumber(
+      item.asset_warranty_period,
+      'asset_warranty_period',
+      '质保期必须是有效数字',
+      errors,
+    )
+    optionalEnum(
+      item.asset_current_status,
+      'asset_current_status',
+      ASSET_STATUSES,
+      '当前状态值非法，可选：in_store / recycled_pending / in_use / damaged / scrapped',
+      errors,
+    )
 
     return { valid: Object.keys(errors).length === 0, errors }
   },
 
   // Excel 表格数据转换为 API 提交格式
   // 后端规则变更：asset_code 由后端自动生成，前端不再传递
+  // P1-4：`?.trim() || null` 同构收敛至 trimmedOrNull，消除 transform 段圈复杂度
   transformToApiData: (row: AssetExcelRow): AssetCreateForm => ({
     asset_name: row.asset_name.trim(),
     asset_specification: row.asset_specification.trim(),
-    asset_brand: row.asset_brand?.trim() || null,
-    asset_unit: row.asset_unit?.trim() || null,
+    asset_brand: trimmedOrNull(row.asset_brand),
+    asset_unit: trimmedOrNull(row.asset_unit),
     asset_purchase_price: String(Number(row.asset_purchase_price)),
     asset_purchase_number: Number(row.asset_purchase_number),
-    asset_purchase_date: row.asset_purchase_date?.trim() || null,
+    asset_purchase_date: trimmedOrNull(row.asset_purchase_date),
     asset_warranty_period: row.asset_warranty_period ? Number(row.asset_warranty_period) : null,
     asset_entry_date: row.asset_entry_date.trim(),
     asset_type: row.asset_type.trim(),
-    asset_entry_person: row.asset_entry_person?.trim() || null,
-    asset_contract: row.asset_contract?.trim() || null,
-    asset_applicant: row.asset_applicant?.trim() || null,
-    asset_manager: row.asset_manager?.trim() || null,
-    asset_using_location: row.asset_using_location?.trim() || null,
-    asset_storage: row.asset_storage?.trim() || null,
-    asset_description: row.asset_description?.trim() || null,
+    asset_entry_person: trimmedOrNull(row.asset_entry_person),
+    asset_contract: trimmedOrNull(row.asset_contract),
+    asset_applicant: trimmedOrNull(row.asset_applicant),
+    asset_manager: trimmedOrNull(row.asset_manager),
+    asset_using_location: trimmedOrNull(row.asset_using_location),
+    asset_storage: trimmedOrNull(row.asset_storage),
+    asset_description: trimmedOrNull(row.asset_description),
   }),
 
   // placeholder: 实际提交逻辑在 handleSubmit 中直接调用 batchCreateAssets

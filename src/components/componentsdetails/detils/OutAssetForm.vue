@@ -388,6 +388,54 @@ const loadEditData = createOutAssetEditLoader({
 })
 
 // ========== 提交表单 ==========
+/** 编辑模式下表单是否有实际修改 */
+const hasFormChanged = (): boolean => {
+  if (!isEditMode.value || !originalFormData.value) return false
+  return Object.keys(outAssetCreateExtendedForm).some(
+    (key) =>
+      (outAssetCreateExtendedForm as Record<string, unknown>)[key] !==
+      (originalFormData.value as Record<string, unknown>)[key],
+  )
+}
+
+/** 提交成功后的跳转与刷新 */
+const finalizeSubmitSuccess = () => {
+  outAssetStore.setRefreshFlag(true)
+  router.push({ name: 'OutAssetDetails' })
+}
+
+/** 提交失败的统一错误处理（区分 Axios 错误 / Error / 其它） */
+const handleFormSubmitError = (error: unknown) => {
+  if (isAxiosError(error)) {
+    ElMessage.error(`操作失败：${error.response?.data?.message || error.message}`)
+  } else if (error instanceof Error) {
+    ElMessage.error(`操作失败：${error.message}`)
+  } else {
+    ElMessage.error('操作失败，请检查网络连接后重试')
+  }
+  logError('components/componentsdetails/detils/OutAssetForm', '出库资产提交失败:', error)
+}
+
+/** 按新增/编辑分支执行提交 */
+const performSubmit = async () => {
+  if (isEditMode.value) {
+    const recordcode = route.query.code as string
+    await outAssetStore.update({ recordcode, ...outAssetForm.value })
+    ElMessage.success('出库资产修改成功')
+  } else {
+    await outAssetStore.create(outAssetForm.value)
+    ElMessage.success('出库资产录入成功')
+    // 后台自动更新状态，不需要前端更新
+    // 出库成功后，更新对应资产的状态为“在用”（in_use）
+    // if (outAssetCreateExtendedForm.outasset_code) {
+    //   await assetStore.update({
+    //     asset_code: outAssetCreateExtendedForm.outasset_code,
+    //     asset_current_status: 'in_use',
+    //   }).catch(e => console.warn('资产状态更新失败（非阻塞）:', e))
+    // }
+  }
+}
+
 const submitForm = () => {
   formRef.value.validate(async (valid: boolean) => {
     if (!valid) {
@@ -396,46 +444,16 @@ const submitForm = () => {
     }
 
     // 编辑模式下检查是否有修改
-    if (isEditMode.value && originalFormData.value) {
-      const hasChanged = Object.keys(outAssetCreateExtendedForm).some(
-        (key) =>
-          (outAssetCreateExtendedForm as Record<string, unknown>)[key] !==
-          (originalFormData.value as Record<string, unknown>)[key],
-      )
-      if (!hasChanged) {
-        ElMessage.info('数据未修改，无需提交')
-        return
-      }
+    if (isEditMode.value && originalFormData.value && !hasFormChanged()) {
+      ElMessage.info('数据未修改，无需提交')
+      return
     }
 
     try {
-      if (isEditMode.value) {
-        const recordcode = route.query.code as string
-        await outAssetStore.update({ recordcode, ...outAssetForm.value })
-        ElMessage.success('出库资产修改成功')
-      } else {
-        await outAssetStore.create(outAssetForm.value)
-        ElMessage.success('出库资产录入成功')
-        // 后台自动更新状态，不需要前端更新
-        // 出库成功后，更新对应资产的状态为“在用”（in_use）
-        // if (outAssetCreateExtendedForm.outasset_code) {
-        //   await assetStore.update({
-        //     asset_code: outAssetCreateExtendedForm.outasset_code,
-        //     asset_current_status: 'in_use',
-        //   }).catch(e => console.warn('资产状态更新失败（非阻塞）:', e))
-        // }
-      }
-      outAssetStore.setRefreshFlag(true)
-      router.push({ name: 'OutAssetDetails' })
+      await performSubmit()
+      finalizeSubmitSuccess()
     } catch (error: unknown) {
-      if (isAxiosError(error)) {
-        ElMessage.error(`操作失败：${error.response?.data?.message || error.message}`)
-      } else if (error instanceof Error) {
-        ElMessage.error(`操作失败：${error.message}`)
-      } else {
-        ElMessage.error('操作失败，请检查网络连接后重试')
-      }
-      logError('components/componentsdetails/detils/OutAssetForm', '出库资产提交失败:', error)
+      handleFormSubmitError(error)
     }
   })
 }

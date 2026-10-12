@@ -230,6 +230,10 @@ const submitState = useRecycleFormSubmit({
   setSubmitting: () => {},
 })
 
+/** 空值兜底助手（吸收 `??` 分支税，语义与原 `x ?? ''` / `x ?? 1` 逐字等价） */
+const orEmpty = (v: string | null | undefined): string => v ?? ''
+const orOne = (v: number | null | undefined): number => v ?? 1
+
 // ==================== 记录操作 ====================
 const addRecord = (row: OutAssetDetail, deptName: string) => {
   const recordcode = row.asset_recordcode ?? row.recordcode ?? ''
@@ -239,12 +243,12 @@ const addRecord = (row: OutAssetDetail, deptName: string) => {
   }
   selectedRecords.value.push({
     recordcode,
-    recycle_asset: row.asset_code ?? '',
-    outasset_name: row.asset_name ?? '',
-    outasset_manager_name: row.outasset_manager?.employee_name ?? '',
-    manager_jobcode: row.outasset_manager?.employee_jobcode ?? '',
+    recycle_asset: orEmpty(row.asset_code),
+    outasset_name: orEmpty(row.asset_name),
+    outasset_manager_name: orEmpty(row.outasset_manager?.employee_name),
+    manager_jobcode: orEmpty(row.outasset_manager?.employee_jobcode),
     department_name: deptName,
-    outasset_number: row.outasset_number ?? 1,
+    outasset_number: orOne(row.outasset_number),
   })
   deptCache.prefetch(selectedRecords.value.map((r) => r.manager_jobcode))
   ElMessage.success('已添加')
@@ -281,6 +285,24 @@ const submitButtonText = computed(() => {
   return count > 1 ? `提交（${count}条批量）` : '提交'
 })
 
+/** 回收人姓名补查（loadEditData 拆分之一） */
+const lookupRecyclePersonName = async (jobcode: string) => {
+  const name = await personLinkage.getNameByCode(jobcode)
+  personLinkage.setName(name ?? '')
+}
+
+/** 关联出库记录加载（loadEditData 拆分之二，失败不阻塞） */
+const loadRelatedOutAsset = async (outassetRecordcode: string) => {
+  try {
+    const outDetail = await outAssetStore.getById(outassetRecordcode)
+    if (outDetail) {
+      selectedOutAsset.value = outDetail as RecyclableOutAsset
+    }
+  } catch (e) {
+    logError('components/componentsdetails/detils/RecycleAssetForm', '加载关联出库记录失败', e)
+  }
+}
+
 // ==================== 编辑加载 ====================
 const loadEditData = async (recordcode: string) => {
   try {
@@ -296,23 +318,15 @@ const loadEditData = async (recordcode: string) => {
       recycle_asset_storage_code: detail.recycle_asset_storage_code,
       recycle_asset_recycle_person_jobcode: detail.recycle_asset_recycle_person_jobcode,
       recycle_asset_date: detail.recycle_asset_date,
-      recycle_type: detail.recycle_type ?? '',
-      recycle_asset_description: detail.recycle_asset_description ?? '',
+      recycle_type: orEmpty(detail.recycle_type),
+      recycle_asset_description: orEmpty(detail.recycle_asset_description),
       id: detail.id,
     })
     if (detail.recycle_asset_recycle_person_jobcode) {
-      const name = await personLinkage.getNameByCode(detail.recycle_asset_recycle_person_jobcode)
-      personLinkage.setName(name ?? '')
+      await lookupRecyclePersonName(detail.recycle_asset_recycle_person_jobcode)
     }
     if (detail.outasset_recordcode) {
-      try {
-        const outDetail = await outAssetStore.getById(detail.outasset_recordcode)
-        if (outDetail) {
-          selectedOutAsset.value = outDetail as RecyclableOutAsset
-        }
-      } catch (e) {
-        logError('components/componentsdetails/detils/RecycleAssetForm', '加载关联出库记录失败', e)
-      }
+      await loadRelatedOutAsset(detail.outasset_recordcode)
     }
   } catch (error) {
     logError('components/componentsdetails/detils/RecycleAssetForm', '加载回收记录失败:', error)

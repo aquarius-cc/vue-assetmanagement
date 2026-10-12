@@ -148,6 +148,47 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
     }
 
     // === 核心方法 （增强分页参数处理）===
+    // [P1-4] 下列 3 个内部助手为 getList 原逻辑原样下沉，未改任何判断/返回。
+    /** 分页参数标准化（兼容 size/pageSize，统一 page/page_size，设定默认值） */
+    const normalizePaginationParams = (queryParams: Record<string, unknown>) => {
+      const requestedPage = Number(queryParams.page) || 1
+      const requestedPageSize = Number(queryParams.page_size) || defaultPageSize
+      return {
+        normalizedParams: {
+          ...queryParams,
+          page: requestedPage,
+          page_size: requestedPageSize,
+        },
+        requestedPage,
+        requestedPageSize,
+      }
+    }
+
+    /** 请求页超出总页数时的兜底：清空本地实体并把分页页码修正到末页 */
+    const handleInvalidPage = (totalPages: number, count: number) => {
+      if (autoSync) {
+        entityState.value.entities = {}
+        entityState.value.ids = []
+        pagination.value = { ...pagination.value, total: count, page: totalPages }
+      }
+    }
+
+    /** 分页结果实体同步到本地状态（entities/ids） */
+    const syncListToState = (results: readonly T[]) => {
+      const newEntities: Record<string, T> = {}
+      const newIds: string[] = []
+      results.forEach((item) => {
+        const idStr = getEntityId(item)
+        newEntities[idStr] = item
+        // 避免ids数组中出现重复项（后端可能返回重复数据）
+        if (!newIds.includes(idStr)) {
+          newIds.push(idStr)
+        }
+      })
+      entityState.value.entities = newEntities
+      entityState.value.ids = newIds
+    }
+
     const getList = async (params?: Q) => {
       const getListApi = config.api.getList
       if (!getListApi) throw new Error('API "getList" not provided')
@@ -157,16 +198,9 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
         async () => {
           // ✅ 步骤1：标准化参数
           const queryParams: Record<string, unknown> = { ...(params || {}) }
+          const { normalizedParams, requestedPage, requestedPageSize } =
+            normalizePaginationParams(queryParams)
 
-          // ✅ 标准化分页参数：兼容 size/pageSize，统一 page/page_size，设定默认值
-          // 注意：由于 params 是引用类型，修改后会直接影响 queryParams
-          const requestedPage = Number(queryParams.page) || 1
-          const requestedPageSize = Number(queryParams.page_size) || defaultPageSize
-          const normalizedParams = {
-            ...queryParams,
-            page: requestedPage,
-            page_size: requestedPageSize,
-          }
           // ✅ 步骤2：调用 API
           const response = await getListApi(normalizedParams as Q)
 
@@ -179,28 +213,13 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
               `[${storeId}] Invalid page: ${requestedPage}, ` +
                 `total pages: ${totalPages}, count: ${response.count}`,
             )
-            if (autoSync) {
-              entityState.value.entities = {}
-              entityState.value.ids = []
-              pagination.value = { ...pagination.value, total: response.count, page: totalPages }
-            }
+            handleInvalidPage(totalPages, response.count)
             return []
           }
 
           // ✅ 步骤4：同步到状态
           if (autoSync) {
-            const newEntities: Record<string, T> = {}
-            const newIds: string[] = []
-            response.results.forEach((item) => {
-              const idStr = getEntityId(item)
-              newEntities[idStr] = item
-              // 避免ids数组中出现重复项（后端可能返回重复数据）
-              if (!newIds.includes(idStr)) {
-                newIds.push(idStr)
-              }
-            })
-            entityState.value.entities = newEntities
-            entityState.value.ids = newIds
+            syncListToState(response.results)
             // ✅ 以后端实际返回值为准（处理 clamp/默认值场景）
             pagination.value = {
               ...pagination.value,
@@ -381,6 +400,63 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
      * @param ids 要删除的实体 ID 数组
      * @returns 批量删除结果（成功数 + 失败列表）
      */
+    // [P1-4] 下列 3 个内部助手为 removeBatch/getList 原逻辑原样下沉，未改任何判断/返回。
+    /** 批量删除结果响应防御校验（适配后端 success_response 格式，非断言以避免 TS6133/TS2339/TS2775） */
+    const assertBatchDeleteResult = (result: BatchDeleteResult | null | undefined): boolean => {
+      if (
+        !result ||
+        typeof result.total !== 'number' ||
+        typeof result.success_count !== 'number' ||
+        typeof result.fail_count !== 'number' ||
+        !Array.isArray(result.success_ids) ||
+        !Array.isArray(result.fail_items)
+      ) {
+        throw new Error('Invalid batch delete response format')
+      }
+      return true
+    }
+
+    /** 批量删除后本地状态精确清理（按后端 success_ids 清理实体/ids/当前选中） */
+    const pruneDeletedEntities = (successIds: readonly string[], successCount: number) => {
+      const successIdSet = new Set(successIds.map(String))
+      successIds.forEach((id) => {
+        const strId = String(id)
+        delete entityState.value.entities[strId]
+        if (currentEntityId.value === strId) currentEntityId.value = null
+      })
+      entityState.value.ids = entityState.value.ids.filter((id) => !successIdSet.has(String(id)))
+      // 同步更新分页总记录数
+      pagination.value.total = Math.max(0, pagination.value.total - successCount)
+    }
+
+    /** 失败项文案（最多展示前 3 条 + 超出条数提示） */
+    const formatFailItems = (
+      failItems: readonly { id: string; error_message: string }[],
+      failCount: number,
+    ): string => {
+      const errorDetails = failItems
+        .slice(0, 3)
+        .map((e) => `${e.id}: ${e.error_message}`)
+        .join('; ')
+      const moreCount = failCount > 3 ? ` 等${failCount}条` : ''
+      return `${errorDetails}${moreCount}`
+    }
+
+    /** 批量删除结果的用户消息提示（fail_count 三档：0=全成功 / 部分失败 / 全失败） */
+    const notifyBatchDeleteResult = (result: BatchDeleteResult) => {
+      // 使用 displayName（中文名）或 storeId 作为显示名称
+      const displayName = config.displayName || storeId
+      if (result.fail_count === 0) {
+        message?.success?.(`成功删除 ${result.success_count} 条${displayName}`)
+      } else if (result.success_count > 0) {
+        message?.warning?.(
+          `成功删除 ${result.success_count} 条，${result.fail_count} 条失败（${formatFailItems(result.fail_items, result.fail_count)}）`,
+        )
+      } else {
+        message?.error?.(`删除失败：${formatFailItems(result.fail_items, result.fail_count)}`)
+      }
+    }
+
     const removeBatch = async (ids: string[]): Promise<BatchDeleteResult> => {
       const batchDeleteApi = config.api.batchDelete
       if (!batchDeleteApi) {
@@ -396,58 +472,14 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
         `batchDelete:${ids.join(',')}`,
         async () => {
           const result = await batchDeleteApi(ids)
-
-          // 防御性校验：确保后端返回格式正确（适配后端 success_response 格式）
-          if (
-            !result ||
-            typeof result.total !== 'number' ||
-            typeof result.success_count !== 'number' ||
-            typeof result.fail_count !== 'number' ||
-            !Array.isArray(result.success_ids) ||
-            !Array.isArray(result.fail_items)
-          ) {
-            throw new Error('Invalid batch delete response format')
-          }
+          assertBatchDeleteResult(result)
 
           if (autoSync) {
-            // 批量清理本地状态：使用后端返回的 success_ids 精确清理
-            const successIdSet = new Set(result.success_ids.map(String))
-
-            result.success_ids.forEach((id) => {
-              const strId = String(id)
-              delete entityState.value.entities[strId]
-              if (currentEntityId.value === strId) currentEntityId.value = null
-            })
-            entityState.value.ids = entityState.value.ids.filter(
-              (id) => !successIdSet.has(String(id)),
-            )
-
-            // 同步更新分页总记录数
-            pagination.value.total = Math.max(0, pagination.value.total - result.success_count)
+            pruneDeletedEntities(result.success_ids, result.success_count)
           }
 
           // 根据结果给出消息提示（适配后端 fail_items 格式）
-          // 使用 displayName（中文名）或 storeId 作为显示名称
-          const displayName = config.displayName || storeId
-          if (result.fail_count === 0) {
-            message?.success?.(`成功删除 ${result.success_count} 条${displayName}`)
-          } else if (result.success_count > 0) {
-            const errorDetails = result.fail_items
-              .slice(0, 3)
-              .map((e) => `${e.id}: ${e.error_message}`)
-              .join('; ')
-            const moreCount = result.fail_count > 3 ? ` 等${result.fail_count}条` : ''
-            message?.warning?.(
-              `成功删除 ${result.success_count} 条，${result.fail_count} 条失败（${errorDetails}${moreCount}）`,
-            )
-          } else {
-            const errorDetails = result.fail_items
-              .slice(0, 3)
-              .map((e) => `${e.id}: ${e.error_message}`)
-              .join('; ')
-            const moreCount = result.fail_count > 3 ? ` 等${result.fail_count}条` : ''
-            message?.error?.(`删除失败：${errorDetails}${moreCount}`)
-          }
+          notifyBatchDeleteResult(result)
 
           return result
         },

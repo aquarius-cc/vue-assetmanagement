@@ -47,6 +47,19 @@ const getOutAssetTypeText = (value: string | null | undefined): string => {
   return outassetTypeMapping[value] || value
 }
 
+// [P1-4] 下列 3 个内部助手吸收 applicantInfoConfig / managerInfoConfig 的 `?.`+`&&`+`||` 分支税（语义逐行等价）
+
+/** 姓名 + 部门联合展示：两者均存在时返回姓名，否则 null（触发 defaultValue） */
+const personNameOrNull = (
+  name: string | null | undefined,
+  dept: string | null | undefined,
+): string | null => (name && dept ? `${name}` : null)
+
+/** 申请人/保管人工号读取（原表达式为同字段冗余 `||`，此处等价收敛为单次读取） */
+const personJobcodeOrNull = (
+  person: { employee_jobcode?: string | null } | null | undefined,
+): string | null => person?.employee_jobcode ?? null
+
 /**
  * 出库资产详情卡片配置 composable
  *
@@ -73,6 +86,43 @@ const getOutAssetTypeText = (value: string | null | undefined): string => {
  */
 
 export function useOutAssetDetailCards(data: Ref<OutAssetDetailCardData>) {
+  // [P1-4] 下列 2 个内部助手吸收 basicInfoConfig 左右两列的 `?.` + formatter `??`/`||` 分支税（语义逐行等价）
+
+  /** 基本信息卡片左列字段（出库码/入库码/资产码/时间/状态/使用地点） */
+  const buildBasicLeftColumn = (d: OutAssetDetail | null) => [
+    { label: '出库唯一标识码', value: d?.recordcode, defaultValue: 'N/A' },
+    { label: '入库唯一标识码', value: d?.asset_recordcode, defaultValue: 'N/A' },
+    { label: '资产码', value: d?.asset_code },
+    {
+      label: '出库时间',
+      value: d?.outasset_date,
+      formatter: (v: unknown) => formatDate(v as string) ?? '',
+    },
+    {
+      label: '资产状态',
+      value: d?.outasset_current_status,
+      formatter: (v: unknown) => getAssetStatusText((v as string) ?? ''),
+    },
+    { label: '使用地点', value: d?.using_location, defaultValue: 'N/A' },
+  ]
+
+  /** 基本信息卡片右列字段（名称/规格/归还日期/出库类型/备注） */
+  const buildBasicRightColumn = (d: OutAssetDetail | null) => [
+    { label: '资产名称', value: d?.asset_name, defaultValue: 'N/A' },
+    { label: '规格型号', value: d?.asset_specification, defaultValue: 'N/A' },
+    {
+      label: '归还日期',
+      value: d?.return_date,
+      formatter: (v: unknown) => formatDate(v as string) ?? '',
+    },
+    {
+      label: '出库类型',
+      value: d?.outasset_type,
+      formatter: (v: unknown) => getOutAssetTypeText(v as string),
+    },
+    { label: '备注描述', value: d?.outasset_description, defaultValue: 'N/A' },
+  ]
+
   /**
    * 基本信息卡片配置
    *
@@ -85,39 +135,7 @@ export function useOutAssetDetailCards(data: Ref<OutAssetDetailCardData>) {
     return {
       title: '基本信息',
       icon: 'Document',
-      fields: [
-        [
-          { label: '出库唯一标识码', value: d?.recordcode, defaultValue: 'N/A' },
-          { label: '入库唯一标识码', value: d?.asset_recordcode, defaultValue: 'N/A' },
-          { label: '资产码', value: d?.asset_code },
-          {
-            label: '出库时间',
-            value: d?.outasset_date,
-            formatter: (v) => formatDate(v as string) ?? '',
-          },
-          {
-            label: '资产状态',
-            value: d?.outasset_current_status,
-            formatter: (v) => getAssetStatusText((v as string) ?? ''),
-          },
-          { label: '使用地点', value: d?.using_location, defaultValue: 'N/A' },
-        ],
-        [
-          { label: '资产名称', value: d?.asset_name, defaultValue: 'N/A' },
-          { label: '规格型号', value: d?.asset_specification, defaultValue: 'N/A' },
-          {
-            label: '归还日期',
-            value: d?.return_date,
-            formatter: (v) => formatDate(v as string) ?? '',
-          },
-          {
-            label: '出库类型',
-            value: d?.outasset_type,
-            formatter: (v) => getOutAssetTypeText(v as string),
-          },
-          { label: '备注描述', value: d?.outasset_description, defaultValue: 'N/A' },
-        ],
-      ],
+      fields: [buildBasicLeftColumn(d), buildBasicRightColumn(d)],
     }
   })
 
@@ -150,8 +168,8 @@ export function useOutAssetDetailCards(data: Ref<OutAssetDetailCardData>) {
    * 包含 2 个字段，单列布局：申请人（姓名/部门）、申请人工号
    */
   const applicantInfoConfig = computed<InfoCardConfig>(() => {
-    // const u = data.value.detail?.outasset_applicant
     const d = data.value.detail
+    const p = d?.outasset_applicant
     return {
       title: '申请人信息',
       icon: 'User',
@@ -159,26 +177,21 @@ export function useOutAssetDetailCards(data: Ref<OutAssetDetailCardData>) {
         [
           {
             label: '部门',
-            value: d?.outasset_applicant?.employee_department_name,
+            value: p?.employee_department_name,
             defaultValue: 'N/A',
           },
         ],
         [
           {
             label: '申请人',
-            value:
-              d?.outasset_applicant?.employee_name &&
-              d?.outasset_applicant?.employee_department_name
-                ? `${d.outasset_applicant.employee_name}`
-                : null,
+            value: personNameOrNull(p?.employee_name, p?.employee_department_name),
             defaultValue: 'N/A',
           },
         ],
         [
           {
             label: '申请人工号',
-            value:
-              d?.outasset_applicant?.employee_jobcode || d?.outasset_applicant?.employee_jobcode,
+            value: personJobcodeOrNull(p),
             defaultValue: 'N/A',
           },
         ],
@@ -192,8 +205,8 @@ export function useOutAssetDetailCards(data: Ref<OutAssetDetailCardData>) {
    * 包含 2 个字段，单列布局：保管人（姓名/部门）、保管人工号
    */
   const managerInfoConfig = computed<InfoCardConfig>(() => {
-    // const u = data.value.managerUser
     const d = data.value.detail
+    const m = d?.outasset_manager
     return {
       title: '保管人信息',
       icon: 'UserFilled',
@@ -201,24 +214,21 @@ export function useOutAssetDetailCards(data: Ref<OutAssetDetailCardData>) {
         [
           {
             label: '部门',
-            value: d?.outasset_manager?.employee_department_name,
+            value: m?.employee_department_name,
             defaultValue: 'N/A',
           },
         ],
         [
           {
             label: '保管人',
-            value:
-              d?.outasset_manager?.employee_name && d?.outasset_manager?.employee_department_name
-                ? `${d.outasset_manager.employee_name}`
-                : null,
+            value: personNameOrNull(m?.employee_name, m?.employee_department_name),
             defaultValue: 'N/A',
           },
         ],
         [
           {
             label: '保管人工号',
-            value: d?.outasset_manager?.employee_jobcode || d?.outasset_manager?.employee_jobcode,
+            value: personJobcodeOrNull(m),
             defaultValue: 'N/A',
           },
         ],

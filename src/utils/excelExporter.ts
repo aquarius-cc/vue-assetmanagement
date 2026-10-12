@@ -42,6 +42,32 @@ export interface ExcelExportConfig<T> {
   additionalData?: unknown // 额外的数据，例如部门映射等
 }
 
+/** 用户取消判别（吸收 error === 'cancel'/'close'/message 含 cancel 的 `||`+`&&` 分支税） */
+const isCancelError = (error: unknown): boolean => {
+  if (error === 'cancel' || error === 'close') return true
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    (error as Error).message?.includes('cancel') === true
+  )
+}
+
+/** 单元格取值：优先 formatter，否则默认转换（吸收 `??` 分支税） */
+const resolveCellValue = <T>(item: T, data: T[], col: ColumnConfig<T>): string => {
+  let value: unknown = (item as Record<string, unknown>)[col.key as string]
+  if (col.formatter) {
+    value = col.formatter(value, item, data)
+  } else {
+    value = String(value ?? col.default ?? '')
+  }
+  return value as string
+}
+
+/** 文件名后缀：已有 .xlsx 原样返回，否则拼时间戳（吸收 `||`/三元分支税） */
+const resolveExportFileName = (baseName: string): string =>
+  baseName.endsWith('.xlsx') ? baseName : `${baseName}_${formatDate(new Date())}.xlsx`
+
 /**
  * 通用 Excel 导出工具函数
  * 使用 ExcelJS 创建工作簿并触发浏览器下载
@@ -74,27 +100,14 @@ export const exportToExcel = async <T>(config: ExcelExportConfig<T>): Promise<vo
 
     // 5. 填充数据行
     config.data.forEach((item: T) => {
-      const rowData = config.columns.map((col: ColumnConfig<T>) => {
-        // 安全获取属性值
-        let value: unknown = (item as Record<string, unknown>)[col.key as string]
-
-        // 如果有自定义格式化函数，则使用它
-        if (col.formatter) {
-          value = col.formatter(value, item, config.data)
-        } else {
-          // 默认处理：直接转换为字符串
-          value = String(value ?? col.default ?? '')
-        }
-
-        return value as string
-      })
+      const rowData = config.columns.map((col: ColumnConfig<T>) =>
+        resolveCellValue(item, config.data, col),
+      )
       worksheet.addRow(rowData)
     })
 
     // 6. 生成文件并触发下载（下载样板收敛至 utils/fileDownload，DR-4）
-    const fileName = config.fileName.endsWith('.xlsx')
-      ? config.fileName
-      : `${config.fileName}_${formatDate(new Date())}.xlsx`
+    const fileName = resolveExportFileName(config.fileName)
 
     const buffer = await workbook.xlsx.writeBuffer()
     downloadBlob(new Blob([buffer], { type: XLSX_MIME }), fileName)
@@ -102,14 +115,7 @@ export const exportToExcel = async <T>(config: ExcelExportConfig<T>): Promise<vo
     ElMessage.success(config.successMessage || '导出成功')
   } catch (error: unknown) {
     // 如果用户点击取消，不显示错误信息
-    if (
-      error === 'cancel' ||
-      error === 'close' ||
-      (typeof error === 'object' &&
-        error !== null &&
-        'message' in error &&
-        (error as Error).message?.includes('cancel'))
-    ) {
+    if (isCancelError(error)) {
       ElMessage.info('已取消导出')
       return
     }

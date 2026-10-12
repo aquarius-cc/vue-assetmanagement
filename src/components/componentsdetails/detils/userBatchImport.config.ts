@@ -9,9 +9,74 @@
 import { USER_STATUS_INPUT_MAPPING } from '@/utils/Format'
 import type { HeaderExample, ExampleColumn } from '@/utils/batchImportHelpers'
 import type { ExcelEmployeeData, EmployeeCreateForm } from '@/types/user'
+import {
+  requireNonEmpty,
+  requirePattern,
+  optionalEnum,
+  cleanExcelString,
+} from '@/utils/batchImport/validation'
 
 /** 部门名称 -> 部门代码 映射的 getter 类型 */
 export type DepartmentMappingGetter = () => Record<string, string>
+
+/** 工号格式：1 位大写字母 + 5 位数字（validateItem 与 spec 共同锁定） */
+const JOBCODE_PATTERN = /^[A-Z][0-9]{5}$/
+
+/** 手机号格式：1 开头 11 位 */
+const PHONE_PATTERN = /^1[3-9]\d{9}$/
+
+/** 排序上限（与 spec 断言一致） */
+const SORT_MAX = 1000000
+
+/**
+ * 部门名称可解析性：精确命中 / trim 后命中 / 双向包含模糊命中 / 「部门代码」列兜底，任一成立即可。
+ * 供 validateItem（存在性判定）与 resolveDepartmentCode（代码解析）共享，DR-1 单一实现。
+ */
+function isDepartmentResolvable(
+  departmentName: string,
+  codeColumn: string,
+  mapping: Record<string, string>,
+): boolean {
+  if (mapping[departmentName]) return true
+  if (Object.keys(mapping).some((name) => name.trim() === departmentName)) return true
+  if (
+    Object.keys(mapping).some(
+      (name) => name.includes(departmentName) || departmentName.includes(name),
+    )
+  ) {
+    return true
+  }
+  return !!codeColumn
+}
+
+/**
+ * 部门名称 → 部门代码解析：精确 → trim → 模糊 → 回退「部门代码」列。
+ * 与原 transformToApiData 内联四级解析逐行等价（供校验与转换两处复用）。
+ */
+function resolveDepartmentCode(
+  departmentName: string,
+  codeColumn: string,
+  mapping: Record<string, string>,
+): string {
+  if (!departmentName) return codeColumn
+  const exact = mapping[departmentName]
+  if (exact) return exact
+  const entries = Object.entries(mapping)
+  const trimMatch = entries.find(([name]) => name.trim() === departmentName)
+  if (trimMatch) return trimMatch[1]
+  const fuzzyMatch = entries.find(
+    ([name]) => name.includes(departmentName) || departmentName.includes(name),
+  )
+  if (fuzzyMatch) return fuzzyMatch[1]
+  return codeColumn
+}
+
+/** 排序值三段校验（NaN / <0 / >上限，顺序覆盖写与原三连 if 等价） */
+function checkSortRange(sort: number, errors: Record<string, string>): void {
+  if (Number.isNaN(sort)) errors['排序'] = '排序必须是数字'
+  if (sort < 0) errors['排序'] = '排序不能小于 0'
+  if (sort > SORT_MAX) errors['排序'] = `排序不能大于 ${SORT_MAX}`
+}
 
 /**
  * 创建员工批量导入配置
@@ -34,59 +99,49 @@ export function createUserBatchConfig(getDepartmentMapping: DepartmentMappingGet
       排序: '排序',
     } as const,
 
-    /** 校验单条 Excel 行 */
+    /** 校验单条 Excel 行（P1-4：同构分支收敛，本体降为清洗 + 纯调用序列） */
     validateItem(item: ExcelEmployeeData) {
       const errors: Record<string, string> = {}
       const VALID_STATUS_INPUTS = Object.keys(USER_STATUS_INPUT_MAPPING)
 
-      // 清洗字段
-      const name = String(item.姓名 ?? '').trim()
-      const jobcode = String(item.工号 ?? '').trim()
-      const phone = String(item.电话 ?? '').trim()
-      const location = String(item.位置 ?? '').trim()
-      const statusInput = String(item.状态 ?? '').trim()
-      const departmentName = String(item.部门 ?? '').trim()
+      // 清洗字段（cleanExcelString 与原 String(x ?? '').trim() 逐值等价，消除每字段 +2 复杂度税）
+      const name = cleanExcelString(item.姓名)
+      const jobcode = cleanExcelString(item.工号)
+      const phone = cleanExcelString(item.电话)
+      const location = cleanExcelString(item.位置)
+      const statusInput = cleanExcelString(item.状态)
+      const departmentName = cleanExcelString(item.部门)
+      const codeColumn = cleanExcelString(item.部门代码)
       const sort = Number(item.排序 ?? 0)
 
       // 必填校验
-      if (!name) errors.姓名 = '姓名为必填项'
-      if (!jobcode) {
-        errors.工号 = '工号为必填项'
-      } else if (!/^[A-Z][0-9]{5}$/.test(jobcode)) {
-        errors.工号 = '工号格式不正确（如 A12345）'
-      }
-      if (!phone) {
-        errors.电话 = '电话为必填项'
-      } else if (!/^1[3-9]\d{9}$/.test(phone)) {
-        errors.电话 = '电话格式不正确'
-      }
-      if (!location) errors.位置 = '位置为必填项'
+      requireNonEmpty(name, '姓名', '姓名为必填项', errors)
+      requirePattern(
+        jobcode,
+        '工号',
+        '工号为必填项',
+        JOBCODE_PATTERN,
+        '工号格式不正确（如 A12345）',
+        errors,
+      )
+      requirePattern(phone, '电话', '电话为必填项', PHONE_PATTERN, '电话格式不正确', errors)
+      requireNonEmpty(location, '位置', '位置为必填项', errors)
       if (!departmentName) {
-        errors.部门 = '部门名称为必填项'
-      } else {
-        // 检查部门名称是否可解析（与 transformToApiData 逻辑一致）
-        const mapping = getDepartmentMapping()
-        const hasExactMatch = !!mapping[departmentName]
-        const hasTrimMatch = Object.keys(mapping).some((name) => name.trim() === departmentName)
-        const hasFuzzyMatch = Object.keys(mapping).some(
-          (name) => name.includes(departmentName) || departmentName.includes(name),
-        )
-        const hasCodeColumn = !!String(item.部门代码 ?? '').trim()
-        if (!hasExactMatch && !hasTrimMatch && !hasFuzzyMatch && !hasCodeColumn) {
-          errors.部门 = '部门名称在系统中不存在，且「部门代码」列也为空'
-        }
+        errors['部门'] = '部门名称为必填项'
+      } else if (!isDepartmentResolvable(departmentName, codeColumn, getDepartmentMapping())) {
+        // 检查部门名称是否可解析（与 transformToApiData 逻辑一致，经共享 isDepartmentResolvable）
+        errors['部门'] = '部门名称在系统中不存在，且「部门代码」列也为空'
       }
-      if (isNaN(sort)) errors.排序 = '排序必须是数字'
-      if (sort < 0) errors.排序 = '排序不能小于 0'
-      if (sort > 1000000) errors.排序 = '排序不能大于 1000000'
+      checkSortRange(sort, errors)
 
       // 状态值映射（可选字段，不存在则使用默认值 active）
-      if (statusInput) {
-        const mapped = USER_STATUS_INPUT_MAPPING[statusInput]
-        if (!mapped) {
-          errors.状态 = `状态值无效，有效值：${VALID_STATUS_INPUTS.join('、')}`
-        }
-      }
+      optionalEnum(
+        statusInput,
+        '状态',
+        VALID_STATUS_INPUTS,
+        `状态值无效，有效值：${VALID_STATUS_INPUTS.join('、')}`,
+        errors,
+      )
 
       return {
         valid: Object.keys(errors).length === 0,
@@ -98,51 +153,29 @@ export function createUserBatchConfig(getDepartmentMapping: DepartmentMappingGet
      * 转换为 API 提交格式（EmployeeCreateForm）
      * 注意：这里只转换通过校验的行，但即使部分数据有误，我们仍返回一个合法的 EmployeeCreateForm 对象，
      * 因为提交时只会提交 valid 行。
+     * P1-4：部门四级解析收敛至 resolveDepartmentCode（与 validateItem 共享，DR-1）。
      */
     transformToApiData(item: ExcelEmployeeData): EmployeeCreateForm {
-      const departmentName = String(item.部门 ?? '').trim()
-      const statusInput = String(item.状态 ?? '').trim()
-      const sort = Number(item.排序 ?? 0)
+      const statusInput = cleanExcelString(item.状态)
       const normalizedStatus = statusInput
         ? ((USER_STATUS_INPUT_MAPPING[statusInput] || 'active') as 'active' | 'left' | 'retirement')
         : 'active'
 
-      const reverseDepartmentMapping = getDepartmentMapping()
-
-      // 部门代码解析：精确匹配 → trim 后匹配 → 模糊匹配 → 回退到部门代码列
-      let departmentCode = ''
-      if (departmentName) {
-        // 1. 精确匹配
-        departmentCode = reverseDepartmentMapping[departmentName] || ''
-        // 2. trim 后再匹配
-        if (!departmentCode) {
-          const entries = Object.entries(reverseDepartmentMapping)
-          const match = entries.find(([name]) => name.trim() === departmentName)
-          if (match) departmentCode = match[1]
-        }
-        // 3. 模糊匹配（部门名称包含 Excel 中的值，或 Excel 中的值包含部门名称）
-        if (!departmentCode) {
-          const entries = Object.entries(reverseDepartmentMapping)
-          const match = entries.find(
-            ([name]) => name.includes(departmentName) || departmentName.includes(name),
-          )
-          if (match) departmentCode = match[1]
-        }
-      }
-      // 4. 回退到「部门代码」列
-      if (!departmentCode) {
-        departmentCode = String(item.部门代码 ?? '').trim()
-      }
+      const departmentCode = resolveDepartmentCode(
+        cleanExcelString(item.部门),
+        cleanExcelString(item.部门代码),
+        getDepartmentMapping(),
+      )
 
       return {
-        employee_jobcode: String(item.工号 ?? '').trim(),
-        employee_name: String(item.姓名 ?? '').trim(),
-        employee_phone: String(item.电话 ?? '').trim(),
-        employee_location: String(item.位置 ?? '').trim(),
+        employee_jobcode: cleanExcelString(item.工号),
+        employee_name: cleanExcelString(item.姓名),
+        employee_phone: cleanExcelString(item.电话),
+        employee_location: cleanExcelString(item.位置),
         employee_status: normalizedStatus,
         employee_department_code: departmentCode || '',
-        employee_description: String(item.描述 ?? '').trim() || null,
-        sort_order: sort,
+        employee_description: cleanExcelString(item.描述) || null,
+        sort_order: Number(item.排序 ?? 0),
       }
     },
 

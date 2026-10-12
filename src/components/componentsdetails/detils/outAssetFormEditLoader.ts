@@ -29,6 +29,70 @@ export function createOutAssetEditLoader(deps: OutAssetEditLoaderDeps) {
   const { form, selectedApplicant, selectedManager, originalFormData, isLoading, store, router } =
     deps
 
+  // 空值兜底助手：与原 `x || ''` 逐字等价（null/undefined/'' 均落 ''）。
+  // P1-4 复杂度收敛用：把 `||` 分支从字段填充语句里收走。
+  const pick = (value: unknown): string => (typeof value === 'string' ? value : '')
+  const pickStr = (value: string | null | undefined): string => value ?? ''
+
+  // 日期字段填充：有值则格式化，格式化结果再兜底为 ''（与原三元 + `|| ''` 逐字等价）。
+  const pickDate = (value: unknown): string => (value ? formatDate(String(value)) || '' : '')
+
+  // 填充表单标量字段
+  const fillForm = (detail: Record<string, unknown>) => {
+    form.outasset_code = pick(detail.outasset_code)
+    form.outasset_number = detail.outasset_number as number
+    // [HR-02] 回填申请人保管人信息（从后端返回的关联对象或字段获取）
+    form.outasset_applicant_jobcode = pick(detail.outasset_applicant_jobcode)
+    form.outasset_manager_jobcode = pick(detail.outasset_manager_jobcode)
+    form.outasset_applicant_name = pick(
+      (detail.outasset_applicant as Record<string, unknown> | undefined)?.employee_name,
+    )
+    form.outasset_manager_name = pick(
+      (detail.outasset_manager as Record<string, unknown> | undefined)?.employee_name,
+    )
+    form.outasset_date = pickDate(detail.outasset_date)
+    form.return_date = pickDate(detail.return_date)
+    form.outasset_type = pick(detail.outasset_type)
+    form.outasset_using_location = pick(detail.outasset_using_location)
+    form.outasset_description = pick(detail.outasset_description)
+    form.outasset_name = pick(detail.asset_name)
+  }
+
+  // 构建单个选中状态对象（申请/保管人同构，抽为同一函数）。
+  // [HR-02] 回填后同步选中状态（用于变更检测）。
+  // 注意：关联对象为 EmployeeExtended 类型，含 employee_department；类型断言绕过推断限制。
+  const buildSelected = (
+    rel: Record<string, unknown> | undefined,
+    name: string,
+    jobcode: string,
+  ): EmployeeAutocompleteItem => {
+    const dept = rel?.employee_department as Record<string, string> | undefined
+    return {
+      value: name,
+      employee_name: name,
+      employee_jobcode: pick(jobcode),
+      employee_department_name: pick(dept?.department_name),
+    }
+  }
+
+  // 回填选中状态：仅在姓名非空时同步（申请人与保管人同构）。
+  const syncSelected = (detail: Record<string, unknown>) => {
+    if (form.outasset_applicant_name) {
+      selectedApplicant.value = buildSelected(
+        detail.outasset_applicant as Record<string, unknown> | undefined,
+        form.outasset_applicant_name,
+        pickStr(form.outasset_applicant_jobcode),
+      )
+    }
+    if (form.outasset_manager_name) {
+      selectedManager.value = buildSelected(
+        detail.outasset_manager as Record<string, unknown> | undefined,
+        form.outasset_manager_name,
+        pickStr(form.outasset_manager_jobcode),
+      )
+    }
+  }
+
   return async function loadEditData(recordcode: string) {
     isLoading.value = true
     try {
@@ -38,43 +102,8 @@ export function createOutAssetEditLoader(deps: OutAssetEditLoaderDeps) {
         router.back()
         return
       }
-      // 填充表单
-      form.outasset_code = detail.outasset_code || ''
-      form.outasset_number = detail.outasset_number
-      // [HR-02] 回填申请人保管人信息（从后端返回的关联对象或字段获取）
-      form.outasset_applicant_jobcode = detail.outasset_applicant_jobcode || ''
-      form.outasset_manager_jobcode = detail.outasset_manager_jobcode || ''
-      form.outasset_applicant_name = detail.outasset_applicant?.employee_name || ''
-      form.outasset_manager_name = detail.outasset_manager?.employee_name || ''
-      form.outasset_date = detail.outasset_date ? formatDate(detail.outasset_date) || '' : ''
-      form.return_date = detail.return_date ? formatDate(detail.return_date) || '' : ''
-      form.outasset_type = detail.outasset_type || ''
-      form.outasset_using_location = detail.outasset_using_location || ''
-      form.outasset_description = detail.outasset_description || ''
-      form.outasset_name = detail.asset_name || ''
-      // [HR-02] 回填后同步选中状态（用于变更检测）
-      // 注意：detail.outasset_applicant/outasset_manager 为 EmployeeExtended 类型
-      // 包含 employee_department 关联对象；使用类型断言绕过 TypeScript 推断限制
-      if (form.outasset_applicant_name) {
-        const applicant = detail.outasset_applicant as Record<string, unknown> | undefined
-        const applicantDept = applicant?.employee_department as Record<string, string> | undefined
-        selectedApplicant.value = {
-          value: form.outasset_applicant_name,
-          employee_name: form.outasset_applicant_name,
-          employee_jobcode: form.outasset_applicant_jobcode || '',
-          employee_department_name: applicantDept?.department_name || '',
-        }
-      }
-      if (form.outasset_manager_name) {
-        const manager = detail.outasset_manager as Record<string, unknown> | undefined
-        const managerDept = manager?.employee_department as Record<string, string> | undefined
-        selectedManager.value = {
-          value: form.outasset_manager_name,
-          employee_name: form.outasset_manager_name,
-          employee_jobcode: form.outasset_manager_jobcode || '',
-          employee_department_name: managerDept?.department_name || '',
-        }
-      }
+      fillForm(detail)
+      syncSelected(detail)
       // 保存原始数据快照
       originalFormData.value = JSON.parse(JSON.stringify(form))
     } catch (error) {

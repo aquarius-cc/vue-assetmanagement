@@ -184,25 +184,47 @@ async function handleUnauthorized(error: unknown): Promise<unknown> {
 
 // ======================== 统一错误提示 ========================
 
+// [P1-4] 下列 3 个内部助手为 pickErrorMessage 原逻辑原样下沉，未改任何判断/返回。
+
+/** 从错误响应体提取顶层 msg 字段（detail/message/error 链） */
+const extractTopLevelMsg = (obj: Record<string, unknown> | null): unknown =>
+  obj?.detail ?? obj?.message ?? obj?.error
+
+/** 字段级错误格式化：data 键下 `{field: msgs}` → `field: text | field2: text2` */
+const formatFieldErrors = (fieldErrors: unknown): string | null => {
+  if (!fieldErrors || typeof fieldErrors !== 'object' || Array.isArray(fieldErrors)) return null
+  const entries = Object.entries(fieldErrors as Record<string, unknown>)
+  if (entries.length === 0) return null
+  return entries
+    .map(([field, msgs]) => {
+      const text = Array.isArray(msgs) ? msgs[0] : String(msgs)
+      return `${field}: ${text}`
+    })
+    .join(' | ')
+}
+
 function pickErrorMessage(data: unknown): string {
   const obj = data as Record<string, unknown> | null
-  const msg = obj?.detail ?? obj?.message ?? obj?.error
+  const msg = extractTopLevelMsg(obj)
   if (typeof msg === 'string' && msg !== '参数验证失败') return msg
 
-  const fieldErrors = obj?.data
-  if (fieldErrors && typeof fieldErrors === 'object' && !Array.isArray(fieldErrors)) {
-    const entries = Object.entries(fieldErrors as Record<string, unknown>)
-    if (entries.length > 0) {
-      return entries
-        .map(([field, msgs]) => {
-          const text = Array.isArray(msgs) ? msgs[0] : String(msgs)
-          return `${field}: ${text}`
-        })
-        .join(' | ')
-    }
-  }
+  const fieldErrors = formatFieldErrors(obj?.data)
+  if (fieldErrors !== null) return fieldErrors
 
   return typeof msg === 'string' ? msg : '请求失败'
+}
+
+// [P1-4] 下列 2 个内部助手为 get 原逻辑原样下沉，未改任何判断/返回。
+
+/** 标准化 options：兼容旧版布尔参数与新版对象参数 */
+function normalizeGetOptions(
+  optionsOrUseCache?: RequestOptions | boolean,
+  cacheTTL?: number,
+): RequestOptions | undefined {
+  if (typeof optionsOrUseCache === 'boolean') {
+    return { useCache: optionsOrUseCache, cacheTTL: cacheTTL ?? 300_000 }
+  }
+  return optionsOrUseCache
 }
 
 function showStatusMessage(status: number, msg: string): void {
@@ -340,6 +362,41 @@ api.interceptors.response.use(
 
 // ======================== 通用请求方法 ========================
 
+/** 请求失败时的缓存降级：有缓存则返回旧数据并告警，否则返回 null（继续抛出） */
+function tryFallbackCache<T>(url: string, cacheKey: string): ApiResponse<T> | null {
+  const cached = cache.get(cacheKey)
+  if (cached === undefined) return null
+  logWarn('api/request', `[降级] 请求失败，返回缓存数据: ${url}`)
+  return cached as ApiResponse<T>
+}
+
+/** 构建查询参数对象：过滤 null/undefined 值 */
+function buildQueryParams(
+  params?: Record<string, string | number | boolean | null | undefined>,
+): Record<string, string> | undefined {
+  if (!params) return undefined
+  return Object.fromEntries(Object.entries(params).filter(([, v]) => v != null)) as Record<
+    string,
+    string
+  >
+}
+
+/** 构建缓存键：`url?querystring` */
+function buildCacheKey(url: string, paramsObj?: Record<string, string>): string {
+  const paramsStr = paramsObj ? new URLSearchParams(paramsObj).toString() : ''
+  return `${url}?${paramsStr}`
+}
+
+/** 从缓存读取：命中返回数据，未命中返回 undefined */
+function readCache<T>(cacheKey: string): ApiResponse<T> | undefined {
+  return cache.get(cacheKey) as ApiResponse<T> | undefined
+}
+
+/** 写入缓存：cacheTTL 缺省时使用默认 300_000 */
+function writeCache<T>(cacheKey: string, data: ApiResponse<T>, cacheTTL?: number): void {
+  cache.set(cacheKey, data, cacheTTL ?? 300_000)
+}
+
 // ---------- 重载签名（支持新/旧两种调用方式） ----------
 
 /** 新方式：使用 options 对象 */
@@ -366,49 +423,29 @@ export async function get<T>(
   optionsOrUseCache?: RequestOptions | boolean,
   cacheTTL?: number,
 ): Promise<ApiResponse<T>> {
-  // 标准化 options
-  let options: RequestOptions | undefined
-  if (typeof optionsOrUseCache === 'boolean') {
-    // 旧版调用：get(url, params, true, 300000)
-    options = { useCache: optionsOrUseCache, cacheTTL: cacheTTL ?? 300_000 }
-  } else {
-    // 新版调用：get(url, params, { useCache: true, cacheTTL: 300000 })
-    options = optionsOrUseCache
-  }
+  const options = normalizeGetOptions(optionsOrUseCache, cacheTTL)
+  const useCache = options?.useCache === true
 
-  // 构建查询参数
-  const paramsObj = params
-    ? Object.fromEntries(Object.entries(params).filter(([, v]) => v != null))
-    : undefined
-  const paramsStr = paramsObj
-    ? new URLSearchParams(paramsObj as Record<string, string>).toString()
-    : ''
-  const cacheKey = `${url}?${paramsStr}`
+  const paramsObj = buildQueryParams(params)
+  const cacheKey = buildCacheKey(url, paramsObj)
 
   // 启用缓存时优先返回缓存数据
-  if (options?.useCache) {
-    const cached = cache.get(cacheKey)
-    if (cached !== undefined) {
-      return cached as ApiResponse<T>
-    }
+  if (useCache) {
+    const cached = readCache<T>(cacheKey)
+    if (cached !== undefined) return cached
   }
 
   try {
     const response = await api.get<ApiResponse<T>>(url, { params: paramsObj })
     const data = response.data
 
-    if (options?.useCache) {
-      cache.set(cacheKey, data, options.cacheTTL ?? 300_000)
-    }
+    if (useCache) writeCache(cacheKey, data, options?.cacheTTL)
     return data
   } catch (error: unknown) {
     // 降级：请求失败但有缓存时返回旧数据
-    if (options?.useCache) {
-      const cached = cache.get(cacheKey)
-      if (cached !== undefined) {
-        logWarn('api/request', `[降级] 请求失败，返回缓存数据: ${url}`)
-        return cached as ApiResponse<T>
-      }
+    if (useCache) {
+      const fallback = tryFallbackCache<T>(url, cacheKey)
+      if (fallback !== null) return fallback
     }
     throw error
   }

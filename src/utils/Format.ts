@@ -280,20 +280,23 @@ const validateUserStatus = (status: string): EmployeeStatus | null => {
   const normalizedStatus = status.trim().toLowerCase()
   return USER_STATUS_INPUT_MAPPING[normalizedStatus] || null
 }
+/** 表格字段字符串兜底（吸收 `|| ''` 分支税，语义与原表达式逐字等价） */
+const orEmpty = (v: string | null | undefined): string => v || ''
+
 // 🌟 新增：Excel用户数据转换+验证
 const transformAndValidateExcelUser = (
   excelData: ExcelEmployeeData,
   departmentCodeMap: Record<string, string>, // 部门代码→部门名称映射
 ): ValidatedEmployeeData => {
   const result: ValidatedEmployeeData = {
-    user_name: excelData.姓名 || '',
-    user_jobcode: excelData.工号 || '',
-    user_phone: excelData.电话 || '',
-    user_location: excelData.位置 || '',
+    user_name: orEmpty(excelData.姓名),
+    user_jobcode: orEmpty(excelData.工号),
+    user_phone: orEmpty(excelData.电话),
+    user_location: orEmpty(excelData.位置),
     user_status: '',
-    user_department_code: excelData.部门代码 || '',
+    user_department_code: orEmpty(excelData.部门代码),
     user_department_name: departmentCodeMap[excelData.部门代码 ?? ''] || '',
-    user_description: excelData.描述 || '',
+    user_description: orEmpty(excelData.描述),
     validationStatus: 'success',
     validationError: '',
   }

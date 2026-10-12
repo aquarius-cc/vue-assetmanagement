@@ -62,6 +62,29 @@ export interface RecycleAssetDetailCardData {
  * ```
  */
 export function useRecycleAssetDetailCards(data: Ref<RecycleAssetDetailCardData>) {
+  // [P1-4] 下列 4 个内部助手吸收 basicInfoConfig / contractInfoConfig 的 `?.` + formatter `??`/`||` 分支税（语义逐行等价）
+
+  /** 基本信息卡片左列字段（标识码/资产码/名称/规格） */
+  const buildBasicLeftColumn = (d: RecycleAssetExtended | null) => [
+    { label: '回收标识码', value: d?.recordcode, defaultValue: 'N/A' },
+    { label: '出库标识码', value: d?.outasset_recordcode, defaultValue: 'N/A' },
+    { label: '资产码', value: d?.asset?.asset_code, defaultValue: 'N/A' },
+    { label: '资产名称', value: d?.asset?.asset_name, defaultValue: 'N/A' },
+    { label: '规格型号', value: d?.asset?.asset_specification, defaultValue: 'N/A' },
+  ]
+
+  /** 基本信息卡片右列字段（时间/数量/描述/出库记录） */
+  const buildBasicRightColumn = (d: RecycleAssetExtended | null) => [
+    {
+      label: '回收时间',
+      value: d?.recycle_asset_date,
+      formatter: (v: unknown) => formatDate(v as string) ?? '',
+    },
+    { label: '回收数量', value: d?.recycle_asset_number },
+    { label: '回收描述', value: d?.recycle_asset_description, defaultValue: 'N/A' },
+    { label: '出库记录编码', value: d?.outasset_recordcode, defaultValue: 'N/A' },
+  ]
+
   /**
    * 基本信息卡片配置
    *
@@ -74,27 +97,41 @@ export function useRecycleAssetDetailCards(data: Ref<RecycleAssetDetailCardData>
     return {
       title: '基本信息',
       icon: 'Document',
-      fields: [
-        [
-          { label: '回收标识码', value: d?.recordcode, defaultValue: 'N/A' },
-          { label: '出库标识码', value: d?.outasset_recordcode, defaultValue: 'N/A' },
-          { label: '资产码', value: d?.asset?.asset_code, defaultValue: 'N/A' },
-          { label: '资产名称', value: d?.asset?.asset_name, defaultValue: 'N/A' },
-          { label: '规格型号', value: d?.asset?.asset_specification, defaultValue: 'N/A' },
-        ],
-        [
-          {
-            label: '回收时间',
-            value: d?.recycle_asset_date,
-            formatter: (v) => formatDate(v as string) ?? '',
-          },
-          { label: '回收数量', value: d?.recycle_asset_number },
-          { label: '回收描述', value: d?.recycle_asset_description, defaultValue: 'N/A' },
-          { label: '出库记录编码', value: d?.outasset_recordcode, defaultValue: 'N/A' },
-        ],
-      ],
+      fields: [buildBasicLeftColumn(d), buildBasicRightColumn(d)],
     }
   })
+
+  /** 合同信息卡片左列字段（编码/名称/金额/供应商） */
+  const buildContractLeftColumn = (c: Contract | null | undefined) => [
+    { label: '合同编码', value: c?.contract_code, defaultValue: 'N/A' },
+    { label: '合同名称', value: c?.contract_name, defaultValue: 'N/A' },
+    { label: '合同金额', value: c?.contract_amount, isPrice: true },
+    { label: '合同供应商', value: c?.supplier_name, defaultValue: 'N/A' },
+  ]
+
+  /** 合同信息卡片右列字段（签订日期/保修期/初验日期/终验日期） */
+  const buildContractRightColumn = (c: Contract | null | undefined) => [
+    {
+      label: '签订日期',
+      value: c?.contract_start_date,
+      formatter: (v: unknown) => formatDate(v as string) ?? '',
+    },
+    {
+      label: '保修期',
+      value: c?.contract_warranty_period,
+      formatter: (v: unknown) => (v !== null && v !== undefined ? `${v} 年` : ''),
+    },
+    {
+      label: '初验日期',
+      value: c?.initial_check_date,
+      formatter: (v: unknown) => formatDate(v as string) ?? '',
+    },
+    {
+      label: '终验日期',
+      value: c?.final_check_date,
+      formatter: (v: unknown) => formatDate(v as string) ?? '',
+    },
+  ]
 
   /**
    * 合同信息卡片配置
@@ -109,36 +146,7 @@ export function useRecycleAssetDetailCards(data: Ref<RecycleAssetDetailCardData>
     return {
       title: '合同信息',
       icon: 'Tickets',
-      fields: [
-        [
-          { label: '合同编码', value: c?.contract_code, defaultValue: 'N/A' },
-          { label: '合同名称', value: c?.contract_name, defaultValue: 'N/A' },
-          { label: '合同金额', value: c?.contract_amount, isPrice: true },
-          { label: '合同供应商', value: c?.supplier_name, defaultValue: 'N/A' },
-        ],
-        [
-          {
-            label: '签订日期',
-            value: c?.contract_start_date,
-            formatter: (v) => formatDate(v as string) ?? '',
-          },
-          {
-            label: '保修期',
-            value: c?.contract_warranty_period,
-            formatter: (v) => (v !== null && v !== undefined ? `${v} 年` : ''),
-          },
-          {
-            label: '初验日期',
-            value: c?.initial_check_date,
-            formatter: (v) => formatDate(v as string) ?? '',
-          },
-          {
-            label: '终验日期',
-            value: c?.final_check_date,
-            formatter: (v) => formatDate(v as string) ?? '',
-          },
-        ],
-      ],
+      fields: [buildContractLeftColumn(c), buildContractRightColumn(c)],
     }
   })
 

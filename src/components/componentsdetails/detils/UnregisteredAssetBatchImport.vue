@@ -120,6 +120,26 @@ import type { UnregisteredAssetCreateForm } from '@/types/unregisteredasset'
 import { ScenarioType } from '@/types/unregisteredasset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { UnregisteredAssetExcelRow } from '@/types/batch-import'
+import {
+  requireEnum,
+  requireDate,
+  requireNonEmpty,
+  optionalNumber,
+  cleanExcelString,
+  trimmedOrNull,
+} from '@/utils/batchImport/validation'
+
+/** 合法场景类型枚举（validateItem 与 requireEnum 共用，避免重复构造） */
+const VALID_SCENARIOS = [
+  ScenarioType.S1_NO_RECORD,
+  ScenarioType.S2_NO_OUTASSET,
+  ScenarioType.S3_STATUS_MISMATCH,
+] as const
+
+/** 是否存在可解析的数值（三重否定判断收敛，transformToApiData estimated_value 用） */
+function hasNumberValue(v: string | number | null | undefined): boolean {
+  return v !== undefined && v !== null && v !== ''
+}
 
 // ===== 状态与实例 =====
 const router = useRouter()
@@ -146,31 +166,23 @@ const importConfig: BatchImportConfig<UnregisteredAssetExcelRow, UnregisteredAss
   validateItem: (item: UnregisteredAssetExcelRow) => {
     const errors: Record<string, string> = {}
     // 场景类型校验
-    const validScenarios = [
-      ScenarioType.S1_NO_RECORD,
-      ScenarioType.S2_NO_OUTASSET,
-      ScenarioType.S3_STATUS_MISMATCH,
-    ]
-    if (!item.scenario_type?.trim()) {
-      errors.scenario_type = '场景类型不能为空'
-    } else if (!validScenarios.includes(item.scenario_type.trim() as ScenarioType)) {
-      errors.scenario_type =
-        '场景类型非法，可选：s1_no_record / s2_no_outasset / s3_status_mismatch'
-    }
-    // 发现日期校验
-    if (!item.discovery_date?.trim()) {
-      errors.discovery_date = '发现日期不能为空'
-    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(item.discovery_date.trim())) {
-      errors.discovery_date = '发现日期格式应为 YYYY-MM-DD'
-    }
-    // 发现地点校验
-    if (!item.discovery_location?.trim()) {
-      errors.discovery_location = '发现地点不能为空'
-    }
-    // 资产名称校验
-    if (!item.asset_name?.trim()) {
-      errors.asset_name = '资产名称不能为空'
-    }
+    requireEnum(
+      cleanExcelString(item.scenario_type),
+      'scenario_type',
+      '场景类型不能为空',
+      VALID_SCENARIOS,
+      '场景类型非法，可选：s1_no_record / s2_no_outasset / s3_status_mismatch',
+      errors,
+    )
+    requireDate(
+      item.discovery_date,
+      'discovery_date',
+      '发现日期不能为空',
+      '发现日期格式应为 YYYY-MM-DD',
+      errors,
+    )
+    requireNonEmpty(item.discovery_location, 'discovery_location', '发现地点不能为空', errors)
+    requireNonEmpty(item.asset_name, 'asset_name', '资产名称不能为空', errors)
     // S2/S3 场景下关联资产编码必填
     if (
       (item.scenario_type === ScenarioType.S2_NO_OUTASSET ||
@@ -179,36 +191,21 @@ const importConfig: BatchImportConfig<UnregisteredAssetExcelRow, UnregisteredAss
     ) {
       errors.related_asset_code = '当前场景下关联资产编码为必填项'
     }
-    // 预估价值校验
-    if (
-      item.estimated_value !== undefined &&
-      item.estimated_value !== null &&
-      item.estimated_value !== ''
-    ) {
-      const value = Number(item.estimated_value)
-      if (isNaN(value) || value < 0) {
-        errors.estimated_value = '预估价值必须为非负数字'
-      }
-    }
+    optionalNumber(item.estimated_value, 'estimated_value', '预估价值必须为非负数字', errors)
     return { valid: Object.keys(errors).length === 0, errors }
   },
   transformToApiData: (row: UnregisteredAssetExcelRow): UnregisteredAssetCreateForm => ({
-    scenario_type: row.scenario_type.trim(),
-    discovery_date: row.discovery_date.trim(),
-    discovery_location: row.discovery_location.trim(),
-    asset_name: row.asset_name.trim(),
-    asset_brand: row.asset_brand?.trim() || null,
-    asset_specification: row.asset_specification?.trim() || null,
-    unregistered_asset_type: row.asset_type_code?.trim() || null,
-    estimated_value:
-      row.estimated_value !== undefined &&
-      row.estimated_value !== null &&
-      row.estimated_value !== ''
-        ? Number(row.estimated_value)
-        : null,
-    related_asset: row.related_asset_code?.trim() || null,
-    unregistered_asset_storage: row.target_storage_code?.trim() || null,
-    handle_description: row.handle_description?.trim() || null,
+    scenario_type: cleanExcelString(row.scenario_type),
+    discovery_date: cleanExcelString(row.discovery_date),
+    discovery_location: cleanExcelString(row.discovery_location),
+    asset_name: cleanExcelString(row.asset_name),
+    asset_brand: trimmedOrNull(row.asset_brand),
+    asset_specification: trimmedOrNull(row.asset_specification),
+    unregistered_asset_type: trimmedOrNull(row.asset_type_code),
+    estimated_value: hasNumberValue(row.estimated_value) ? Number(row.estimated_value) : null,
+    related_asset: trimmedOrNull(row.related_asset_code),
+    unregistered_asset_storage: trimmedOrNull(row.target_storage_code),
+    handle_description: trimmedOrNull(row.handle_description),
   }),
   createFn: (data: UnregisteredAssetCreateForm) => unregisteredAssetStore.create(data),
   idField: 'asset_name',

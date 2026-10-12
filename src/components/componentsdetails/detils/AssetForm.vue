@@ -135,6 +135,37 @@ const assetForm = reactive<AssetCreateFormExtended>({
 })
 
 /**
+ * 从可选字符串字段取值，null/undefined 兜底为默认值。
+ * P1-4 复杂度收敛用：把 `field ?? ''` 的分支从 getAssetCreateForm 字段字面量里收走。
+ */
+const pickStr = (value: string | null | undefined, fallback: string): string => value ?? fallback
+
+/**
+ * 从可选数值字段取值，null/undefined 兜底为默认值。
+ */
+const pickNum = (value: number | null | undefined, fallback: number): number => value ?? fallback
+
+/**
+ * 单价字段取值：null/undefined → ''，其余 String() 化（与原三元表达式逐字等价）。
+ */
+const pickPrice = (value: number | string | null | undefined): string =>
+  value != null ? String(value) : ''
+
+/**
+ * 从「可空关联对象」上安全取一个字符串字段。
+ * 对象或字段任一缺失均兜底为默认值，与原 `detail.rel?.field ?? ''` 逐字等价。
+ * P1-4 复杂度收敛用：把 `?.` 与 `??` 两处分支从调用方收走。
+ */
+const pickRel = (
+  rel: Record<string, unknown> | null | undefined,
+  field: string,
+  fallback: string,
+): string => {
+  const value = rel?.[field]
+  return typeof value === 'string' ? value : fallback
+}
+
+/**
  * 获取提交给后端的创建表单数据
  * 新增模式时不传入 asset_code（后端自动生成）
  * 编辑模式时传入 asset_code（作为唯一标识）
@@ -145,29 +176,100 @@ const assetForm = reactive<AssetCreateFormExtended>({
  * - asset_entry_person → SlugRelatedField(slug_field='employee_jobcode')
  * - asset_applicant → SlugRelatedField(slug_field='employee_jobcode')
  * - asset_manager ?SlugRelatedField(slug_field='employee_jobcode')
+ *
+ * P1-4：可选字段（类型 `string | null`，后端详情可能回 null）原逐字段 `?? 默认值`
+ * 共 16 处分支，令本 computed 圈复杂度达 18（上限 10）。现收敛至 pickStr / pickNum /
+ * pickPrice 三个模块级纯函数——把「空值兜底」分支从每个字段的字面量里收走，
+ * 字段映射本身（键名、目标类型）逐字段不变，语义等价：null/undefined → 默认值，
+ * 其余原样透传。
  */
 const getAssetCreateForm = computed(() => {
   return {
-    asset_name: assetForm.asset_name ?? '',
-    asset_specification: assetForm.asset_specification ?? '',
-    asset_brand: assetForm.asset_brand ?? '',
-    asset_unit: assetForm.asset_unit ?? '',
-    asset_purchase_price:
-      assetForm.asset_purchase_price != null ? String(assetForm.asset_purchase_price) : '',
-    asset_purchase_number: assetForm.asset_purchase_number ?? 1,
-    asset_purchase_date: assetForm.asset_purchase_date ?? '',
-    asset_warranty_period: assetForm.asset_warranty_period ?? 0,
-    asset_entry_date: assetForm.asset_entry_date ?? '',
-    asset_type: assetForm.asset_type ?? '',
-    asset_entry_person: assetForm.asset_entry_person ?? '',
-    asset_contract: assetForm.asset_contract ?? '',
-    asset_applicant: assetForm.asset_applicant ?? '',
-    asset_manager: assetForm.asset_manager ?? '',
-    asset_using_location: assetForm.asset_using_location ?? '',
-    asset_storage: assetForm.asset_storage ?? '',
-    asset_description: assetForm.asset_description ?? '',
+    asset_name: pickStr(assetForm.asset_name, ''),
+    asset_specification: pickStr(assetForm.asset_specification, ''),
+    asset_brand: pickStr(assetForm.asset_brand, ''),
+    asset_unit: pickStr(assetForm.asset_unit, ''),
+    asset_purchase_price: pickPrice(assetForm.asset_purchase_price),
+    asset_purchase_number: pickNum(assetForm.asset_purchase_number, 1),
+    asset_purchase_date: pickStr(assetForm.asset_purchase_date, ''),
+    asset_warranty_period: pickNum(assetForm.asset_warranty_period, 0),
+    asset_entry_date: pickStr(assetForm.asset_entry_date, ''),
+    asset_type: pickStr(assetForm.asset_type, ''),
+    asset_entry_person: pickStr(assetForm.asset_entry_person, ''),
+    asset_contract: pickStr(assetForm.asset_contract, ''),
+    asset_applicant: pickStr(assetForm.asset_applicant, ''),
+    asset_manager: pickStr(assetForm.asset_manager, ''),
+    asset_using_location: pickStr(assetForm.asset_using_location, ''),
+    asset_storage: pickStr(assetForm.asset_storage, ''),
+    asset_description: pickStr(assetForm.asset_description, ''),
   }
 })
+
+/**
+ * 从详情响应标量字段回填表单（BF-081：仅嵌套关联对象，无平铺 _code/_jobcode 键）。
+ */
+const applyScalarDetail = (detail: AssetDetail) => {
+  editRecordcode.value = detail.recordcode
+  assetForm.asset_code = detail.asset_code
+  assetForm.asset_name = detail.asset_name
+  assetForm.asset_specification = detail.asset_specification
+  assetForm.asset_brand = pickStr(detail.asset_brand, '')
+  assetForm.asset_unit = pickStr(detail.asset_unit, '')
+  assetForm.asset_purchase_price = Number(detail.asset_purchase_price)
+  assetForm.asset_purchase_number = Number(detail.asset_purchase_number)
+  assetForm.asset_purchase_date = pickStr(detail.asset_purchase_date, '')
+  assetForm.asset_warranty_period = Number(detail.asset_warranty_period ?? 0)
+  assetForm.asset_entry_date = pickStr(detail.asset_entry_date, '')
+  assetForm.asset_using_location = pickStr(detail.asset_using_location, '')
+  assetForm.asset_description = pickStr(detail.asset_description, '')
+  assetForm.asset_current_status = pickStr(detail.asset_current_status, '')
+}
+
+/**
+ * 从详情响应嵌套关联对象回填表单的编码与名称。
+ * 【BF-081】编码与名称一律直读嵌套对象——修复前读平铺键恒为空，且经 Promise.all 反查
+ * 关联端点（非 recordcode 定位，必 404 后整块置空）。关联名称随嵌套对象一并返回，无需再发查询。
+ * P1-4：`?.字段 ?? ''` 同构收敛至 pickRel，语义等价（对象缺失或字段缺失均落 ''）。
+ */
+const applyRelationDetail = (detail: AssetDetail) => {
+  const type = detail.asset_type as Record<string, unknown> | null | undefined
+  const contract = detail.asset_contract as Record<string, unknown> | null | undefined
+  const storage = detail.asset_storage as Record<string, unknown> | null | undefined
+  const entryPerson = detail.asset_entry_person as Record<string, unknown> | null | undefined
+  const applicant = detail.asset_applicant as Record<string, unknown> | null | undefined
+  const manager = detail.asset_manager as Record<string, unknown> | null | undefined
+
+  assetForm.asset_type = pickRel(type, 'type_code', '')
+  assetForm.asset_contract = pickRel(contract, 'contract_code', '')
+  assetForm.asset_storage = pickRel(storage, 'storage_code', '')
+  assetForm.asset_entry_person = pickRel(entryPerson, 'employee_jobcode', '')
+  assetForm.asset_applicant = pickRel(applicant, 'employee_jobcode', '')
+  assetForm.asset_manager = pickRel(manager, 'employee_jobcode', '')
+
+  assetForm.asset_type_name = pickRel(type, 'type_name', '')
+  assetForm.asset_storage_name = pickRel(storage, 'storage_name', '')
+  assetForm.asset_contract_name = pickRel(contract, 'contract_name', '')
+  assetForm.asset_entry_person_name = pickRel(entryPerson, 'employee_name', '')
+  assetForm.asset_applicant_name = pickRel(applicant, 'employee_name', '')
+  assetForm.asset_manager_name = pickRel(manager, 'employee_name', '')
+}
+
+/**
+ * 编辑模式加载详情并回填表单。以详情响应中的 recordcode 为准提交更新（【ID-2/取键契约】）。
+ */
+const loadAssetDetail = async (recordcode: string) => {
+  try {
+    const detail = await assetStore.getById(recordcode)
+    if (!detail) {
+      ElMessage.error('未找到该资产，请确认记录编码是否正确')
+      return
+    }
+    applyScalarDetail(detail)
+    applyRelationDetail(detail)
+  } catch {
+    ElMessage.error('无法加载资产详情，请检查网络连接后刷新页面重试')
+  }
+}
 
 const rules = assetFormRules
 
@@ -228,53 +330,6 @@ const handleAssetTypeChange = (typeName: string) => {
   }
 }
 
-// 编辑：加载详情（入参为 recordcode，后端 detail 路由定位键）
-const loadAssetDetail = async (recordcode: string) => {
-  try {
-    const detail = await assetStore.getById(recordcode)
-    if (!detail) {
-      ElMessage.error('未找到该资产，请确认记录编码是否正确')
-      return
-    }
-
-    // 【ID-2/取键契约】以详情响应中的 recordcode 为准提交更新
-    editRecordcode.value = detail.recordcode
-    assetForm.asset_code = detail.asset_code
-    assetForm.asset_name = detail.asset_name
-    assetForm.asset_specification = detail.asset_specification
-    assetForm.asset_brand = detail.asset_brand ?? ''
-    assetForm.asset_unit = detail.asset_unit ?? ''
-    assetForm.asset_purchase_price = Number(detail.asset_purchase_price)
-    assetForm.asset_purchase_number = Number(detail.asset_purchase_number)
-    assetForm.asset_purchase_date = detail.asset_purchase_date ?? ''
-    assetForm.asset_warranty_period = Number(detail.asset_warranty_period ?? 0)
-    assetForm.asset_entry_date = detail.asset_entry_date ?? ''
-    assetForm.asset_using_location = detail.asset_using_location ?? ''
-    assetForm.asset_description = detail.asset_description ?? ''
-    assetForm.asset_current_status = detail.asset_current_status ?? ''
-
-    // 【BF-081】detail 路由由 AssetDetailSerializer 输出：仅嵌套关联对象
-    // （asset_type/asset_contract/asset_storage/asset_*_person），无平铺 _code/_jobcode 键。
-    // 编码与名称一律直读嵌套——修复前读平铺键恒为空，且经 Promise.all 反查关联端点（非 recordcode 定位，
-    // 必 404 后整块置空）。关联名称随嵌套对象一并返回，无需再发查询。
-    assetForm.asset_type = detail.asset_type?.type_code ?? ''
-    assetForm.asset_contract = detail.asset_contract?.contract_code ?? ''
-    assetForm.asset_storage = detail.asset_storage?.storage_code ?? ''
-    assetForm.asset_entry_person = detail.asset_entry_person?.employee_jobcode ?? ''
-    assetForm.asset_applicant = detail.asset_applicant?.employee_jobcode ?? ''
-    assetForm.asset_manager = detail.asset_manager?.employee_jobcode ?? ''
-
-    assetForm.asset_type_name = detail.asset_type?.type_name ?? ''
-    assetForm.asset_storage_name = detail.asset_storage?.storage_name ?? ''
-    assetForm.asset_contract_name = detail.asset_contract?.contract_name ?? ''
-    assetForm.asset_entry_person_name = detail.asset_entry_person?.employee_name ?? ''
-    assetForm.asset_applicant_name = detail.asset_applicant?.employee_name ?? ''
-    assetForm.asset_manager_name = detail.asset_manager?.employee_name ?? ''
-  } catch {
-    ElMessage.error('无法加载资产详情，请检查网络连接后刷新页面重试')
-  }
-}
-
 // 假设 assetForm 中有 asset_current_status
 const displayStatus = computed(() => getAssetStatusText(assetForm.asset_current_status))
 
@@ -293,37 +348,60 @@ const submitForm = () => {
     submitting.value = true
     try {
       if (isEditMode.value) {
-        // 【ID-2/取键契约】优先用回填捕获的 recordcode；路由参数兜底
-        const recordcode = editRecordcode.value || (route.query.code as string) || ''
-        if (!recordcode) {
-          ElMessage.error('缺少记录编码，无法更新资产')
-          return
-        }
-        await assetStore.update({
-          ...getAssetUpdateForm.value,
-          recordcode,
-        } as unknown as Partial<AssetDetail>)
-        ElMessage.success('更新成功')
+        await submitUpdate()
       } else {
-        const createdAssets = await assetStore.create(
-          getAssetCreateForm.value as unknown as Partial<AssetDetail>,
-        )
-        const assetCount = Array.isArray(createdAssets) ? createdAssets.length : 1
-        ElMessage.success(`录入成功，共创建 ${assetCount} 条资产记录`)
+        await submitCreate()
       }
       assetStore.setRefreshFlag(true)
       router.go(-1)
     } catch (error: unknown) {
-      const msg = isAxiosError(error)
-        ? error.response?.data?.message || '操作失败，请检查网络连接后重试'
-        : error instanceof Error
-          ? error.message
-          : '未知错误'
-      ElMessage.error(msg)
+      ElMessage.error(resolveSubmitError(error))
     } finally {
       submitting.value = false
     }
   })
+}
+
+/**
+ * 编辑模式提交：优先用回填捕获的 recordcode，路由参数兜底（【ID-2/取键契约】）。
+ */
+const submitUpdate = async () => {
+  const recordcode = editRecordcode.value || (route.query.code as string) || ''
+  if (!recordcode) {
+    ElMessage.error('缺少记录编码，无法更新资产')
+    return
+  }
+  await assetStore.update({
+    ...getAssetUpdateForm.value,
+    recordcode,
+  } as unknown as Partial<AssetDetail>)
+  ElMessage.success('更新成功')
+}
+
+/**
+ * 新增模式提交：不传定位键，后端自动生成并返回 List[AssetDetail]。
+ */
+const submitCreate = async () => {
+  const createdAssets = await assetStore.create(
+    getAssetCreateForm.value as unknown as Partial<AssetDetail>,
+  )
+  const assetCount = Array.isArray(createdAssets) ? createdAssets.length : 1
+  ElMessage.success(`录入成功，共创建 ${assetCount} 条资产记录`)
+}
+
+/**
+ * 将提交失败的异常解析为用户可读文案。
+ * 分支与原 submitForm 内联三元逐一等价：axios 优先取响应 message（缺失时用操作失败兜底），
+ * 其次取 Error.message，最后用未知错误兜底。
+ */
+const resolveSubmitError = (error: unknown): string => {
+  if (isAxiosError(error)) {
+    return error.response?.data?.message || '操作失败，请检查网络连接后重试'
+  }
+  if (error instanceof Error) {
+    return error.message
+  }
+  return '未知错误'
 }
 
 const resetForm = () => {

@@ -82,6 +82,51 @@ let appInitialized = false
 
 // 设置路由守卫
 export const setupAuthGuard = (router: Router) => {
+  // ===== P1-4 复杂度收敛：beforeEach 按阶段下沉（语义逐行等价）=====
+
+  /** 不需要认证的页面直接放行（requiresAuth: false 或白名单） */
+  const shouldBypassAuth = (to: RouteLocationNormalized): boolean =>
+    to.meta.requiresAuth === false || whiteList.includes(to.path)
+
+  /** 未登录分支：非 /login 提示并重定向，/login 直接放行 */
+  const handleUnauthenticated = (to: RouteLocationNormalized): string | true => {
+    if (to.path !== '/login') {
+      ElMessage.warning('请先登录')
+      return '/login'
+    }
+    return true
+  }
+
+  /** 已登录分支：确保用户信息与权限已加载，再做 RBAC 检查 */
+  const handleAuthenticated = async (to: RouteLocationNormalized): Promise<string | true> => {
+    const authStore = useAuthStore()
+    try {
+      if (!authStore.authInfo) {
+        await authStore.getAuthInfo()
+      }
+      if (!authStore.permissionsLoaded) {
+        await authStore.loadMyPermissions()
+      }
+      if (
+        !checkRoleAccess(
+          to.path,
+          authStore.userRole,
+          authStore.isSuperuser,
+          to.meta.requiredMinRole as string,
+        )
+      ) {
+        ElMessage.error('您没有权限访问该页面')
+        return '/main'
+      }
+      return true
+    } catch (error) {
+      logError('router/guards', 'Token验证失败', error)
+      authStore.silentLogout()
+      ElMessage.error('登录已过期，请重新登录')
+      return '/login'
+    }
+  }
+
   // 全局前置守卫
   router.beforeEach(async (to, _from) => {
     const authStore = useAuthStore()
@@ -104,68 +149,19 @@ export const setupAuthGuard = (router: Router) => {
         await authStore.initAuthState()
       }
 
-      // 检查是否需要认证
       // 已登录用户访问 /login 时重定向到主页（必须在白名单检查之前）
       if (authStore.isLoggedIn && to.path === '/login') {
         return '/main'
       }
 
-      // 不需要认证的页面直接放行（如扫码页 requiresAuth: false）
-      if (to.meta.requiresAuth === false) {
+      if (shouldBypassAuth(to)) {
         return true
       }
 
-      if (whiteList.includes(to.path)) {
-        // 在白名单中，直接放行
-        return true
-      }
-
-      // 检查是否已登录（cookie 通道 access_token 仅内存，isLoggedIn 为唯一判定依据）
       if (authStore.isLoggedIn && authStore.access_token) {
-        // 已登录，检查token是否有效
-        try {
-          // 如果没有用户信息，尝试获取
-          if (!authStore.authInfo) {
-            await authStore.getAuthInfo()
-          }
-
-          // [N1] 权限未加载完成时必须联网拉取。
-          // 用 permissionsLoaded 而非 permissions.length，区分"已加载但为空"
-          // （如 regular_user 无角色，后端返回 []）与"未加载"（刷新后/登录后），
-          // 避免空权限用户每次导航都重复请求
-          if (!authStore.permissionsLoaded) {
-            await authStore.loadMyPermissions()
-          }
-
-          // RBAC: 检查角色是否有权访问目标路由（isSuperuser 来自 authStore）
-          if (
-            !checkRoleAccess(
-              to.path,
-              authStore.userRole,
-              authStore.isSuperuser,
-              to.meta.requiredMinRole as string,
-            )
-          ) {
-            ElMessage.error('您没有权限访问该页面')
-            return '/main' // 无权限则回首页
-          }
-
-          return true
-        } catch (error) {
-          // token无效，清除登录状态并重定向到登录页
-          logError('router/guards', 'Token验证失败', error)
-          authStore.silentLogout()
-          ElMessage.error('登录已过期，请重新登录')
-          return '/login'
-        }
-      } else {
-        // 未登录，重定向到登录页
-        if (to.path !== '/login') {
-          ElMessage.warning('请先登录')
-          return '/login'
-        }
-        return true
+        return await handleAuthenticated(to)
       }
+      return handleUnauthenticated(to)
     } catch (error) {
       logError('router/guards', '路由守卫错误', error)
       return '/login'

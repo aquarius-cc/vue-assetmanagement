@@ -5,6 +5,34 @@ import type { ContractCreateForm } from '@/types/contract'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { ContractExcelRow } from '@/types/batch-import'
 import type { HeaderExample, ExampleColumn } from '@/utils/batchImportHelpers'
+import {
+  requireNonEmpty,
+  requireNumber,
+  requireDate,
+  requireEnum,
+  optionalDate,
+  optionalNumber,
+} from '@/utils/batchImport/validation'
+
+/** 合同类型允许集（validateItem 枚举校验单一来源） */
+const CONTRACT_TYPES = [
+  'tender_procurement',
+  'service',
+  'information_construction',
+  'direct_procurement',
+] as const
+
+/** 合同状态允许集（validateItem 枚举校验单一来源） */
+const CONTRACT_STATUSES = [
+  'purchasing',
+  'purchase_finished',
+  'receive_check',
+  'initial_check',
+  'project_settlement',
+  'settlement_done',
+  'final_check',
+  'project_finished',
+] as const
 
 // ===== 批量导入配置 =====
 export const contractImportConfig: BatchImportConfig<ContractExcelRow, ContractCreateForm> = {
@@ -38,107 +66,64 @@ export const contractImportConfig: BatchImportConfig<ContractExcelRow, ContractC
     'contract_status',
   ],
 
-  // 单条数据验证
+  // 单条数据验证（P1-4：同构分支收敛至 batchImport/validation 原语，本体降为纯调用序列）
   validateItem: (item: ContractExcelRow) => {
     const errors: Record<string, string> = {}
 
-    // 必填字段非空校验
-    if (!item.contract_code?.trim()) {
-      errors.contract_code = '合同编码不能为空'
-    }
-
-    if (!item.contract_name?.trim()) {
-      errors.contract_name = '合同名称不能为空'
-    }
-
-    if (!item.supplier_name?.trim()) {
-      errors.supplier_name = '供应商不能为空'
-    }
-
-    // 合同金额校验
-    const price = Number(item.contract_amount)
-    if (isNaN(price) || price < 0) {
-      errors.contract_amount = '合同金额必须是有效数字且不小于0'
-    }
-
-    // 签订日期格式校验
-    const signingDateRaw = item.contract_start_date
-    const signingDate =
-      typeof signingDateRaw === 'string' ? signingDateRaw.trim() : String(signingDateRaw ?? '')
-    if (!signingDate) {
-      errors.contract_start_date = '签订日期不能为空'
-    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(signingDate)) {
-      errors.contract_start_date = '签订日期格式应为 YYYY-MM-DD'
-    }
-
-    // 合同类型校验
-    const validTypes = [
-      'tender_procurement',
-      'service',
-      'information_construction',
-      'direct_procurement',
-    ]
-    if (!item.contract_type?.trim()) {
-      errors.contract_type = '合同类型不能为空'
-    } else if (!validTypes.includes(item.contract_type)) {
-      errors.contract_type =
-        '合同类型无效，可选：tender_procurement / service / information_construction / direct_procurement'
-    }
-
-    // 保修期校验
-    const warranty = Number(item.contract_warranty_period)
-    if (isNaN(warranty) || warranty < 0) {
-      errors.contract_warranty_period = '保修期必须是有效数字且不小于0'
-    }
-
-    // 合同状态校验
-    const validStatuses = [
-      'purchasing',
-      'purchase_finished',
-      'receive_check',
-      'initial_check',
-      'project_settlement',
-      'settlement_done',
-      'final_check',
-      'project_finished',
-    ]
-    if (!item.contract_status?.trim()) {
-      errors.contract_status = '合同状态不能为空'
-    } else if (!validStatuses.includes(item.contract_status)) {
-      errors.contract_status =
-        '合同状态无效，可选：purchasing / purchase_finished / receive_check / initial_check / project_settlement / settlement_done / final_check / project_finished'
-    }
-
-    // 可选字段校验
-    if (item.initial_check_date) {
-      const dateRaw = item.initial_check_date
-      const dateStr = typeof dateRaw === 'string' ? dateRaw.trim() : String(dateRaw)
-      if (dateStr && !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        errors.initial_check_date = '初验日期格式应为 YYYY-MM-DD'
-      }
-    }
-
-    if (item.final_check_date) {
-      const dateRaw = item.final_check_date
-      const dateStr = typeof dateRaw === 'string' ? dateRaw.trim() : String(dateRaw)
-      if (dateStr && !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        errors.final_check_date = '终验日期格式应为 YYYY-MM-DD'
-      }
-    }
-
-    if (item.settlemented_price !== undefined && item.settlemented_price !== '') {
-      const settlementPrice = Number(item.settlemented_price)
-      if (isNaN(settlementPrice) || settlementPrice < 0) {
-        errors.settlemented_price = '结算价格必须是有效数字且不小于0'
-      }
-    }
-
-    if (item.amount_paid !== undefined && item.amount_paid !== '') {
-      const paidPrice = Number(item.amount_paid)
-      if (isNaN(paidPrice) || paidPrice < 0) {
-        errors.amount_paid = '已付金额必须是有效数字且不小于0'
-      }
-    }
+    requireNonEmpty(item.contract_code, 'contract_code', '合同编码不能为空', errors)
+    requireNonEmpty(item.contract_name, 'contract_name', '合同名称不能为空', errors)
+    requireNonEmpty(item.supplier_name, 'supplier_name', '供应商不能为空', errors)
+    requireNumber(
+      item.contract_amount,
+      'contract_amount',
+      '合同金额必须是有效数字且不小于0',
+      true,
+      errors,
+    )
+    requireDate(
+      item.contract_start_date,
+      'contract_start_date',
+      '签订日期不能为空',
+      '签订日期格式应为 YYYY-MM-DD',
+      errors,
+    )
+    requireEnum(
+      item.contract_type,
+      'contract_type',
+      '合同类型不能为空',
+      CONTRACT_TYPES,
+      '合同类型无效，可选：tender_procurement / service / information_construction / direct_procurement',
+      errors,
+    )
+    requireNumber(
+      item.contract_warranty_period,
+      'contract_warranty_period',
+      '保修期必须是有效数字且不小于0',
+      true,
+      errors,
+    )
+    requireEnum(
+      item.contract_status,
+      'contract_status',
+      '合同状态不能为空',
+      CONTRACT_STATUSES,
+      '合同状态无效，可选：purchasing / purchase_finished / receive_check / initial_check / project_settlement / settlement_done / final_check / project_finished',
+      errors,
+    )
+    optionalDate(
+      item.initial_check_date,
+      'initial_check_date',
+      '初验日期格式应为 YYYY-MM-DD',
+      errors,
+    )
+    optionalDate(item.final_check_date, 'final_check_date', '终验日期格式应为 YYYY-MM-DD', errors)
+    optionalNumber(
+      item.settlemented_price,
+      'settlemented_price',
+      '结算价格必须是有效数字且不小于0',
+      errors,
+    )
+    optionalNumber(item.amount_paid, 'amount_paid', '已付金额必须是有效数字且不小于0', errors)
 
     return { valid: Object.keys(errors).length === 0, errors }
   },

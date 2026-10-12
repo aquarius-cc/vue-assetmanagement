@@ -215,28 +215,34 @@ const openEditDialog = (row: Role) => {
   dialogVisible.value = true
 }
 
+/** 从提交错误中提取可展示的消息（优先后端 message，回退本地 message，最后按模式兜底） */
+const extractSubmitErrorMessage = (error: unknown, isEditBranch: boolean): string => {
+  const err = error as { response?: { data?: { message?: string } }; message?: string }
+  return err?.response?.data?.message || err?.message || (isEditBranch ? '更新失败' : '创建失败')
+}
+
+/** 提交成功后的分支（编辑/新建走不同 store 方法与成功文案） */
+const submitRole = async () => {
+  if (isEdit.value && editingId.value) {
+    await roleStore.update({ ...formData, id: editingId.value })
+    ElMessage.success('更新成功')
+  } else {
+    await roleStore.create({ ...formData })
+    ElMessage.success('创建成功')
+  }
+}
+
 const handleSubmit = async () => {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
     if (!valid) return
     submitting.value = true
     try {
-      if (isEdit.value && editingId.value) {
-        await roleStore.update({ ...formData, id: editingId.value })
-        ElMessage.success('更新成功')
-      } else {
-        await roleStore.create({ ...formData })
-        ElMessage.success('创建成功')
-      }
+      await submitRole()
       dialogVisible.value = false
       fetchRoles()
     } catch (error: unknown) {
-      const msg =
-        (error as { response?: { data?: { message?: string } }; message?: string })?.response?.data
-          ?.message ||
-        (error as { message?: string })?.message ||
-        (isEdit.value ? '更新失败' : '创建失败')
-      ElMessage.error(msg)
+      ElMessage.error(extractSubmitErrorMessage(error, isEdit.value))
     } finally {
       submitting.value = false
     }

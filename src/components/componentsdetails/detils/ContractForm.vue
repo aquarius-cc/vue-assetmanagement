@@ -374,6 +374,45 @@ onMounted(async () => {
   }
 })
 
+/** 提交失败的用户提示（P1-4：从 submitForm 抽出，吸收 axios/Error 分支税） */
+const notifySubmitError = (error: unknown) => {
+  const errorMsg = isAxiosError(error)
+    ? `操作失败${error.response?.data?.message || '服务器错误'}`
+    : error instanceof Error
+      ? error.message
+      : '操作失败：未知错误'
+  ElMessage.error(errorMsg)
+  logError('components/componentsdetails/detils/ContractForm', '合同提交失败:', error)
+}
+
+/** 构建提交数据（P1-4：从 submitForm 抽出，吸收 Number() 转换链与 recordcode 注入分支） */
+const buildSubmitData = (): ContractCreateForm & { recordcode?: string } => {
+  const submitData: ContractCreateForm & { recordcode?: string } = {
+    contract_code: contractForm.contract_code,
+    contract_name: contractForm.contract_name,
+    contract_amount: Number(contractForm.contract_amount),
+    contract_status: contractForm.contract_status as ContractStatus,
+    contract_start_date: safeFormatDate(contractForm.contract_start_date) || '',
+    supplier_name: contractForm.supplier_name,
+    contract_type: contractForm.contract_type,
+    contract_warranty_period: Number(contractForm.contract_warranty_period),
+    settlemented_price: Number(contractForm.settlemented_price),
+    initial_check_date: safeFormatDate(contractForm.initial_check_date),
+    final_check_date: safeFormatDate(contractForm.final_check_date),
+  }
+  // 【BF-055】amount_paid 在创建入口的语义是「期初已付金额」，后端会将其规范化为
+  // 一条 approved 期初付款记录，此前此处未传导致该输入被静默丢弃（决策 2a）。
+  // 编辑态不得传：后端 Update 侧三字段已全部 read_only，改金额须走付款记录端点。
+  if (!isEdit.value) {
+    submitData.amount_paid = Number(contractForm.amount_paid) || 0
+  }
+  // 编辑模式必须携带 recordcode，后端按 recordcode 定位更新（勿用 contract_code）
+  if ((route.query.code as string) && isEdit.value) {
+    submitData.recordcode = route.query.code as string
+  }
+  return submitData
+}
+
 // ========== 表单提交 ==========
 const submitForm = () => {
   formRef.value.validate(async (valid: boolean) => {
@@ -382,30 +421,7 @@ const submitForm = () => {
       return
     }
 
-    // 构建提交数据，确保类型正确
-    const submitData: ContractCreateForm & { recordcode?: string } = {
-      contract_code: contractForm.contract_code,
-      contract_name: contractForm.contract_name,
-      contract_amount: Number(contractForm.contract_amount),
-      contract_status: contractForm.contract_status as ContractStatus,
-      contract_start_date: safeFormatDate(contractForm.contract_start_date) || '',
-      supplier_name: contractForm.supplier_name,
-      contract_type: contractForm.contract_type,
-      contract_warranty_period: Number(contractForm.contract_warranty_period),
-      settlemented_price: Number(contractForm.settlemented_price),
-      initial_check_date: safeFormatDate(contractForm.initial_check_date),
-      final_check_date: safeFormatDate(contractForm.final_check_date),
-    }
-    // 【BF-055】amount_paid 在创建入口的语义是「期初已付金额」，后端会将其规范化为
-    // 一条 approved 期初付款记录，此前此处未传导致该输入被静默丢弃（决策 2a）。
-    // 编辑态不得传：后端 Update 侧三字段已全部 read_only，改金额须走付款记录端点。
-    if (!isEdit.value) {
-      submitData.amount_paid = Number(contractForm.amount_paid) || 0
-    }
-    // 编辑模式必须携带 recordcode，后端按 recordcode 定位更新（勿用 contract_code）
-    if ((route.query.code as string) && isEdit.value) {
-      submitData.recordcode = route.query.code as string
-    }
+    const submitData = buildSubmitData()
 
     try {
       if (isEdit.value) {
@@ -418,13 +434,7 @@ const submitForm = () => {
       contractStore.setRefreshFlag(true)
       router.push({ name: 'ContractDetails' })
     } catch (error: unknown) {
-      const errorMsg = isAxiosError(error)
-        ? `操作失败${error.response?.data?.message || '服务器错误'}`
-        : error instanceof Error
-          ? error.message
-          : '操作失败：未知错误'
-      ElMessage.error(errorMsg)
-      logError('components/componentsdetails/detils/ContractForm', '合同提交失败:', error)
+      notifySubmitError(error)
     }
   })
 }

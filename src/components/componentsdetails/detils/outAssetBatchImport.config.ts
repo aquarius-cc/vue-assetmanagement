@@ -6,6 +6,14 @@ import { OutAssetType, OutAssetCurrentStatus } from '@/types/outasset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { OutAssetExcelRow } from '@/types/batch-import'
 import type { HeaderExample, ExampleColumn } from '@/utils/batchImportHelpers'
+import {
+  requireNonEmpty,
+  requirePositiveInteger,
+  requireDate,
+  optionalDateTrimmed,
+  optionalEnum,
+  trimmedOr,
+} from '@/utils/batchImport/validation'
 
 // ===== 批量导入配置 =====
 export const outAssetImportConfig: BatchImportConfig<OutAssetExcelRow, OutAssetCreateForm> = {
@@ -39,64 +47,55 @@ export const outAssetImportConfig: BatchImportConfig<OutAssetExcelRow, OutAssetC
     'outasset_date',
   ],
 
-  // 单条数据验证
+  // 单条数据验证（P1-4：同构分支收敛至 batchImport/validation 原语，本体降为纯调用序列）
   validateItem: (item: OutAssetExcelRow) => {
     const errors: Record<string, string> = {}
 
-    // 出库资产编码校验
-    if (!item.outasset_code?.trim()) {
-      errors.outasset_code = '出库资产编码不能为空'
-    }
+    // [HR-01] 后端 v1.1.0 改为 read_only，申请/保管人工号校验已移除
+    requireNonEmpty(item.outasset_code, 'outasset_code', '出库资产编码不能为空', errors)
+    requirePositiveInteger(item.outasset_number, 'outasset_number', '出库数量必须是正整数', errors)
+    requireDate(
+      item.outasset_date,
+      'outasset_date',
+      '出库日期不能为空',
+      '出库日期格式应为 YYYY-MM-DD',
+      errors,
+    )
 
-    // 出库数量校验
-    const quantity = Number(item.outasset_number)
-    if (isNaN(quantity) || !Number.isInteger(quantity) || quantity < 1) {
-      errors.outasset_number = '出库数量必须是正整数'
-    }
-
-    // [HR-01] 后端 v1.1.0 改为 read_only，移除申请人工号校验
-    // [HR-01] 后端 v1.1.0 改为 read_only，移除保管人工号校验
-
-    // 出库日期校验
-    const dateValue = item.outasset_date?.trim()
-    if (!dateValue) {
-      errors.outasset_date = '出库日期不能为空'
-    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-      errors.outasset_date = '出库日期格式应为 YYYY-MM-DD'
-    }
-
-    // 可选字段校验（如果有值）
+    // 可选字段校验（如果有值）——枚举清单由类型单一来源导出，消息动态拼接
     const validStatuses = Object.values(OutAssetCurrentStatus)
-    if (
-      item.outasset_current_status &&
-      !validStatuses.includes(item.outasset_current_status as OutAssetCurrentStatus)
-    ) {
-      errors.outasset_current_status = `资产状态非法，可选：${validStatuses.join(' / ')}`
-    }
+    optionalEnum(
+      item.outasset_current_status,
+      'outasset_current_status',
+      validStatuses,
+      `资产状态非法，可选：${validStatuses.join(' / ')}`,
+      errors,
+    )
 
     const validTypes = Object.values(OutAssetType)
-    if (item.outasset_type && !validTypes.includes(item.outasset_type as OutAssetType)) {
-      errors.outasset_type = `出库类型非法，可选：${validTypes.join(' / ')}`
-    }
+    optionalEnum(
+      item.outasset_type,
+      'outasset_type',
+      validTypes,
+      `出库类型非法，可选：${validTypes.join(' / ')}`,
+      errors,
+    )
 
-    if (item.return_date && !/^\d{4}-\d{2}-\d{2}$/.test(item.return_date.trim())) {
-      errors.return_date = '预计返回日期格式应为 YYYY-MM-DD'
-    }
+    optionalDateTrimmed(item.return_date, 'return_date', '预计返回日期格式应为 YYYY-MM-DD', errors)
 
     return { valid: Object.keys(errors).length === 0, errors }
   },
 
-  // Excel 行 → API 提交数据
+  // Excel 行 → API 提交数据（P1-4：`?.trim() || ''` 同构收敛至 trimmedOr）
   transformToApiData: (row: OutAssetExcelRow): OutAssetCreateForm => ({
     outasset_code: row.outasset_code.trim(),
     outasset_number: Number(row.outasset_number),
-    // [HR-01] 后端 v1.1.0 改为 read_only，移除 outasset_applicant_jobcode
-    // [HR-01] 后端 v1.1.0 改为 read_only，移除 outasset_manager_jobcode
+    // [HR-01] 后端 v1.1.0 改为 read_only，移除 outasset_applicant_jobcode / outasset_manager_jobcode
     outasset_date: row.outasset_date.trim(),
-    return_date: row.return_date?.trim() || '', // 改为空字符串
-    outasset_type: row.outasset_type?.trim() || OutAssetType.RECEIVE,
+    return_date: trimmedOr(row.return_date, ''), // 改为空字符串
+    outasset_type: trimmedOr(row.outasset_type, OutAssetType.RECEIVE),
     // [HR-01] 后端 v1.1.0 改为 read_only，移除 outasset_using_location
-    outasset_description: row.outasset_description?.trim() || '', // 改为空字符串
+    outasset_description: trimmedOr(row.outasset_description, ''), // 改为空字符串
   }),
 
   // placeholder: 实际提交逻辑在 handleSubmit 中直接调用 batchCreateOutAssets

@@ -114,6 +114,13 @@ import type { DamagedAssetCreateForm } from '@/types/damagedasset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { DamagedAssetExcelRow } from '@/types/batch-import'
 import { downloadExcelTemplate } from '@/utils/batchImport/templateExport'
+import {
+  requireNonEmpty,
+  requirePositiveInteger,
+  optionalDateTrimmed,
+  optionalEnum,
+  trimmedOrNull,
+} from '@/utils/batchImport/validation'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 
 // ===== 状态与实例 =====
@@ -135,32 +142,43 @@ const importConfig: BatchImportConfig<DamagedAssetExcelRow, DamagedAssetCreateFo
     描述: 'damaged_asset_description',
   },
   requiredFields: ['damaged_asset_code', 'damaged_asset_number', 'damaged_asset_storage_code'],
+  // [P1-4] 迁移至 validation.ts 原语库（DR-1），分支语义与原内联实现逐字等价
   validateItem: (item: DamagedAssetExcelRow) => {
     const errors: Record<string, string> = {}
-    if (!item.damaged_asset_code?.trim()) errors.damaged_asset_code = '资产编码不能为空'
-    const quantity = Number(item.damaged_asset_number)
-    if (isNaN(quantity) || !Number.isInteger(quantity) || quantity < 1)
-      errors.damaged_asset_number = '待报废数量必须是正整数'
-    if (!item.damaged_asset_storage_code?.trim())
-      errors.damaged_asset_storage_code = '仓库编码不能为空'
-    const dateValue = item.damaged_date?.trim()
-    if (dateValue && !/^\d{4}-\d{2}-\d{2}$/.test(dateValue))
-      errors.damaged_date = '待报废日期格式应为 YYYY-MM-DD'
-    const validStatuses = ['pending', 'approved', 'rejected']
-    if (item.approval_status && !validStatuses.includes(item.approval_status))
-      errors.approval_status = '审批状态非法，可选：pending / approved / rejected'
+    requireNonEmpty(item.damaged_asset_code, 'damaged_asset_code', '资产编码不能为空', errors)
+    requirePositiveInteger(
+      item.damaged_asset_number,
+      'damaged_asset_number',
+      '待报废数量必须是正整数',
+      errors,
+    )
+    requireNonEmpty(
+      item.damaged_asset_storage_code,
+      'damaged_asset_storage_code',
+      '仓库编码不能为空',
+      errors,
+    )
+    optionalDateTrimmed(item.damaged_date, 'damaged_date', '待报废日期格式应为 YYYY-MM-DD', errors)
+    optionalEnum(
+      item.approval_status,
+      'approval_status',
+      ['pending', 'approved', 'rejected'],
+      '审批状态非法，可选：pending / approved / rejected',
+      errors,
+    )
     return { valid: Object.keys(errors).length === 0, errors }
   },
   // [HALT] FE-C2修复：字段名从 damaged_asset_code 改为 asset_recordcode，与后端Serializer对齐
+  // [P1-4] 迁移至 validation.ts 原语库（DR-1），空值回退语义与原 `?.trim() || null` 逐字等价
   transformToApiData: (row: DamagedAssetExcelRow): DamagedAssetCreateForm => ({
-    asset_recordcode: row.damaged_asset_code?.trim() || null,
+    asset_recordcode: trimmedOrNull(row.damaged_asset_code),
     damaged_asset_number: Number(row.damaged_asset_number),
     damaged_asset_storage_code: row.damaged_asset_storage_code.trim(),
-    damaged_asset_contract_code: row.damaged_asset_contract_code?.trim() || null,
-    damaged_date: row.damaged_date?.trim() || null,
-    approval_status: row.approval_status?.trim() || null,
-    approver: row.approver?.trim() || null,
-    damaged_asset_description: row.damaged_asset_description?.trim() || null,
+    damaged_asset_contract_code: trimmedOrNull(row.damaged_asset_contract_code),
+    damaged_date: trimmedOrNull(row.damaged_date),
+    approval_status: trimmedOrNull(row.approval_status),
+    approver: trimmedOrNull(row.approver),
+    damaged_asset_description: trimmedOrNull(row.damaged_asset_description),
   }),
   createFn: (data: DamagedAssetCreateForm) => damagedAssetStore.create(data),
   idField: 'asset_recordcode',

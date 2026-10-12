@@ -38,6 +38,71 @@ export interface ExportOptions<T> {
  * 通用 Excel 导出 Composable
  * 提供列表导出（当前页/全部）和详情导出功能
  */
+/**
+ * 弹出导出范围选择（confirm=当前页 / cancel=全部 / close=放弃）。
+ * 返回 'current' | 'all' | null（null 表示用户放弃导出）。
+ */
+async function promptExportScope<T>(options: {
+  entityName: string
+  currentData: T[]
+  totalCount: number
+}): Promise<'current' | 'all' | null> {
+  const { entityName, currentData, totalCount } = options
+  try {
+    const result = await ElMessageBox({
+      title: '选择导出范围',
+      message: h('div', null, [
+        h('p', null, `当前页面显示 ${currentData.length} 条${entityName}数据`),
+        h('p', null, `总共有 ${totalCount} 条${entityName}数据`),
+        h('br'),
+        h('p', null, '请选择导出范围：'),
+      ]),
+      showCancelButton: true,
+      confirmButtonText: '导出当前页面',
+      cancelButtonText: '导出全部数据',
+      distinguishCancelAndClose: true,
+      closeOnClickModal: false,
+    })
+    if (result === 'confirm') return 'current'
+    if (result === 'cancel') return 'all'
+    return null
+  } catch (err) {
+    if (err === 'cancel') return 'all'
+    if (err === 'close') return null
+    throw err
+  }
+}
+
+/** 拉取全部数据并生成文件名；超 1000 条先确认。失败返回 null。 */
+async function resolveExportAll<T>(options: {
+  entityName: string
+  totalCount: number
+  fetchAllData: () => Promise<T[]>
+}): Promise<{ exportData: T[]; fileName: string } | null> {
+  const { entityName, totalCount, fetchAllData } = options
+  ElMessage.info(`正在准备全部${entityName}数据，请稍候...`)
+  if (totalCount > 1000) {
+    const confirm = await ElMessageBox.confirm(
+      `数据量较大（共 ${totalCount} 条），导出可能需要一些时间，是否继续？`,
+      '导出确认',
+      {
+        confirmButtonText: '继续',
+        cancelButtonText: '取消',
+        type: 'warning',
+      },
+    ).catch(() => false)
+    if (!confirm) return null
+  }
+  try {
+    const exportData = await fetchAllData()
+    return { exportData, fileName: `${entityName}列表_全部_${exportData.length}条.xlsx` }
+  } catch (error) {
+    logError('composables/useExcelExport', '获取全部数据失败:', error)
+    ElMessage.error('获取全部数据失败，请重试')
+    return null
+  }
+}
+
 export function useExcelExport() {
   /**
    * 列表导出：弹出选择范围（当前页/全部），确认后导出
@@ -52,63 +117,19 @@ export function useExcelExport() {
       sheetName = '数据',
     } = options
 
-    let exportCurrent = false
-    let exportAll = false
-
-    try {
-      const result = await ElMessageBox({
-        title: '选择导出范围',
-        message: h('div', null, [
-          h('p', null, `当前页面显示 ${currentData.length} 条${entityName}数据`),
-          h('p', null, `总共有 ${totalCount} 条${entityName}数据`),
-          h('br'),
-          h('p', null, '请选择导出范围：'),
-        ]),
-        showCancelButton: true,
-        confirmButtonText: '导出当前页面',
-        cancelButtonText: '导出全部数据',
-        distinguishCancelAndClose: true,
-        closeOnClickModal: false,
-      })
-      if (result === 'confirm') exportCurrent = true
-      else if (result === 'cancel') exportAll = true
-      else return
-    } catch (err) {
-      if (err === 'cancel') exportAll = true
-      else if (err === 'close') return
-      else throw err
-    }
+    const scope = await promptExportScope({ entityName, currentData, totalCount })
+    if (!scope) return
 
     let exportData: T[] = []
     let fileName: string
-
-    if (exportCurrent) {
+    if (scope === 'current') {
       exportData = currentData
       fileName = `${entityName}列表_当前页面_${currentData.length}条.xlsx`
-    } else if (exportAll) {
-      ElMessage.info(`正在准备全部${entityName}数据，请稍候...`)
-      if (totalCount > 1000) {
-        const confirm = await ElMessageBox.confirm(
-          `数据量较大（共 ${totalCount} 条），导出可能需要一些时间，是否继续？`,
-          '导出确认',
-          {
-            confirmButtonText: '继续',
-            cancelButtonText: '取消',
-            type: 'warning',
-          },
-        ).catch(() => false)
-        if (!confirm) return
-      }
-      try {
-        exportData = await fetchAllData()
-        fileName = `${entityName}列表_全部_${exportData.length}条.xlsx`
-      } catch (error) {
-        logError('composables/useExcelExport', '获取全部数据失败:', error)
-        ElMessage.error('获取全部数据失败，请重试')
-        return
-      }
     } else {
-      return
+      const all = await resolveExportAll({ entityName, totalCount, fetchAllData })
+      if (!all) return
+      exportData = all.exportData
+      fileName = all.fileName
     }
 
     await exportToExcel({

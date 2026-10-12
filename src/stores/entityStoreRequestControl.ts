@@ -39,6 +39,108 @@ export interface RequestControlContext<T> {
   debounceMap: Map<string, number>
 }
 
+type RequestOptions = { cacheable?: boolean; debounced?: boolean }
+
+/** 缓存写入：仅当 cacheable 且 config.enableCache 时写入 */
+function applyCache<R, T>(
+  ctx: RequestControlContext<T>,
+  key: string,
+  result: R,
+  options: RequestOptions,
+): void {
+  if (options.cacheable && ctx.config.enableCache) {
+    setCache(ctx.cache, key, result)
+  }
+}
+
+/** 防抖执行路径：延迟执行 fn，成功后缓存并 resolve */
+function buildDebouncedPromise<R, T>(
+  ctx: RequestControlContext<T>,
+  key: string,
+  fn: () => Promise<R>,
+  options: RequestOptions,
+): Promise<R> {
+  return new Promise<R>((resolve, reject) => {
+    runDebounced(
+      ctx.debounceMap,
+      key,
+      async () => {
+        try {
+          const result = await fn()
+          applyCache(ctx, key, result, options)
+          resolve(result)
+        } catch (error) {
+          reject(error)
+        }
+      },
+      ctx.config.debounceDelay,
+    )
+  })
+}
+
+/** 立即执行路径：直接运行 fn，成功后缓存 */
+function buildImmediatePromise<R, T>(
+  ctx: RequestControlContext<T>,
+  key: string,
+  fn: () => Promise<R>,
+  options: RequestOptions,
+): Promise<R> {
+  return (async () => {
+    const result = await fn()
+    applyCache(ctx, key, result, options)
+    return result
+  })()
+}
+
+/** 从缓存读取：命中返回数据，未命中返回 null（分页请求不缓存） */
+function tryGetCached<R, T>(
+  ctx: RequestControlContext<T>,
+  key: string,
+  cacheable: boolean,
+): R | null {
+  const { config, cache } = ctx
+  const isPaginationRequest = key.startsWith('list:')
+  if (!(cacheable && config.enableCache && !isPaginationRequest)) return null
+  return getCached<R>(cache, key, config.cacheTTL)
+}
+
+/** pending 去重：存在相同进行中请求则返回其 Promise，否则返回 null */
+function getExistingPendingPromise<R, T>(
+  ctx: RequestControlContext<T>,
+  key: string,
+): Promise<R> | null {
+  if (!isRequestPending(ctx.pendingSet, key)) return null
+  return (globalPendingPromises.get(ctx.config.storeId)?.get(key) as Promise<R> | undefined) ?? null
+}
+
+/** 注册新请求：设置 pending 标记、loading 引用计数递增、保存 Promise 供后续复用 */
+function registerPendingRequest<R, T>(
+  ctx: RequestControlContext<T>,
+  key: string,
+  promise: Promise<R>,
+): void {
+  const { config, entityState, loadingCount, pendingSet } = ctx
+  setRequestPending(pendingSet, key, true)
+  entityState.value.loading = true
+  loadingCount.value++
+  if (!globalPendingPromises.has(config.storeId)) {
+    globalPendingPromises.set(config.storeId, new Map())
+  }
+  globalPendingPromises.get(config.storeId)!.set(key, promise)
+}
+
+/** 请求结束后清理：loading 引用计数递减（归零时关闭 loading）、清除 pending 标记与 Promise 缓存 */
+function cleanupPendingRequest<T>(ctx: RequestControlContext<T>, key: string): void {
+  const { config, entityState, loadingCount, pendingSet } = ctx
+  loadingCount.value--
+  if (loadingCount.value <= 0) {
+    entityState.value.loading = false
+    loadingCount.value = 0
+  }
+  setRequestPending(pendingSet, key, false)
+  globalPendingPromises.get(config.storeId)?.delete(key)
+}
+
 /**
  * 带缓存/防重/防抖的请求包装器
  * 使用引用计数管理 loading 状态，避免并发请求时提前关闭 loading
@@ -49,84 +151,29 @@ export async function withRequestControl<R, T = unknown>(
   fn: () => Promise<R>,
   options: { cacheable?: boolean; debounced?: boolean } = {},
 ): Promise<R> {
-  const { config, entityState, loadingCount, cache, pendingSet, debounceMap } = ctx
+  const { config } = ctx
   const { cacheable = false, debounced = false } = options
 
-  // ✅ 优化：分页请求不缓存（避免数据不更新问题）
-  const isPaginationRequest = key.startsWith('list:')
-  const shouldCache = cacheable && config.enableCache && !isPaginationRequest
   // 1. 尝试从缓存读取（仅非分页请求）
-  if (shouldCache) {
-    const cached = getCached<R>(cache, key, config.cacheTTL)
-    if (cached !== null) return cached
-  }
+  const cached = tryGetCached<R, T>(ctx, key, cacheable)
+  if (cached !== null) return cached
 
   // 2. 如果已有相同请求正在进行，直接返回它的 Promise
-  if (isRequestPending(pendingSet, key)) {
-    const existingPromise = globalPendingPromises.get(config.storeId)?.get(key)
-    if (existingPromise) {
-      return existingPromise as Promise<R>
-    }
-  }
+  const existing = getExistingPendingPromise<R, T>(ctx, key)
+  if (existing !== null) return existing
 
-  // 3. 准备执行新请求
-  let promise: Promise<R>
+  // 3. 准备执行新请求（防抖或立即执行）
+  const promise: Promise<R> =
+    debounced && config.enableDebounce
+      ? buildDebouncedPromise(ctx, key, fn, options)
+      : buildImmediatePromise(ctx, key, fn, options)
 
-  if (debounced && config.enableDebounce) {
-    // 防抖：延迟执行 fn
-    promise = new Promise<R>((resolve, reject) => {
-      runDebounced(
-        debounceMap,
-        key,
-        async () => {
-          try {
-            const result = await fn()
-            if (cacheable && config.enableCache) {
-              setCache(cache, key, result)
-            }
-            resolve(result)
-          } catch (error) {
-            reject(error)
-          }
-        },
-        config.debounceDelay,
-      )
-    })
-  } else {
-    // 立即执行
-    promise = (async () => {
-      const result = await fn()
-      if (cacheable && config.enableCache) {
-        setCache(cache, key, result)
-      }
-      return result
-    })()
-  }
-
-  // 4. 注册到 pending 管理器
-  setRequestPending(pendingSet, key, true)
-
-  // 使用引用计数管理loading状态，避免并发请求时提前关闭loading
-  entityState.value.loading = true
-  loadingCount.value++
-
-  // 保存 Promise 引用（用于后续复用）
-  if (!globalPendingPromises.has(config.storeId)) {
-    globalPendingPromises.set(config.storeId, new Map())
-  }
-  globalPendingPromises.get(config.storeId)!.set(key, promise)
+  // 4. 注册到 pending 管理器与 loading 引用计数
+  registerPendingRequest(ctx, key, promise)
 
   try {
-    const result = await promise
-    return result
+    return await promise
   } finally {
-    loadingCount.value--
-    // 仅当所有请求都完成时才关闭loading
-    if (loadingCount.value <= 0) {
-      entityState.value.loading = false
-      loadingCount.value = 0
-    }
-    setRequestPending(pendingSet, key, false)
-    globalPendingPromises.get(config.storeId)?.delete(key)
+    cleanupPendingRequest(ctx, key)
   }
 }

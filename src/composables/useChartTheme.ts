@@ -46,6 +46,16 @@ const FALLBACK = {
 
 const PIE_EXTRA = ['#8B5CF6', '#6B7280']
 
+// [P1-4] 下列 2 个内部助手为 useChartTheme 原逻辑原样下沉，未改任何判断/返回。
+
+/** 从 getComputedStyle 读取 CSS 变量，空值回退到 fallback（吸收 `||` 分支税） */
+const readCssVar = (getter: (prop: string) => string, prop: string, fallback: string): string =>
+  getter(prop) || fallback
+
+/** 按 isDark 生成亮/暗派生色（吸收 `? :` 三元分支税） */
+const deriveDarkLight = (isDark: boolean, dark: string, light: string): string =>
+  isDark ? dark : light
+
 export function useChartTheme() {
   const { isDark } = useDarkMode()
 
@@ -55,27 +65,28 @@ export function useChartTheme() {
 
     const s = getComputedStyle(document.documentElement)
     const get = (prop: string) => s.getPropertyValue(prop).trim()
+    const dark = isDark.value
 
-    const primary = get('--color-primary') || FALLBACK.primary
-    const success = get('--color-success') || FALLBACK.success
-    const warning = get('--color-warning') || FALLBACK.warning
-    const danger = get('--color-danger') || FALLBACK.danger
+    const primary = readCssVar(get, '--color-primary', FALLBACK.primary)
+    const success = readCssVar(get, '--color-success', FALLBACK.success)
+    const warning = readCssVar(get, '--color-warning', FALLBACK.warning)
+    const danger = readCssVar(get, '--color-danger', FALLBACK.danger)
 
     return {
-      textColor: get('--text-primary') || FALLBACK.textPrimary,
-      secondaryText: get('--text-secondary') || FALLBACK.textSecondary,
-      axisText: get('--text-secondary') || FALLBACK.textSecondary,
-      borderColor: get('--border-color') || FALLBACK.borderColor,
-      gridLine: get('--border-color-light') || FALLBACK.borderColorLight,
-      tooltipBg: isDark.value ? 'rgba(29,30,31,0.95)' : 'rgba(255,255,255,0.95)',
-      tooltipBorder: get('--border-color') || FALLBACK.borderColor,
-      dividerColor: isDark.value ? '#1d1e1f' : '#ffffff',
+      textColor: readCssVar(get, '--text-primary', FALLBACK.textPrimary),
+      secondaryText: readCssVar(get, '--text-secondary', FALLBACK.textSecondary),
+      axisText: readCssVar(get, '--text-secondary', FALLBACK.textSecondary),
+      borderColor: readCssVar(get, '--border-color', FALLBACK.borderColor),
+      gridLine: readCssVar(get, '--border-color-light', FALLBACK.borderColorLight),
+      tooltipBg: deriveDarkLight(dark, 'rgba(29,30,31,0.95)', 'rgba(255,255,255,0.95)'),
+      tooltipBorder: readCssVar(get, '--border-color', FALLBACK.borderColor),
+      dividerColor: deriveDarkLight(dark, '#1d1e1f', '#ffffff'),
       lineColor: primary,
-      lineAreaTop: isDark.value ? 'rgba(74,144,226,0.25)' : 'rgba(59,130,246,0.25)',
-      lineAreaBottom: isDark.value ? 'rgba(74,144,226,0.02)' : 'rgba(59,130,246,0.02)',
+      lineAreaTop: deriveDarkLight(dark, 'rgba(74,144,226,0.25)', 'rgba(59,130,246,0.25)'),
+      lineAreaBottom: deriveDarkLight(dark, 'rgba(74,144,226,0.02)', 'rgba(59,130,246,0.02)'),
       pieColors: [primary, success, warning, danger, ...PIE_EXTRA],
-      centerText: get('--text-primary') || FALLBACK.textPrimary,
-      subText: get('--text-secondary') || FALLBACK.textSecondary,
+      centerText: readCssVar(get, '--text-primary', FALLBACK.textPrimary),
+      subText: readCssVar(get, '--text-secondary', FALLBACK.textSecondary),
     }
   })
 
