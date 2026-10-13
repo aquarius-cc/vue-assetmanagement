@@ -289,7 +289,7 @@ const handleReplace = async () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 16px;
+  padding: 8px 16px;
   cursor: pointer;
   transition: background-color 0.15s;
 }

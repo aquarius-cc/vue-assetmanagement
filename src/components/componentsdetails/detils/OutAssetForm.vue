@@ -431,7 +431,7 @@ const performSubmit = async () => {
     //   await assetStore.update({
     //     asset_code: outAssetCreateExtendedForm.outasset_code,
     //     asset_current_status: 'in_use',
-    //   }).catch(e => console.warn('资产状态更新失败（非阻塞）:', e))
+    //   })
     // }
   }
 }

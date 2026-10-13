@@ -6,21 +6,13 @@
  *   - RolePermissionForm: 角色-权限关联请求类型
  * @callers
  *   - views/system/RoleManage.vue: 角色管理视图
- *   - views/system/UserManagementPage.vue: 用户管理页面中分配角色
+ *   - views/system/AuthUserManage.vue: 用户管理页面中分配角色
  *   - components/system/UserRoleAssignDialog.vue: 用户角色分配弹窗
- *   - api/userAPI: getUserRoles/assignUserRoles 用户角色相关接口
- *   - api/roleAPI: getAllRoles 获取所有角色接口
- *   - api/roleAPI: getRole 获取角色详情接口
- *   - api/roleAPI: createRole 创建角色接口
- *   - api/roleAPI: updateRole 更新角色接口
- *   - api/roleAPI: deleteRole 删除角色接口
- *   - api/roleAPI: getRolePermissions 获取角色权限码列表接口
- *   - api/roleAPI: setRolePermissions 设置角色权限码接口
+ *   - stores/roleStore: 角色数据状态管理
+ *   - components/componentsdetails/UserDetails.vue: 角色查询与分配
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
- *   - api/system/userAPI: 用户角色相关接口
- * @dependsOn
- *   - api/request.ts: 使用 request 实例
+ *   - api/authusers.ts: 用户角色相关接口（getUserRoles/assignUserRoles）
  *   - types/roles: 角色相关类型定义
  */
 import { request, unwrapResponse } from '@/api/index'

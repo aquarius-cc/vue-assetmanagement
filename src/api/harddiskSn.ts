@@ -5,7 +5,7 @@
  *   - harddiskSnAPI: 硬盘序列号管理 API 对象（包含所有硬盘序列号相关方法）
  * @callers
  *   - stores/harddiskSnStore: 硬盘序列号状态管理
- *   - views/HarddiskSnManage: 硬盘序列号管理视图
+ *   - components/componentsdetails/HardDiskSNDetails: 硬盘序列号管理视图
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
  *   - types/harddisksn: 硬盘序列号相关类型定义

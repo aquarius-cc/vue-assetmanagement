@@ -201,7 +201,6 @@ const loginRules: FormRules = {
 
 // 登录处理函数
 const handleLogin = async () => {
-  // console.log('API Base URL:', api.defaults.baseURL)
   if (!formRef.value) return
   try {
     // 清除之前的错误提示

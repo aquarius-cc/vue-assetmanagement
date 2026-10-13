@@ -5,7 +5,7 @@
  *   - unregisteredAssetAPI: 未登记资产管理 API 对象（包含所有未登记资产相关方法）
  * @callers
  *   - stores/unregisteredAssetStore: 未登记资产状态管理
- *   - views/UnregisteredAssetManage: 未登记资产管理视图
+ *   - components/componentsdetails/UnregisteredAssetDetails: 未登记资产管理视图
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
  *   - types/unregisteredasset: 未登记资产相关类型定义

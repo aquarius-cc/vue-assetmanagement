@@ -246,7 +246,7 @@ function formatTime(iso: string) {
 .item-title {
   font-size: 14px;
   font-weight: 500;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .item-message {

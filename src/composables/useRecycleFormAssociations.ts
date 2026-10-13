@@ -59,14 +59,12 @@ export function useRecycleFormAssociations() {
         page_size: 100,
         // 若后端支持：storage_type: 'recycle'
       })
-      // console.log('loadStorages response:', response)
       // 前端过滤仅保留回收仓库（若后端未过滤）
       const allStorages = response || []
       // storages.value = allStorages.filter(
       //   (s: Storage) => s.storage_type === 'recycle'
       // )
       storages.value = allStorages
-      // console.log('loadStorages storages:', storages.value)
       storagesLoaded = true
     } catch (err) {
       error.value = '加载仓库列表失败'

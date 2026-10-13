@@ -4,12 +4,14 @@
  * @exports
  *   - networkAPI: 网络连通性测试 API 对象（包含连通性检测方法）
  * @callers
- *   - views/NetworkTest: 网络测试视图
+ *   - stores/networkStore: 网络连通性检测状态管理
+ *   - views/LogIn: 登录前连通性预检
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
  *   - axios: 错误处理
  */
 import { request } from '@/api/index'
+import { TIMEOUT } from '@/api/config'
 import { isAxiosError } from 'axios'
 
 // 【修复】不缓存为模块级常量,确保 vitest vi.stubEnv 能在运行时覆盖
@@ -85,6 +87,8 @@ export const networkAPI = {
         headers: {
           'Content-Type': 'application/json',
         },
+        // 预检超时对齐请求口径 TIMEOUT=15s（api/config.ts:17），裸 fetch 补超时防挂起（AR-3/AR-4）
+        signal: AbortSignal.timeout(TIMEOUT),
       })
 
       if (response.ok) {

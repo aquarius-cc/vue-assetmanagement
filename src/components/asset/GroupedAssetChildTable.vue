@@ -269,7 +269,7 @@ defineExpose({ refreshSelection: applySelectedKeys })
 }
 
 .child-table :deep(.el-table__cell) {
-  padding: 6px 8px;
+  padding: 4px 8px;
 }
 
 /* 三列高亮（recordcode / asset_code / asset_current_status），走令牌适配双主题 */
@@ -281,6 +281,6 @@ defineExpose({ refreshSelection: applySelectedKeys })
 .child-pager {
   display: flex;
   justify-content: flex-end;
-  padding: 6px 0 2px;
+  padding: 4px 0 4px;
 }
 </style>

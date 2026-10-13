@@ -205,7 +205,6 @@ const {
 //     const data = await assetStore.getById(assetCode)
 //     if (data) assetDetail.value = data
 //   } catch (error) {
-//     console.error('刷新资产详情失败', error)
 //   }
 // }
 

@@ -41,7 +41,7 @@ $breakpoint-tablet: 1024px;
     padding: 24px;
 
     .el-form-item {
-      margin-bottom: 22px;
+      margin-bottom: 20px;
 
       .el-form-item__label {
         font-weight: 500;
@@ -201,7 +201,7 @@ $breakpoint-tablet: 1024px;
     flex-wrap: wrap;
 
     .status-tag {
-      padding: 6px 16px;
+      padding: 4px 16px;
       font-size: 14px;
       font-weight: 500;
       border-radius: 4px;
@@ -629,7 +629,7 @@ $breakpoint-tablet: 1024px;
   gap: 12px;
   font-weight: 600;
   color: var(--color-primary);
-  padding: 18px 24px;
+  padding: 16px 24px;
   background: linear-gradient(
     135deg,
     var(--color-primary-lighter, #f0f7ff) 0%,

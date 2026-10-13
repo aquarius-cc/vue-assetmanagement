@@ -393,7 +393,7 @@ defineExpose({
   width: min(100cqw, 100%);
   padding: 16px;
   background: var(--gradient-card-highlight);
-  border-left: 4px solid var(--color-primary-light);
+  border-left: 4px solid var(--color-primary);
   border-radius: 8px;
 }
 

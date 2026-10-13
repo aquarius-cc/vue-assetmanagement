@@ -306,9 +306,7 @@ const handleSubmit = async () => {
       row.submitStatus = undefined
       row.submitError = undefined
     })
-    // console.log('提交数据:', apiDataList)
     const result = await batchCreateStorages(apiDataList)
-    // console.log('批量创建仓库响应:', result)
 
     // 使用 index 匹配：后端 fail_items 的 index 对应 validRows 的数组索引
     if (result.fail_count > 0) {

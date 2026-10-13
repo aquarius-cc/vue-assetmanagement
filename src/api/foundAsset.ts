@@ -5,7 +5,7 @@
  *   - foundAssetAPI: 找到资产管理 API 对象（包含所有找到资产相关方法）
  * @callers
  *   - stores/foundAssetStore: 找到资产状态管理
- *   - views/FoundAssetManage: 找到资产管理视图
+ *   - views/FoundAssetView: 找到资产管理视图
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
  *   - types/foundasset: 找到资产相关类型定义

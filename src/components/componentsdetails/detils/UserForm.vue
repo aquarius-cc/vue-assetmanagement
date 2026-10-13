@@ -251,7 +251,6 @@ const loadUserData = async () => {
       await userStore.getList()
     }
     const targetUser = await getUserInfo(route.query.jobcode as string)
-    // console.log('获取到的用户信息:', targetUser)
     if (targetUser) {
       // Object.assign(userForm, targetUser)
       userForm.employee_name = targetUser.employee_name
@@ -263,7 +262,6 @@ const loadUserData = async () => {
       currentDepartmentName.value = targetUser.employee_department_name || ''
       userForm.employee_description = targetUser.employee_description || ''
       userForm.sort_order = targetUser.sort_order || undefined // 确保排序顺序为 undefined
-      // console.log('currentDepartmentName:', currentDepartmentName.value)
     } else {
       ElMessage.error('用户不存在')
       goBack()

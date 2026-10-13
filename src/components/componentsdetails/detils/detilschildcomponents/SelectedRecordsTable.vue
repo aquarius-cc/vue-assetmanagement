@@ -66,7 +66,7 @@ defineEmits<{
   margin: 0;
   padding: 12px 16px;
   background: var(--gradient-card-highlight);
-  border-left: 4px solid var(--color-primary-light);
+  border-left: 4px solid var(--color-primary);
   border-radius: 4px;
 }
 </style>

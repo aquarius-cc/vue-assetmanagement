@@ -81,43 +81,7 @@ import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ArrowDown, ArrowUp, Folder, FolderOpened, Document } from '@element-plus/icons-vue'
 import type { DepartmentTreeNode } from '@/types/department'
-
-// ==================== el-tree 拖拽节点类型 ====================
-
-/**
- * el-tree 拖拽回调中的节点参数类型
- * el-tree 的 @node-drop/@allow-drop 回调参数为内部 TreeNode 对象，
- * 其 .data 属性为传入的树节点数据
- */
-interface ElTreeNode {
-  /** 节点 ID（对应 node-key） */
-  id: string | number
-  /** 节点绑定的数据（即 treeData 中的对象） */
-  data: DepartmentTreeNode
-  /** 节点是否展开 */
-  expanded: boolean
-  /** 子节点 */
-  childNodes: ElTreeNode[]
-  /** 父节点 */
-  parent: ElTreeNode | null
-  /** 是否为叶子节点 */
-  isLeaf: boolean
-  /** 节点层级 */
-  level: number
-  [key: string]: unknown
-}
-
-/**
- * el-tree 内部 Store 类型
- * 用于访问所有节点的映射表
- */
-interface ElTreeStore {
-  /** 节点映射表，key 为节点 id，value 为节点对象 */
-  nodesMap: Record<string, ElTreeNode>
-}
-
-/** el-tree @node-drop 回调的放置类型 */
-type DropType = 'before' | 'after' | 'inner'
+import type { DropType, ElTreeNode, ElTreeStore } from '@/types/form-helpers'
 
 // ==================== Props & Emits ====================
 

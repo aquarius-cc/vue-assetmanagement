@@ -24,7 +24,7 @@ const routes: RouteRecordRaw[] = [
             path: ':asset_code?',
             name: 'AssetContentDetails',
             component: { template: '<div/>' },
-            meta: { title: '资产详情', componentName: 'AssetContentDetails' },
+            meta: { title: '资产详情' },
           },
         ],
       },

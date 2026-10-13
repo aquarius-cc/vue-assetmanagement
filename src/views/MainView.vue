@@ -202,7 +202,6 @@ const keepAliveComponents = computed<(string | RegExp)[]>(() => {
  */
 .el-main {
   --el-main-padding: 8px;
-  padding: var(--el-main-padding) !important;
 }
 
 /**

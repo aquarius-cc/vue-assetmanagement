@@ -118,7 +118,6 @@ export async function submitBatch<T extends object>(
     const batch = dataList.slice(i, i + batchSize)
     const promises = batch.map(async (item) => {
       try {
-        // console.log("尝试创建:", item)
         await createFn(item)
         successCount++
       } catch (error) {

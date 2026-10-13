@@ -5,7 +5,7 @@
  *   - auditLogAPI: 通用审计日志 API 对象（包含所有审计日志相关方法）
  * @callers
  *   - stores/auditLogStore: 审计日志状态管理
- *   - views/AuditLogManage: 审计日志管理视图
+ *   - components/componentsdetails/AuditLogDetails: 审计日志管理视图
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
  *   - types/auditlog: 审计日志相关类型定义

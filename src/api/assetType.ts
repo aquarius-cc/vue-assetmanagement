@@ -6,7 +6,7 @@
  *   - AssetTypeBatchCreateResult: 批量创建资产类型响应类型
  * @callers
  *   - stores/assetTypeStore: 资产类型状态管理
- *   - views/AssetTypeManage: 资产类型管理视图
+ *   - components/componentsdetails/AssetTypeDetails: 资产类型管理视图
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
  *   - types/assettype: 资产类型相关类型定义

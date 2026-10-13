@@ -5,7 +5,7 @@
  *   - lostAssetAPI: 遗失资产管理 API 对象（包含所有遗失资产相关方法）
  * @callers
  *   - stores/lostAssetStore: 遗失资产状态管理
- *   - views/LostAssetManage: 遗失资产管理视图
+ *   - views/LostAssetView: 遗失资产管理视图
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
  *   - types/lostasset: 遗失资产相关类型定义

@@ -6,7 +6,7 @@
  *   - StorageBatchCreateResult: 批量创建仓库响应类型
  * @callers
  *   - stores/storageStore: 仓库状态管理
- *   - views/StorageManage: 仓库管理视图
+ *   - components/componentsdetails/StorageDetails: 仓库管理视图
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
  *   - types/storage: 仓库相关类型定义

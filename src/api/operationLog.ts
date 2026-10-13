@@ -5,7 +5,7 @@
  *   - operationLogAPI: 操作日志管理 API 对象（包含所有操作日志相关方法）
  * @callers
  *   - stores/operationLogStore: 操作日志状态管理
- *   - views/OperationLogManage: 操作日志管理视图
+ *   - components/componentsdetails/OperationLogDetails: 操作日志管理视图
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
  *   - types/operationlog: 操作日志相关类型定义

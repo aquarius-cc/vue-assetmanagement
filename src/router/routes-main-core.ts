@@ -43,9 +43,10 @@ export const routesMainCore: RouteRecordRaw[] = [
       {
         // 【L-1 落地】分组展开入口（/main/assetdetails/grouped）：静态段 'grouped'
         // 在 vue-router 评分中高于下方动态段 `:asset_code?`，故必命中本路由。
-        // 刻意不设 keepAlive（防御性保留；注意该配置当前实际不生效——MainView
-        // keep-alive include 名为 'AssetContentDetails'，该层实际渲染的 vnode
-        // __name 是 'AssetDetails'，永不匹配，登记见账本 BF-079 观察项）。
+        // 刻意不设 keepAlive：资产详情条原 keepAlive/componentName 死配置已随
+        // BF-079 方案② 删除（2026-10-13）——MainView keep-alive 的 include 匹配
+        // 的是本层容器 vnode __name='AssetDetails'，孙层组件名 'AssetContentDetails'
+        // 永不命中、缓存从未生效；资产详情子树**有意不缓存**，返回重置为预期行为。
         // 【复用真相·BF-078 需求3 二轮修正】分组/扁平互切的实例复用风险由
         // AssetDetails 的 <router-view :key> 消解（vue-router h(ViewComponent)
         // 不带 key，同组件同位置必复用、setup 不重跑）；key 取本容器直接子记录名，
@@ -68,8 +69,6 @@ export const routesMainCore: RouteRecordRaw[] = [
         meta: {
           title: '资产详情',
           requiresAuth: true,
-          keepAlive: true, // 添加缓存标识
-          componentName: 'AssetContentDetails', // 组件名称（需与组件定义的name一致）
         },
         children: [
           {

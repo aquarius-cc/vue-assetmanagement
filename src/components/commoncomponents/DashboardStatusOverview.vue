@@ -91,8 +91,8 @@ defineProps<{
     .group-header {
       display: flex;
       align-items: center;
-      gap: 6px;
-      margin-bottom: 6px;
+      gap: 4px;
+      margin-bottom: 4px;
       font-weight: 600;
       font-size: 13px;
 
@@ -113,7 +113,7 @@ defineProps<{
     }
 
     .group-items {
-      padding-left: 14px;
+      padding-left: 12px;
     }
 
     .status-row {
@@ -133,13 +133,13 @@ defineProps<{
         flex: 1;
         height: 6px;
         background: var(--status-bar-track);
-        border-radius: 3px;
+        border-radius: 4px;
         overflow: hidden;
       }
 
       .status-bar-fill {
         height: 100%;
-        border-radius: 3px;
+        border-radius: 4px;
         transition: width 0.6s ease;
       }
 

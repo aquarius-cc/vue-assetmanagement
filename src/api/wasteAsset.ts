@@ -5,7 +5,7 @@
  *   - wasteAssetAPI: 报废资产管理 API 对象（包含所有报废资产相关方法）
  * @callers
  *   - stores/wasteAssetStore: 报废资产状态管理
- *   - views/WasteAssetManage: 报废资产管理视图
+ *   - components/componentsdetails/WasteAssetDetails: 报废资产管理视图
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
  *   - types/wasteasset: 报废资产相关类型定义

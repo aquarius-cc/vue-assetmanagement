@@ -25,6 +25,7 @@ vi.mock('axios', () => ({
 }))
 
 import { networkAPI } from '@/api/network'
+import { TIMEOUT } from '@/api/config'
 
 describe('networkAPI', () => {
   beforeEach(() => {
@@ -77,6 +78,21 @@ describe('networkAPI', () => {
     const result = await networkAPI.testLoginAPI()
     expect(result.status).toBe('success')
     expect(mockFetch).toHaveBeenCalled()
+  })
+
+  it('testLoginAPI 预检传入 AbortSignal 且超时对齐 TIMEOUT 配置（AR-3/AR-4）', async () => {
+    const timeoutSpy = vi.spyOn(AbortSignal, 'timeout')
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers({ 'content-type': 'application/json' }),
+    })
+    vi.stubGlobal('fetch', mockFetch)
+    const result = await networkAPI.testLoginAPI()
+    expect(result.status).toBe('success')
+    expect(timeoutSpy).toHaveBeenCalledWith(TIMEOUT)
+    timeoutSpy.mockRestore()
   })
 
   it('testLoginAPI returns error when fetch fails', async () => {

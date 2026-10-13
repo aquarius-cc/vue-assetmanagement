@@ -127,6 +127,19 @@ describe('Router Configuration', () => {
     expect(groupedRoute.meta.keepAlive).toBeUndefined()
   })
 
+  it('should have flat asset detail route with no keepAlive (BF-079 方案②)', async () => {
+    const { capturedConfig } = await loadRouter()
+    const mainRoute = capturedConfig.routes.find((r: any) => r.path === '/main')
+    const assetRoute = mainRoute.children.find((r: any) => r.path === 'assetdetails')
+    const flatRoute = assetRoute.children.find((r: any) => r.path === ':asset_code?')
+    expect(flatRoute).toBeDefined()
+    // BF-079：MainView keep-alive 的 include 匹配的是父壳 vnode（__name='AssetDetails'），
+    // 原 componentName 'AssetContentDetails' 属孙层、永不命中 → 缓存从未生效；
+    // 方案②（2026-10-13）删除死配置，资产详情子树有意不缓存（返回重置为预期行为）
+    expect(flatRoute.meta.keepAlive).toBeUndefined()
+    expect(flatRoute.meta.componentName).toBeUndefined()
+  })
+
   it('should have scan route with requiresAuth: false', async () => {
     const { capturedConfig } = await loadRouter()
     const scanRoute = capturedConfig.routes.find((r: any) => r.path === '/scan/:recordcode')

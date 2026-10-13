@@ -5,8 +5,8 @@
  *   - permissionsAPI: 权限模块 API 对象（包含权限相关方法）
  *   - MyPermissionsResponse: 我的权限响应类型
  * @callers
- *   - stores/authStore: 认证状态管理（权限加载）
- *   - views/system/PermissionManage: 权限管理视图
+ *   - stores/auth: 认证状态管理（权限加载）
+ *   - views/system/RoleManage: 角色权限管理视图
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
  *   - types/user: 用户相关类型定义（Permission, DataScope）

@@ -5,7 +5,7 @@
  *   - damagedAssetAPI: 损坏资产管理 API 对象（包含所有损坏资产相关方法）
  * @callers
  *   - stores/damagedAssetStore: 损坏资产状态管理
- *   - views/DamagedAssetManage: 损坏资产管理视图
+ *   - components/componentsdetails/DamagedAssetDetails: 损坏资产管理视图
  * @dependsOn
  *   - api/request.ts: 使用 request 实例
  *   - types/damagedasset: 损坏资产相关类型定义
