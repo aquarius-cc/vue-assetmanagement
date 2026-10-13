@@ -1,6 +1,6 @@
 import { fileURLToPath, URL } from 'node:url'
 
-import { defineConfig, loadEnv } from 'vite'
+import { createLogger, defineConfig, loadEnv, type Logger, type LogErrorOptions } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import vueDevTools from 'vite-plugin-vue-devtools'
@@ -13,11 +13,80 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { visualizer } from 'rollup-plugin-visualizer'
 import compression from 'vite-plugin-compression'
 
+// [BF-087] dev 代理错误降噪（[PATCH-FE] customLogger 日志层过滤）
+// AI_REVIEW_NEEDED: vite proxy error 过滤判据（AR-2①）
+// 根因：Vite 代理错误日志点硬编码 config.logger.error(...err.stack)（vite 8.2.2
+// dist/node/chunks/node.js:19212 http proxy error / :19218 ws proxy error /
+// :19228 ws proxy socket error / :19254 ws proxy bypass error），无静默开关；
+// 而 configure 钩子挂 proxy.on('error') 无效——Vite 在 configure 返回后才注册
+// 自身处理器（:19209→:19210），EventEmitter 调用全部监听器，挡不住打全栈。
+// customLogger 是 UserConfig 正式字段（index.d.ts:3598），createLogger 直接
+// 返回它（:3234）成为 config.logger（:36616）→ proxyMiddleware 同一 config
+// （:35845），四个日志点全走它——唯一干净的官方扩展点。
+const PROXY_NOISE_CODES = new Set(['ECONNRESET', 'ECONNABORTED', 'ECONNREFUSED', 'EPIPE'])
+const PROXY_NOISE_WINDOW_MS = 10_000
+
+/**
+ * 是否命中「预期性代理断连」降噪判据：双条件缺一不可——
+ * 错误码在白名单 且 日志消息含 proxy（定位到代理日志点）。
+ * 任一不满足 → false，原样透传（不吞真错误）。
+ */
+function shouldDowngradeProxyNoise(msg: string, options?: LogErrorOptions): boolean {
+  const code = (options?.error as NodeJS.ErrnoException | null | undefined)?.code
+  return typeof code === 'string' && PROXY_NOISE_CODES.has(code) && msg.includes('proxy')
+}
+
+/**
+ * 同错误码 10s 窗口节流：窗口内重复错误静默丢弃，防 console 刷屏。
+ * 返回 true 表示本次应静默。
+ */
+function isProxyNoiseThrottled(code: string, lastAt: number | undefined, now: number): boolean {
+  return lastAt !== undefined && now - lastAt < PROXY_NOISE_WINDOW_MS
+}
+
+/**
+ * 包装 Vite 默认 logger：仅拦截命中降噪判据的代理错误为单行提示（带节流），
+ * 其余全部委托默认 logger（含未知错误完整堆栈，不吞异常）。
+ */
+function createProxyQuietLogger(): Logger {
+  const base = createLogger()
+  const lastLoggedAt = new Map<string, number>()
+  return {
+    info: (msg, options) => base.info(msg, options),
+    warn: (msg, options) => base.warn(msg, options),
+    warnOnce: (msg, options) => base.warnOnce(msg, options),
+    clearScreen: type => base.clearScreen(type),
+    hasErrorLogged: error => base.hasErrorLogged(error),
+    // hasWarned 必须 getter/setter 委托（不可 spread 拷贝）：底 logger 的
+    // warn* 会原地改写自身的 hasWarned（:3276），拷贝会读到陈旧值（Vite 经
+    // :22309 读它）。
+    get hasWarned() {
+      return base.hasWarned
+    },
+    set hasWarned(value: boolean) {
+      base.hasWarned = value
+    },
+    error: (msg, options) => {
+      if (!shouldDowngradeProxyNoise(msg, options)) {
+        base.error(msg, options)
+        return
+      }
+      const code = String((options?.error as NodeJS.ErrnoException).code)
+      const now = Date.now()
+      if (isProxyNoiseThrottled(code, lastLoggedAt.get(code), now)) return
+      lastLoggedAt.set(code, now)
+      base.warn(`代理连接中断（${code}）：后端重载/重启或浏览器断开所致，属 dev 预期，前端将自动重连`)
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
+    // [BF-087] dev 代理错误降噪（详见文件头 createProxyQuietLogger 注释）
+    customLogger: createProxyQuietLogger(),
     // 子路径部署支持（如 /admin/），默认根路径 '/'
     // router/index.ts 的 createWebHistory 已自动读取 import.meta.env.BASE_URL
     base: env.VITE_BASE_URL || '/',
