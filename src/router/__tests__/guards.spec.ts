@@ -304,6 +304,10 @@ describe('Router Guards', () => {
       '/main/contractdetails',
       '/main/userdetails',
       '/main/departmentdetails',
+      '/main/departmentmanagement',
+      '/main/departmentmanagement/userform',
+      '/main/departmentmanagement/userbatchimport',
+      '/main/departmentmanagement/departmentbatchimport',
       '/main/system',
     ])('should allow system_admin on %s', async (path) => {
       ;(getDecryptedToken as any).mockReturnValue('valid-token')
@@ -318,21 +322,61 @@ describe('Router Guards', () => {
       expect(result).toBe(true)
     })
 
-    it.each(['/main/assettypedetails', '/main/userdetails', '/main/departmentdetails'])(
-      'should deny regular_user on %s',
-      async (path) => {
-        ;(getDecryptedToken as any).mockReturnValue('valid-token')
-        mockAuthStore.isLoggedIn = true
-        mockAuthStore.access_token = 'valid-token'
-        mockAuthStore.userRole = 'regular_user'
-        mockAuthStore.authInfo = { auth_id: 1, auth_username: 'test' }
+    it.each([
+      '/main/assettypedetails',
+      '/main/userdetails',
+      '/main/departmentdetails',
+      '/main/departmentmanagement',
+      '/main/departmentmanagement/userform',
+      '/main/departmentmanagement/userbatchimport',
+      '/main/departmentmanagement/departmentbatchimport',
+    ])('should deny regular_user on %s', async (path) => {
+      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = 'valid-token'
+      mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.authInfo = { auth_id: 1, auth_username: 'test' }
 
-        setupAndCapture()
+      setupAndCapture()
 
-        const result = await beforeEachCallback({ path, meta: {} }, { path: '/' })
-        expect(result).toBe('/main')
-      },
-    )
+      const result = await beforeEachCallback({ path, meta: {} }, { path: '/' })
+      expect(result).toBe('/main')
+    })
+
+    it('should deny dept_manager on /main/departmentmanagement [I-7]', async () => {
+      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = 'valid-token'
+      mockAuthStore.userRole = 'dept_manager'
+      mockAuthStore.authInfo = { auth_id: 1, auth_username: 'mgr' }
+
+      setupAndCapture()
+
+      const result = await beforeEachCallback(
+        { path: '/main/departmentmanagement', meta: {} },
+        { path: '/' },
+      )
+      expect(result).toBe('/main')
+    })
+
+    it('meta.requiredMinRole=system_admin 拦截 dept_manager（子路由独立加固）[I-7]', async () => {
+      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = 'valid-token'
+      mockAuthStore.userRole = 'dept_manager'
+      mockAuthStore.authInfo = { auth_id: 1, auth_username: 'mgr' }
+
+      setupAndCapture()
+
+      const result = await beforeEachCallback(
+        {
+          path: '/main/departmentmanagement/userform',
+          meta: { requiredMinRole: 'system_admin' },
+        },
+        { path: '/' },
+      )
+      expect(result).toBe('/main')
+    })
   })
 
   describe('roleWhitelist — dept_manager + system_admin routes', () => {

@@ -368,8 +368,9 @@ const submitForm = () => {
 const submitUpdate = async () => {
   const recordcode = editRecordcode.value || (route.query.code as string) || ''
   if (!recordcode) {
-    ElMessage.error('缺少记录编码，无法更新资产')
-    return
+    // [BF-095/M-5] throw 阻断 submitForm 后续 setRefreshFlag/router.go(-1)；
+    // 文案由 submitForm catch 的 resolveSubmitError 统一出口，避免双弹窗
+    throw new Error('缺少记录编码，无法更新资产')
   }
   await assetStore.update({
     ...getAssetUpdateForm.value,

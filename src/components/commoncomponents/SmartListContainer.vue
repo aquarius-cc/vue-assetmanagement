@@ -26,6 +26,7 @@
       :handle-current-change="handleCurrentChange"
       :perform-search="performSearch"
       :perform-search-with-params="performSearchWithParams"
+      :search-with-reset="searchWithReset"
       :refresh="refreshCurrentPage"
       :reset="resetToFirstPage"
       :selected-rows="selectedRows"
@@ -119,6 +120,7 @@ const {
   handleCurrentChange,
   performSearch,
   performSearchWithParams,
+  searchWithReset,
   refreshCurrentPage,
   resetToFirstPage,
   pageSizeOptions,
@@ -180,6 +182,7 @@ defineExpose({
   reset: resetToFirstPage,
   search: performSearch,
   searchWithParams: performSearchWithParams,
+  searchWithReset,
   currentPage,
   pageSize,
   data: tableData,

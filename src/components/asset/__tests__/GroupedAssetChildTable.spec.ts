@@ -35,7 +35,11 @@ const globalMount = {
       props: ['prop', 'label', 'showOverflowTooltip', 'fixed', 'type', 'width', 'minWidth'],
       template: '<div class="el-table-column" />',
     },
-    'el-pagination': { name: 'ElPagination', template: '<div class="el-pagination" />' },
+    'el-pagination': {
+      name: 'ElPagination',
+      props: ['disabled'],
+      template: '<div class="el-pagination" />',
+    },
     'el-button': { name: 'ElButton', template: '<button><slot /></button>' },
   },
 }
@@ -79,6 +83,16 @@ describe('GroupedAssetChildTable · 高度约束回归（CT-4）', () => {
     expect(pager.exists()).toBe(true)
     expect(pager.attributes('size')).toBe('small')
     expect(pager.attributes('small')).toBeUndefined()
+  })
+})
+
+describe('GroupedAssetChildTable · 分页 loading 禁点（BF-095/M-10）', () => {
+  it('loading=true 时分页 disabled=true（防并发翻页竞态），空闲时恢复可点', () => {
+    const loadingWrapper = mountChild({ props: { total: 120, pageSize: 20, loading: true } })
+    expect(loadingWrapper.findComponent({ name: 'ElPagination' }).props('disabled')).toBe(true)
+
+    const idleWrapper = mountChild({ props: { total: 120, pageSize: 20, loading: false } })
+    expect(idleWrapper.findComponent({ name: 'ElPagination' }).props('disabled')).toBe(false)
   })
 })
 

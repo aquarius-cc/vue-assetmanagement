@@ -321,7 +321,8 @@ const handleSearch = (params: Record<string, string>) => {
     void groupedTableRef.value.search(filters)
     return
   }
-  smartListRef.value?.searchWithParams(params)
+  // [M-2] 用户触发的搜索必须从第 1 页开始（searchWithReset = 置1 + performSearchWithParams）
+  void smartListRef.value?.searchWithReset(params)
 }
 
 const handleSearchReset = () => {
@@ -330,7 +331,7 @@ const handleSearchReset = () => {
     void groupedTableRef.value.search()
     return
   }
-  smartListRef.value?.reset()
+  void smartListRef.value?.reset()
 }
 
 /** 分组模式删除：组内跨合同/分类，不存在「编辑组」语义，故仅提供组内批量删除 */

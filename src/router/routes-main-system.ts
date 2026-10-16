@@ -75,6 +75,8 @@ export const routesMainSystem: RouteRecordRaw[] = [
       title: '通讯录管理',
       requiresAuth: true,
       showPageHeader: true,
+      // [I-7] 通讯录管理（用户录入/批量导入）为管理端功能，仅系统管理员可访问
+      requiredMinRole: 'system_admin',
     },
     children: [
       {
@@ -91,6 +93,8 @@ export const routesMainSystem: RouteRecordRaw[] = [
         meta: {
           title: '用户录入',
           requiresAuth: true,
+          // [I-7] 子路由独立加固：守卫只读 to.meta，父级 meta 不自动继承
+          requiredMinRole: 'system_admin',
         },
       },
       {
@@ -100,6 +104,8 @@ export const routesMainSystem: RouteRecordRaw[] = [
         meta: {
           title: '批量导入用户',
           requiresAuth: true,
+          // [I-7] 子路由独立加固：守卫只读 to.meta，父级 meta 不自动继承
+          requiredMinRole: 'system_admin',
         },
       },
       {
@@ -109,6 +115,8 @@ export const routesMainSystem: RouteRecordRaw[] = [
         meta: {
           title: '批量导入部门',
           requiresAuth: true,
+          // [I-7] 子路由独立加固：守卫只读 to.meta，父级 meta 不自动继承
+          requiredMinRole: 'system_admin',
         },
       },
     ],

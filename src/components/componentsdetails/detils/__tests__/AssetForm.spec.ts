@@ -252,4 +252,23 @@ describe('AssetForm 编辑回填与提交【BF-081】', () => {
     expect(payload).not.toHaveProperty('recordcode')
     expect(elMessage.success).toHaveBeenCalledWith(expect.stringContaining('录入成功'))
   })
+
+  it('编辑提交失败：update 抛错时不导航、不置刷新标志（M-5 回归屏障）', async () => {
+    // M-5 缺陷类：submitUpdate 失败后 submitForm 不得继续 setRefreshFlag/router.go(-1)。
+    // recordcode 缺失防御分支被 isEditMode（!!route.query.code）网关保护、常规不可达，
+    // 本用例锁定其 throw 语义的可达等价面：任何 submitUpdate 失败均阻断导航。
+    currentQuery.value = { code: 'REC-001' }
+    mockAssetGetById.mockResolvedValue(makeDetail())
+    mockAssetUpdate.mockRejectedValue(new Error('network down'))
+
+    const wrapper = mountForm()
+    await flushPromises()
+
+    const submitBtn = wrapper.findAll('button').find((b) => b.text().includes('提交'))
+    await submitBtn!.trigger('click')
+    await vi.waitFor(() => expect(elMessage.error).toHaveBeenCalled())
+
+    expect(mockGo).not.toHaveBeenCalled()
+    expect(mockSetRefreshFlag).not.toHaveBeenCalled()
+  })
 })

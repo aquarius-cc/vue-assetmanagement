@@ -57,6 +57,9 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
   const searchTotal = ref(0)
   const searchParams = ref<Record<string, string>>({})
 
+  // [I-8] 搜索竞态守卫：仅最新请求的响应可写状态（范式同 dashboard.ts trendRequestId）
+  let searchSeq = 0
+
   /** 获取当前页码的读写代理 */
   const getPage = () => readReactive<number>(currentPage)
   const getSize = () => readReactive<number>(pageSize)
@@ -86,13 +89,18 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
       return loadList(1, getSize())
     }
 
+    const seq = ++searchSeq
     try {
       isSearching.value = true
       const response = await searchConfig.performSearch(keyword.trim(), getPage(), getSize())
+      // [I-8] 过期响应：被更新请求取代，跳过结果写回
+      if (seq !== searchSeq) return
       searchResults.value = response.results || []
       searchTotal.value = response.count ?? 0
       updateTotal(response.count)
     } catch (error) {
+      // [I-8] 过期失败：不得清空更新请求的结果，仅最新失败才清空
+      if (seq !== searchSeq) throw error
       logError(
         'composables/usePaginationSearchState',
         '[usePaginationSearch] Search failed:',
@@ -103,7 +111,8 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
       searchTotal.value = 0
       throw error
     } finally {
-      isSearching.value = false
+      // [I-8] 过期请求不复位标志：新请求可能仍在进行中
+      if (seq === searchSeq) isSearching.value = false
     }
   }
 
@@ -172,13 +181,18 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
       return fallbackSearchWithoutMultiParam(params)
     }
 
+    const seq = ++searchSeq
     try {
       isSearching.value = true
       const response = await searchConfig.performSearchWithParams(params, getPage(), getSize())
+      // [I-8] 过期响应：被更新请求取代，跳过结果写回
+      if (seq !== searchSeq) return
       searchResults.value = response.results || []
       searchTotal.value = response.count ?? 0
       updateTotal(response.count)
     } catch (error) {
+      // [I-8] 过期失败：不得清空更新请求的结果，仅最新失败才清空
+      if (seq !== searchSeq) throw error
       logError(
         'composables/usePaginationSearchState',
         '[usePaginationSearch] Search failed:',
@@ -189,7 +203,8 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
       searchTotal.value = 0
       throw error
     } finally {
-      isSearching.value = false
+      // [I-8] 过期请求不复位标志：新请求可能仍在进行中
+      if (seq === searchSeq) isSearching.value = false
     }
   }
 

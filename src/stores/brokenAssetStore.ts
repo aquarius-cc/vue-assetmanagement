@@ -18,6 +18,7 @@ import type {
 } from '@/types/brokenasset'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
+import type { BlobDownload } from '@/api/request'
 
 export const useBrokenAssetStore = createEntityStore<BrokenAssetExtended, PaginationQuery>(
   'brokenAsset',
@@ -49,3 +50,8 @@ export const useBrokenAssetStore = createEntityStore<BrokenAssetExtended, Pagina
     enableCache: false,
   },
 )
+
+/** BF-092/I-1: 服务端 Excel 导出（经 store 层消费，满足 no-restricted-imports 分层约束） */
+export function brokenAssetExportExcel(params: Record<string, unknown>): Promise<BlobDownload> {
+  return brokenAssetAPI.exportExcel(params)
+}

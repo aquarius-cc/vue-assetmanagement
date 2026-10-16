@@ -113,7 +113,7 @@ describe('useRecycleFormSubmit', () => {
   })
 
   describe('doSubmit - edit mode', () => {
-    it('calls recycleStore.update in edit mode', async () => {
+    it('calls recycleStore.update with whitelist fields only (F2)', async () => {
       const options = createDefaultOptions()
       options.isEditMode = vi.fn(() => true)
       options.currentRecordcode = vi.fn(() => 'RC-001')
@@ -121,12 +121,13 @@ describe('useRecycleFormSubmit', () => {
 
       await doSubmit()
 
-      expect(options.recycleStore.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          outasset_recordcode: 'RC-001',
-          recycle_asset: 'Asset1',
-        }),
-      )
+      expect(options.recycleStore.update).toHaveBeenCalledWith({
+        outasset_recordcode: 'RC-001',
+        recycle_asset_date: '2026-01-01',
+        recycle_type: 'normal',
+        recycle_asset_description: null,
+        id: undefined,
+      })
       expect(mockElMessageSuccess).toHaveBeenCalledWith('更新成功')
       expect(options.recycleStore.setRefreshFlag).toHaveBeenCalledWith(true)
       expect(mockGo).toHaveBeenCalledWith(-1)
@@ -134,19 +135,21 @@ describe('useRecycleFormSubmit', () => {
   })
 
   describe('doSubmit - single record', () => {
-    it('calls createRecycleAsset for single selected record', async () => {
+    it('calls createRecycleAsset with storage_code (F2 contract)', async () => {
       const options = createDefaultOptions()
       options.selectedRecords = vi.fn(() => [{ recordcode: 'OUT-001', recycle_asset: 'Asset1' }])
       const { doSubmit } = useRecycleFormSubmit(options)
 
       await doSubmit()
 
-      expect(mockCreateRecycleAsset).toHaveBeenCalledWith(
-        expect.objectContaining({
-          outasset_recordcode: 'OUT-001',
-          recycle_asset: 'Asset1',
-        }),
-      )
+      expect(mockCreateRecycleAsset).toHaveBeenCalledWith({
+        outasset_recordcode: 'OUT-001',
+        storage_code: 'ST-001',
+        recycle_asset_number: 1,
+        recycle_asset_date: '2026-01-01',
+        recycle_type: 'normal',
+        recycle_asset_description: null,
+      })
       expect(mockElMessageSuccess).toHaveBeenCalledWith('回收登记成功')
     })
   })

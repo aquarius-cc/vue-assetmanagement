@@ -49,9 +49,16 @@ describe('outAssetAPI', () => {
     )
   })
 
-  it('createOutAsset calls POST /assets/out-assets/', async () => {
-    await outAssetAPI.createOutAsset({ outasset_code: 'A001', outasset_person: 'E001' } as never)
-    expect(mockRequest.post).toHaveBeenCalled()
+  it('createOutAsset maps asset_recordcode and drops outasset_code (F3)', async () => {
+    await outAssetAPI.createOutAsset({
+      outasset_code: 'A001',
+      asset_recordcode: 'RC-1',
+      outasset_number: 1,
+    } as never)
+    expect(mockRequest.post).toHaveBeenCalledWith('/assets/out-assets/', {
+      asset_recordcode: 'RC-1',
+      outasset_number: 1,
+    })
   })
 
   it('deleteOutAsset calls DELETE /assets/out-assets/{code}/', async () => {

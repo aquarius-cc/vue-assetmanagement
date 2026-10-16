@@ -77,6 +77,7 @@ describe('useOutAssetAssetSelection', () => {
     const { form, handleAssetNameSelect, selectedAsset } = setup()
     const item: AssetAutocompleteItem = {
       value: '服务器',
+      recordcode: 'RC-1',
       asset_name: '服务器',
       asset_code: 'A001',
       asset_current_status: 'in_store',
@@ -84,6 +85,7 @@ describe('useOutAssetAssetSelection', () => {
     handleAssetNameSelect(item)
     expect(form.outasset_name).toBe('服务器')
     expect(form.outasset_code).toBe('A001')
+    expect(form.asset_recordcode).toBe('RC-1')
     expect(selectedAsset.value).toEqual(item)
   })
 
@@ -91,6 +93,7 @@ describe('useOutAssetAssetSelection', () => {
     const { form, handleAssetNameSelect, handleAssetNameChange, selectedAsset } = setup()
     handleAssetNameSelect({
       value: '服务器',
+      recordcode: 'RC-1',
       asset_name: '服务器',
       asset_code: 'A001',
       asset_current_status: '',
@@ -104,6 +107,7 @@ describe('useOutAssetAssetSelection', () => {
     const { handleAssetNameSelect, handleAssetNameChange, selectedAsset } = setup()
     handleAssetNameSelect({
       value: '服务器',
+      recordcode: 'RC-1',
       asset_name: '服务器',
       asset_code: 'A001',
       asset_current_status: '',
@@ -116,6 +120,7 @@ describe('useOutAssetAssetSelection', () => {
     const { handleAssetNameSelect, handleAssetNameBlur, assetStore } = setup()
     handleAssetNameSelect({
       value: '服务器',
+      recordcode: 'RC-1',
       asset_name: '服务器',
       asset_code: 'A001',
       asset_current_status: '',
@@ -152,8 +157,10 @@ describe('useOutAssetAssetSelection', () => {
     await handleAssetNameBlur(blurEvent('服务器'))
     expect(form.outasset_name).toBe('服务器')
     expect(form.outasset_code).toBe('A001')
+    expect(form.asset_recordcode).toBe('RC-1')
     expect(selectedAsset.value).toEqual({
       value: '服务器',
+      recordcode: 'RC-1',
       asset_name: '服务器',
       asset_code: 'A001',
       asset_current_status: 'in_store',
@@ -221,8 +228,10 @@ describe('useOutAssetAssetSelection', () => {
     await handleAssetCodeChange('A001')
     expect(assetStore.getById).toHaveBeenCalledWith('A001')
     expect(form.outasset_name).toBe('服务器')
+    expect(form.asset_recordcode).toBe('RC-1')
     expect(selectedAsset.value).toEqual({
       value: '服务器',
+      recordcode: 'RC-1',
       asset_name: '服务器',
       asset_code: 'A001',
       asset_current_status: 'in_store',
@@ -256,8 +265,10 @@ describe('useOutAssetAssetSelection', () => {
     handleAssetSelect(makeAsset())
     expect(form.outasset_code).toBe('A001')
     expect(form.outasset_name).toBe('服务器')
+    expect(form.asset_recordcode).toBe('RC-1')
     expect(selectedAsset.value).toEqual({
       value: '服务器',
+      recordcode: 'RC-1',
       asset_name: '服务器',
       asset_code: 'A001',
       asset_current_status: 'in_store',

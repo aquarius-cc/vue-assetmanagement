@@ -148,12 +148,8 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
   // ===== 分页操作 =====
   const handleSizeChange = async (newSize: number) => {
     pageSize.value = newSize
-    const totalPages = Math.ceil(total.value / newSize)
-    if (totalPages === 0 || currentPage.value < 1) {
-      currentPage.value = 1
-    } else if (currentPage.value > totalPages) {
-      currentPage.value = totalPages
-    }
+    // [M-3] 统一语义：改每页条数回第 1 页（业界惯例，消解 EP size-change/current-change 双触发）
+    currentPage.value = 1
     await nextTick()
     await runActiveSearch()
   }
@@ -174,9 +170,22 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
     }
   }
 
-  const resetToFirstPage = () => {
+  const resetToFirstPage = async () => {
     currentPage.value = 1
     clearSearch()
+    // [I-2] 重置后必须真实加载第 1 页数据，否则表格停留在旧数据/空态
+    await loadList(1, pageSize.value)
+  }
+
+  /**
+   * [M-2] 搜索入口置 1 薄包装（用户触发的搜索必须从第 1 页开始）
+   *
+   * 仅置 1 + 委托 performSearchWithParams；翻页/刷新路径仍走 performSearchWithParams
+   * 原型（不复位），避免破坏 BF-083 搜索态路由与 routing.spec 的翻页契约。
+   */
+  const searchWithReset = async (params: Record<string, string>) => {
+    currentPage.value = 1
+    return performSearchWithParams(params)
   }
 
   const refreshCurrentPage = async () => {
@@ -223,6 +232,7 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
     handleCurrentChange,
     performSearch,
     performSearchWithParams,
+    searchWithReset,
     loadList,
     resetToFirstPage,
     refreshCurrentPage,

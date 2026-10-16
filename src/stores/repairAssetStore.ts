@@ -21,6 +21,7 @@ import type {
 } from '@/types/repairasset'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery, EntityStore } from '@/stores/createEntityStore'
+import type { BlobDownload } from '@/api/request'
 
 /**
  * 维修资产 Store 接口（含状态流转扩展方法）
@@ -135,4 +136,9 @@ export const useRepairAssetStore = (): RepairAssetStore => {
   }
 
   return store as unknown as RepairAssetStore
+}
+
+/** BF-092/I-1: 服务端 Excel 导出（经 store 层消费，满足 no-restricted-imports 分层约束） */
+export function repairAssetExportExcel(params: Record<string, unknown>): Promise<BlobDownload> {
+  return repairAssetAPI.exportExcel(params)
 }

@@ -154,6 +154,12 @@ export interface SmartListContainerExpose<T = unknown> {
   searchWithParams: (params: Record<string, string>) => Promise<void>
 
   /**
+   * [M-2] 搜索入口置 1 薄包装：先回第 1 页再执行多参数搜索
+   * @param params 搜索参数对象（key-value 对）
+   */
+  searchWithReset: (params: Record<string, string>) => Promise<void>
+
+  /**
    * 当前页码（响应式）
    */
   currentPage: Ref<number>

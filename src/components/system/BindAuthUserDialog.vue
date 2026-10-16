@@ -63,7 +63,9 @@
               <StatusTag :status="emp.employee_status" map-type="employee" size="small" />
             </div>
           </div>
-          <div v-else-if="searchKeyword && !searching" class="empty-tip">无匹配结果</div>
+          <div v-else-if="searchKeyword && !searching && !selectedEmployee" class="empty-tip">
+            无匹配结果
+          </div>
         </div>
       </template>
     </template>
@@ -134,8 +136,16 @@ const showSearch = ref(false)
 
 const dialogTitle = ref('绑定用户')
 
+// [BF-095/M-8] 程序化回填关键词（选中员工后写入 "姓名 (工号)"）会触发防抖检索，
+// 该检索必然无命中并把空态提示打回已选状态；置 suppress 标志跳过这一次回调。
+let suppressNextSearch = false
+
 // 使用防抖搜索 composable
 useDebouncedSearch(searchKeyword, async (value) => {
+  if (suppressNextSearch) {
+    suppressNextSearch = false
+    return
+  }
   if (!value.trim()) {
     searchResults.value = []
     selectedEmployee.value = null
@@ -187,6 +197,7 @@ watch(
 )
 
 const handleSelectEmployee = (emp: Employee) => {
+  suppressNextSearch = true
   selectedEmployee.value = emp
   searchKeyword.value = `${emp.employee_name} (${emp.employee_jobcode})`
   searchResults.value = []

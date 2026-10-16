@@ -293,7 +293,7 @@ describe('usePaginationSearch', () => {
   })
 
   describe('resetToFirstPage', () => {
-    it('resets page to 1 and clears search', () => {
+    it('resets page to 1, clears search, and reloads first page [I-2]', async () => {
       const { resetToFirstPage, currentPage, search } = usePaginationSearch({
         store: mockStore,
       })
@@ -301,10 +301,11 @@ describe('usePaginationSearch', () => {
       currentPage.value = 5
       search.value = 'test'
 
-      resetToFirstPage()
+      await resetToFirstPage()
 
       expect(currentPage.value).toBe(1)
       expect(search.value).toBe('')
+      expect(mockStore.getList).toHaveBeenCalledWith({ page: 1, page_size: 20 })
     })
   })
 
@@ -505,7 +506,7 @@ describe('usePaginationSearch', () => {
       expect(total.value).toBe(0)
     })
 
-    it('clamps current page to last page on size change', async () => {
+    it('always resets current page to 1 on size change [M-3]', async () => {
       mockStore.pagination.total = ref(20)
 
       const { handleSizeChange, currentPage } = usePaginationSearch({ store: mockStore })
@@ -606,6 +607,117 @@ describe('usePaginationSearch', () => {
       expect((await import('element-plus')).ElMessage.warning).toHaveBeenCalledWith(
         '自定义超范围提示（1）',
       )
+    })
+  })
+
+  describe('搜索竞态守卫 [I-8]', () => {
+    /** 手控 resolve 的 deferred promise 夹具 */
+    const deferred = <T>() => {
+      let resolve!: (v: T) => void
+      let reject!: (e: unknown) => void
+      const promise = new Promise<T>((res, rej) => {
+        resolve = res
+        reject = rej
+      })
+      return { promise, resolve, reject }
+    }
+
+    it('慢关键词搜索过期时丢弃结果：不覆盖新搜索数据', async () => {
+      const slow = deferred<{ count: number; results: { id: number }[] }>()
+      const fast = deferred<{ count: number; results: { id: number }[] }>()
+      const mockSearch = vi.fn().mockReturnValueOnce(slow.promise).mockReturnValueOnce(fast.promise)
+
+      const { performSearch, searchResults, isSearching } = usePaginationSearch({
+        store: mockStore,
+        search: { performSearch: mockSearch },
+      })
+
+      // A（慢）先发起，B（快）后发起
+      const promiseA = performSearch('AAA')
+      const promiseB = performSearch('BBB')
+
+      // B 先 resolve
+      fast.resolve({ count: 1, results: [{ id: 2 }] })
+      await promiseB
+      expect(searchResults.value).toEqual([{ id: 2 }])
+
+      // A 后 resolve：应被丢弃
+      slow.resolve({ count: 1, results: [{ id: 1 }] })
+      await promiseA
+      expect(searchResults.value).toEqual([{ id: 2 }])
+      expect(isSearching.value).toBe(false)
+    })
+
+    it('慢搜索失败时不清空新搜索结果', async () => {
+      const slow = deferred<{ count: number; results: { id: number }[] }>()
+      const fast = deferred<{ count: number; results: { id: number }[] }>()
+      const mockSearch = vi.fn().mockReturnValueOnce(slow.promise).mockReturnValueOnce(fast.promise)
+
+      const { performSearch, searchResults } = usePaginationSearch({
+        store: mockStore,
+        search: { performSearch: mockSearch },
+      })
+
+      const promiseA = performSearch('AAA')
+      const promiseB = performSearch('BBB')
+
+      fast.resolve({ count: 1, results: [{ id: 2 }] })
+      await promiseB
+      expect(searchResults.value).toEqual([{ id: 2 }])
+
+      // A 后 reject：不得清空 B 的结果，仍应 rethrow
+      slow.reject(new Error('A failed'))
+      await expect(promiseA).rejects.toThrow('A failed')
+      expect(searchResults.value).toEqual([{ id: 2 }])
+    })
+
+    it('慢参数搜索过期时丢弃结果：不覆盖新搜索数据', async () => {
+      const slow = deferred<{ count: number; results: { id: number }[] }>()
+      const fast = deferred<{ count: number; results: { id: number }[] }>()
+      const mockWithParams = vi
+        .fn()
+        .mockReturnValueOnce(slow.promise)
+        .mockReturnValueOnce(fast.promise)
+
+      const { performSearchWithParams, searchResults } = usePaginationSearch({
+        store: mockStore,
+        search: { performSearch: vi.fn(), performSearchWithParams: mockWithParams },
+      })
+
+      const promiseA = performSearchWithParams({ status: 'in_store' })
+      const promiseB = performSearchWithParams({ status: 'in_use' })
+
+      fast.resolve({ count: 1, results: [{ id: 2 }] })
+      await promiseB
+      expect(searchResults.value).toEqual([{ id: 2 }])
+
+      slow.resolve({ count: 1, results: [{ id: 1 }] })
+      await promiseA
+      expect(searchResults.value).toEqual([{ id: 2 }])
+    })
+
+    it('新请求在途时慢请求 finally 不复位 isSearching', async () => {
+      const slow = deferred<{ count: number; results: { id: number }[] }>()
+      const fast = deferred<{ count: number; results: { id: number }[] }>()
+      const mockSearch = vi.fn().mockReturnValueOnce(slow.promise).mockReturnValueOnce(fast.promise)
+
+      const { performSearch, isSearching } = usePaginationSearch({
+        store: mockStore,
+        search: { performSearch: mockSearch },
+      })
+
+      const promiseA = performSearch('AAA')
+      const promiseB = performSearch('BBB')
+
+      // A 先完成（过期），此时 B 仍在途：isSearching 不得被 A 复位为 false
+      slow.resolve({ count: 0, results: [] })
+      await promiseA
+      expect(isSearching.value).toBe(true)
+
+      // B 完成后才复位
+      fast.resolve({ count: 0, results: [] })
+      await promiseB
+      expect(isSearching.value).toBe(false)
     })
   })
 })

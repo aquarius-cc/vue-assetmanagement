@@ -166,4 +166,50 @@ describe('createSuggestionFetcher', () => {
 
     expect(fetchData).toHaveBeenCalledWith('query')
   })
+
+  it('should discard stale out-of-order response [BF-095/M-9]', async () => {
+    let resolveFirst: (items: TestData[]) => void = () => {}
+    fetchData
+      .mockImplementationOnce(
+        () =>
+          new Promise<TestData[]>((resolve) => {
+            resolveFirst = resolve
+          }),
+      )
+      .mockResolvedValueOnce([{ id: 2, name: 'New' }])
+
+    const fetcher = createSuggestionFetcher({ fetchData, transform })
+    const cb = vi.fn()
+
+    const first = fetcher('old', cb) // 挂起，后返回
+    const second = fetcher('new', cb) // 先返回
+    await second
+    expect(cb).toHaveBeenCalledWith([{ value: 'New', id: 2 }])
+
+    resolveFirst([{ id: 1, name: 'Old' }])
+    await first
+    // 过期响应被丢弃：cb 仍只被最新一次调用回填
+    expect(cb).toHaveBeenCalledTimes(1)
+  })
+
+  it('should invalidate in-flight request when input cleared [BF-095/M-9]', async () => {
+    let resolveFirst: (items: TestData[]) => void = () => {}
+    fetchData.mockImplementationOnce(
+      () =>
+        new Promise<TestData[]>((resolve) => {
+          resolveFirst = resolve
+        }),
+    )
+
+    const fetcher = createSuggestionFetcher({ fetchData, transform })
+    const cb = vi.fn()
+
+    const first = fetcher('query', cb)
+    await fetcher('', cb) // 清空输入
+    expect(cb).toHaveBeenCalledWith([])
+
+    resolveFirst([{ id: 1, name: 'Stale' }])
+    await first
+    expect(cb).toHaveBeenCalledTimes(1)
+  })
 })

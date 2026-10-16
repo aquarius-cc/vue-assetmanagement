@@ -8,6 +8,7 @@ const hoisted = vi.hoisted(() => ({
   handleCurrentChange: vi.fn(),
   performSearch: vi.fn(async () => {}),
   performSearchWithParams: vi.fn(async () => {}),
+  searchWithReset: vi.fn(async () => {}),
   refreshCurrentPage: vi.fn(async () => {}),
   resetToFirstPage: vi.fn(async () => {}),
   messageError: vi.fn(),
@@ -32,6 +33,7 @@ vi.mock('@/composables/usePaginationSearch', async () => {
       handleCurrentChange: hoisted.handleCurrentChange,
       performSearch: hoisted.performSearch,
       performSearchWithParams: hoisted.performSearchWithParams,
+      searchWithReset: hoisted.searchWithReset,
       refreshCurrentPage: hoisted.refreshCurrentPage,
       resetToFirstPage: hoisted.resetToFirstPage,
     }),
@@ -198,7 +200,7 @@ describe('SmartListContainer', () => {
   })
 
   describe('exposed API', () => {
-    it('delegates refresh, reset, search and searchWithParams to the composable', async () => {
+    it('delegates refresh, reset, search, searchWithParams and searchWithReset to the composable', async () => {
       const wrapper = mountContainer({ autoLoad: false })
       const vm = wrapper.vm as unknown as Record<string, (...args: never[]) => Promise<void>>
 
@@ -206,11 +208,13 @@ describe('SmartListContainer', () => {
       await vm.reset()
       await vm.search('kw' as never)
       await vm.searchWithParams({ code: 'C-2' } as never)
+      await vm.searchWithReset({ code: 'C-3' } as never)
 
       expect(hoisted.refreshCurrentPage).toHaveBeenCalledTimes(1)
       expect(hoisted.resetToFirstPage).toHaveBeenCalledTimes(1)
       expect(hoisted.performSearch).toHaveBeenCalledWith('kw')
       expect(hoisted.performSearchWithParams).toHaveBeenCalledWith({ code: 'C-2' })
+      expect(hoisted.searchWithReset).toHaveBeenCalledWith({ code: 'C-3' })
     })
 
     it('exposes reactive pagination refs, data and clearSelection', () => {

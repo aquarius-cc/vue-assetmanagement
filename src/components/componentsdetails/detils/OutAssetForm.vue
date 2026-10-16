@@ -281,6 +281,7 @@ const isEditMode = ref(!!route.query.code)
 //   以及 outasset_applicant_name / outasset_manager_name 用于前端展示
 const outAssetCreateExtendedForm = reactive<OutAssetCreateExtended>({
   outasset_code: '',
+  asset_recordcode: '',
   outasset_number: 1,
   outasset_applicant_jobcode: '',
   outasset_manager_jobcode: '',
@@ -301,6 +302,7 @@ const originalFormData = ref<OutAssetCreateExtended | null>(null)
 // [HR-02] 恢复传递 outasset_applicant_jobcode / outasset_manager_jobcode / outasset_using_location
 const outAssetForm = computed<OutAssetCreateForm>(() => ({
   outasset_code: outAssetCreateExtendedForm.outasset_code,
+  asset_recordcode: outAssetCreateExtendedForm.asset_recordcode || undefined,
   outasset_number: outAssetCreateExtendedForm.outasset_number,
   outasset_applicant: outAssetCreateExtendedForm.outasset_applicant_jobcode || null,
   outasset_manager: outAssetCreateExtendedForm.outasset_manager_jobcode || null,
@@ -334,6 +336,7 @@ const fetchAssetSuggestions = createSuggestionFetcher({
     asset.asset_current_status === AssetCurrentStatus.RECYCLED_PENDING,
   transform: (asset: AssetDetail): AssetAutocompleteItem => ({
     value: asset.asset_name,
+    recordcode: asset.recordcode,
     asset_name: asset.asset_name,
     asset_code: asset.asset_code,
     asset_current_status: asset.asset_current_status ?? '',
@@ -463,6 +466,7 @@ const resetForm = () => {
   formRef.value?.resetFields()
   Object.assign(outAssetCreateExtendedForm, {
     outasset_code: '',
+    asset_recordcode: '',
     outasset_number: 1,
     outasset_applicant_jobcode: '',
     outasset_manager_jobcode: '',
@@ -496,6 +500,23 @@ onMounted(async () => {
       return
     }
     await loadEditData(code)
+    return
+  }
+
+  // 新增模式预填：详情页出库入口传 asset（资产 recordcode），勿用 code（编辑模式占用）
+  const presetAsset = route.query.asset as string
+  if (presetAsset) {
+    try {
+      const asset = await assetStore.getById(presetAsset)
+      if (asset) {
+        handleAssetSelect(asset)
+      } else {
+        ElMessage.warning(`未找到资产记录 ${presetAsset}，请手动选择`)
+      }
+    } catch (error) {
+      logError('components/componentsdetails/detils/OutAssetForm', '预填资产加载失败:', error)
+      ElMessage.warning('预填资产加载失败，请手动选择')
+    }
   }
 })
 </script>

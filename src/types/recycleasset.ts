@@ -18,28 +18,28 @@ import type { AssetDetail } from '@/types/asset'
 
 /**
  * 回收资产创建表单接口
- * 用于创建回收资产时的表单数据
+ * 用于创建回收资产时的表单数据（单条创建，对齐后端 RecycleAssetCreateSerializer）
  *
- * 字段映射（前端→后端 RecycleAssetSerializer）：
- * - outasset_recordcode →recycle_outasset (SlugRelatedField, slug_field="recordcode")
- * - recycle_asset_storage_code →recycle_asset_storage (SlugRelatedField, slug_field="storage_code")
- * - recycle_asset_recycle_person_jobcode →recycle_asset_recycle_person_jobcode (SlugRelatedField)
- * - recycle_type: 回收原因（新增字段）
+ * 字段映射（前端→后端 RecycleAssetCreateSerializer）：
+ * - outasset_recordcode → outasset_recordcode (SlugRelatedField, slug_field="recordcode", 必填)
+ * - storage_code → storage_code (SlugRelatedField, slug_field="storage_code", 必填, write_only)
+ * - recycle_asset_date / recycle_type: 必填
+ * - recycle_asset_number: 可选（后端 default=1）
+ *
+ * 注意：单条 serializer 不接收 recycle_asset / recycle_asset_storage /
+ * recycle_asset_recycle_person_jobcode（回收人取当前登录操作者）；
+ * 批量创建走 RecycleAssetBatchCreateForm（顶层 recycle_asset_storage）。
  */
 export interface RecycleAssetCreateForm {
-  /** 出库记录编码 (→recycle_outasset, SlugRelatedField) */
+  /** 出库记录编码 (→outasset_recordcode, SlugRelatedField slug=recordcode, 必填) */
   outasset_recordcode: string
-  /** 回收资产编码 (FK →am_asset.recordcode) */
-  recycle_asset: string
-  /** 回收数量 (default=1) */
-  recycle_asset_number: number
-  /** [HALT] FE-C1修复：字段名从 recycle_asset_storage_code 改为 recycle_asset_storage，与后端Serializer对齐 */
-  recycle_asset_storage: string
-  /** 回收人工号(→recycle_asset_recycle_person_jobcode, SlugRelatedField) */
-  recycle_asset_recycle_person_jobcode: string
-  /** 回收日期 */
+  /** 回收仓库编码 (→storage_code, SlugRelatedField slug=storage_code, 必填) */
+  storage_code: string
+  /** 回收数量 (后端 default=1) */
+  recycle_asset_number?: number
+  /** 回收日期 (必填) */
   recycle_asset_date: string
-  /** 回收原因 */
+  /** 回收原因 (必填) */
   recycle_type: string
   /** 回收描述 (optional) */
   recycle_asset_description?: string | null

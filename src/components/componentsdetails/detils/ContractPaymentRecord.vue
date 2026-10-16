@@ -39,7 +39,7 @@
       />
 
       <!-- 支付记录表格 -->
-      <el-table :data="activePayments" v-loading="loading" style="width: 100%">
+      <el-table :data="activePayments" style="width: 100%">
         <el-table-column prop="date" label="支付日期" width="120" />
         <el-table-column prop="amount" label="支付金额" width="120">
           <template #default="{ row }"> ¥{{ formatPrice(row.amount) }} </template>
@@ -138,14 +138,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { addPaymentRecord, deletePaymentRecord, approvePaymentRecord } from '@/stores/contractStore'
 import type { Contract, PaymentRecord } from '@/types/contract'
 import { getErrorMessage } from '@/utils/errorHandler'
-import { logError } from '@/utils/logger'
 
 // Props
 const props = defineProps<{
@@ -158,11 +157,9 @@ const emit = defineEmits<{
 }>()
 
 // 状态
-const loading = ref(false)
 const submitting = ref(false)
 const dialogVisible = ref(false)
 const formRef = ref<FormInstance>()
-const payments = ref<PaymentRecord[]>([])
 
 // 表单数据
 const paymentForm = ref({
@@ -237,23 +234,6 @@ const getStatusType = (status: string) => {
   return map[status] || 'info'
 }
 
-const loadPayments = async () => {
-  loading.value = true
-  try {
-    const record = props.contract.paid_record
-    if (record && typeof record !== 'string') {
-      payments.value = record.payments || []
-    } else {
-      payments.value = []
-    }
-  } catch (e) {
-    logError('components/componentsdetails/detils/ContractPaymentRecord', '解析支付记录失败:', e)
-    payments.value = []
-  } finally {
-    loading.value = false
-  }
-}
-
 const showAddDialog = () => {
   paymentForm.value = {
     date: '',
@@ -272,14 +252,17 @@ const submitPayment = async () => {
 
     submitting.value = true
     try {
+      // [BF-095/M-7] 表单 date/payment_method 此前收集后丢弃，此处补齐进载荷（键名对齐
+      // ContractBatchPaymentRecordItemSerializer：payment_date/payment_method）
       await addPaymentRecord(props.contract.recordcode, {
         amount: paymentForm.value.amount,
         description: paymentForm.value.description,
+        payment_date: paymentForm.value.date,
+        payment_method: paymentForm.value.payment_method,
       })
       ElMessage.success('支付记录添加成功')
       dialogVisible.value = false
       emit('update')
-      await loadPayments()
     } catch (error) {
       ElMessage.error(getErrorMessage(error, '添加支付记录失败'))
     } finally {
@@ -295,7 +278,6 @@ const handleDelete = async (payment: PaymentRecord) => {
     await deletePaymentRecord(props.contract.recordcode, payment.id)
     ElMessage.success('支付记录删除成功')
     emit('update')
-    await loadPayments()
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error(getErrorMessage(error, '删除支付记录失败'))
@@ -310,18 +292,12 @@ const handleApprove = async (payment: PaymentRecord) => {
     await approvePaymentRecord(props.contract.recordcode, payment.id)
     ElMessage.success('支付记录审核成功')
     emit('update')
-    await loadPayments()
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error(getErrorMessage(error, '审核支付记录失败'))
     }
   }
 }
-
-// 生命周期
-onMounted(() => {
-  loadPayments()
-})
 </script>
 
 <style scoped>

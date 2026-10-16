@@ -91,7 +91,7 @@
         :page-sizes="PAGE_SIZE_OPTIONS"
         :total="total"
         layout="total, sizes, prev, pager, next"
-        @size-change="fetchAuthUsers"
+        @size-change="handleSizeChange"
         @current-change="fetchAuthUsers"
       />
     </el-card>
@@ -202,6 +202,12 @@ const fetchAuthUsers = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// [M-3] 改每页条数回第 1 页（消解 EP size-change/current-change 双触发下页码语义分叉）
+const handleSizeChange = () => {
+  currentPage.value = 1
+  fetchAuthUsers()
 }
 
 const formatDate = (dateStr: string) => {

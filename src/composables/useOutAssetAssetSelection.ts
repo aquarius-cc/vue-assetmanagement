@@ -32,6 +32,7 @@ export function useOutAssetAssetSelection(
     selectedAsset.value = item
     form.outasset_name = item.asset_name
     form.outasset_code = item.asset_code
+    form.asset_recordcode = item.recordcode
   }
 
   /** 手动输入资产名称变化时，清空已选资人*/
@@ -60,8 +61,10 @@ export function useOutAssetAssetSelection(
       const asset = await assetStore.getById(code)
       if (asset) {
         form.outasset_name = asset.asset_name
+        form.asset_recordcode = asset.recordcode
         selectedAsset.value = {
           value: asset.asset_name,
+          recordcode: asset.recordcode,
           asset_name: asset.asset_name,
           asset_code: asset.asset_code,
           asset_current_status: asset.asset_current_status ?? '',
@@ -93,8 +96,10 @@ export function useOutAssetAssetSelection(
         const asset = assets[0]
         form.outasset_name = asset.asset_name
         form.outasset_code = asset.asset_code
+        form.asset_recordcode = asset.recordcode
         selectedAsset.value = {
           value: asset.asset_name,
+          recordcode: asset.recordcode,
           asset_name: asset.asset_name,
           asset_code: asset.asset_code,
           asset_current_status: asset.asset_current_status ?? '',
@@ -114,6 +119,7 @@ export function useOutAssetAssetSelection(
   const clearAssetInfo = () => {
     form.outasset_name = ''
     form.outasset_code = ''
+    form.asset_recordcode = ''
     selectedAsset.value = null
   }
 
@@ -121,8 +127,10 @@ export function useOutAssetAssetSelection(
   const handleAssetSelect = (asset: AssetDetail) => {
     form.outasset_code = asset.asset_code
     form.outasset_name = asset.asset_name
+    form.asset_recordcode = asset.recordcode
     selectedAsset.value = {
       value: asset.asset_name,
+      recordcode: asset.recordcode,
       asset_name: asset.asset_name,
       asset_code: asset.asset_code,
       asset_current_status: asset.asset_current_status || '',

@@ -18,6 +18,7 @@ import type {
 } from '@/types/foundasset'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
+import type { BlobDownload } from '@/api/request'
 
 export const useFoundAssetStore = createEntityStore<FoundAssetExtended, PaginationQuery>(
   'foundAsset',
@@ -49,3 +50,8 @@ export const useFoundAssetStore = createEntityStore<FoundAssetExtended, Paginati
     enableCache: false,
   },
 )
+
+/** BF-092/I-1: 服务端 Excel 导出（经 store 层消费，满足 no-restricted-imports 分层约束） */
+export function foundAssetExportExcel(params: Record<string, unknown>): Promise<BlobDownload> {
+  return foundAssetAPI.exportExcel(params)
+}

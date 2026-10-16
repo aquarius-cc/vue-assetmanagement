@@ -34,6 +34,8 @@ const roleWhitelist: Record<string, string[]> = {
   '/main/contractdetails': [ROLE_CODES.SYSTEM_ADMIN],
   '/main/userdetails': [ROLE_CODES.SYSTEM_ADMIN],
   '/main/departmentdetails': [ROLE_CODES.SYSTEM_ADMIN],
+  // [I-7] 通讯录管理（用户录入/批量导入/部门批量导入）：仅系统管理员
+  '/main/departmentmanagement': [ROLE_CODES.SYSTEM_ADMIN],
   '/main/system': [ROLE_CODES.SYSTEM_ADMIN],
   // 报废审批：部门经理及以上
   '/main/damagedassetdetails': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER],

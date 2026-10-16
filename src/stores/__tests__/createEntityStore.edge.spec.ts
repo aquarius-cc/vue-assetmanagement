@@ -222,4 +222,74 @@ describe('createEntityStore 边界分支', () => {
       expect(mockElMessage.error).toHaveBeenCalledWith(expect.stringContaining('等4条'))
     })
   })
+
+  describe('getList 竞态守卫 [I-8]', () => {
+    /** 手控 resolve 的 deferred promise 夹具 */
+    const deferred = <T>() => {
+      let resolve!: (v: T) => void
+      let reject!: (e: unknown) => void
+      const promise = new Promise<T>((res, rej) => {
+        resolve = res
+        reject = rej
+      })
+      return { promise, resolve, reject }
+    }
+
+    it('慢响应过期时丢弃结果：返回 [] 且不覆盖状态', async () => {
+      const store = makeStore('edge-race-getlist', api)
+      const slow = deferred<ListResponse<TestEntity>>()
+      const fast = deferred<ListResponse<TestEntity>>()
+
+      // A（慢）先发起，B（快）后发起
+      api.getList.mockReturnValueOnce(slow.promise).mockReturnValueOnce(fast.promise)
+      const promiseA = store.getList({ page: 1, page_size: 20 })
+      const promiseB = store.getList({ page: 2, page_size: 20 })
+
+      // B 先 resolve（count=40 → totalPages=2，page 2 有效）
+      fast.resolve({
+        count: 40,
+        page: 2,
+        page_size: 20,
+        results: [{ id: '3', name: 'C', value: 3 }],
+      })
+      const resultB = await promiseB
+      expect(resultB).toEqual([{ id: '3', name: 'C', value: 3 }])
+      expect(store.list).toEqual([{ id: '3', name: 'C', value: 3 }])
+
+      // A 后 resolve：应被丢弃
+      slow.resolve({
+        count: 40,
+        page: 1,
+        page_size: 20,
+        results: [{ id: '1', name: 'A', value: 1 }],
+      })
+      const resultA = await promiseA
+      expect(resultA).toEqual([])
+      // 状态仍为 B 的数据，未被 A 覆盖
+      expect(store.list).toEqual([{ id: '3', name: 'C', value: 3 }])
+      expect(store.pagination.page).toBe(2)
+    })
+
+    it('慢响应超出末页时不触发 handleInvalidPage 修正', async () => {
+      const store = makeStore('edge-race-invalidpage', api)
+      const slow = deferred<ListResponse<TestEntity>>()
+      const fast = deferred<ListResponse<TestEntity>>()
+
+      api.getList.mockReturnValueOnce(slow.promise).mockReturnValueOnce(fast.promise)
+      const promiseA = store.getList({ page: 5, page_size: 20 })
+      const promiseB = store.getList({ page: 1, page_size: 20 })
+
+      // B 先 resolve（total=0 → totalPages=0，不触发无效页）
+      fast.resolve({ count: 0, page: 1, page_size: 20, results: [] })
+      await promiseB
+      expect(store.pagination.page).toBe(1)
+
+      // A 后 resolve：声称 page 5 超出末页，但 seq 过期，不得把页码修正到 1（覆盖 B）
+      slow.resolve({ count: 0, page: 5, page_size: 20, results: [] })
+      const resultA = await promiseA
+      expect(resultA).toEqual([])
+      expect(store.pagination.page).toBe(1)
+      expect(store.list).toEqual([])
+    })
+  })
 })

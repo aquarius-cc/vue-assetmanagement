@@ -76,11 +76,10 @@ import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/types/list'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { RepairAssetExtended } from '@/types/repairasset'
-import { useRepairAssetStore } from '@/stores/repairAssetStore'
+import { useRepairAssetStore, repairAssetExportExcel } from '@/stores/repairAssetStore'
 import { getRepairStatusText, getRepairStatusTagType } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
 import { useAssetLifecycleActions, formatDate } from '@/composables/useAssetLifecycleActions'
-import type { ColumnConfig } from '@/utils/excelExporter'
 
 const repairAssetStore = useRepairAssetStore()
 const smartListRef = ref<SmartListContainerExpose | null>(null)
@@ -115,31 +114,10 @@ const storeConfig = useSmartListConfig<RepairAssetExtended>({
   entityName: '维修记录',
 })
 
-const exportColumns: ColumnConfig<RepairAssetExtended>[] = [
-  { title: '记录编码', key: 'recordcode', default: '' },
-  { title: '资产编码', key: 'asset_code', default: '' },
-  { title: '资产名称', key: 'asset_name', default: '' },
-  { title: '维修原因', key: 'repair_reason', default: '' },
-  {
-    title: '维修日期',
-    key: 'repair_date',
-    default: '',
-    formatter: (val: unknown) => formatDate(val as string | Date | null) || '',
-  },
-  {
-    title: '状态',
-    key: 'repair_status',
-    default: '',
-    formatter: (val: unknown) => getRepairStatusText(val as string),
-  },
-  { title: '操作人', key: 'operator_name', default: '' },
-]
-
 const { handleDelete, handleBatchDelete, handleExportExcel } = useAssetLifecycleActions({
   store: repairAssetStore,
   entityName: '维修资产',
-  fileNamePrefix: '维修资产列表',
-  exportColumns,
+  fetchExport: repairAssetExportExcel,
   refresh: async () => {
     smartListRef.value?.refresh()
   },

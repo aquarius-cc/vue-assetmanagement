@@ -70,10 +70,9 @@ import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/types/list'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { BrokenAssetExtended } from '@/types/brokenasset'
-import { useBrokenAssetStore } from '@/stores/brokenAssetStore'
+import { useBrokenAssetStore, brokenAssetExportExcel } from '@/stores/brokenAssetStore'
 import type { SmartListContainerExpose } from '@/types/common'
 import { useAssetLifecycleActions, formatDate } from '@/composables/useAssetLifecycleActions'
-import type { ColumnConfig } from '@/utils/excelExporter'
 
 const brokenAssetStore = useBrokenAssetStore()
 const smartListRef = ref<SmartListContainerExpose | null>(null)
@@ -100,25 +99,10 @@ const storeConfig = useSmartListConfig<BrokenAssetExtended>({
   entityName: '损坏资产',
 })
 
-const exportColumns: ColumnConfig<BrokenAssetExtended>[] = [
-  { title: '记录编码', key: 'recordcode', default: '' },
-  { title: '资产编码', key: 'asset_code', default: '' },
-  { title: '资产名称', key: 'asset_name', default: '' },
-  { title: '损坏原因', key: 'broken_reason', default: '' },
-  {
-    title: '损坏日期',
-    key: 'broken_date',
-    default: '',
-    formatter: (val: unknown) => formatDate(val as string | Date | null) || '',
-  },
-  { title: '操作人', key: 'operator_name', default: '' },
-]
-
 const { handleDelete, handleBatchDelete, handleExportExcel } = useAssetLifecycleActions({
   store: brokenAssetStore,
   entityName: '损坏资产',
-  fileNamePrefix: '损坏资产列表',
-  exportColumns,
+  fetchExport: brokenAssetExportExcel,
   refresh: async () => {
     smartListRef.value?.refresh()
   },

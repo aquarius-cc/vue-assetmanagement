@@ -11,7 +11,8 @@
  *   - types/lostasset: 遗失资产相关类型定义
  *   - stores/createEntityStore: 批量删除结果类型
  */
-import { request, unwrapResponse } from '@/api/index'
+import { request, unwrapResponse, getBlob } from '@/api/index'
+import type { BlobDownload } from '@/api/request'
 import type {
   LostAssetExtended,
   LostAssetCreateForm,
@@ -157,5 +158,13 @@ export const lostAssetAPI = {
     return unwrapResponse(
       request.post<LostAssetExtended>(`/assets/assets/${recordcode}/found/`, data),
     )
+  },
+
+  /**
+   * 服务端 Excel 导出（BF-092/I-1）
+   * 省略 limit/offset 时全量导出，总行数超 EXPORT_MAX_ROWS 会被后端拒绝（400）。
+   */
+  exportExcel: (params?: Record<string, unknown>): Promise<BlobDownload> => {
+    return getBlob('/assets/lost-assets/export/', params, 'lost_assets.xlsx')
   },
 }

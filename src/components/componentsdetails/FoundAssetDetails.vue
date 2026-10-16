@@ -70,10 +70,9 @@ import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/types/list'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { FoundAssetExtended } from '@/types/foundasset'
-import { useFoundAssetStore } from '@/stores/foundAssetStore'
+import { useFoundAssetStore, foundAssetExportExcel } from '@/stores/foundAssetStore'
 import type { SmartListContainerExpose } from '@/types/common'
 import { useAssetLifecycleActions, formatDate } from '@/composables/useAssetLifecycleActions'
-import type { ColumnConfig } from '@/utils/excelExporter'
 
 const foundAssetStore = useFoundAssetStore()
 const smartListRef = ref<SmartListContainerExpose | null>(null)
@@ -101,26 +100,10 @@ const storeConfig = useSmartListConfig<FoundAssetExtended>({
   entityName: '找回资产',
 })
 
-const exportColumns: ColumnConfig<FoundAssetExtended>[] = [
-  { title: '记录编码', key: 'recordcode', default: '' },
-  { title: '遗失记录', key: 'lost_asset_code', default: '' },
-  { title: '资产编码', key: 'asset_code', default: '' },
-  { title: '资产名称', key: 'asset_name', default: '' },
-  { title: '找到位置', key: 'found_location', default: '' },
-  {
-    title: '找到日期',
-    key: 'found_date',
-    default: '',
-    formatter: (val: unknown) => formatDate(val as string | Date | null) || '',
-  },
-  { title: '操作人', key: 'operator_name', default: '' },
-]
-
 const { handleDelete, handleBatchDelete, handleExportExcel } = useAssetLifecycleActions({
   store: foundAssetStore,
   entityName: '找回资产',
-  fileNamePrefix: '找回资产列表',
-  exportColumns,
+  fetchExport: foundAssetExportExcel,
   refresh: async () => {
     smartListRef.value?.refresh()
   },

@@ -99,6 +99,10 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
     // 当多个请求同时进行时，只有最后一个请求完成才关闭loading
     const loadingCount = ref(0)
 
+    // [I-8] getList 请求序号：仅最新请求的响应写入状态，丢弃慢响应防止覆盖新数据
+    // 范式来源：stores/dashboard.ts trendRequestId（[M-10] 竞态保护同款）
+    let listRequestSeq = 0
+
     // ✅ 确保 pagination 正确初始化为 Ref<P>
     const pagination = ref<PaginationState>({
       page: 1,
@@ -201,8 +205,12 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
           const { normalizedParams, requestedPage, requestedPageSize } =
             normalizePaginationParams(queryParams)
 
-          // ✅ 步骤2：调用 API
+          // ✅ 步骤2：调用 API（[I-8] seq 竞态守卫，范式同 dashboard.ts trendRequestId）
+          const seq = ++listRequestSeq
           const response = await getListApi(normalizedParams as Q)
+
+          // [I-8] 过期响应：被更新请求取代，跳过页码校验与状态写回，防止慢响应覆盖新数据
+          if (seq !== listRequestSeq) return []
 
           // ✅ 步骤3：验证页码有效性（以后端实际返回值为准）
           const totalPages = response.total_pages ?? Math.ceil(response.count / requestedPageSize)

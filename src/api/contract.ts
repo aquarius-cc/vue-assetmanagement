@@ -31,8 +31,19 @@ import type { BatchCreateResult } from '@/types/common'
 export type ContractBatchCreateResult = BatchCreateResult<Contract, ContractCreateForm>
 
 /**
+ * [BF-095/M-7] 支付记录添加载荷（唯一声明点，store 直通函数复用）
+ * 键名对齐后端 ContractBatchPaymentRecordItemSerializer：payment_date/payment_method
+ */
+export interface PaymentRecordPayload {
+  amount: number
+  description?: string
+  payment_date?: string
+  payment_method?: string
+}
+
+/**
  * 支付记录操作响应
- * 对应后端 payment_record/delete/approve action 返回格式
+ * 对应 payment_record/delete/approve action 的返回格式
  */
 export interface PaymentRecordResponse {
   contract: Contract
@@ -131,7 +142,7 @@ export const contractAPI = {
    */
   addPaymentRecord: (
     recordcode: string,
-    data: { amount: number; description?: string },
+    data: PaymentRecordPayload,
   ): Promise<PaymentRecordResponse> => {
     return unwrapResponse(
       request.post<PaymentRecordResponse>(`/assets/contracts/${recordcode}/payment_record/`, data),

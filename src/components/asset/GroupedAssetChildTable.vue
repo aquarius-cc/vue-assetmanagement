@@ -99,7 +99,7 @@
       </el-table-column>
     </el-table>
 
-    <!-- 真分页：仅超过单页容量时显示 -->
+    <!-- 真分页：仅超过单页容量时显示；loading 期间禁点防并发翻页 [BF-095/M-10] -->
     <div v-if="total > pageSize" class="child-pager">
       <el-pagination
         size="small"
@@ -108,6 +108,7 @@
         :total="total"
         :page-size="pageSize"
         :current-page="currentPage"
+        :disabled="loading"
         @current-change="onPageChange"
       />
     </div>

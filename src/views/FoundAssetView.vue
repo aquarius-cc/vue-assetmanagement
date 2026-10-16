@@ -15,6 +15,8 @@
     :asset-code="assetCode"
     :loading="loading"
     :asset="asset"
+    :fetch-error="fetchError"
+    @retry="fetchAsset"
   >
     <template #form>
       <el-form ref="formRef" :model="formData" label-width="100px">
@@ -56,6 +58,9 @@ const {
   submitting,
   asset,
   assetCode,
+  fetchError, // [BF-095/M-4] 加载失败状态
+  fetchAsset, // [BF-095/M-4] 供 @retry 事件调用
+  formRef,
   handleSubmit: baseHandleSubmit,
 } = useAssetOperationForm<{
   found_location?: string | null
@@ -71,6 +76,10 @@ const {
   successMessage: '遗失资产已找回并加入已回收待发放状态',
   errorMessage: '找回操作失败，请重试',
 })
+
+// formRef 由模板 ref="formRef" 绑定到 el-form，供 composable 内部校验；
+// vue-tsc 不将模板 ref 绑定计为变量使用，此处显式消费以消除 TS6133
+void formRef
 
 const formData = reactive({
   found_location: '',

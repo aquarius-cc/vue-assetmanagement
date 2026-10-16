@@ -1,12 +1,12 @@
 /**
  * useAssetLifecycleActions 单元测试
- * 覆盖：单删（recordcode 取键 + 取消/失败分支）、批删（空选择/缺编码/取消）、导出（当前页/全量/失败/关闭）
+ * 覆盖：单删（recordcode 取键 + 取消/失败分支）、批删（空选择/缺编码/取消）、导出（服务端委托）
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockConfirm, mockExportToExcel } = vi.hoisted(() => ({
+const { mockConfirm, mockExportFromServer } = vi.hoisted(() => ({
   mockConfirm: vi.fn(),
-  mockExportToExcel: vi.fn(),
+  mockExportFromServer: vi.fn(),
 }))
 
 vi.mock('element-plus', () => ({
@@ -14,8 +14,8 @@ vi.mock('element-plus', () => ({
   ElMessageBox: { confirm: mockConfirm },
 }))
 
-vi.mock('@/utils/excelExporter', () => ({
-  exportToExcel: mockExportToExcel,
+vi.mock('@/composables/useServerExcelExport', () => ({
+  useServerExcelExport: () => ({ exportFromServer: mockExportFromServer }),
 }))
 
 import { useAssetLifecycleActions } from '../useAssetLifecycleActions'
@@ -38,11 +38,16 @@ const makeStore = () => ({
   setRefreshFlag: vi.fn(),
 })
 
+const mockFetchExport = vi.fn().mockResolvedValue({
+  blob: new Blob(),
+  headers: {},
+  filename: 'test.xlsx',
+})
+
 const makeParams = (store: ReturnType<typeof makeStore>) => ({
   store,
   entityName: '损坏资产',
-  fileNamePrefix: '损坏资产导出',
-  exportColumns: [] as never[],
+  fetchExport: mockFetchExport,
   refresh: vi.fn().mockResolvedValue(undefined),
   clearSelection: vi.fn(),
 })
@@ -51,6 +56,7 @@ describe('useAssetLifecycleActions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockElMessageBoxConfirm.mockResolvedValue(undefined)
+    mockFetchExport.mockResolvedValue({ blob: new Blob(), headers: {}, filename: 'test.xlsx' })
   })
 
   describe('handleDelete', () => {
@@ -160,58 +166,28 @@ describe('useAssetLifecycleActions', () => {
   })
 
   describe('handleExportExcel', () => {
-    it('选择"导出当前页"：以 store.list 导出数据', async () => {
+    it('委托 useServerExcelExport 服务端导出', async () => {
       const store = makeStore()
       const { handleExportExcel } = useAssetLifecycleActions(makeParams(store))
 
       await handleExportExcel()
 
-      expect(mockExportToExcel).toHaveBeenCalledTimes(1)
-      const arg = mockExportToExcel.mock.calls[0][0] as Record<string, unknown>
-      expect(arg.data).toHaveLength(2)
-      expect(arg.fileName).toBe('损坏资产导出_当前页_2.xlsx')
-      expect(arg.sheetName).toBe('损坏资产')
+      expect(mockExportFromServer).toHaveBeenCalledTimes(1)
+      const arg = mockExportFromServer.mock.calls[0][0] as Record<string, unknown>
+      expect(arg.entityName).toBe('损坏资产')
+      expect(arg.totalCount).toBe(2)
+      expect(arg.fetchExport).toBe(mockFetchExport)
     })
 
-    it('选择"导出全部"：以 total 为 page_size 拉取全量数据', async () => {
-      mockElMessageBoxConfirm.mockRejectedValue('cancel')
+    it('透传 store.pagination.total 给服务端做上限预判', async () => {
       const store = makeStore()
-      store.getList.mockResolvedValue([
-        { recordcode: 'R1' },
-        { recordcode: 'R2' },
-        { recordcode: 'R3' },
-      ])
-      store.pagination.total = 3
+      store.pagination.total = 5000
       const { handleExportExcel } = useAssetLifecycleActions(makeParams(store))
 
       await handleExportExcel()
 
-      expect(store.getList).toHaveBeenCalledWith({ page: 1, page_size: 3 })
-      const arg = mockExportToExcel.mock.calls[0][0] as Record<string, unknown>
-      expect(arg.fileName).toBe('损坏资产导出_全部_3.xlsx')
-    })
-
-    it('全量拉取失败：提示加载数据失败且不导出', async () => {
-      mockElMessageBoxConfirm.mockRejectedValue('cancel')
-      const store = makeStore()
-      store.getList.mockRejectedValue(new Error('network'))
-      const { handleExportExcel } = useAssetLifecycleActions(makeParams(store))
-
-      await handleExportExcel()
-
-      expect(mockElMessageError).toHaveBeenCalledWith('加载数据失败')
-      expect(mockExportToExcel).not.toHaveBeenCalled()
-    })
-
-    it('关闭确认框（非取消）：不导出', async () => {
-      mockElMessageBoxConfirm.mockRejectedValue('close')
-      const store = makeStore()
-      const { handleExportExcel } = useAssetLifecycleActions(makeParams(store))
-
-      await handleExportExcel()
-
-      expect(mockExportToExcel).not.toHaveBeenCalled()
-      expect(store.getList).not.toHaveBeenCalled()
+      const arg = mockExportFromServer.mock.calls[0][0] as Record<string, unknown>
+      expect(arg.totalCount).toBe(5000)
     })
   })
 })

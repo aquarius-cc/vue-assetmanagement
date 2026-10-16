@@ -21,7 +21,11 @@
  */
 import { createEntityStore } from '@/stores/createEntityStore'
 import { contractAPI } from '@/api/contract'
-import type { ContractBatchCreateResult, PaymentRecordResponse } from '@/api/contract'
+import type {
+  ContractBatchCreateResult,
+  PaymentRecordPayload,
+  PaymentRecordResponse,
+} from '@/api/contract'
 import type { Contract, ContractCreateForm, ContractUpdateForm } from '@/types/contract'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import { ElMessage } from 'element-plus'
@@ -77,7 +81,7 @@ export const useContractStore = createEntityStore<Contract, PaginationQuery>('co
  */
 export const addPaymentRecord = (
   recordcode: string,
-  data: { amount: number; description?: string },
+  data: PaymentRecordPayload,
 ): Promise<PaymentRecordResponse> => {
   return contractAPI.addPaymentRecord(recordcode, data)
 }

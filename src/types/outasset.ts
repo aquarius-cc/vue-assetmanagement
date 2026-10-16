@@ -54,8 +54,10 @@ export enum OutAssetCurrentStatus {
  * - outasset_current_status（后端为 read_only，前端传入无效）
  */
 export interface OutAssetCreateForm {
-  /** 出库资产编码 (外键关联 am_asset.asset_code, 可选) */
+  /** 出库资产编码 (前端展示用; 单条创建以 asset_recordcode 关联资产) */
   outasset_code: string | null
+  /** 资产记录编码 (后端 OutAssetCreateSerializer 必填, slug=recordcode) */
+  asset_recordcode?: string
   /** 出库数量 */
   outasset_number: number
   /** 出库申请人工号*/
@@ -247,6 +249,8 @@ export type OutAssetResponse = PaginatedResponse<OutAssetDetail>
 export interface AssetAutocompleteItem {
   /** 候选值）*/
   value: string
+  /** 资产记录编码 (单条创建出库单时提交 asset_recordcode) */
+  recordcode: string
   /** 资产名称 */
   asset_name: string
   /** 资产编码 */

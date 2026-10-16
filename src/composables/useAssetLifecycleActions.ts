@@ -5,10 +5,10 @@
  * @module composables/useAssetLifecycleActions
  */
 import { ElMessage, ElMessageBox } from 'element-plus'
-import type { ColumnConfig } from '@/utils/excelExporter'
-import { exportToExcel } from '@/utils/excelExporter'
 import { formatDate } from '@/utils/Format'
 import { logError } from '@/utils/logger'
+import { useServerExcelExport } from '@/composables/useServerExcelExport'
+import type { BlobDownload } from '@/api/request'
 
 /** 最小 store 接口（适用于损坏/遗失/找回/维修四个 store） */
 export interface AssetLifecycleStore<T = Record<string, unknown>> {
@@ -24,8 +24,11 @@ export interface AssetLifecycleStore<T = Record<string, unknown>> {
 export interface UseAssetLifecycleActionsParams<T> {
   store: AssetLifecycleStore<T>
   entityName: string
-  fileNamePrefix: string
-  exportColumns: ColumnConfig<T>[]
+  /**
+   * 服务端导出请求函数（BF-092/I-1）
+   * 由调用方传入对应实体的 API.exportExcel，composable 内部走 useServerExcelExport。
+   */
+  fetchExport: (params: Record<string, unknown>) => Promise<BlobDownload>
   /** 可选：删除后刷新回调（默认调用 smartListRef.refresh） */
   refresh?: () => Promise<void>
   /** 可选：批量删除后清空选择状态 */
@@ -45,7 +48,8 @@ export interface UseAssetLifecycleActionsReturn {
 export function useAssetLifecycleActions<T>(
   params: UseAssetLifecycleActionsParams<T>,
 ): UseAssetLifecycleActionsReturn {
-  const { store, entityName, fileNamePrefix, exportColumns, refresh, clearSelection } = params
+  const { store, entityName, fetchExport, refresh, clearSelection } = params
+  const { exportFromServer } = useServerExcelExport()
 
   const handleDelete = (row: Record<string, unknown>) => {
     const recordcode = row.recordcode as string | undefined
@@ -99,57 +103,15 @@ export function useAssetLifecycleActions<T>(
     }
   }
 
+  /**
+   * 服务端导出（BF-092/I-1）
+   * 由 useServerExcelExport 统一处理：空数据拦截 → 大数据确认 → 上限预判 → 下载。
+   */
   const handleExportExcel = async () => {
-    let range: 'current' | 'all' | null = null
-    try {
-      await ElMessageBox.confirm(
-        `当前页：${store.list.length} 条，共 ${store.pagination.total} 条。请选择导出范围：`,
-        '导出范围',
-        {
-          confirmButtonText: '导出当前页',
-          cancelButtonText: '导出全部',
-          distinguishCancelAndClose: true,
-        },
-      )
-      range = 'current'
-    } catch (err) {
-      if (err === 'cancel') range = 'all'
-      else return
-    }
-
-    let exportData: T[] = []
-    let fileName = ''
-
-    if (range === 'current') {
-      exportData = store.list
-      fileName = `${fileNamePrefix}_当前页_${store.list.length}.xlsx`
-    } else if (range === 'all') {
-      ElMessage.info('正在加载全部数据...')
-      try {
-        const allData = await store.getList({
-          page: 1,
-          page_size: store.pagination.total,
-        })
-        exportData = allData
-        fileName = `${fileNamePrefix}_全部_${allData.length}.xlsx`
-      } catch (error) {
-        logError('composables/useAssetLifecycleActions', '加载全部数据失败:', error)
-        ElMessage.error('加载数据失败')
-        return
-      }
-    } else {
-      return
-    }
-
-    await exportToExcel({
-      data: exportData,
-      columns: exportColumns,
-      fileName,
-      sheetName: entityName,
-      confirmMessage: `确定要导出 ${exportData.length} 条${entityName}数据吗？`,
-      emptyMessage: '没有可导出的数据',
-      successMessage: '导出成功',
-      errorMessage: '导出失败',
+    await exportFromServer({
+      entityName,
+      totalCount: store.pagination.total,
+      fetchExport,
     })
   }
 

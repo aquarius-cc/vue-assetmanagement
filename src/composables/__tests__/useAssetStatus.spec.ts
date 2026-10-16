@@ -31,6 +31,8 @@ describe('useAssetStatusChecks', () => {
     expect(checks.canRepairDone.value).toBe(false)
     expect(checks.canRepairFailed.value).toBe(false)
     expect(checks.canScrap.value).toBe(false)
+    expect(checks.canOutAsset.value).toBe(false)
+    expect(checks.canRecycle.value).toBe(false)
   })
 
   it('canMarkBroken and canMarkLost are true for in_store/in_use/recycled_pending', () => {
@@ -105,6 +107,40 @@ describe('useAssetStatusChecks', () => {
       AssetCurrentStatus.REPAIRING,
     ]) {
       expect(statusChecksFor(s).canScrap.value).toBe(false)
+    }
+  })
+
+  it('canOutAsset is true for in_store/recycled_pending', () => {
+    for (const s of [AssetCurrentStatus.IN_STORE, AssetCurrentStatus.RECYCLED_PENDING]) {
+      expect(statusChecksFor(s).canOutAsset.value).toBe(true)
+    }
+  })
+
+  it('canOutAsset is false for other statuses', () => {
+    for (const s of [
+      AssetCurrentStatus.IN_USE,
+      AssetCurrentStatus.DAMAGED,
+      AssetCurrentStatus.SCRAPPED,
+      AssetCurrentStatus.BROKEN,
+      AssetCurrentStatus.LOST,
+      AssetCurrentStatus.REPAIRING,
+    ]) {
+      expect(statusChecksFor(s).canOutAsset.value).toBe(false)
+    }
+  })
+
+  it('canRecycle is true only for in_use', () => {
+    expect(statusChecksFor(AssetCurrentStatus.IN_USE).canRecycle.value).toBe(true)
+    for (const s of [
+      AssetCurrentStatus.IN_STORE,
+      AssetCurrentStatus.RECYCLED_PENDING,
+      AssetCurrentStatus.DAMAGED,
+      AssetCurrentStatus.SCRAPPED,
+      AssetCurrentStatus.BROKEN,
+      AssetCurrentStatus.LOST,
+      AssetCurrentStatus.REPAIRING,
+    ]) {
+      expect(statusChecksFor(s).canRecycle.value).toBe(false)
     }
   })
 })

@@ -133,4 +133,36 @@ describe('usePaginationSearch 搜索态路由（BF-083）', () => {
 
     expect(mockStore.getList).toHaveBeenCalledWith({ page: 1, page_size: 20 })
   })
+
+  it('searchWithReset 先置 1 再委托 performSearchWithParams [M-2]', async () => {
+    const mockWithParams = vi.fn().mockResolvedValue({ count: 0, results: [] })
+
+    const { performSearchWithParams, searchWithReset, currentPage } = usePaginationSearch({
+      store: mockStore,
+      search: { performSearch: vi.fn(), performSearchWithParams: mockWithParams },
+    })
+
+    // 先进入第 3 页
+    await performSearchWithParams({ status: 'in_store' })
+    mockStore.pagination.page.value = 3
+
+    await searchWithReset({ status: 'in_use' })
+
+    expect(mockWithParams).toHaveBeenCalledWith({ status: 'in_use' }, 1, 20)
+    expect(currentPage.value).toBe(1)
+  })
+
+  it('performSearchWithParams 原型不复位页码（翻页契约回归锁）', async () => {
+    const mockWithParams = vi.fn().mockResolvedValue({ count: 0, results: [] })
+
+    const { performSearchWithParams, currentPage } = usePaginationSearch({
+      store: mockStore,
+      search: { performSearch: vi.fn(), performSearchWithParams: mockWithParams },
+    })
+
+    currentPage.value = 3
+    await performSearchWithParams({ status: 'in_store' })
+
+    expect(mockWithParams).toHaveBeenCalledWith({ status: 'in_store' }, 3, 20)
+  })
 })

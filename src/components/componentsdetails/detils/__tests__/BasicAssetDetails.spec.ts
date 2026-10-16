@@ -4,13 +4,15 @@ import BasicAssetDetails from '../BasicAssetDetails.vue'
 
 const currentQuery: { value: Record<string, string> } = { value: {} }
 
-const { mockPush, mockGo, mockGetById, mockGetQrCodeImageUrl, elMessage } = vi.hoisted(() => ({
-  mockPush: vi.fn(() => Promise.resolve()),
-  mockGo: vi.fn(),
-  mockGetById: vi.fn(async () => null),
-  mockGetQrCodeImageUrl: vi.fn(() => 'https://example.com/qr.png'),
-  elMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
-}))
+const { mockPush, mockGo, mockGetById, mockGetQrCodeImageUrl, elMessage, permissionState } =
+  vi.hoisted(() => ({
+    mockPush: vi.fn(() => Promise.resolve()),
+    mockGo: vi.fn(),
+    mockGetById: vi.fn(async () => null),
+    mockGetQrCodeImageUrl: vi.fn(() => 'https://example.com/qr.png'),
+    elMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+    permissionState: { canOperateAsset: false },
+  }))
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ query: currentQuery.value }),
@@ -41,7 +43,7 @@ vi.mock('@/utils/logger', () => ({
 }))
 
 vi.mock('@/composables/usePermission', () => ({
-  usePermission: () => ({ canOperateAsset: false }),
+  usePermission: () => ({ canOperateAsset: permissionState.canOperateAsset }),
 }))
 
 vi.mock('@/composables/useExcelExport', () => ({
@@ -127,5 +129,57 @@ describe('BasicAssetDetails 操作跳转取键【BF-081 连带】', () => {
     await flushPromises()
 
     expect(elMessage.warning).toHaveBeenCalledWith('未找到资产编码为 REC-001 的资产')
+  })
+})
+
+describe('BasicAssetDetails 出库/回收按钮', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    permissionState.canOperateAsset = true
+  })
+
+  it('in_store 资产显示「出库」按钮，点击以 query.asset 传 recordcode', async () => {
+    currentQuery.value = { code: 'REC-001' }
+    mockGetById.mockResolvedValue({ ...makeDetail(), asset_current_status: 'in_store' })
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    const outBtn = wrapper.findAll('button').find((b) => b.text().includes('出库'))
+    expect(outBtn).toBeTruthy()
+    expect(wrapper.findAll('button').find((b) => b.text().includes('回收'))).toBeUndefined()
+
+    await outBtn!.trigger('click')
+    expect(mockPush).toHaveBeenCalledWith({
+      name: 'OutAssetForm',
+      query: { asset: 'REC-001' },
+    })
+  })
+
+  it('in_use 资产显示「回收」按钮，点击以 params.code 传 recordcode', async () => {
+    currentQuery.value = { code: 'REC-001' }
+    mockGetById.mockResolvedValue({ ...makeDetail(), asset_current_status: 'in_use' })
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    const recycleBtn = wrapper.findAll('button').find((b) => b.text().includes('回收'))
+    expect(recycleBtn).toBeTruthy()
+    expect(wrapper.findAll('button').find((b) => b.text().includes('出库'))).toBeUndefined()
+
+    await recycleBtn!.trigger('click')
+    expect(mockPush).toHaveBeenCalledWith({
+      name: 'RecycleAsset',
+      params: { code: 'REC-001' },
+    })
+  })
+
+  it('无权限时出库/回收按钮均不渲染', async () => {
+    permissionState.canOperateAsset = false
+    currentQuery.value = { code: 'REC-001' }
+    mockGetById.mockResolvedValue({ ...makeDetail(), asset_current_status: 'in_store' })
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    expect(wrapper.findAll('button').find((b) => b.text().includes('出库'))).toBeUndefined()
+    expect(wrapper.findAll('button').find((b) => b.text().includes('回收'))).toBeUndefined()
   })
 })

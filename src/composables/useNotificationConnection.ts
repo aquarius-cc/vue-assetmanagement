@@ -11,7 +11,7 @@
  *   - stores/auth: 认证状态 store
  *   - types/notification: 通知类型
  */
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getDecryptedToken } from '@/utils/tokenCrypto'
 import { getInMemoryAccessToken } from '@/utils/tokenMemory'
@@ -33,6 +33,8 @@ export function useNotificationConnection() {
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
   let reconnectAttempts = 0
+  // [BF-095/I-9①] 主动关闭标志：disconnect 后异步 onclose 不得再 scheduleReconnect 复活
+  let intentionallyClosed = false
   const MAX_RECONNECT_ATTEMPTS = 10
   const RECONNECT_DELAY = 3000
   const messageHandlers = new Set<(data: WSMessage) => void>()
@@ -77,6 +79,16 @@ export function useNotificationConnection() {
     const token = getAccessToken()
     if (!token) return
 
+    // [BF-095/I-9②] 入口先关旧连接：防旧 socket 孤儿化（双 onmessage 分发 / 句柄泄漏）
+    if (ws) {
+      ws.onclose = null
+      ws.onerror = null
+      ws.close()
+      ws = null
+    }
+    stopHeartbeat()
+    intentionallyClosed = false
+
     const url = `${WS_BASE_URL}/ws/notifications/${jobcode}/`
 
     ws = new WebSocket(url, [token])
@@ -99,6 +111,8 @@ export function useNotificationConnection() {
     ws.onclose = (event) => {
       isConnected.value = false
       stopHeartbeat()
+      // [BF-095/I-9①] 主动断开（disconnect）后的异步 onclose 不复活连接
+      if (intentionallyClosed) return
       // 4401 无效/过期 token、4403 无权限 → 认证失效，停止自动重连，提示重新登录
       if (event.code === 4401 || event.code === 4403) {
         isConnectionExhausted.value = true
@@ -117,6 +131,8 @@ export function useNotificationConnection() {
    * 心跳保活
    */
   function startHeartbeat() {
+    // [BF-095/I-9③] 先清旧 timer：防 onopen 二次触发时 setInterval 叠加成双心跳
+    stopHeartbeat()
     heartbeatTimer = setInterval(() => {
       if (ws?.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: 'ping' }))
@@ -163,6 +179,8 @@ export function useNotificationConnection() {
    * 断开连接
    */
   function disconnect() {
+    // [BF-095/I-9①] 先置主动关闭标志：随后的 ws.close() 触发的异步 onclose 见此标志直接返回
+    intentionallyClosed = true
     if (reconnectTimer) {
       clearTimeout(reconnectTimer)
       reconnectTimer = null
@@ -192,6 +210,20 @@ export function useNotificationConnection() {
     }
     return false
   }
+
+  // [BF-095/I-9④] 登录态复位：4401 置 exhausted 后，token 变化（重新登录/静默刷新）时
+  // 清零尝试次数并重连。正常续期（exhausted=false）不触发任何连接动作。
+  // watch 在组件 setup 上下文创建，随组件卸载自动销毁。
+  const authStore = useAuthStore()
+  watch(
+    () => authStore.access_token,
+    (token) => {
+      if (!token || !isConnectionExhausted.value) return
+      reconnectAttempts = 0
+      isConnectionExhausted.value = false
+      connect()
+    },
+  )
 
   return {
     isConnected,

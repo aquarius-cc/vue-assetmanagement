@@ -20,6 +20,8 @@
     :asset-code="assetCode"
     :loading="loading"
     :asset="asset"
+    :fetch-error="fetchError"
+    @retry="fetchAsset"
   >
     <template #form>
       <el-alert
@@ -89,6 +91,8 @@ const {
   submitting,
   asset,
   assetCode,
+  fetchError, // [BF-095/M-4] 加载失败状态
+  fetchAsset, // [BF-095/M-4] 供 @retry 事件调用
   formRef,
   handleSubmit: baseHandleSubmit,
 } = useAssetOperationForm<{

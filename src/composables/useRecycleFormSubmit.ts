@@ -16,7 +16,6 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { isAxiosError } from 'axios'
 import { recycleAssetAPI } from '@/api/recycleAsset'
 import type {
-  RecycleAssetCreateForm,
   RecycleAssetBatchItem,
   RecycleAssetExtended,
   RecycleAssetUpdateForm,
@@ -102,36 +101,34 @@ export function useRecycleFormSubmit(options: {
 
   // [P1-4] 三分支拆分：doSubmit 降圈，三个 submit* 助手与原内联实现逐字等价
 
-  /** 编辑模式提交（update） */
+  /**
+   * 编辑模式提交（update）
+   * 后端 service 白名单仅允许 recycle_asset_date/recycle_type/recycle_asset_description
+   * （RECYCLE_ASSET_UPDATE_ALLOWED_FIELDS），发其余字段（如 recycle_asset_number）会 400。
+   * outasset_recordcode 仅用于 API 层定位记录（后端 serializer 中为 read_only）。
+   */
   const submitUpdate = async (form: RecycleAssetFormData) => {
-    // [HALT] FE-C1修复：字段名从 recycle_asset_storage_code 改为 recycle_asset_storage，与后端Serializer和批量路径对齐
-    const submitData: RecycleAssetCreateForm = {
-      outasset_recordcode: form.outasset_recordcode,
-      recycle_asset: form.recycle_asset,
-      recycle_asset_number: form.recycle_asset_number,
-      recycle_asset_storage: form.recycle_asset_storage_code,
-      recycle_asset_recycle_person_jobcode: form.recycle_asset_recycle_person_jobcode,
+    await options.recycleStore.update({
+      outasset_recordcode: options.currentRecordcode(),
       recycle_asset_date: form.recycle_asset_date,
       recycle_type: form.recycle_type,
       recycle_asset_description: form.recycle_asset_description || null,
-    }
-    await options.recycleStore.update({
-      ...submitData,
-      outasset_recordcode: options.currentRecordcode(),
       id: form.id,
     })
   }
 
-  /** 单选模式提交（createRecycleAsset） */
+  /**
+   * 单选模式提交（createRecycleAsset）
+   * 对齐后端 RecycleAssetCreateSerializer：storage_code 必填（slug=storage_code）；
+   * 不发 recycle_asset / recycle_asset_storage / recycle_asset_recycle_person_jobcode
+   * （单条 serializer 不接收，回收人取当前登录操作者）。
+   */
   const submitSingle = async (form: RecycleAssetFormData) => {
     const record = options.selectedRecords()[0]
-    // [HALT] FE-C1修复：字段名从 recycle_asset_storage_code 改为 recycle_asset_storage，与后端Serializer和批量路径对齐
     await recycleAssetAPI.createRecycleAsset({
       outasset_recordcode: record.recordcode,
-      recycle_asset: record.recycle_asset,
+      storage_code: form.recycle_asset_storage_code,
       recycle_asset_number: 1,
-      recycle_asset_storage: form.recycle_asset_storage_code,
-      recycle_asset_recycle_person_jobcode: form.recycle_asset_recycle_person_jobcode,
       recycle_asset_date: form.recycle_asset_date,
       recycle_type: form.recycle_type,
       recycle_asset_description: form.recycle_asset_description || null,

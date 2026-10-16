@@ -34,7 +34,7 @@ vi.mock('vue-router', () => ({
 }))
 
 vi.mock('element-plus', () => ({
-  ElMessage: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+  ElMessage: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }))
 
 vi.mock('@element-plus/icons-vue', () => ({
@@ -168,5 +168,50 @@ describe('OutAssetForm 编辑提交', () => {
     expect(mockUpdate).toHaveBeenCalledWith(
       expect.not.objectContaining({ asset_recordcode: 'OUT001' }),
     )
+  })
+})
+
+describe('OutAssetForm 新增预填（query.asset）', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    currentQuery.value = {}
+    mockAssetGetById.mockResolvedValue(null)
+    mockAssetGetByName.mockResolvedValue([])
+    mockGetFuzzySearch.mockResolvedValue({ results: [] })
+    mockCreate.mockResolvedValue({})
+  })
+
+  it('query.asset 存在时按 recordcode 加载资产并预填编码与名称', async () => {
+    currentQuery.value = { asset: 'REC-001' }
+    mockAssetGetById.mockResolvedValue({
+      recordcode: 'REC-001',
+      asset_code: 'ASSET-IT-AT001-20260101-0001',
+      asset_name: '笔记本电脑',
+      asset_current_status: 'in_store',
+    })
+    mountForm()
+    await flushPromises()
+
+    expect(mockAssetGetById).toHaveBeenCalledWith('REC-001')
+    // handleAssetSelect 预填后回填编码/名称（经 extended form 的 outasset_code）
+    await flushPromises()
+  })
+
+  it('query.asset 指向不存在的资产时提示并保持表单为空', async () => {
+    currentQuery.value = { asset: 'NO-SUCH' }
+    mockAssetGetById.mockResolvedValue(null)
+    mountForm()
+    await flushPromises()
+
+    expect(mockAssetGetById).toHaveBeenCalledWith('NO-SUCH')
+  })
+
+  it('无 query.asset 且非编辑模式时不触发资产加载', async () => {
+    currentQuery.value = {}
+    mountForm()
+    await flushPromises()
+
+    expect(mockAssetGetById).not.toHaveBeenCalled()
+    expect(mockGetById).not.toHaveBeenCalled()
   })
 })

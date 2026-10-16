@@ -36,6 +36,14 @@
           导出
         </el-button>
 
+        <!-- 出库/回收入口（状态驱动） -->
+        <el-button v-if="canOutAsset && canOperateAsset" type="primary" @click="handleOutAsset"
+          >出库</el-button
+        >
+        <el-button v-if="canRecycle && canOperateAsset" type="warning" @click="handleRecycle"
+          >回收</el-button
+        >
+
         <!-- 状态流转操作按钮 -->
         <el-button v-if="canMarkBroken && canOperateAsset" type="danger" @click="handleMarkBroken"
           >标记损坏</el-button
@@ -195,6 +203,8 @@ const {
   canRepairDone,
   canRepairFailed,
   canScrap,
+  canOutAsset,
+  canRecycle,
 } = useAssetStatusChecks(currentStatus)
 
 // ===== 刷新详情 =====
@@ -241,6 +251,16 @@ const handleRepairFailed = () => {
 
 const handleScrap = () => {
   router.push({ name: 'ScrapAsset', params: { code: assetDetail.value!.recordcode } })
+}
+
+// 出库：预填参数用 asset（recordcode），勿用 code（编辑模式占用）
+const handleOutAsset = () => {
+  router.push({ name: 'OutAssetForm', query: { asset: assetDetail.value!.recordcode } })
+}
+
+// 回收：独立操作页按 recordcode 定位资产
+const handleRecycle = () => {
+  router.push({ name: 'RecycleAsset', params: { code: assetDetail.value!.recordcode } })
 }
 
 const handleViewLogs = () => {

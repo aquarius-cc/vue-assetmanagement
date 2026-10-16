@@ -37,16 +37,24 @@ export interface SuggestionFetcherOptions<T, R> {
  */
 export function createSuggestionFetcher<T, R>(options: SuggestionFetcherOptions<T, R>) {
   const { fetchData, filter, sort, transform, keywordMatch } = options
+  // [BF-095/M-9] 乱序守卫：连续触发时仅最后一次调用的响应可回填 cb，
+  // 过期响应（网络抖动下旧请求后到）直接丢弃，防建议列表被旧数据覆盖。
+  let fetchSeq = 0
 
   return async (queryString: string, cb: (results: R[]) => void) => {
     if (!queryString || queryString.trim() === '') {
+      fetchSeq++ // 清空输入同样使在途请求过期
       cb([])
       return
     }
 
+    const seq = ++fetchSeq
+
     try {
       // 1. 获取原始数据
       let items = await fetchData(queryString.trim())
+      if (seq !== fetchSeq) return // 过期响应丢弃，不覆盖新结果
+
       // 2. 前端过滤
       if (filter) {
         items = items.filter(filter)
@@ -68,7 +76,7 @@ export function createSuggestionFetcher<T, R>(options: SuggestionFetcherOptions<
       cb(suggestions)
     } catch (error) {
       logError('composables/useSuggestionFetcher', '获取建议失败:', error)
-      cb([])
+      if (seq === fetchSeq) cb([])
     }
   }
 }

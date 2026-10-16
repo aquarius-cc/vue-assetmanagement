@@ -25,7 +25,7 @@
         class="login-form"
       >
         <!-- 用户名输入框 -->
-        <el-form-item label="用户名" prop="username">
+        <el-form-item label="用户名" prop="auth_username">
           <el-input
             v-model="loginForm.auth_username"
             placeholder="请输入用户名"

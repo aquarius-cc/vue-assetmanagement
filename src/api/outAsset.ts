@@ -76,18 +76,22 @@ export const outAssetAPI = {
    * POST /api/assets/out-assets/
    *
    * 字段映射（前端表单 → 后端序列化器）：
-   * - outasset_code → outasset_asset (SlugRelatedField, slug: asset_code)
+   * - asset_recordcode → asset_recordcode (SlugRelatedField, slug: recordcode, 必填)
    *
-   * 注意：outasset_contract_code 在后端模型/序列化器中不存在，已从请求中移除
+   * 注意：outasset_code 仅用于前端展示，后端单条创建序列化器不接收；
+   * 批量创建（batch_create）另走 outasset_asset (slug: asset_code)，不受此映射影响。
    * @param data 出库记录创建表单数据
    * @returns 创建的出库记录
    */
   createOutAsset: (data: OutAssetCreateForm): Promise<OutAssetDetail> => {
-    const { outasset_code, ...rest } = data as unknown as Record<string, unknown>
+    const {
+      outasset_code: _,
+      asset_recordcode,
+      ...rest
+    } = data as unknown as Record<string, unknown>
     const backendData = {
       ...rest,
-      ...(outasset_code !== undefined &&
-        outasset_code !== null && { outasset_asset: outasset_code }),
+      ...(asset_recordcode !== undefined && asset_recordcode !== null && { asset_recordcode }),
     }
     return unwrapResponse(request.post<OutAssetDetail>('/assets/out-assets/', backendData))
   },

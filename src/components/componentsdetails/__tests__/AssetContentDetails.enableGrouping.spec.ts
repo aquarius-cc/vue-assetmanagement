@@ -147,6 +147,7 @@ const SmartListContainerStub = {
   },
   methods: {
     searchWithParams: mockSmartSearchWithParams,
+    searchWithReset: mockSmartSearchWithParams,
     reset: mockSmartReset,
   },
 }

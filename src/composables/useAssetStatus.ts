@@ -39,5 +39,11 @@ export function useAssetStatusChecks(statusRef: ComputedRef<AssetCurrentStatus |
         AssetCurrentStatus.RECYCLED_PENDING,
       ]),
     ),
+    // 出库源头状态（对齐后端 OutAssetService._validate_outasset_source）
+    canOutAsset: computed(() =>
+      isStatusIn([AssetCurrentStatus.IN_STORE, AssetCurrentStatus.RECYCLED_PENDING]),
+    ),
+    // 回收仅在用资产（对齐后端 RecycleAssetService 状态校验）
+    canRecycle: computed(() => status.value === AssetCurrentStatus.IN_USE),
   }
 }
