@@ -95,6 +95,16 @@ describe('outAssetImportConfig 基础配置', () => {
       expect(result.valid).toBe(true)
     })
 
+    it('P3-03 扩枚举后新增 4 态在导入校验入口合法', () => {
+      // 枚举 8 化后 Object.values 自动放行,后端该字段 read_only 不消费——回归锚
+      for (const status of ['in_store', 'broken', 'repairing', 'lost']) {
+        const result = outAssetImportConfig.validateItem(
+          makeOutAssetRow({ outasset_current_status: status }),
+        )
+        expect(result.errors.outasset_current_status).toBeUndefined()
+      }
+    })
+
     it('资产状态为空时不校验', () => {
       const result = outAssetImportConfig.validateItem(
         makeOutAssetRow({ outasset_current_status: '' }),

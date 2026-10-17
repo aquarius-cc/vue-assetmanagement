@@ -24,6 +24,7 @@ import type {
 } from '@/types/harddisksn'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
+import type { BlobDownload } from '@/api/request'
 
 /**
  * 按资产编码查询硬盘序列号列表
@@ -90,3 +91,8 @@ export const useHardDiskSnStore = createEntityStore<HardDiskSN, PaginationQuery>
   defaultPageSize: 20,
   enableCache: false,
 })
+
+/** P2-04: 服务端 Excel 导出（经 store 层消费，满足 no-restricted-imports 分层约束） */
+export function harddiskSnExportExcel(params: Record<string, unknown>): Promise<BlobDownload> {
+  return harddiskSnAPI.exportExcel(params)
+}

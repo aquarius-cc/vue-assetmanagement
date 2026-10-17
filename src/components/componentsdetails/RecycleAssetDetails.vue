@@ -101,10 +101,11 @@ import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { RecycleAssetExtended } from '@/types/recycleasset'
-import { useRecycleAssetStore } from '@/stores/recycleAssetStore'
+import { useRecycleAssetStore, recycleAssetExportExcel } from '@/stores/recycleAssetStore'
 import { formatDate } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'
 import { logError } from '@/utils/logger'
+import { useServerExcelExport } from '@/composables/useServerExcelExport'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -310,33 +311,35 @@ const handleAddRecycleAsset = () => {
  * 导出 Excel
  * 【优化】实现导出功能
  */
-const handleExportExcel = async () => {
-  const exportColumns: ColumnConfig<RecycleAssetExtended>[] = [
-    { title: '回收资产编码', key: 'recycle_asset', default: '' },
-    { title: '资产名称', key: 'recycle_asset_name', default: '' },
-    { title: '回收人姓名', key: 'recycle_person_name', default: '' },
-    { title: '存放仓库', key: 'storage_code', default: '' },
-    {
-      title: '回收数量',
-      key: 'recycle_asset_number',
-      default: '1',
-      formatter: (val) => String(val),
-    },
-    {
-      title: '回收日期',
-      key: 'recycle_asset_date',
-      default: '',
-      formatter: (val) => formatDate(val as string | Date | null) || '',
-    },
-    { title: '资产保管人工号', key: 'using_person_jobcode', default: '' },
-    { title: '资产保管人姓名', key: 'using_person_name', default: '' },
-  ]
+const exportColumns: ColumnConfig<RecycleAssetExtended>[] = [
+  { title: '回收资产编码', key: 'recycle_asset', default: '' },
+  { title: '资产名称', key: 'recycle_asset_name', default: '' },
+  { title: '回收人姓名', key: 'recycle_person_name', default: '' },
+  { title: '存放仓库', key: 'storage_code', default: '' },
+  {
+    title: '回收数量',
+    key: 'recycle_asset_number',
+    default: '1',
+    formatter: (val) => String(val),
+  },
+  {
+    title: '回收日期',
+    key: 'recycle_asset_date',
+    default: '',
+    formatter: (val) => formatDate(val as string | Date | null) || '',
+  },
+  { title: '资产保管人工号', key: 'using_person_jobcode', default: '' },
+  { title: '资产保管人姓名', key: 'using_person_name', default: '' },
+]
 
-  // 选择导出范围
+const { exportFromServer } = useServerExcelExport()
+
+const handleExportExcel = async () => {
+  // P2-04: 「导出全部」迁服务端流式导出(修复 page_size=total 被 MAX_PAGE_SIZE=100 截断)。
   let range: 'current' | 'all' | null = null
   try {
     await ElMessageBox.confirm(
-      `当前页面 ${recycleAssetStore.list.length} 条，总共 ${recycleAssetStore.pagination.total} 条。请选择：`,
+      `当前页面 ${recycleAssetStore.list.length} 条，总共 回收资产 ${recycleAssetStore.pagination.total} 条。请选择：`,
       '导出范围',
       {
         confirmButtonText: '导出当前页',
@@ -350,49 +353,28 @@ const handleExportExcel = async () => {
     else return
   }
 
-  // 获取数据
-  let exportData: RecycleAssetExtended[] = []
-  let fileName = ''
-
   if (range === 'current') {
-    exportData = recycleAssetStore.list
-    fileName = `回收资产列表_当前页面_${recycleAssetStore.list.length}条.xlsx`
-  } else if (range === 'all') {
-    ElMessage.info('正在准备全部数据，请稍候...')
-    if (recycleAssetStore.pagination.total > 1000) {
-      const confirm = await ElMessageBox.confirm(
-        '数据量较大，导出可能需要一些时间，是否继续？',
-        '导出确认',
-        { confirmButtonText: '继续', cancelButtonText: '取消', type: 'warning' },
-      ).catch(() => false)
-      if (!confirm) return
-    }
-    try {
-      const allData = await recycleAssetStore.getList({
-        page: 1,
-        page_size: recycleAssetStore.pagination.total,
-      })
-      exportData = allData
-      fileName = `回收资产列表_全部_${allData.length}条.xlsx`
-    } catch (error) {
-      logError('components/componentsdetails/RecycleAssetDetails', '导出全部数据失败:', error)
-      ElMessage.error('获取全部数据失败，请重试')
-      return
-    }
-  } else {
+    await exportToExcel({
+      data: recycleAssetStore.list,
+      columns: exportColumns,
+      fileName: `回收资产列表_当前页面_${recycleAssetStore.list.length}条.xlsx`,
+      sheetName: '回收资产列表',
+      confirmMessage: `确定要导出 ${recycleAssetStore.list.length} 条回收资产数据吗？`,
+      emptyMessage: '暂无回收资产数据可导出',
+      successMessage: '回收资产数据导出成功',
+      errorMessage: '回收资产数据导出失败，请重试',
+    })
     return
   }
 
-  await exportToExcel({
-    data: exportData,
-    columns: exportColumns,
-    fileName,
-    sheetName: '回收资产列表',
-    confirmMessage: `确定要导出 ${exportData.length} 条回收资产数据吗？`,
-    emptyMessage: '暂无回收资产数据可导出',
-    successMessage: '回收资产数据导出成功',
-    errorMessage: '回收资产数据导出失败，请重试',
-  })
+  if (range === 'all') {
+    await exportFromServer({
+      entityName: '回收资产',
+      totalCount: recycleAssetStore.pagination.total,
+      fetchExport: (params) => recycleAssetExportExcel(params),
+      params: {},
+    })
+  }
 }
 
 /**

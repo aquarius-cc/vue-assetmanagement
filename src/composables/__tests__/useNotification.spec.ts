@@ -34,9 +34,9 @@ vi.mock('@/utils/tokenMemory', () => ({
 
 vi.mock('@/api/notification', () => ({
   notificationAPI: {
-    getNotifications: vi.fn().mockResolvedValue({ data: [] }),
-    getUnreadCount: vi.fn().mockResolvedValue({ data: { count: 0 } }),
-    markAllRead: vi.fn().mockResolvedValue({ data: { marked_count: 0 } }),
+    getNotifications: vi.fn().mockResolvedValue([]),
+    getUnreadCount: vi.fn().mockResolvedValue({ count: 0 }),
+    markAllRead: vi.fn().mockResolvedValue({ marked_count: 0 }),
   },
 }))
 
@@ -474,9 +474,7 @@ describe('useNotification', () => {
     })
 
     it('loads notifications from array response', async () => {
-      ;(notificationAPI.getNotifications as ReturnType<typeof vi.fn>).mockResolvedValue({
-        data: [{ id: 1 }],
-      })
+      ;(notificationAPI.getNotifications as ReturnType<typeof vi.fn>).mockResolvedValue([{ id: 1 }])
 
       const { fetchNotifications, notifications, isLoading } = useNotification()
       await fetchNotifications(10)
@@ -487,7 +485,11 @@ describe('useNotification', () => {
 
     it('loads notifications from paginated response', async () => {
       ;(notificationAPI.getNotifications as ReturnType<typeof vi.fn>).mockResolvedValue({
-        data: { results: [{ id: 2 }] },
+        count: 1,
+        total_pages: 1,
+        page: 1,
+        page_size: 20,
+        results: [{ id: 2 }],
       })
 
       const { fetchNotifications, notifications } = useNotification()
@@ -522,7 +524,7 @@ describe('useNotification', () => {
 
     it('fetches unread count', async () => {
       ;(notificationAPI.getUnreadCount as ReturnType<typeof vi.fn>).mockResolvedValue({
-        data: { count: 3 },
+        count: 3,
       })
 
       const { fetchUnreadCount, unreadCount } = useNotification()

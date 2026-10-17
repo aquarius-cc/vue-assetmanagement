@@ -21,6 +21,7 @@ import type { OutAssetDetail, OutAssetCreateForm, OutAssetUpdateForm } from '@/t
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import type { OutAssetBatchCreateResult } from '@/api/outAsset'
+import type { BlobDownload } from '@/api/request'
 
 export type { OutAssetBatchCreateResult } from '@/api/outAsset'
 
@@ -68,3 +69,8 @@ export const useOutAssetStore = createEntityStore<OutAssetDetail, PaginationQuer
   defaultPageSize: 20,
   enableCache: false,
 })
+
+/** P2-04: 服务端 Excel 导出（经 store 层消费，满足 no-restricted-imports 分层约束） */
+export function outAssetExportExcel(params: Record<string, unknown>): Promise<BlobDownload> {
+  return outAssetAPI.exportExcel(params)
+}

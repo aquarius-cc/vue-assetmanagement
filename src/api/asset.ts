@@ -22,7 +22,8 @@
  *   - stores/createEntityStore: 批量删除结果类型
  *   - axios: 错误处理
  */
-import { request, unwrapResponse } from '@/api/index'
+import { request, unwrapResponse, getBlob } from '@/api/index'
+import type { BlobDownload } from '@/api/request'
 import { BASE_URL } from '@/api/config'
 import { isAxiosError } from 'axios'
 import type {
@@ -417,5 +418,13 @@ export const assetAPI = {
     return unwrapResponse(
       request.get<AssetGroupChildListResponse>('/assets/group_children/', params),
     )
+  },
+
+  /**
+   * 服务端 Excel 导出（P2-04）
+   * 省略 limit/offset 时全量导出，总行数超 EXPORT_MAX_ROWS 会被后端拒绝（400）。
+   */
+  exportExcel: (params?: Record<string, unknown>): Promise<BlobDownload> => {
+    return getBlob('/assets/assets/export/', params, 'assets.xlsx')
   },
 }

@@ -148,6 +148,11 @@ export interface Contract extends ContractCreateForm {
   contract_end_date: string | null
   /** 合同状态 */
   contract_status: ContractStatus | string | null
+  /**
+   * 当前状态的合法下一状态（P3-04，仅 ContractDetailSerializer 下发）。
+   * list 序列化器与 PUT 响应均不含此字段，编辑态需回退 getById 获取。
+   */
+  allowed_next_states?: string[]
   /** 到货验收日期 */
   receive_check_date: string | null
   /** 初步验收日期 */

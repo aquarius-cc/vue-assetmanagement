@@ -11,7 +11,8 @@
  *   - types/harddisksn: 硬盘序列号相关类型定义
  *   - stores/createEntityStore: 批量删除结果类型
  */
-import { request, unwrapResponse } from '@/api/index'
+import { request, unwrapResponse, getBlob } from '@/api/index'
+import type { BlobDownload } from '@/api/request'
 import type {
   HardDiskSN,
   HardDiskSNCreateForm,
@@ -112,5 +113,13 @@ export const harddiskSnAPI = {
     return unwrapResponse(
       request.get<HardDiskSNListResponse>(`/assets/harddisk-sn/by-asset/${asset_code}/`),
     )
+  },
+
+  /**
+   * 服务端 Excel 导出（P2-04）
+   * 省略 limit/offset 时全量导出，总行数超 EXPORT_MAX_ROWS 会被后端拒绝（400）。
+   */
+  exportExcel: (params?: Record<string, unknown>): Promise<BlobDownload> => {
+    return getBlob('/assets/harddisk-sn/export/', params, 'harddisk_sn_export.xlsx')
   },
 }

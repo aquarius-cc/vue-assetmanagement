@@ -5,7 +5,6 @@
  *   - NotificationType: 通知类型
  *   - NotificationPriority: 通知优先级
  *   - NotificationItem: 通知项接口
- *   - NotificationListResponse: 通知列表响应接口
  *   - NotificationPaginatedData: 通知分页数据接口
  *   - NotificationFilterParams: 通知筛选参数接口
  *   - UnreadCountResponse/MarkReadResponse: 通知操作响应接口
@@ -34,13 +33,6 @@ export interface NotificationItem {
   created_at: string
 }
 
-/** 通知列表响应 */
-export interface NotificationListResponse {
-  code: number
-  data: NotificationItem[] | NotificationPaginatedData
-  message: string
-}
-
 /** 通知分页数据 */
 export interface NotificationPaginatedData {
   results: NotificationItem[]
@@ -58,14 +50,11 @@ export interface NotificationFilterParams {
   keyword?: string
   page?: number
   page_size?: number
-  limit?: number
 }
 
-/** 未读数量响应 */
+/** 未读数量响应（unwrapResponse 已剥外层信封，此处为载荷形状） */
 export interface UnreadCountResponse {
-  code: number
-  data: { count: number }
-  message: string
+  count: number
 }
 
 /** 标记已读响应 */

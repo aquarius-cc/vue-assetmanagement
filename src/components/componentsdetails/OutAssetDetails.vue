@@ -112,10 +112,11 @@ import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { OutAsset, OutAssetDetail } from '@/types/outasset'
-import { useOutAssetStore } from '@/stores/outAssetStore'
+import { useOutAssetStore, outAssetExportExcel } from '@/stores/outAssetStore'
 import { formatDate, outassetTypeMapping } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'
 import { logError } from '@/utils/logger'
+import { useServerExcelExport } from '@/composables/useServerExcelExport'
 
 // ===== 状态与实例 =====
 const outAssetStore = useOutAssetStore()
@@ -281,53 +282,55 @@ const handleBatchImport = () => {
  * 导出 Excel
  * 支持导出当前页或全部数据
  */
-const handleExportExcel = async () => {
-  const exportColumns: ColumnConfig<OutAssetDetail>[] = [
-    { title: '资产名称', key: 'asset_name', default: '' },
-    { title: '出库资产编码', key: 'asset_code', default: '' },
-    { title: '出库数量', key: 'outasset_number', default: '1', formatter: (val) => String(val) },
-    {
-      title: '合同编码',
-      key: 'contract',
-      default: '',
-      formatter: (_, row) => row.contract?.contract_code || '',
-    },
-    {
-      title: '申请人姓名',
-      key: 'outasset_applicant',
-      default: '',
-      formatter: (_, row) => row.outasset_applicant?.employee_name || '',
-    },
-    { title: '申请人工号', key: 'outasset_applicant_jobcode', default: '' },
-    {
-      title: '保管人姓名',
-      key: 'outasset_manager',
-      default: '',
-      formatter: (_, row) => row.outasset_manager?.employee_name || '',
-    },
-    { title: '保管人工号', key: 'outasset_manager_jobcode', default: '' },
-    {
-      title: '出库日期',
-      key: 'outasset_date',
-      default: '',
-      formatter: (val) => formatDate(val as string | Date | null) || '',
-    },
-    {
-      title: '预计返回日期',
-      key: 'return_date',
-      default: '',
-      formatter: (val) => formatDate(val as string | Date | null) || '',
-    },
-    { title: '出库类型', key: 'outasset_type', default: '' },
-    { title: '使用位置', key: 'outasset_using_location', default: '' },
-    { title: '资产描述', key: 'outasset_description', default: '' },
-  ]
+const exportColumns: ColumnConfig<OutAssetDetail>[] = [
+  { title: '资产名称', key: 'asset_name', default: '' },
+  { title: '出库资产编码', key: 'asset_code', default: '' },
+  { title: '出库数量', key: 'outasset_number', default: '1', formatter: (val) => String(val) },
+  {
+    title: '合同编码',
+    key: 'contract',
+    default: '',
+    formatter: (_, row) => row.contract?.contract_code || '',
+  },
+  {
+    title: '申请人姓名',
+    key: 'outasset_applicant',
+    default: '',
+    formatter: (_, row) => row.outasset_applicant?.employee_name || '',
+  },
+  { title: '申请人工号', key: 'outasset_applicant_jobcode', default: '' },
+  {
+    title: '保管人姓名',
+    key: 'outasset_manager',
+    default: '',
+    formatter: (_, row) => row.outasset_manager?.employee_name || '',
+  },
+  { title: '保管人工号', key: 'outasset_manager_jobcode', default: '' },
+  {
+    title: '出库日期',
+    key: 'outasset_date',
+    default: '',
+    formatter: (val) => formatDate(val as string | Date | null) || '',
+  },
+  {
+    title: '预计返回日期',
+    key: 'return_date',
+    default: '',
+    formatter: (val) => formatDate(val as string | Date | null) || '',
+  },
+  { title: '出库类型', key: 'outasset_type', default: '' },
+  { title: '使用位置', key: 'outasset_using_location', default: '' },
+  { title: '资产描述', key: 'outasset_description', default: '' },
+]
 
-  // 选择导出范围
+const { exportFromServer } = useServerExcelExport()
+
+const handleExportExcel = async () => {
+  // P2-04: 「导出全部」迁服务端流式导出(修复 page_size=total 被 MAX_PAGE_SIZE=100 截断)。
   let range: 'current' | 'all' | null = null
   try {
     await ElMessageBox.confirm(
-      `当前页面 ${outAssetStore.list.length} 条，总共 ${outAssetStore.pagination.total} 条。请选择：`,
+      `当前页面 ${outAssetStore.list.length} 条，总共 出库资产 ${outAssetStore.pagination.total} 条。请选择：`,
       '导出范围',
       {
         confirmButtonText: '导出当前页',
@@ -338,52 +341,31 @@ const handleExportExcel = async () => {
     range = 'current'
   } catch (err) {
     if (err === 'cancel') range = 'all'
-    else return // 关闭弹窗
+    else return
   }
 
-  // 获取数据
-  let exportData: OutAssetDetail[] = []
-  let fileName = ''
-
   if (range === 'current') {
-    exportData = outAssetStore.list
-    fileName = `出库资产列表_当前页面_${outAssetStore.list.length}条.xlsx`
-  } else if (range === 'all') {
-    ElMessage.info('正在准备全部数据，请稍候...')
-    if (outAssetStore.pagination.total > 1000) {
-      const confirm = await ElMessageBox.confirm(
-        '数据量较大，导出可能需要一些时间，是否继续？',
-        '导出确认',
-        { confirmButtonText: '继续', cancelButtonText: '取消', type: 'warning' },
-      ).catch(() => false)
-      if (!confirm) return
-    }
-    try {
-      const allData = await outAssetStore.getList({
-        page: 1,
-        page_size: outAssetStore.pagination.total,
-      })
-      exportData = allData
-      fileName = `出库资产列表_全部_${allData.length}条.xlsx`
-    } catch (error) {
-      logError('components/componentsdetails/OutAssetDetails', '导出全部数据失败:', error)
-      ElMessage.error('获取全部数据失败，请重试')
-      return
-    }
-  } else {
+    await exportToExcel({
+      data: outAssetStore.list,
+      columns: exportColumns,
+      fileName: `出库资产列表_当前页面_${outAssetStore.list.length}条.xlsx`,
+      sheetName: '出库资产列表',
+      confirmMessage: `确定要导出 ${outAssetStore.list.length} 条出库资产数据吗？`,
+      emptyMessage: '暂无出库资产数据可导出',
+      successMessage: '出库资产数据导出成功',
+      errorMessage: '出库资产数据导出失败，请重试',
+    })
     return
   }
 
-  await exportToExcel({
-    data: exportData,
-    columns: exportColumns,
-    fileName,
-    sheetName: '出库资产列表',
-    confirmMessage: `确定要导出 ${exportData.length} 条出库资产数据吗？`,
-    emptyMessage: '暂无出库资产数据可导出',
-    successMessage: '出库资产数据导出成功',
-    errorMessage: '出库资产数据导出失败，请重试',
-  })
+  if (range === 'all') {
+    await exportFromServer({
+      entityName: '出库资产',
+      totalCount: outAssetStore.pagination.total,
+      fetchExport: (params) => outAssetExportExcel(params),
+      params: {},
+    })
+  }
 }
 
 /**

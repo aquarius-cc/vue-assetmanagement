@@ -12,7 +12,8 @@
  */
 import { get, post, unwrapResponse } from '@/api/request'
 import type {
-  NotificationListResponse,
+  NotificationItem,
+  NotificationPaginatedData,
   NotificationFilterParams,
   UnreadCountResponse,
   MarkReadResponse,
@@ -21,12 +22,16 @@ import type {
 export const notificationAPI = {
   /**
    * 获取当前用户通知列表
+   * [P1-02] unwrapResponse 已剥外层信封, 返回裸载荷:
+   * 历史数组(兼容) 或分页对象 {count,total_pages,page,page_size,next,previous,results}
    * @param params 查询参数
-   * @returns 通知列表
+   * @returns 通知数组或分页对象
    */
-  getNotifications: (params?: NotificationFilterParams): Promise<NotificationListResponse> => {
+  getNotifications: (
+    params?: NotificationFilterParams,
+  ): Promise<NotificationItem[] | NotificationPaginatedData> => {
     return unwrapResponse(
-      get<NotificationListResponse>(
+      get<NotificationItem[] | NotificationPaginatedData>(
         '/notifications/',
         params as Record<string, string | number | boolean | null | undefined>,
       ),

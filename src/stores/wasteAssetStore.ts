@@ -17,6 +17,7 @@ import { wasteAssetAPI } from '@/api/wasteAsset'
 import type { WasteAsset, WasteAssetCreateForm, WasteAssetUpdateForm } from '@/types/wasteasset'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
+import type { BlobDownload } from '@/api/request'
 
 /**
  * 报废资产 Store
@@ -50,3 +51,8 @@ export const useWasteAssetStore = createEntityStore<WasteAsset, PaginationQuery>
   defaultPageSize: 20,
   enableCache: false,
 })
+
+/** P2-04: 服务端 Excel 导出（经 store 层消费，满足 no-restricted-imports 分层约束） */
+export function wasteAssetExportExcel(params: Record<string, unknown>): Promise<BlobDownload> {
+  return wasteAssetAPI.exportExcel(params)
+}

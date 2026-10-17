@@ -38,6 +38,7 @@ import { ElMessage } from 'element-plus'
 import type { PaginationQuery, EntityStore } from '@/stores/createEntityStore'
 import type { AssetBatchCreateResult } from '@/api/asset'
 import type { Contract } from '@/types/contract'
+import type { BlobDownload } from '@/api/request'
 
 type StrictQueryParams = {
   page: number
@@ -294,4 +295,9 @@ export const useAssetStore = (): AssetStore => {
   }
 
   return store as unknown as AssetStore
+}
+
+/** P2-04: 服务端 Excel 导出（经 store 层消费，满足 no-restricted-imports 分层约束） */
+export function assetExportExcel(params: Record<string, unknown>): Promise<BlobDownload> {
+  return assetAPI.exportExcel(params)
 }

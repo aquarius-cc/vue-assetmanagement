@@ -3,7 +3,7 @@
  * @module types/outasset
  * @exports
  *   - OutAssetType/OutAssetCurrentStatus: 出库类型与状态枚举
- *   - outassetStatusMapping: 出库资产状态映射
+ *     （状态映射为 @/utils/statusMapping 的 OUTASSET_STATUS_MAP,本文件不含映射）
  *   - OutAssetCreateForm/OutAssetUpdateForm/OutAssetCreateExtended: 出库资产表单接口
  *   - OutAsset/OutAssetDetail: 出库资产基础与详情接口
  *   - RecyclableOutAsset/RecyclableOutAssetResponse: 可回收出库资产接口
@@ -34,11 +34,24 @@ export enum OutAssetType {
 }
 
 /**
- * 出库资产状态枚举 * in_use: 在用
- * recycled: 已回收 */
+ * 出库资产状态枚举 * 对齐后端 outasset_current_status 语义（read_only，直取关联资产的 8 态,
+ * 见 OutAssetCreateForm 注释 HR-02）:
+ * - in_store: 在库
+ * - in_use: 在用
+ * - recycled_pending: 已回收待发放
+ * - broken: 已损坏
+ * - repairing: 维修中
+ * - lost: 已遗失
+ * - damaged: 待报废
+ * - scrapped: 已报废
+ */
 export enum OutAssetCurrentStatus {
+  IN_STORE = 'in_store',
   IN_USE = 'in_use',
   RECYCLED_PENDING = 'recycled_pending',
+  BROKEN = 'broken',
+  REPAIRING = 'repairing',
+  LOST = 'lost',
   DAMAGED = 'damaged',
   SCRAPPED = 'scrapped',
 }

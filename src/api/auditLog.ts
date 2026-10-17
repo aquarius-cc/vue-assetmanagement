@@ -10,7 +10,8 @@
  *   - api/request.ts: 使用 request 实例
  *   - types/auditlog: 审计日志相关类型定义
  */
-import { request, unwrapResponse } from '@/api/index'
+import { request, unwrapResponse, getBlob } from '@/api/index'
+import type { BlobDownload } from '@/api/request'
 import type { AuditLog, AuditLogQueryParams, AuditLogListResponse } from '@/types/auditlog'
 
 export const auditLogAPI = {
@@ -28,5 +29,13 @@ export const auditLogAPI = {
    */
   getAuditLogByLoggingId: (loggingId: string): Promise<AuditLog> => {
     return unwrapResponse(request.get<AuditLog>(`/audit-logs/by-logging-id/${loggingId}/`))
+  },
+
+  /**
+   * 服务端 Excel 导出（P2-04）
+   * 省略 limit/offset 时全量导出，总行数超 EXPORT_MAX_ROWS 会被后端拒绝（400）。
+   */
+  exportExcel: (params?: Record<string, unknown>): Promise<BlobDownload> => {
+    return getBlob('/audit-logs/export/', params, 'audit_logs.xlsx')
   },
 }

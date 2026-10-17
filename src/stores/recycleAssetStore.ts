@@ -21,6 +21,7 @@ import type {
 } from '@/types/recycleasset'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
+import type { BlobDownload } from '@/api/request'
 
 /**
  * 回收资产 Store
@@ -59,3 +60,8 @@ export const useRecycleAssetStore = createEntityStore<RecycleAssetExtended, Pagi
     enableCache: false,
   },
 )
+
+/** P2-04: 服务端 Excel 导出（经 store 层消费，满足 no-restricted-imports 分层约束） */
+export function recycleAssetExportExcel(params: Record<string, unknown>): Promise<BlobDownload> {
+  return recycleAssetAPI.exportExcel(params)
+}

@@ -29,6 +29,7 @@ import type {
 import type { Contract, ContractCreateForm, ContractUpdateForm } from '@/types/contract'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import { ElMessage } from 'element-plus'
+import type { BlobDownload } from '@/api/request'
 
 export type { ContractBatchCreateResult, PaymentRecordResponse } from '@/api/contract'
 
@@ -121,4 +122,9 @@ export const batchCreateContracts = (
   items: ContractCreateForm[],
 ): Promise<ContractBatchCreateResult> => {
   return contractAPI.batchCreateContracts(items)
+}
+
+/** P2-04: 服务端 Excel 导出（经 store 层消费，满足 no-restricted-imports 分层约束） */
+export function contractExportExcel(params: Record<string, unknown>): Promise<BlobDownload> {
+  return contractAPI.exportExcel(params)
 }

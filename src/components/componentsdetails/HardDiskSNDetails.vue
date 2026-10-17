@@ -109,10 +109,11 @@ import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { HardDiskSN } from '@/types/harddisksn'
 import { HardDiskType } from '@/types/harddisksn'
-import { useHardDiskSnStore } from '@/stores/harddiskSnStore'
+import { useHardDiskSnStore, harddiskSnExportExcel } from '@/stores/harddiskSnStore'
 import { getHardDiskStatusText, getHardDiskStatusTagType } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
 import { logError } from '@/utils/logger'
+import { useServerExcelExport } from '@/composables/useServerExcelExport'
 
 // ===== 状态与实例 =====
 const harddiskSnStore = useHardDiskSnStore()
@@ -346,33 +347,36 @@ const handleAdd = () => {
  * 导出 Excel
  * 支持导出当前页或全部数据
  */
-const handleExportExcel = async () => {
-  const exportColumns: ColumnConfig<HardDiskSN>[] = [
-    { title: '资产编码', key: 'asset_code', default: '' },
-    { title: '资产名称', key: 'asset_name', default: '' },
-    { title: '硬盘编号', key: 'harddisk_no', default: '', formatter: (val) => String(val) },
-    { title: '硬盘序列号', key: 'harddisk_sn_code', default: '' },
-    {
-      title: '硬盘类型',
-      key: 'harddisk_type',
-      default: '',
-      formatter: (val) => getHardDiskTypeText(val as string),
-    },
-    { title: '硬盘数量', key: 'harddisk_number', default: '', formatter: (val) => String(val) },
-    {
-      title: '硬盘状态',
-      key: 'harddisk_status',
-      default: '',
-      formatter: (val) => getHardDiskStatusText(val as string),
-    },
-    { title: '用户工号', key: 'harddisk_user_jobcode', default: '' },
-    { title: '描述', key: 'harddisk_description', default: '' },
-  ]
+const exportColumns: ColumnConfig<HardDiskSN>[] = [
+  { title: '资产编码', key: 'asset_code', default: '' },
+  { title: '资产名称', key: 'asset_name', default: '' },
+  { title: '硬盘编号', key: 'harddisk_no', default: '', formatter: (val) => String(val) },
+  { title: '硬盘序列号', key: 'harddisk_sn_code', default: '' },
+  {
+    title: '硬盘类型',
+    key: 'harddisk_type',
+    default: '',
+    formatter: (val) => getHardDiskTypeText(val as string),
+  },
+  { title: '硬盘数量', key: 'harddisk_number', default: '', formatter: (val) => String(val) },
+  {
+    title: '硬盘状态',
+    key: 'harddisk_status',
+    default: '',
+    formatter: (val) => getHardDiskStatusText(val as string),
+  },
+  { title: '用户工号', key: 'harddisk_user_jobcode', default: '' },
+  { title: '描述', key: 'harddisk_description', default: '' },
+]
 
+const { exportFromServer } = useServerExcelExport()
+
+const handleExportExcel = async () => {
+  // P2-04: 「导出全部」迁服务端流式导出(修复 page_size=total 被 MAX_PAGE_SIZE=100 截断)。
   let range: 'current' | 'all' | null = null
   try {
     await ElMessageBox.confirm(
-      `当前页面 ${harddiskSnStore.list.length} 条，总共 ${harddiskSnStore.pagination.total} 条。请选择：`,
+      `当前页面 ${harddiskSnStore.list.length} 条，总共 硬盘序列号 ${harddiskSnStore.pagination.total} 条。请选择：`,
       '导出范围',
       {
         confirmButtonText: '导出当前页',
@@ -386,48 +390,28 @@ const handleExportExcel = async () => {
     else return
   }
 
-  let exportData: HardDiskSN[] = []
-  let fileName = ''
-
   if (range === 'current') {
-    exportData = harddiskSnStore.list
-    fileName = `硬盘序列号列表_当前页面_${harddiskSnStore.list.length}条.xlsx`
-  } else if (range === 'all') {
-    ElMessage.info('正在准备全部数据，请稍候...')
-    if (harddiskSnStore.pagination.total > 1000) {
-      const confirm = await ElMessageBox.confirm(
-        '数据量较大，导出可能需要一些时间，是否继续？',
-        '导出确认',
-        { confirmButtonText: '继续', cancelButtonText: '取消', type: 'warning' },
-      ).catch(() => false)
-      if (!confirm) return
-    }
-    try {
-      const allData = await harddiskSnStore.getList({
-        page: 1,
-        page_size: harddiskSnStore.pagination.total,
-      })
-      exportData = allData
-      fileName = `硬盘序列号列表_全部_${allData.length}条.xlsx`
-    } catch (error) {
-      logError('components/componentsdetails/HardDiskSNDetails', '导出全部数据失败:', error)
-      ElMessage.error('获取全部数据失败，请重试')
-      return
-    }
-  } else {
+    await exportToExcel({
+      data: harddiskSnStore.list,
+      columns: exportColumns,
+      fileName: `硬盘序列号列表_当前页面_${harddiskSnStore.list.length}条.xlsx`,
+      sheetName: '硬盘序列号列表',
+      confirmMessage: `确定要导出 ${harddiskSnStore.list.length} 条硬盘序列号数据吗？`,
+      emptyMessage: '暂无硬盘序列号数据可导出',
+      successMessage: '硬盘序列号数据导出成功',
+      errorMessage: '硬盘序列号数据导出失败，请重试',
+    })
     return
   }
 
-  await exportToExcel({
-    data: exportData,
-    columns: exportColumns,
-    fileName,
-    sheetName: '硬盘序列号列表',
-    confirmMessage: `确定要导出 ${exportData.length} 条硬盘序列号数据吗？`,
-    emptyMessage: '暂无硬盘序列号数据可导出',
-    successMessage: '硬盘序列号数据导出成功',
-    errorMessage: '硬盘序列号数据导出失败，请重试',
-  })
+  if (range === 'all') {
+    await exportFromServer({
+      entityName: '硬盘序列号',
+      totalCount: harddiskSnStore.pagination.total,
+      fetchExport: (params) => harddiskSnExportExcel(params),
+      params: {},
+    })
+  }
 }
 
 /**

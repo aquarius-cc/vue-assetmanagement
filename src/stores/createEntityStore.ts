@@ -153,7 +153,7 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
 
     // === 核心方法 （增强分页参数处理）===
     // [P1-4] 下列 3 个内部助手为 getList 原逻辑原样下沉，未改任何判断/返回。
-    /** 分页参数标准化（兼容 size/pageSize，统一 page/page_size，设定默认值） */
+    /** 分页参数标准化：读取 page/page_size 并设默认值（P3-02：原注释称兼容 size/pageSize 与实现不符，已订正） */
     const normalizePaginationParams = (queryParams: Record<string, unknown>) => {
       const requestedPage = Number(queryParams.page) || 1
       const requestedPageSize = Number(queryParams.page_size) || defaultPageSize

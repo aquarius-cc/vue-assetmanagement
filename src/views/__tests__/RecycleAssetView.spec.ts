@@ -91,6 +91,17 @@ const ASSET = {
   asset_storage_code: 'ST-001',
 }
 
+/** 资产 B：仓库不同且无可回收出库单，用于复现 A→B 切换后的陈旧值残留（P1-03） */
+const ASSET_B = {
+  recordcode: 'ASSET-RC-002',
+  asset_code: 'DEMO-B002',
+  asset_name: '台式机',
+  asset_current_status: 'in_use',
+  asset_storage_code: 'ST-002',
+}
+
+const EMPTY_RECYCLABLE = { count: 0, results: [] }
+
 const RECYCLABLE_HIT = {
   count: 1,
   results: [{ recordcode: 'OUT-RC-001', asset_code: 'DEMO-A001' }],
@@ -162,6 +173,24 @@ const mountView = () =>
 
 const findSubmitBtn = (wrapper: ReturnType<typeof mountView>) =>
   wrapper.findAll('button').find((b) => b.text().includes('确认回收'))
+
+/**
+ * 同实例切换资产：重设资产/出库单 mock 后走 layout 的 @retry 触发 fetchAsset，
+ * 使 `asset` ref 在**同一组件实例**内由 A 变为 B —— 这正是 P1-03 陈旧值残留的成因
+ * （重挂载会清空状态，复现不了缺陷）。route→fetch 的转发链由 useAssetOperationForm.spec 覆盖，
+ * 本套件聚焦 watch 对 `asset` 变更的处理。
+ */
+const switchAsset = async (
+  wrapper: ReturnType<typeof mountView>,
+  asset: typeof ASSET,
+  recyclable: { count: number; results: unknown[] },
+) => {
+  getAssetByCodeMock.mockResolvedValue(asset)
+  getRecyclableMock.mockResolvedValue(recyclable)
+  const layout = wrapper.findComponent({ name: 'AssetOperationLayout' })
+  await layout.find('.retry-btn').trigger('click')
+  await flushPromises()
+}
 
 describe('RecycleAssetView', () => {
   beforeEach(() => {
@@ -273,5 +302,75 @@ describe('RecycleAssetView', () => {
 
     expect(getAssetByCodeMock).toHaveBeenCalledTimes(2)
     expect(layout.props('fetchError')).toBe(false)
+  })
+
+  it('【P1-03】A→B 切换：清空 A 的出库单残留，canSubmit 归 false 且提交被拦截', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+    expect(findSubmitBtn(wrapper)!.attributes('disabled')).toBeUndefined()
+
+    await switchAsset(wrapper, ASSET_B, EMPTY_RECYCLABLE)
+
+    expect(elMessageWarning).toHaveBeenCalledWith('该资产暂无可回收的在用出库记录，无法提交回收')
+    const submitBtn = findSubmitBtn(wrapper)
+    expect(submitBtn!.attributes('disabled')).toBeDefined()
+
+    // 即便按钮事件被触发，submitFn 也因缺少出库单拒绝，不得对错误出库单建回收记录
+    await submitBtn!.trigger('click')
+    await flushPromises()
+    expect(createRecycleMock).not.toHaveBeenCalled()
+  })
+
+  it('【P1-03】A→B→A 往返：出库单与仓库恢复为 A 的值（重置不误伤正常路径）', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    await switchAsset(wrapper, ASSET_B, EMPTY_RECYCLABLE)
+    await switchAsset(wrapper, ASSET, RECYCLABLE_HIT)
+
+    expect(findSubmitBtn(wrapper)!.attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('select.el-select').element.value).toBe('ST-001')
+
+    const submitBtn = findSubmitBtn(wrapper)
+    await submitBtn!.trigger('click')
+    await flushPromises()
+
+    expect(createRecycleMock).toHaveBeenCalledWith(
+      expect.objectContaining({ outasset_recordcode: 'OUT-RC-001', storage_code: 'ST-001' }),
+    )
+  })
+
+  it('【P1-03】切到 B 后 storage_code 为 B 的仓库码，而非残留 A 的 ST-001', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+    expect(wrapper.find('select.el-select').element.value).toBe('ST-001')
+
+    await switchAsset(wrapper, ASSET_B, EMPTY_RECYCLABLE)
+
+    expect(wrapper.find('select.el-select').element.value).toBe('ST-002')
+  })
+
+  it('【P1-03】竞态：A 的晚到响应不得写回已切到 B 的出库单', async () => {
+    let releaseA: (() => void) | undefined
+    getRecyclableMock.mockImplementation((params: { asset_code?: string }) => {
+      if (params.asset_code === 'DEMO-A001') {
+        return new Promise((resolve) => {
+          releaseA = () => resolve(RECYCLABLE_HIT)
+        })
+      }
+      return Promise.resolve(EMPTY_RECYCLABLE)
+    })
+
+    const wrapper = mountView()
+    await flushPromises() // A 的 recyclable 请求仍挂起
+
+    await switchAsset(wrapper, ASSET_B, EMPTY_RECYCLABLE)
+    expect(findSubmitBtn(wrapper)!.attributes('disabled')).toBeDefined()
+
+    releaseA!()
+    await flushPromises()
+
+    expect(findSubmitBtn(wrapper)!.attributes('disabled')).toBeDefined()
+    expect(createRecycleMock).not.toHaveBeenCalled()
   })
 })

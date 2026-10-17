@@ -106,11 +106,13 @@ import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { DamagedAsset } from '@/types/damagedasset'
-import { useDamagedAssetStore } from '@/stores/damagedAssetStore'
+import { useDamagedAssetStore, damagedAssetExportExcel } from '@/stores/damagedAssetStore'
 import { formatDate } from '@/utils/Format'
 import { getApprovalStatusText, getApprovalStatusTagType } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
 import { logError } from '@/utils/logger'
+import { useServerExcelExport } from '@/composables/useServerExcelExport'
+const { exportFromServer } = useServerExcelExport()
 
 // ===== 状态与实例 =====
 const damagedAssetStore = useDamagedAssetStore()
@@ -398,50 +400,30 @@ const handleExportExcel = async () => {
     else return
   }
 
-  let exportData: DamagedAsset[] = []
-  let fileName = ''
-
   if (range === 'current') {
-    exportData = damagedAssetStore.list
-    fileName = `待报废资产列表_当前页面_${damagedAssetStore.list.length}条.xlsx`
-  } else if (range === 'all') {
-    ElMessage.info('正在准备全部数据，请稍候...')
-    if (damagedAssetStore.pagination.total > 1000) {
-      const confirm = await ElMessageBox.confirm(
-        '数据量较大，导出可能需要一些时间，是否继续？',
-        '导出确认',
-        { confirmButtonText: '继续', cancelButtonText: '取消', type: 'warning' },
-      ).catch(() => false)
-      if (!confirm) return
-    }
-    try {
-      // 【业务逻辑】导出全部时也只导出 pending 状态的记录
-      const allData = await damagedAssetStore.getList({
-        page: 1,
-        page_size: damagedAssetStore.pagination.total,
-        approval_status: 'pending',
-      })
-      exportData = allData
-      fileName = `待报废资产列表_全部_${allData.length}条.xlsx`
-    } catch (error) {
-      logError('components/componentsdetails/DamagedAssetDetails', '导出全部数据失败:', error)
-      ElMessage.error('获取全部数据失败，请重试')
-      return
-    }
-  } else {
+    await exportToExcel({
+      data: damagedAssetStore.list,
+      columns: exportColumns,
+      fileName: `待报废资产列表_当前页面_${damagedAssetStore.list.length}条.xlsx`,
+      sheetName: '待报废资产列表',
+      confirmMessage: `确定要导出 ${damagedAssetStore.list.length} 条待报废资产数据吗？`,
+      emptyMessage: '暂无待报废资产数据可导出',
+      successMessage: '待报废资产数据导出成功',
+      errorMessage: '待报废资产数据导出失败，请重试',
+    })
     return
   }
 
-  await exportToExcel({
-    data: exportData,
-    columns: exportColumns,
-    fileName,
-    sheetName: '待报废资产列表',
-    confirmMessage: `确定要导出 ${exportData.length} 条待报废资产数据吗？`,
-    emptyMessage: '暂无待报废资产数据可导出',
-    successMessage: '待报废资产数据导出成功',
-    errorMessage: '待报废资产数据导出失败，请重试',
-  })
+  if (range === 'all') {
+    // P2-04: 「导出全部」迁服务端流式导出(修复 page_size=total 被 MAX_PAGE_SIZE=100 截断)。
+    // 后端 get_export_queryset 写死 approval_status=pending，与页面口径一致，params 无需再传。
+    await exportFromServer({
+      entityName: '待报废资产',
+      totalCount: damagedAssetStore.pagination.total,
+      fetchExport: (params) => damagedAssetExportExcel(params),
+      params: {},
+    })
+  }
 }
 
 /**

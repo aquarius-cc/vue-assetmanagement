@@ -120,9 +120,9 @@
 defineOptions({ name: 'ContractDetails' })
 
 // ===== 导入顺序：Vue 核心模块、第三方库、内部模块 =====
-import { ref, watch, h } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox, ElRadioGroup, ElRadio } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import { contractDetailColumns as columns } from './contractDetails.columns'
@@ -130,11 +130,12 @@ import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { Contract } from '@/types/contract'
-import { useContractStore } from '@/stores/contractStore'
+import { useContractStore, contractExportExcel } from '@/stores/contractStore'
 import { formatPrice, formatDate, contractTypeMapping } from '@/utils/Format'
 import { getContractStatusTagType, getContractStatusText } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
 import { logError } from '@/utils/logger'
+import { useServerExcelExport } from '@/composables/useServerExcelExport'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -147,9 +148,6 @@ const contractStore = useContractStore()
  * 使用 SmartListContainerExpose 类型确保类型安全
  */
 const smartListRef = ref<SmartListContainerExpose | null>(null)
-
-/** 导出范围（默认当前页），由导出弹窗单选控制 */
-const exportScope = ref<'current' | 'all'>('current')
 
 /**
  * 子路由激活状态 * 用于控制子路由遮罩层的显礀 */
@@ -296,124 +294,84 @@ const handleBatchDelete = async (rows: Contract[] | undefined) => {
 /**
  * 导出 Excel（支持当前页/全部数据）
  * @param row 行数捀 */
-const handleExportExcel = async () => {
-  const exportColumns: ColumnConfig<Contract>[] = [
-    { title: '合同编码', key: 'contract_code', default: '' },
-    { title: '合同名称', key: 'contract_name', default: '' },
-    {
-      title: '合同类型',
-      key: 'contract_type',
-      default: '',
-      formatter: (value) => contractTypeMapping[value as string] || (value as string) || '',
-    },
-    {
-      title: '合同金额',
-      key: 'contract_amount',
-      default: '0',
-      formatter: (value) => String(value ?? '0'),
-    },
-    { title: '供应商', key: 'supplier_name', default: '' },
-    { title: '签订日期', key: 'contract_start_date', default: '' },
-    { title: '保修期', key: 'contract_warranty_period', default: '' },
-    {
-      title: '合同状态',
-      key: 'contract_status',
-      default: '',
-    },
-    {
-      title: '结算价格',
-      key: 'settlemented_price',
-      default: '0',
-      formatter: (value) => String(value ?? '0'),
-    },
-    { title: '初验日期', key: 'initial_check_date', default: '' },
-    { title: '终验日期', key: 'final_check_date', default: '' },
-    { title: '已支付金额', key: 'amount_paid', default: '0' },
-    { title: '未支付金额', key: 'amount_unpaid', default: '0' },
-  ]
+const exportColumns: ColumnConfig<Contract>[] = [
+  { title: '合同编码', key: 'contract_code', default: '' },
+  { title: '合同名称', key: 'contract_name', default: '' },
+  {
+    title: '合同类型',
+    key: 'contract_type',
+    default: '',
+    formatter: (value) => contractTypeMapping[value as string] || (value as string) || '',
+  },
+  {
+    title: '合同金额',
+    key: 'contract_amount',
+    default: '0',
+    formatter: (value) => String(value ?? '0'),
+  },
+  { title: '供应商', key: 'supplier_name', default: '' },
+  { title: '签订日期', key: 'contract_start_date', default: '' },
+  { title: '保修期', key: 'contract_warranty_period', default: '' },
+  {
+    title: '合同状态',
+    key: 'contract_status',
+    default: '',
+  },
+  {
+    title: '结算价格',
+    key: 'settlemented_price',
+    default: '0',
+    formatter: (value) => String(value ?? '0'),
+  },
+  { title: '初验日期', key: 'initial_check_date', default: '' },
+  { title: '终验日期', key: 'final_check_date', default: '' },
+  { title: '已支付金额', key: 'amount_paid', default: '0' },
+  { title: '未支付金额', key: 'amount_unpaid', default: '0' },
+]
 
+const { exportFromServer } = useServerExcelExport()
+
+const handleExportExcel = async () => {
+  // P2-04: 「导出全部」迁服务端流式导出(修复 page_size=total 被 MAX_PAGE_SIZE=100 截断)。
+  let range: 'current' | 'all' | null = null
   try {
-    await ElMessageBox.alert(
-      h('div', null, [
-        h('p', null, `当前页面显示 ${contractStore.list.length} 条数据`),
-        h('p', null, `总共 ${contractStore.pagination.total} 条数据`),
-        h('br'),
-        h(
-          ElRadioGroup,
-          {
-            modelValue: exportScope.value,
-            'onUpdate:modelValue': (value: string | number | boolean | undefined) => {
-              exportScope.value = value === 'all' ? 'all' : 'current'
-            },
-          },
-          () => [
-            h(ElRadio, { label: 'current', value: 'current' }, () => '导出当前页面'),
-            h(ElRadio, { label: 'all', value: 'all' }, () => '导出全部数据'),
-          ],
-        ),
-      ]),
-      '选择导出范围',
+    await ElMessageBox.confirm(
+      `当前页面 ${contractStore.list.length} 条，总共 合同 ${contractStore.pagination.total} 条。请选择：`,
+      '导出范围',
       {
-        confirmButtonText: '确认导出',
-        showCancelButton: false,
-        closeOnClickModal: false,
-        type: 'info',
+        confirmButtonText: '导出当前页',
+        cancelButtonText: '导出全部',
+        distinguishCancelAndClose: true,
       },
     )
+    range = 'current'
   } catch (err) {
-    if (err === 'close') return
-    throw err
+    if (err === 'cancel') range = 'all'
+    else return
   }
 
-  const exportCurrent = exportScope.value === 'current'
-  const exportAll = !exportCurrent
-
-  let exportData: Contract[] = []
-  let fileName: string
-
-  if (exportCurrent) {
-    exportData = contractStore.list
-    fileName = `合同列表_当前页面_${contractStore.list.length}.xlsx`
-  } else if (exportAll) {
-    ElMessage.info('正在准备全部数据，请稍候...')
-    if (contractStore.pagination.total > 1000) {
-      const confirm = await ElMessageBox.confirm(
-        '数据量较大，导出可能需要一些时间，是否继续',
-        '导出确认',
-        {
-          confirmButtonText: '继续',
-          cancelButtonText: '取消',
-          type: 'warning',
-        },
-      ).catch(() => false)
-      if (!confirm) return
-    }
-    try {
-      const allData = await contractStore.getList({
-        page: 1,
-        page_size: contractStore.pagination.total,
-      })
-      exportData = allData
-      fileName = `合同列表_全部_${allData.length}.xlsx`
-    } catch (error) {
-      logError('components/componentsdetails/ContractDetails', '获取全部数据失败:', error)
-      ElMessage.error('获取全部数据失败，请重试')
-      return
-    }
-  } else {
+  if (range === 'current') {
+    await exportToExcel({
+      data: contractStore.list,
+      columns: exportColumns,
+      fileName: `合同列表_当前页面_${contractStore.list.length}条.xlsx`,
+      sheetName: '合同列表',
+      confirmMessage: `确定要导出 ${contractStore.list.length} 条合同数据吗？`,
+      emptyMessage: '暂无合同数据可导出',
+      successMessage: '合同数据导出成功',
+      errorMessage: '合同数据导出失败，请重试',
+    })
     return
   }
 
-  await exportToExcel({
-    data: exportData,
-    columns: exportColumns,
-    fileName,
-    sheetName: '合同列表',
-    confirmMessage: `确定要导出${exportData.length} 条合同数据吗？`,
-    emptyMessage: '暂无合同数据可导出',
-    successMessage: '合同数据导出成功',
-    errorMessage: '合同数据导出失败，请重试',
-  })
+  if (range === 'all') {
+    await exportFromServer({
+      entityName: '合同',
+      totalCount: contractStore.pagination.total,
+      fetchExport: (params) => contractExportExcel(params),
+      params: {},
+    })
+  }
 }
 
 /**

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getDecryptedToken } from '@/utils/tokenCrypto'
 import { ElMessage } from 'element-plus'
 import { setupAuthGuard } from '../guards'
+import { routesMainSystem } from '../routes-main-system'
 
 vi.mock('@/utils/tokenCrypto', () => ({
   getDecryptedToken: vi.fn(),
@@ -854,6 +855,25 @@ describe('Router Guards', () => {
 
       const result = await beforeEachCallback(
         { path: '/main/auditlogdetails', meta: { requiredMinRole: 'auditor' } },
+        { path: '/' },
+      )
+      expect(result).toBe(true)
+    })
+
+    it('should allow regular_user for operationlogdetails and lock real route meta [P2-05]', async () => {
+      // 锚定真实路由配置(与 RBAC 矩阵对齐): 配置若被回改为 auditor, 此断言先红
+      const opLogRoute = routesMainSystem.find((r) => r.name === 'OperationLogDetails')
+      expect(opLogRoute?.meta?.requiredMinRole).toBe('regular_user')
+
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = 'valid-token'
+      mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.authInfo = { auth_id: 1, auth_username: 'test' }
+
+      setupAndCapture()
+
+      const result = await beforeEachCallback(
+        { path: '/main/operationlogdetails', meta: opLogRoute?.meta ?? {} },
         { path: '/' },
       )
       expect(result).toBe(true)

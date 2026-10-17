@@ -77,7 +77,7 @@ defineOptions({ name: 'WasteAssetDetails' })
 // ===== 导入顺序：Vue 核心 → 第三方库 → @/ 内部模块 =====
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import SmartListContainer from '@/components/commoncomponents/SmartListContainer.vue'
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/types/list'
@@ -85,9 +85,9 @@ import { useSmartListConfig } from '@/composables/useSmartListConfig'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { WasteAsset } from '@/types/wasteasset'
-import { useWasteAssetStore } from '@/stores/wasteAssetStore'
+import { useWasteAssetStore, wasteAssetExportExcel } from '@/stores/wasteAssetStore'
 import { formatDate } from '@/utils/Format'
-import { logError } from '@/utils/logger'
+import { useServerExcelExport } from '@/composables/useServerExcelExport'
 
 // ===== 状态与实例 =====
 const wasteAssetStore = useWasteAssetStore()
@@ -164,31 +164,34 @@ watch(
  * - 已报废资产记录由后端在审批通过后自动创建
  * - 前端只提供导出功能，无增删改操作
  */
-const handleExportExcel = async () => {
-  const exportColumns: ColumnConfig<WasteAsset>[] = [
-    { title: '已报废资产编码', key: 'waste_asset_code', default: '' },
-    { title: '资产名称', key: 'asset_name', default: '' },
-    { title: '规格型号', key: 'waste_asset_specification', default: '' },
-    { title: '合同名称', key: 'contract_name', default: '' },
-    {
-      title: '已报废数量',
-      key: 'waste_asset_number',
-      default: '1',
-      formatter: (val) => String(val),
-    },
-    {
-      title: '报废日期',
-      key: 'waste_asset_date',
-      default: '',
-      formatter: (val) => formatDate(val as string | Date | null) || '',
-    },
-    { title: '报废描述', key: 'waste_asset_description', default: '' },
-  ]
+const exportColumns: ColumnConfig<WasteAsset>[] = [
+  { title: '已报废资产编码', key: 'waste_asset_code', default: '' },
+  { title: '资产名称', key: 'asset_name', default: '' },
+  { title: '规格型号', key: 'waste_asset_specification', default: '' },
+  { title: '合同名称', key: 'contract_name', default: '' },
+  {
+    title: '已报废数量',
+    key: 'waste_asset_number',
+    default: '1',
+    formatter: (val) => String(val),
+  },
+  {
+    title: '报废日期',
+    key: 'waste_asset_date',
+    default: '',
+    formatter: (val) => formatDate(val as string | Date | null) || '',
+  },
+  { title: '报废描述', key: 'waste_asset_description', default: '' },
+]
 
+const { exportFromServer } = useServerExcelExport()
+
+const handleExportExcel = async () => {
+  // P2-04: 「导出全部」迁服务端流式导出(修复 page_size=total 被 MAX_PAGE_SIZE=100 截断)。
   let range: 'current' | 'all' | null = null
   try {
     await ElMessageBox.confirm(
-      `当前页面 ${wasteAssetStore.list.length} 条，总共 ${wasteAssetStore.pagination.total} 条。请选择：`,
+      `当前页面 ${wasteAssetStore.list.length} 条，总共 已报废资产 ${wasteAssetStore.pagination.total} 条。请选择：`,
       '导出范围',
       {
         confirmButtonText: '导出当前页',
@@ -202,48 +205,28 @@ const handleExportExcel = async () => {
     else return
   }
 
-  let exportData: WasteAsset[] = []
-  let fileName = ''
-
   if (range === 'current') {
-    exportData = wasteAssetStore.list
-    fileName = `已报废资产列表_当前页面_${wasteAssetStore.list.length}条.xlsx`
-  } else if (range === 'all') {
-    ElMessage.info('正在准备全部数据，请稍候...')
-    if (wasteAssetStore.pagination.total > 1000) {
-      const confirm = await ElMessageBox.confirm(
-        '数据量较大，导出可能需要一些时间，是否继续？',
-        '导出确认',
-        { confirmButtonText: '继续', cancelButtonText: '取消', type: 'warning' },
-      ).catch(() => false)
-      if (!confirm) return
-    }
-    try {
-      const allData = await wasteAssetStore.getList({
-        page: 1,
-        page_size: wasteAssetStore.pagination.total,
-      })
-      exportData = allData
-      fileName = `已报废资产列表_全部_${allData.length}条.xlsx`
-    } catch (error) {
-      logError('components/componentsdetails/WasteAssetDetails', '导出全部数据失败:', error)
-      ElMessage.error('获取全部数据失败，请重试')
-      return
-    }
-  } else {
+    await exportToExcel({
+      data: wasteAssetStore.list,
+      columns: exportColumns,
+      fileName: `已报废资产列表_当前页面_${wasteAssetStore.list.length}条.xlsx`,
+      sheetName: '已报废资产列表',
+      confirmMessage: `确定要导出 ${wasteAssetStore.list.length} 条已报废资产数据吗？`,
+      emptyMessage: '暂无已报废资产数据可导出',
+      successMessage: '已报废资产数据导出成功',
+      errorMessage: '已报废资产数据导出失败，请重试',
+    })
     return
   }
 
-  await exportToExcel({
-    data: exportData,
-    columns: exportColumns,
-    fileName,
-    sheetName: '已报废资产列表',
-    confirmMessage: `确定要导出 ${exportData.length} 条已报废资产数据吗？`,
-    emptyMessage: '暂无已报废资产数据可导出',
-    successMessage: '已报废资产数据导出成功',
-    errorMessage: '已报废资产数据导出失败，请重试',
-  })
+  if (range === 'all') {
+    await exportFromServer({
+      entityName: '已报废资产',
+      totalCount: wasteAssetStore.pagination.total,
+      fetchExport: (params) => wasteAssetExportExcel(params),
+      params: {},
+    })
+  }
 }
 
 /**

@@ -11,7 +11,8 @@
  *   - types/recycleasset: 回收资产相关类型定义
  *   - stores/createEntityStore: 批量删除结果类型
  */
-import { request, unwrapResponse } from '@/api/index'
+import { request, unwrapResponse, getBlob } from '@/api/index'
+import type { BlobDownload } from '@/api/request'
 import type {
   RecycleAssetExtended,
   RecycleAssetCreateForm,
@@ -113,5 +114,13 @@ export const recycleAssetAPI = {
     return unwrapResponse(
       request.post<RecycleAssetBatchCreateResult>('/assets/recycle-assets/batch-create/', data),
     )
+  },
+
+  /**
+   * 服务端 Excel 导出（P2-04）
+   * 省略 limit/offset 时全量导出，总行数超 EXPORT_MAX_ROWS 会被后端拒绝（400）。
+   */
+  exportExcel: (params?: Record<string, unknown>): Promise<BlobDownload> => {
+    return getBlob('/assets/recycle-assets/export/', params, 'recycle_assets.xlsx')
   },
 }

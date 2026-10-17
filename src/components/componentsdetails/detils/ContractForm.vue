@@ -122,19 +122,20 @@
             </el-form-item>
           </el-col>
 
-          <!-- 合同结算状态：选项来自 CONTRACT_STATUS_MAP 单一来源 -->
+          <!-- 合同结算状态：编辑态仅当前态+合法下一态（P3-04 状态机收口），终态禁用 -->
           <el-col :xs="24" :sm="24" :md="12">
             <el-form-item label="合同结算状态" prop="contract_status">
               <el-select
                 v-model="contractForm.contract_status"
                 placeholder="请选择结算状态"
                 style="width: 100%"
+                :disabled="isStatusSelectDisabled"
               >
                 <el-option
-                  v-for="(item, value) in CONTRACT_STATUS_MAP"
-                  :key="value"
+                  v-for="item in statusOptions"
+                  :key="item.value"
                   :label="item.label"
-                  :value="value"
+                  :value="item.value"
                 />
               </el-select>
             </el-form-item>
@@ -220,7 +221,7 @@
 defineOptions({ name: 'ContractForm' })
 
 <script lang="ts" setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Edit } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -277,6 +278,26 @@ const initFormData = (): ContractFormData => ({
 
 const contractForm = reactive<ContractFormData>(initFormData())
 
+/** P3-04:详情接口下发的合法下一状态(list/PUT 响应均不含此字段) */
+const allowedNextStates = ref<string[]>([])
+
+/** 编辑态=当前态∪出边;新建态=全部8态;出边空(终态/脏值)=仅当前态 */
+const statusOptions = computed(() => {
+  if (!isEdit.value) {
+    return Object.entries(CONTRACT_STATUS_MAP).map(([value, item]) => ({
+      value,
+      label: item.label,
+    }))
+  }
+  const keys = [contractForm.contract_status, ...allowedNextStates.value].filter(
+    (k): k is string => !!k && k in CONTRACT_STATUS_MAP,
+  )
+  return [...new Set(keys)].map((value) => ({ value, label: CONTRACT_STATUS_MAP[value].label }))
+})
+
+/** 终态无合法下一状态时禁用下拉(防提交必被后端400拦截的无效操作) */
+const isStatusSelectDisabled = computed(() => isEdit.value && allowedNextStates.value.length === 0)
+
 // ========== 表单验证规则 ==========
 const rules = {
   contract_code: [
@@ -324,12 +345,10 @@ const safeFormatDate = (date: string | null | undefined): string | null => {
 const loadContractDetail = async (code: string) => {
   isLoading.value = true
   try {
-    // 优先什store 中查找，如果找不到则设为 null
+    // 优先从 store 中查找;P3-04:list 序列化器不含 allowed_next_states,字段缺失时回退详情接口取出边
     let targetContract: Contract | null =
       contractStore.list.find((item) => item.contract_code === code) ?? null
-
-    if (!targetContract) {
-      // 如果 store 中没有，调用详情接口
+    if (!targetContract || targetContract.allowed_next_states === undefined) {
       targetContract = await contractStore.getById(code)
     }
 
@@ -338,6 +357,8 @@ const loadContractDetail = async (code: string) => {
       goBack()
       return
     }
+
+    allowedNextStates.value = targetContract.allowed_next_states ?? []
 
     // 填充表单数据
     Object.assign(contractForm, {

@@ -82,6 +82,10 @@ vi.mock('@/composables/useExcelExport', () => ({
   useExcelExport: () => ({ handleExportExcel: mockExcelExport }),
 }))
 
+vi.mock('@/composables/useServerExcelExport', () => ({
+  useServerExcelExport: () => ({ exportFromServer: vi.fn() }),
+}))
+
 /**
  * logger 部分 mock：logWarn/logError 收敛为 spy（断言 Invalid status 告警），其余导出
  * （logInfo/resetTraceId 等）保持真实实现——本文件模块图引用面未知，importOriginal 兜底。

@@ -100,13 +100,14 @@ export function useNotification() {
 
   /**
    * 从 API 加载通知列表
+   * [P1-02/P2-09] 后端已统一分页信封; unwrapResponse 已剥外层信封, 此处直接消费载荷
+   * (与 notificationStore 同构); limit 参数随 P1-02 移除, 改传 page_size
    */
-  async function fetchNotifications(limit = 20) {
+  async function fetchNotifications(pageSize = 20) {
     isLoading.value = true
     fetchError.value = false // [修复] 重置错误状态
     try {
-      const res = await notificationAPI.getNotifications({ limit })
-      const data = res.data
+      const data = await notificationAPI.getNotifications({ page_size: pageSize })
       if (Array.isArray(data)) {
         notifications.value = data
       } else {
@@ -130,7 +131,7 @@ export function useNotification() {
   async function fetchUnreadCount() {
     try {
       const res = await notificationAPI.getUnreadCount()
-      unreadCount.value = res.data.count
+      unreadCount.value = res.count
     } catch {
       // ignore
     }

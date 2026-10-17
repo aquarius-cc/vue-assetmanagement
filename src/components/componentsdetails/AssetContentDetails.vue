@@ -5,7 +5,8 @@
   - views/AssetDetails.vue: 通过 router-view 渲染资产列表
 @dependsOn
   - composables/useAssetListConfig: 资产列表配置（分页、搜索、导出列）
-  - composables/useExcelExport: Excel导出功能
+  - composables/useServerExcelExport: 服务端流式导出（P2-04 导出全部）
+  - utils/excelExporter: 客户端导出当前页
   - constants/assetGroupedFilters: 分组筛选键映射单一来源（9 键白名单）
   - stores/assetStore: 资产数据管理
   - components/commoncomponents/SmartListContainer: 数据管理容器
@@ -145,12 +146,14 @@ import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import type { TableColumn } from '@/types/list'
 import type { SmartListContainerExpose } from '@/types/common'
 import { useAssetListConfig } from '@/composables/useAssetListConfig'
-import { useExcelExport } from '@/composables/useExcelExport'
 import type { AssetDetail, AssetGroupQueryParams, AssetGroupSummary } from '@/types/asset'
 import { GROUPED_FILTER_KEY_MAP } from '@/constants/assetGroupedFilters'
 import { useGroupedAssetSession, type GroupedPageSnapshot } from '@/stores/groupedAssetSession'
 import { logError } from '@/utils/logger'
 import { readStoreValue } from '@/utils/reactiveAccess'
+import { useServerExcelExport } from '@/composables/useServerExcelExport'
+import { exportToExcel } from '@/utils/excelExporter'
+import { assetExportExcel } from '@/stores/assetStore'
 
 /** 分组展开表格对外暴露的方法（`defineExpose` 形态） */
 interface GroupedAssetTableExpose {
@@ -424,18 +427,49 @@ const handleBatchImport = () => {
 }
 
 // ===== Excel 导出 =====
-const { exportList } = useExcelExport()
+const { exportFromServer } = useServerExcelExport()
 
 const handleExportExcel = async () => {
-  await exportList({
-    entityName: '资产',
-    columns: exportColumns,
-    currentData: assetStore.list,
-    totalCount: assetStore.pagination.total,
-    fetchAllData: async () =>
-      assetStore.getList({ page: 1, page_size: assetStore.pagination.total }),
-    sheetName: '资产列表',
-  })
+  // P2-04: 「导出全部」迁服务端流式导出(修复 page_size=total 被 MAX_PAGE_SIZE=100 截断)。
+  let range: 'current' | 'all' | null = null
+  try {
+    await ElMessageBox.confirm(
+      `当前页面 ${assetStore.list.length} 条，总共 资产 ${assetStore.pagination.total} 条。请选择：`,
+      '导出范围',
+      {
+        confirmButtonText: '导出当前页',
+        cancelButtonText: '导出全部',
+        distinguishCancelAndClose: true,
+      },
+    )
+    range = 'current'
+  } catch (err) {
+    if (err === 'cancel') range = 'all'
+    else return
+  }
+
+  if (range === 'current') {
+    await exportToExcel({
+      data: assetStore.list,
+      columns: exportColumns,
+      fileName: `资产列表_当前页面_${assetStore.list.length}条.xlsx`,
+      sheetName: '资产列表',
+      confirmMessage: `确定要导出 ${assetStore.list.length} 条资产数据吗？`,
+      emptyMessage: '暂无资产数据可导出',
+      successMessage: '资产数据导出成功',
+      errorMessage: '资产数据导出失败，请重试',
+    })
+    return
+  }
+
+  if (range === 'all') {
+    await exportFromServer({
+      entityName: '资产',
+      totalCount: assetStore.pagination.total,
+      fetchExport: (params) => assetExportExcel(params),
+      params: {},
+    })
+  }
 }
 
 // ===== 批量删除 =====

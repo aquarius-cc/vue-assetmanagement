@@ -42,16 +42,10 @@ export const ASSET_STATUS_MAP: Record<
   scrapped: { label: '已报废', type: 'info' },
 }
 
-// ===== 出库状态映射（出库资产的当前状态，对齐 OutAssetCurrentStatus 枚举） =====
-export const OUTASSET_STATUS_MAP: Record<
-  string,
-  { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
-> = {
-  in_use: { label: '在用', type: 'primary' },
-  recycled_pending: { label: '已回收待发放', type: 'info' },
-  damaged: { label: '待报废', type: 'warning' },
-  scrapped: { label: '已报废', type: 'info' },
-}
+// ===== 出库状态映射（出库资产的当前状态，对齐 OutAssetCurrentStatus 枚举）=====
+// P3-03:后端 outasset_current_status 为 read_only 直取资产 8 态,故与 ASSET_STATUS_MAP
+// 完全同集——按 DR-1 收敛为别名,禁止两处独立维护(原 4 键缺失 in_store/broken/repairing/lost)。
+export const OUTASSET_STATUS_MAP = ASSET_STATUS_MAP
 
 // ===== 审批状态映射 =====
 export const APPROVAL_STATUS_MAP: Record<

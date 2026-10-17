@@ -72,10 +72,30 @@ describe('NotificationStore', () => {
         makeItem(3),
       ] as never)
 
-      await notificationStore.fetchNotifications({ limit: 3 })
+      await notificationStore.fetchNotifications({ page: 1, page_size: 3 })
 
       expect(notificationStore.notifications).toHaveLength(3)
       expect(notificationStore.pagination.total).toBe(3)
+    })
+
+    it('超过单页 20 条时应以 count 为总数并呈现第二页结果', async () => {
+      const { notificationAPI } = await import('@/api/notification')
+      const page2Items = Array.from({ length: 10 }, (_, i) => makeItem(21 + i))
+      vi.mocked(notificationAPI.getNotifications).mockResolvedValue({
+        count: 30,
+        total_pages: 2,
+        page: 2,
+        page_size: 20,
+        next: null,
+        previous: '/api/v1/notifications/?page=1',
+        results: page2Items,
+      } as never)
+
+      await notificationStore.fetchNotifications({ page: 2, page_size: 20 })
+
+      expect(notificationStore.notifications).toHaveLength(10)
+      expect(notificationStore.pagination.total).toBe(30)
+      expect(notificationAPI.getNotifications).toHaveBeenCalledWith({ page: 2, page_size: 20 })
     })
 
     it('空响应时应清空列表', async () => {

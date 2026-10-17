@@ -94,6 +94,9 @@ const {
 /** 活跃出库单 recordcode（F2 契约：单条创建必须关联真实出库单，非空才允许提交） */
 const recyclableRecordcode = ref('')
 
+/** 上一次处理过的资产编码，用于识别「切换资产」与「同资产重载」（P1-03 残留清理基线） */
+const lastAssetCode = ref('')
+
 /** 仓库必填下拉表单数据 */
 const formData = reactive({
   storage_code: '',
@@ -145,19 +148,29 @@ const {
 void formRef
 
 /**
- * 资产加载后：① 回填仓库默认值；② 解析活跃出库单（F2 契约核心）。
+ * 资产加载后：① 跨资产切换时清空上一资产的出库单与仓库残留；② 解析活跃出库单（F2 契约核心）。
  * asset_code（业务编码）与 recordcode（记录编码）不同——recyclable 接口按 asset_code 过滤，
  * 且后端为 icontains 模糊匹配，故客户端按精确 asset_code 二次过滤，防止子串误命中其他资产的出库单。
+ *
+ * 【P1-03 陈旧值防线】① 入口按 asset_code 身份比对，切换资产即重置 recyclableRecordcode
+ * 与 storage_code（同资产重载保留用户已选仓库），否则会用上一资产的出库单提交；
+ * ② await 之后复核身份，防止快速切换时上一次晚到的响应写回陈旧单号。
  */
 watch(
   asset,
   async (current) => {
     if (!current) return
-    if (current.asset_storage_code && !formData.storage_code) {
-      formData.storage_code = current.asset_storage_code
+    const identityChanged = (current.asset_code ?? '') !== lastAssetCode.value
+    lastAssetCode.value = current.asset_code ?? ''
+    if (identityChanged) {
+      recyclableRecordcode.value = ''
+      formData.storage_code = current.asset_storage_code ?? ''
+    } else if (!formData.storage_code) {
+      formData.storage_code = current.asset_storage_code ?? ''
     }
     if (!current.asset_code) return
     await searchRecyclable({ asset_code: current.asset_code, page_size: 100 })
+    if (asset.value?.asset_code !== current.asset_code) return // 竞态复核：期间已切到别的资产
     const exact = recyclableList.value.find((item) => item.asset_code === current.asset_code)
     if (exact) {
       recyclableRecordcode.value = exact.recordcode

@@ -23,6 +23,7 @@ import type {
   UnregisteredAssetApproveForm,
 } from '@/types/unregisteredasset'
 import type { PaginationQuery } from '@/stores/createEntityStore'
+import type { BlobDownload } from '@/api/request'
 
 /**
  * 审批未登记资产
@@ -77,3 +78,10 @@ export const useUnregisteredAssetStore = createEntityStore<UnregisteredAsset, Pa
     enableCache: false,
   },
 )
+
+/** P2-04: 服务端 Excel 导出（经 store 层消费，满足 no-restricted-imports 分层约束） */
+export function unregisteredAssetExportExcel(
+  params: Record<string, unknown>,
+): Promise<BlobDownload> {
+  return unregisteredAssetAPI.exportExcel(params)
+}

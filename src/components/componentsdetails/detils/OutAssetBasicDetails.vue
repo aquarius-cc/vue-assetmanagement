@@ -13,16 +13,14 @@
         <el-button type="warning" :icon="Download" @click="handleExport">导出</el-button>
       </div>
     </div>
-    <!-- 资产状态标签 -->
+    <!-- 资产状态标签（P3-03:StatusTag 无 slot,原传入的"资产状态:…"默认内容从未渲染,已移除死 children） -->
     <div class="status-badges">
       <StatusTag
         :status="showOutAssetDetails?.outasset_current_status || ''"
         map-type="outasset"
         size="large"
         class="status-tag"
-      >
-        {{ '资产状态：' + getAssetStatusText(showOutAssetDetails?.outasset_current_status || '') }}
-      </StatusTag>
+      />
     </div>
     <!-- 内容区：使用 InfoCard 组件展示 4 个语义卡片 -->
     <div class="child-page-content">

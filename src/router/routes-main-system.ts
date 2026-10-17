@@ -20,7 +20,9 @@ export const routesMainSystem: RouteRecordRaw[] = [
       title: '资产操作日志',
       requiresAuth: true,
       showPageHeader: true,
-      requiredMinRole: 'auditor',
+      // [P2-05] 与 RBAC 矩阵对齐(Rules_Fiels/backend-business-rules.md 操作日志详情:
+      // 普通用户及以上可访问, 服务端仅做归属过滤): 矩阵为权威, 勿改回 auditor
+      requiredMinRole: 'regular_user',
     },
     children: [
       {

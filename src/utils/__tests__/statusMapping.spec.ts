@@ -134,6 +134,11 @@ describe('statusMapping', () => {
       expect(getOutAssetStatusTagType('recycled_pending')).toBe('info')
       expect(getOutAssetStatusTagType('damaged')).toBe('warning')
       expect(getOutAssetStatusTagType('scrapped')).toBe('info')
+      // P3-03:补齐 4 态(原缺失导致 StatusTag 显示原始值)
+      expect(getOutAssetStatusTagType('in_store')).toBe('success')
+      expect(getOutAssetStatusTagType('broken')).toBe('danger')
+      expect(getOutAssetStatusTagType('repairing')).toBe('warning')
+      expect(getOutAssetStatusTagType('lost')).toBe('danger')
     })
 
     it('getOutAssetStatusText returns correct label', () => {
@@ -141,6 +146,15 @@ describe('statusMapping', () => {
       expect(getOutAssetStatusText('recycled_pending')).toBe('已回收待发放')
       expect(getOutAssetStatusText('damaged')).toBe('待报废')
       expect(getOutAssetStatusText('scrapped')).toBe('已报废')
+      // P3-03:补齐 4 态
+      expect(getOutAssetStatusText('in_store')).toBe('在库')
+      expect(getOutAssetStatusText('broken')).toBe('已损坏')
+      expect(getOutAssetStatusText('repairing')).toBe('维修中')
+      expect(getOutAssetStatusText('lost')).toBe('已遗失')
+    })
+
+    it('getOutAssetStatusText falls back to raw value for unknown status', () => {
+      expect(getOutAssetStatusText('not_a_status')).toBe('not_a_status')
     })
   })
 
@@ -186,11 +200,18 @@ describe('statusMapping', () => {
     })
 
     it('OUTASSET_STATUS_MAP has all required statuses', () => {
-      expect(Object.keys(OUTASSET_STATUS_MAP)).toHaveLength(4)
+      // P3-03:扩到 8 态(别名 ASSET_STATUS_MAP),后端 outasset_current_status 直取资产状态
+      expect(Object.keys(OUTASSET_STATUS_MAP)).toHaveLength(8)
+      expect(OUTASSET_STATUS_MAP).toHaveProperty('in_store')
       expect(OUTASSET_STATUS_MAP).toHaveProperty('in_use')
       expect(OUTASSET_STATUS_MAP).toHaveProperty('recycled_pending')
+      expect(OUTASSET_STATUS_MAP).toHaveProperty('broken')
+      expect(OUTASSET_STATUS_MAP).toHaveProperty('repairing')
+      expect(OUTASSET_STATUS_MAP).toHaveProperty('lost')
       expect(OUTASSET_STATUS_MAP).toHaveProperty('damaged')
       expect(OUTASSET_STATUS_MAP).toHaveProperty('scrapped')
+      // DR-1 别名:两映射同源,禁止独立漂移
+      expect(OUTASSET_STATUS_MAP).toBe(ASSET_STATUS_MAP)
     })
 
     it('APPROVAL_STATUS_MAP has all required statuses', () => {

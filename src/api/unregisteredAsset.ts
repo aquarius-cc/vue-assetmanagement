@@ -11,7 +11,8 @@
  *   - types/unregisteredasset: 未登记资产相关类型定义
  *   - stores/createEntityStore: 批量删除结果类型
  */
-import { request, unwrapResponse } from '@/api/index'
+import { request, unwrapResponse, getBlob } from '@/api/index'
+import type { BlobDownload } from '@/api/request'
 import type {
   UnregisteredAsset,
   UnregisteredAssetCreateForm,
@@ -120,6 +121,18 @@ export const unregisteredAssetAPI = {
         `/unregisteredassets/unregistered-assets/${code}/approve/`,
         data,
       ),
+    )
+  },
+
+  /**
+   * 服务端 Excel 导出（P2-04）
+   * 省略 limit/offset 时全量导出，总行数超 EXPORT_MAX_ROWS 会被后端拒绝（400）。
+   */
+  exportExcel: (params?: Record<string, unknown>): Promise<BlobDownload> => {
+    return getBlob(
+      '/unregisteredassets/unregistered-assets/export/',
+      params,
+      'unregistered_assets_export.xlsx',
     )
   },
 }

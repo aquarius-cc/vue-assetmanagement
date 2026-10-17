@@ -14,6 +14,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { auditLogAPI } from '@/api/auditLog'
 import type { AuditLog, AuditLogQueryParams, AuditLogListResponse } from '@/types/auditlog'
+import type { BlobDownload } from '@/api/request'
 
 export const useAuditLogStore = defineStore('auditLog', () => {
   // ===== 状态 =====
@@ -128,3 +129,8 @@ export const useAuditLogStore = defineStore('auditLog', () => {
     getAuditLogByLoggingId,
   }
 })
+
+/** P2-04: 服务端 Excel 导出（经 store 层消费，满足 no-restricted-imports 分层约束） */
+export function auditLogExportExcel(params: Record<string, unknown>): Promise<BlobDownload> {
+  return auditLogAPI.exportExcel(params)
+}

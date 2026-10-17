@@ -118,11 +118,15 @@ import type { ColumnConfig } from '@/utils/excelExporter'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { UnregisteredAsset } from '@/types/unregisteredasset'
 import { scenarioTypeTextMap, scenarioTypeTagMap } from '@/types/unregisteredasset'
-import { useUnregisteredAssetStore } from '@/stores/unregisteredAssetStore'
+import {
+  useUnregisteredAssetStore,
+  unregisteredAssetExportExcel,
+} from '@/stores/unregisteredAssetStore'
 import { formatDate } from '@/utils/Format'
 import { getApprovalStatusText, getApprovalStatusTagType } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
 import { logError } from '@/utils/logger'
+import { useServerExcelExport } from '@/composables/useServerExcelExport'
 
 // ===== 状态与实例 =====
 const unregisteredAssetStore = useUnregisteredAssetStore()
@@ -278,44 +282,47 @@ const handleBatchImport = () => {
  * 导出 Excel
  * 支持导出当前页或全部数据
  */
-const handleExportExcel = async () => {
-  const exportColumns: ColumnConfig<UnregisteredAsset>[] = [
-    { title: '编码', key: 'unregistered_code', default: '' },
-    { title: '资产名称', key: 'asset_name', default: '' },
-    {
-      title: '场景类型',
-      key: 'scenario_type',
-      default: '',
-      formatter: (val) => getScenarioTypeText(val as string),
-    },
-    {
-      title: '发现日期',
-      key: 'discovery_date',
-      default: '',
-      formatter: (val) => formatDate(val as string | Date | null) || '',
-    },
-    { title: '发现地点', key: 'discovery_location', default: '' },
-    { title: '资产品牌', key: 'asset_brand', default: '' },
-    { title: '资产规格型号', key: 'asset_specification', default: '' },
-    { title: '资产类型编码', key: 'unregistered_asset_type', default: '' },
-    { title: '预估价值', key: 'estimated_value', default: '' },
-    { title: '关联资产编码', key: 'related_asset', default: '' },
-    { title: '目标仓库编码', key: 'unregistered_asset_storage', default: '' },
-    {
-      title: '审批状态',
-      key: 'approval_status',
-      default: '',
-      formatter: (val) => getApprovalStatusText((val as string) ?? ''),
-    },
-    { title: '审批人', key: 'approver_name', default: '' },
-    { title: '处理类型', key: 'handle_type', default: '' },
-    { title: '描述', key: 'handle_description', default: '' },
-  ]
+const exportColumns: ColumnConfig<UnregisteredAsset>[] = [
+  { title: '编码', key: 'unregistered_code', default: '' },
+  { title: '资产名称', key: 'asset_name', default: '' },
+  {
+    title: '场景类型',
+    key: 'scenario_type',
+    default: '',
+    formatter: (val) => getScenarioTypeText(val as string),
+  },
+  {
+    title: '发现日期',
+    key: 'discovery_date',
+    default: '',
+    formatter: (val) => formatDate(val as string | Date | null) || '',
+  },
+  { title: '发现地点', key: 'discovery_location', default: '' },
+  { title: '资产品牌', key: 'asset_brand', default: '' },
+  { title: '资产规格型号', key: 'asset_specification', default: '' },
+  { title: '资产类型编码', key: 'unregistered_asset_type', default: '' },
+  { title: '预估价值', key: 'estimated_value', default: '' },
+  { title: '关联资产编码', key: 'related_asset', default: '' },
+  { title: '目标仓库编码', key: 'unregistered_asset_storage', default: '' },
+  {
+    title: '审批状态',
+    key: 'approval_status',
+    default: '',
+    formatter: (val) => getApprovalStatusText((val as string) ?? ''),
+  },
+  { title: '审批人', key: 'approver_name', default: '' },
+  { title: '处理类型', key: 'handle_type', default: '' },
+  { title: '描述', key: 'handle_description', default: '' },
+]
 
+const { exportFromServer } = useServerExcelExport()
+
+const handleExportExcel = async () => {
+  // P2-04: 「导出全部」迁服务端流式导出(修复 page_size=total 被 MAX_PAGE_SIZE=100 截断)。
   let range: 'current' | 'all' | null = null
   try {
     await ElMessageBox.confirm(
-      `当前页面 ${unregisteredAssetStore.list.length} 条，总共 ${unregisteredAssetStore.pagination.total} 条。请选择：`,
+      `当前页面 ${unregisteredAssetStore.list.length} 条，总共 未登记资产 ${unregisteredAssetStore.pagination.total} 条。请选择：`,
       '导出范围',
       {
         confirmButtonText: '导出当前页',
@@ -329,48 +336,28 @@ const handleExportExcel = async () => {
     else return
   }
 
-  let exportData: UnregisteredAsset[] = []
-  let fileName = ''
-
   if (range === 'current') {
-    exportData = unregisteredAssetStore.list
-    fileName = `未登记资产列表_当前页面_${unregisteredAssetStore.list.length}条.xlsx`
-  } else if (range === 'all') {
-    ElMessage.info('正在准备全部数据，请稍候...')
-    if (unregisteredAssetStore.pagination.total > 1000) {
-      const confirm = await ElMessageBox.confirm(
-        '数据量较大，导出可能需要一些时间，是否继续？',
-        '导出确认',
-        { confirmButtonText: '继续', cancelButtonText: '取消', type: 'warning' },
-      ).catch(() => false)
-      if (!confirm) return
-    }
-    try {
-      const allData = await unregisteredAssetStore.getList({
-        page: 1,
-        page_size: unregisteredAssetStore.pagination.total,
-      })
-      exportData = allData
-      fileName = `未登记资产列表_全部_${allData.length}条.xlsx`
-    } catch (error) {
-      logError('components/componentsdetails/UnregisteredAssetDetails', '导出全部数据失败:', error)
-      ElMessage.error('获取全部数据失败，请重试')
-      return
-    }
-  } else {
+    await exportToExcel({
+      data: unregisteredAssetStore.list,
+      columns: exportColumns,
+      fileName: `未登记资产列表_当前页面_${unregisteredAssetStore.list.length}条.xlsx`,
+      sheetName: '未登记资产列表',
+      confirmMessage: `确定要导出 ${unregisteredAssetStore.list.length} 条未登记资产数据吗？`,
+      emptyMessage: '暂无未登记资产数据可导出',
+      successMessage: '未登记资产数据导出成功',
+      errorMessage: '未登记资产数据导出失败，请重试',
+    })
     return
   }
 
-  await exportToExcel({
-    data: exportData,
-    columns: exportColumns,
-    fileName,
-    sheetName: '未登记资产列表',
-    confirmMessage: `确定要导出 ${exportData.length} 条未登记资产数据吗？`,
-    emptyMessage: '暂无未登记资产数据可导出',
-    successMessage: '未登记资产数据导出成功',
-    errorMessage: '未登记资产数据导出失败，请重试',
-  })
+  if (range === 'all') {
+    await exportFromServer({
+      entityName: '未登记资产',
+      totalCount: unregisteredAssetStore.pagination.total,
+      fetchExport: (params) => unregisteredAssetExportExcel(params),
+      params: {},
+    })
+  }
 }
 
 /**
