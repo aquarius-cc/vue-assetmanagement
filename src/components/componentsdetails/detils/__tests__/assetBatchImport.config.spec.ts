@@ -19,7 +19,6 @@ function makeAssetRow(overrides: Record<string, unknown> = {}): AssetExcelRow {
     asset_purchase_date: '2025-01-10',
     asset_warranty_period: 3,
     asset_entry_date: '2025-01-15',
-    asset_current_status: 'in_store',
     asset_type: 'SVR-01',
     asset_entry_person: 'EMP001',
     asset_contract: 'CT-2025-001',
@@ -152,22 +151,10 @@ describe('assetImportConfig 基础配置', () => {
       expect(result.errors.asset_warranty_period).toBeUndefined()
     })
 
-    it('当前状态非法时失败', () => {
+    it('【BF-110】状态列已移除：status 不参与校验（死列负锚，CT-4）', () => {
       const result = assetImportConfig.validateItem(makeAssetRow({ asset_current_status: 'bogus' }))
-      expect(result.valid).toBe(false)
-      expect(result.errors.asset_current_status).toContain('当前状态值非法')
-    })
-
-    it('当前状态合法时通过', () => {
-      const result = assetImportConfig.validateItem(
-        makeAssetRow({ asset_current_status: 'in_use' }),
-      )
-      expect(result.valid).toBe(true)
-    })
-
-    it('当前状态为空时不校验', () => {
-      const result = assetImportConfig.validateItem(makeAssetRow({ asset_current_status: '' }))
       expect(result.errors.asset_current_status).toBeUndefined()
+      expect(result.valid).toBe(true)
     })
   })
 
@@ -278,8 +265,13 @@ describe('assetImportConfig 基础配置', () => {
 })
 
 describe('assetImportConfig 静态导出', () => {
+  it('【BF-110】状态列已移除：表头映射与必填均不含状态（死列负锚）', () => {
+    expect(assetImportConfig.excelHeaderMap.当前状态).toBeUndefined()
+    expect(assetImportConfig.requiredFields).not.toContain('asset_current_status')
+  })
+
   it('assetHeaderExamples 定义完整', () => {
-    expect(assetHeaderExamples).toHaveLength(19)
+    expect(assetHeaderExamples).toHaveLength(18)
     expect(assetHeaderExamples[1]).toMatchObject({
       headerName: '资产名称',
       field: 'asset_name',

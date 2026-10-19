@@ -28,7 +28,6 @@ export interface AssetExcelRow {
   asset_purchase_date?: string
   asset_warranty_period?: number | string
   asset_entry_date: string
-  asset_current_status?: string
   asset_type: string
   asset_entry_person?: string
   asset_contract?: string
@@ -79,7 +78,6 @@ export interface StorageExcelRow {
 export interface OutAssetExcelRow {
   outasset_code: string
   outasset_number: number | string
-  outasset_current_status?: string
   outasset_date: string
   return_date?: string
   outasset_type?: string

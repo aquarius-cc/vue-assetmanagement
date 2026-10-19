@@ -3,7 +3,7 @@
  * @module stores/dashboard
  */
 import { defineStore } from 'pinia'
-import { STATUS_GROUPS } from './dashboardStatusGroups'
+import { STATUS_GROUPS, CHART_ORDER } from './dashboardStatusGroups'
 import { ref, computed } from 'vue'
 import { isAxiosError } from 'axios'
 import { dashboardAPI } from '@/api/dashboard'
@@ -22,6 +22,7 @@ import { logError } from '@/utils/logger'
 import {
   getStatusColor as getStatusColorFromMapping,
   ASSET_STATUS_CHART_COLORS,
+  STATUS_COLOR_MAP,
 } from '@/utils/statusMapping'
 
 /**
@@ -136,7 +137,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
             code: statusCode,
             name: item?.name || statusCode,
             count: item?.count || 0,
-            color: ASSET_STATUS_CHART_COLORS[statusCode] || '#909399',
+            color: ASSET_STATUS_CHART_COLORS[statusCode] || STATUS_COLOR_MAP.info,
           }
         })
         .filter((item) => item.count > 0) // 仅展示有数据的项
@@ -151,24 +152,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
       }
     })
 
-    // 环形图数据（所有8种状态，按自定义顺序排列）
-    const chartOrder = [
-      'in_use',
-      'in_store',
-      'recycled_pending',
-      'broken',
-      'repairing',
-      'lost',
-      'damaged',
-      'scrapped',
-    ]
-    const chartData = chartOrder
-      .filter((code) => (dist[code]?.count || 0) > 0)
-      .map((code) => ({
-        name: dist[code]?.name || code,
-        value: dist[code]?.count || 0,
-        itemStyle: { color: ASSET_STATUS_CHART_COLORS[code] || '#909399' },
-      }))
+    // 环形图数据（所有8种状态，按自定义顺序排列；顺序单一来源 CHART_ORDER）
+    const chartData = CHART_ORDER.filter((code) => (dist[code]?.count || 0) > 0).map((code) => ({
+      name: dist[code]?.name || code,
+      value: dist[code]?.count || 0,
+      itemStyle: { color: ASSET_STATUS_CHART_COLORS[code] || STATUS_COLOR_MAP.info },
+    }))
 
     const totalAssets = overview.value?.total_assets || 0
 

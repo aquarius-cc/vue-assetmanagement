@@ -17,12 +17,8 @@ import {
   requirePositiveInteger,
   optionalDateRaw,
   optionalNumber,
-  optionalEnum,
   trimmedOrNull,
 } from '@/utils/batchImport/validation'
-
-/** 资产状态允许集（validateItem 枚举校验单一来源） */
-const ASSET_STATUSES = ['in_store', 'recycled_pending', 'in_use', 'damaged', 'scrapped'] as const
 
 // ===== 批量导入配置（对应AssetCreateForm） =====
 export const assetImportConfig: BatchImportConfig<AssetExcelRow, AssetCreateForm> = {
@@ -39,7 +35,6 @@ export const assetImportConfig: BatchImportConfig<AssetExcelRow, AssetCreateForm
     采购日期: 'asset_purchase_date',
     质保期: 'asset_warranty_period',
     入库日期: 'asset_entry_date',
-    当前状态: 'asset_current_status',
     资产分类编码: 'asset_type',
     录入人工: 'asset_entry_person',
     合同编码: 'asset_contract',
@@ -58,7 +53,6 @@ export const assetImportConfig: BatchImportConfig<AssetExcelRow, AssetCreateForm
     'asset_purchase_number',
     'asset_entry_date',
     'asset_type',
-    'asset_current_status',
   ],
   // 单条数据验证（P1-4：同构分支收敛至 batchImport/validation 原语，本体降为纯调用序列）
   validateItem: (item: AssetExcelRow) => {
@@ -106,13 +100,6 @@ export const assetImportConfig: BatchImportConfig<AssetExcelRow, AssetCreateForm
       item.asset_warranty_period,
       'asset_warranty_period',
       '质保期必须是有效数字',
-      errors,
-    )
-    optionalEnum(
-      item.asset_current_status,
-      'asset_current_status',
-      ASSET_STATUSES,
-      '当前状态值非法，可选：in_store / recycled_pending / in_use / damaged / scrapped',
       errors,
     )
 
@@ -211,13 +198,6 @@ export const assetHeaderExamples: HeaderExample[] = [
     remark: 'YYYY-MM-DD',
   },
   {
-    headerName: '当前状态',
-    field: 'asset_current_status',
-    required: false,
-    example: 'in_store',
-    remark: 'in_store/recycled_pending/in_use/damaged/scrapped',
-  },
-  {
     headerName: '资产分类编码',
     field: 'asset_type_code',
     required: true,
@@ -292,7 +272,6 @@ export const assetExampleRows = [
     asset_purchase_date: '2025-01-10',
     asset_warranty_period: 3,
     asset_entry_date: '2025-01-15',
-    asset_current_status: 'in_store',
     asset_type_code: 'SVR-01',
     asset_entry_person_jobcode: 'EMP001',
     asset_contract_code: 'CT-2025-001',
@@ -312,7 +291,6 @@ export const assetExampleRows = [
     asset_purchase_date: '2024-12-20',
     asset_warranty_period: 2,
     asset_entry_date: '2024-12-25',
-    asset_current_status: 'in_store',
     asset_type_code: 'FUR-01',
     asset_entry_person_jobcode: 'EMP004',
     asset_contract_code: '',

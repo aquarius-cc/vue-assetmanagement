@@ -13,7 +13,6 @@ function makeOutAssetRow(overrides: Record<string, unknown> = {}): OutAssetExcel
     outasset_code: 'OUT-001',
     outasset_number: 1,
     outasset_date: '2025-06-01',
-    outasset_current_status: 'in_use',
     return_date: '2025-12-31',
     outasset_type: 'receive',
     outasset_description: '用于项目测试',
@@ -80,36 +79,18 @@ describe('outAssetImportConfig 基础配置', () => {
       expect(result.errors.outasset_date).toBe('出库日期格式应为 YYYY-MM-DD')
     })
 
-    it('资产状态非法时失败', () => {
-      const result = outAssetImportConfig.validateItem(
+    it('【BF-110】状态列已移除：status 不参与校验（死列负锚，CT-4；原 P3-03 八态锚随死列消亡）', () => {
+      const bogus = outAssetImportConfig.validateItem(
         makeOutAssetRow({ outasset_current_status: 'bogus' }),
       )
-      expect(result.valid).toBe(false)
-      expect(result.errors.outasset_current_status).toContain('资产状态非法')
-    })
-
-    it('资产状态合法时通过', () => {
-      const result = outAssetImportConfig.validateItem(
-        makeOutAssetRow({ outasset_current_status: 'scrapped' }),
-      )
-      expect(result.valid).toBe(true)
-    })
-
-    it('P3-03 扩枚举后新增 4 态在导入校验入口合法', () => {
-      // 枚举 8 化后 Object.values 自动放行,后端该字段 read_only 不消费——回归锚
+      expect(bogus.errors.outasset_current_status).toBeUndefined()
+      expect(bogus.valid).toBe(true)
       for (const status of ['in_store', 'broken', 'repairing', 'lost']) {
         const result = outAssetImportConfig.validateItem(
           makeOutAssetRow({ outasset_current_status: status }),
         )
         expect(result.errors.outasset_current_status).toBeUndefined()
       }
-    })
-
-    it('资产状态为空时不校验', () => {
-      const result = outAssetImportConfig.validateItem(
-        makeOutAssetRow({ outasset_current_status: '' }),
-      )
-      expect(result.errors.outasset_current_status).toBeUndefined()
     })
 
     it('出库类型非法时失败', () => {
@@ -195,8 +176,12 @@ describe('outAssetImportConfig 基础配置', () => {
 })
 
 describe('outAssetImportConfig 静态导出', () => {
+  it('【BF-110】状态列已移除：表头映射不含状态（死列负锚）', () => {
+    expect(outAssetImportConfig.excelHeaderMap.资产状态).toBeUndefined()
+  })
+
   it('outAssetHeaderExamples 定义完整', () => {
-    expect(outAssetHeaderExamples).toHaveLength(7)
+    expect(outAssetHeaderExamples).toHaveLength(6)
     expect(outAssetHeaderExamples[0]).toMatchObject({
       headerName: '出库资产编码',
       field: 'outasset_code',
@@ -205,8 +190,8 @@ describe('outAssetImportConfig 静态导出', () => {
   })
 
   it('outAssetExampleColumns 定义完整', () => {
-    expect(outAssetExampleColumns).toHaveLength(6)
-    expect(outAssetExampleColumns[3]).toEqual({ prop: 'outasset_status', label: '资产状态' })
+    expect(outAssetExampleColumns).toHaveLength(5)
+    expect(outAssetExampleColumns[3]).toEqual({ prop: 'outasset_type', label: '出库类型' })
   })
 
   it('outAssetExampleRows 包含两条示例', () => {

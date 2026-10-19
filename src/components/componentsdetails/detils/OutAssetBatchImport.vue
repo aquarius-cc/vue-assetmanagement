@@ -40,7 +40,6 @@
         :example-columns="exampleColumns"
         :notices="[
           '出库资产编码、出库数量、出库日期为必填项',
-          '资产状态可选值：in_use（使用中）/returned（已归还）/lost（丢失）/damaged（损坏）',
           '出库类型可选值：normal（正常出库）/scrap（报废出库）/transfer（调拨出库）',
           '日期格式统一为 YYYY-MM-DD，必填日期不可为空',
           'Excel 首行必须与「表头说明」中的中文列名完全一致',
@@ -66,7 +65,6 @@
           <!-- [HR-01] 后端 v1.1.0 改为 read_only，移除申请人工号列 -->
           <!-- [HR-01] 后端 v1.1.0 改为 read_only，移除保管人工号列 -->
           <el-table-column label="出库日期" prop="data.outasset_date" width="110" />
-          <el-table-column label="资产状态" prop="data.outasset_status" width="100" />
           <el-table-column label="出库类型" prop="data.outasset_type" width="100" />
           <!-- [HR-01] 后端 v1.1.0 改为 read_only，移除使用位置列 -->
           <el-table-column label="描述" prop="data.outasset_description" show-overflow-tooltip />
@@ -159,7 +157,6 @@ const handleExportTemplate = async () => {
     出库数量: '1',
     // [HR-01] 后端 v1.1.0 改为 read_only，移除申请人工号示例
     // [HR-01] 后端 v1.1.0 改为 read_only，移除保管人工号示例
-    资产状态: 'in_use',
     出库日期: '2025-06-01',
     预计返回日期: '2025-12-31',
     出库类型: 'receive',

@@ -2,7 +2,7 @@
  * 出库资产批量导入配置（自 OutAssetBatchImport.vue 物理提取，零逻辑变更）
  */
 import type { OutAssetCreateForm } from '@/types/outasset'
-import { OutAssetType, OutAssetCurrentStatus } from '@/types/outasset'
+import { OutAssetType } from '@/types/outasset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { OutAssetExcelRow } from '@/types/batch-import'
 import type { HeaderExample, ExampleColumn } from '@/utils/batchImportHelpers'
@@ -25,7 +25,6 @@ export const outAssetImportConfig: BatchImportConfig<OutAssetExcelRow, OutAssetC
     出库数量: 'outasset_number',
     // [HR-01] 后端 v1.1.0 改为 read_only，移除 申请人工号 -> outasset_applicant_jobcode 映射
     // [HR-01] 后端 v1.1.0 改为 read_only，移除 保管人工号 -> outasset_manager_jobcode 映射
-    资产状态: 'outasset_current_status',
     出库日期: 'outasset_date',
     预计返回日期: 'return_date',
     出库类型: 'outasset_type',
@@ -63,15 +62,6 @@ export const outAssetImportConfig: BatchImportConfig<OutAssetExcelRow, OutAssetC
     )
 
     // 可选字段校验（如果有值）——枚举清单由类型单一来源导出，消息动态拼接
-    const validStatuses = Object.values(OutAssetCurrentStatus)
-    optionalEnum(
-      item.outasset_current_status,
-      'outasset_current_status',
-      validStatuses,
-      `资产状态非法，可选：${validStatuses.join(' / ')}`,
-      errors,
-    )
-
     const validTypes = Object.values(OutAssetType)
     optionalEnum(
       item.outasset_type,
@@ -122,13 +112,6 @@ export const outAssetHeaderExamples: HeaderExample[] = [
   // [HR-01] 后端 v1.1.0 改为 read_only，移除申请人工号表头说明
   // [HR-01] 后端 v1.1.0 改为 read_only，移除保管人工号表头说明
   {
-    headerName: '资产状态',
-    field: 'outasset_status',
-    required: false,
-    example: 'in_use',
-    remark: 'in_use/returned/lost/damaged',
-  },
-  {
     headerName: '出库日期',
     field: 'outasset_date',
     required: true,
@@ -165,7 +148,6 @@ export const outAssetExampleColumns: ExampleColumn[] = [
   // [HR-01] 后端 v1.1.0 改为 read_only，移除申请人工号列
   // [HR-01] 后端 v1.1.0 改为 read_only，移除保管人工号列
   { prop: 'outasset_date', label: '出库日期' },
-  { prop: 'outasset_status', label: '资产状态' },
   { prop: 'outasset_type', label: '出库类型' },
   // [HR-01] 后端 v1.1.0 改为 read_only，移除使用位置列
   { prop: 'outasset_description', label: '资产描述' },
@@ -178,7 +160,6 @@ export const outAssetExampleRows = [
     // [HR-01] 后端 v1.1.0 改为 read_only，移除申请人工号
     // [HR-01] 后端 v1.1.0 改为 read_only，移除保管人工号
     outasset_date: '2025-06-01',
-    outasset_status: 'in_use',
     outasset_type: 'receive',
     // [HR-01] 后端 v1.1.0 改为 read_only，移除使用位置
     outasset_description: '用于项目测试',
@@ -189,7 +170,6 @@ export const outAssetExampleRows = [
     // [HR-01] 后端 v1.1.0 改为 read_only，移除申请人工号
     // [HR-01] 后端 v1.1.0 改为 read_only，移除保管人工号
     outasset_date: '2025-05-15',
-    outasset_status: 'in_use',
     outasset_type: 'borrow',
     // [HR-01] 后端 v1.1.0 改为 read_only，移除使用位置
     outasset_description: '临时调拨',

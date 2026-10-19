@@ -44,6 +44,14 @@ vi.mock('@/utils/statusMapping', () => ({
     damaged: '#FA8C16',
     scrapped: '#909399',
   },
+  // [BF-110 ③] dashboardStatusGroups 收敛后模块级依赖，mock 须补全
+  STATUS_COLOR_MAP: {
+    success: '#52C41A',
+    primary: '#2B5FD7',
+    warning: '#FAAD14',
+    danger: '#FF4D4F',
+    info: '#909399',
+  },
 }))
 
 describe('DashboardStore', () => {
