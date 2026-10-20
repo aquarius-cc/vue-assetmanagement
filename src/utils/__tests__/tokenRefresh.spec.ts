@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { refreshAccessToken, RefreshSessionError, MissingRefreshTokenError } from '../tokenRefresh'
 
 const axiosPost = vi.hoisted(() => vi.fn())
-const tokenCrypto = vi.hoisted(() => ({
-  setEncryptedToken: vi.fn(),
-  getDecryptedToken: vi.fn(),
+const tokenObfuscator = vi.hoisted(() => ({
+  encodeToken: vi.fn(),
+  decodeToken: vi.fn(),
 }))
 const csrf = vi.hoisted(() => ({ getCsrfToken: vi.fn() }))
 
@@ -13,7 +13,7 @@ vi.mock('axios', () => ({
   isAxiosError: (e: unknown) => (e as { isAxiosError?: boolean })?.isAxiosError === true,
 }))
 
-vi.mock('@/utils/tokenCrypto', () => tokenCrypto)
+vi.mock('@/utils/tokenObfuscator', () => tokenObfuscator)
 vi.mock('@/utils/csrf', () => csrf)
 vi.mock('@/utils/traceId', () => ({ generateTraceId: vi.fn(() => 'test-trace-id') }))
 
@@ -62,7 +62,7 @@ describe('refreshAccessToken - no BroadcastChannel support', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubGlobal('BroadcastChannel', undefined)
-    tokenCrypto.getDecryptedToken.mockReturnValue('refresh-token')
+    tokenObfuscator.decodeToken.mockReturnValue('refresh-token')
   })
 
   afterEach(() => {
@@ -83,7 +83,7 @@ describe('refreshAccessToken - BroadcastChannel sync', () => {
     vi.clearAllMocks()
     MockBroadcastChannel.instances.length = 0
     vi.stubGlobal('BroadcastChannel', MockBroadcastChannel)
-    tokenCrypto.getDecryptedToken.mockReturnValue('refresh-token')
+    tokenObfuscator.decodeToken.mockReturnValue('refresh-token')
     csrf.getCsrfToken.mockReturnValue('csrf-token')
   })
 
@@ -109,7 +109,7 @@ describe('refreshAccessToken - BroadcastChannel sync', () => {
     )
 
     channel.postMessage.mockClear()
-    tokenCrypto.setEncryptedToken.mockClear()
+    tokenObfuscator.encodeToken.mockClear()
     axiosPost.mockResolvedValueOnce(okResponse('c-access'))
 
     await refreshAccessToken('cookie')
@@ -128,16 +128,16 @@ describe('refreshAccessToken - BroadcastChannel sync', () => {
     dispatch({ type: 'access', access: 'mem-bearer', channel: 'bearer' })
     dispatch({ type: 'access', access: 'mem-bearer2', channel: 'bearer', refresh: 'r2' })
 
-    expect(tokenCrypto.setEncryptedToken).toHaveBeenCalledWith('access_token', 'mem-bearer2')
-    expect(tokenCrypto.setEncryptedToken).toHaveBeenCalledWith('refresh_token', 'r2')
-    expect(tokenCrypto.setEncryptedToken).not.toHaveBeenCalledWith('refresh_token', 'mem-bearer')
+    expect(tokenObfuscator.encodeToken).toHaveBeenCalledWith('access_token', 'mem-bearer2')
+    expect(tokenObfuscator.encodeToken).toHaveBeenCalledWith('refresh_token', 'r2')
+    expect(tokenObfuscator.encodeToken).not.toHaveBeenCalledWith('refresh_token', 'mem-bearer')
   })
 })
 
 describe('refreshAccessToken - bearer channel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    tokenCrypto.getDecryptedToken.mockReturnValue('refresh-token')
+    tokenObfuscator.decodeToken.mockReturnValue('refresh-token')
   })
 
   it('should persist new access AND new refresh token on success', async () => {
@@ -146,9 +146,9 @@ describe('refreshAccessToken - bearer channel', () => {
     const access = await refreshAccessToken('bearer')
 
     expect(access).toBe('new-access')
-    expect(tokenCrypto.setEncryptedToken).toHaveBeenCalledWith('access_token', 'new-access')
+    expect(tokenObfuscator.encodeToken).toHaveBeenCalledWith('access_token', 'new-access')
     // 轮换修复：必须持久化新 refresh，否则下次刷新 400
-    expect(tokenCrypto.setEncryptedToken).toHaveBeenCalledWith('refresh_token', 'new-refresh')
+    expect(tokenObfuscator.encodeToken).toHaveBeenCalledWith('refresh_token', 'new-refresh')
   })
 
   it('should tolerate missing new refresh in response', async () => {
@@ -156,15 +156,12 @@ describe('refreshAccessToken - bearer channel', () => {
 
     await refreshAccessToken('bearer')
 
-    expect(tokenCrypto.setEncryptedToken).toHaveBeenCalledWith('access_token', 'new-access')
-    expect(tokenCrypto.setEncryptedToken).not.toHaveBeenCalledWith(
-      'refresh_token',
-      expect.anything(),
-    )
+    expect(tokenObfuscator.encodeToken).toHaveBeenCalledWith('access_token', 'new-access')
+    expect(tokenObfuscator.encodeToken).not.toHaveBeenCalledWith('refresh_token', expect.anything())
   })
 
   it('should throw MissingRefreshTokenError when no refresh token', async () => {
-    tokenCrypto.getDecryptedToken.mockReturnValue(null)
+    tokenObfuscator.decodeToken.mockReturnValue(null)
 
     await expect(refreshAccessToken('bearer')).rejects.toBeInstanceOf(MissingRefreshTokenError)
     expect(axiosPost).not.toHaveBeenCalled()
@@ -260,7 +257,7 @@ describe('refreshAccessToken - cookie channel', () => {
     })
     expect(config.withCredentials).toBe(true)
     // cookie 通道不写 localStorage
-    expect(tokenCrypto.setEncryptedToken).not.toHaveBeenCalled()
+    expect(tokenObfuscator.encodeToken).not.toHaveBeenCalled()
   })
 
   it('should skip X-CSRFToken header when csrf token missing', async () => {

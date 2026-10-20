@@ -6,14 +6,14 @@
  * @callers
  *   - composables/useNotification: 通知数据管理（聚合连接件）
  * @dependsOn
- *   - utils/tokenCrypto: Token 解密获取用户工号
+ *   - utils/tokenObfuscator: Token 解密获取用户工号
  *   - utils/tokenMemory: 内存 access token
  *   - stores/auth: 认证状态 store
  *   - types/notification: 通知类型
  */
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getDecryptedToken } from '@/utils/tokenCrypto'
+import { decodeToken } from '@/utils/tokenObfuscator'
 import { getInMemoryAccessToken } from '@/utils/tokenMemory'
 import { useAuthStore } from '@/stores/auth'
 import type { NotificationItem } from '@/types/notification'
@@ -50,7 +50,7 @@ export function useNotificationConnection() {
       const raw = parsed
         ? { auth_username: parsed.auth_username }
         : (() => {
-            const saved = getDecryptedToken('authInfo')
+            const saved = decodeToken('authInfo')
             return saved ? (JSON.parse(saved) as { auth_username?: string }) : null
           })()
       return raw?.auth_username || null
@@ -66,7 +66,7 @@ export function useNotificationConnection() {
    */
   function getAccessToken(): string | null {
     const authStore = useAuthStore()
-    return getInMemoryAccessToken() || authStore.access_token || getDecryptedToken('access_token')
+    return getInMemoryAccessToken() || authStore.access_token || decodeToken('access_token')
   }
 
   /**

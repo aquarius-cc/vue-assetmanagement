@@ -66,3 +66,6 @@ everything-claude-code/
 **/.impeccable/live/deferred-svelte-component-accepts.json
 **/.impeccable/live/*.png
 # impeccable-ignore-end
+
+# 陈旧 git 内部备份目录（批次 D untrack，本地保留待确认用途后移出）
+.git_bak/

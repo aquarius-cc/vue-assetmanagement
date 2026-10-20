@@ -79,9 +79,9 @@ vi.mock('element-plus', () => ({
   ElMessage: { error: vi.fn(), success: vi.fn() },
 }))
 
-vi.mock('@/utils/tokenCrypto', () => ({
-  setEncryptedToken: vi.fn(),
-  getDecryptedToken: vi.fn().mockReturnValue(null),
+vi.mock('@/utils/tokenObfuscator', () => ({
+  encodeToken: vi.fn(),
+  decodeToken: vi.fn().mockReturnValue(null),
   clearAllAuthTokens: vi.fn(),
 }))
 
@@ -93,7 +93,7 @@ vi.mock('@/utils/traceId', () => ({
   generateTraceId: vi.fn(() => 'test-trace-id'),
 }))
 
-import { setEncryptedToken, getDecryptedToken, clearAllAuthTokens } from '@/utils/tokenCrypto'
+import { encodeToken, decodeToken, clearAllAuthTokens } from '@/utils/tokenObfuscator'
 import { generateTraceId } from '@/utils/traceId'
 import { ElMessage } from 'element-plus'
 import { unwrapResponse, get, post, put, patch, del } from '@/api/request'
@@ -148,12 +148,12 @@ describe('request', () => {
     mocks.instancePatch.mockClear()
     mocks.instanceDelete.mockClear()
     mocks.staticPost.mockClear()
-    vi.mocked(setEncryptedToken).mockClear()
-    vi.mocked(getDecryptedToken).mockClear()
+    vi.mocked(encodeToken).mockClear()
+    vi.mocked(decodeToken).mockClear()
     vi.mocked(clearAllAuthTokens).mockClear()
     vi.mocked(ElMessage.error).mockClear()
     vi.mocked(generateTraceId).mockClear()
-    vi.mocked(getDecryptedToken).mockReturnValue(null)
+    vi.mocked(decodeToken).mockReturnValue(null)
     device.detectAuthChannel.mockReturnValue('bearer')
     csrf.getCsrfToken.mockReturnValue(null)
     vi.spyOn(global, 'setTimeout').mockImplementation((fn: () => void) => {
@@ -169,7 +169,7 @@ describe('request', () => {
   describe('request interceptor', () => {
     it('bearer channel attaches Authorization header', () => {
       device.detectAuthChannel.mockReturnValue('bearer')
-      vi.mocked(getDecryptedToken).mockReturnValue('access-tok')
+      vi.mocked(decodeToken).mockReturnValue('access-tok')
 
       const config = requestHandlerRef.fn?.({ method: 'get', headers: {} })
 
@@ -180,7 +180,7 @@ describe('request', () => {
     it('cookie channel POST attaches X-CSRFToken, no Authorization', () => {
       device.detectAuthChannel.mockReturnValue('cookie')
       csrf.getCsrfToken.mockReturnValue('csrf-xyz')
-      vi.mocked(getDecryptedToken).mockReturnValue('access-tok')
+      vi.mocked(decodeToken).mockReturnValue('access-tok')
 
       const config = requestHandlerRef.fn?.({ method: 'post', headers: {} })
 
@@ -354,7 +354,7 @@ describe('request', () => {
 
   describe('401 token refresh interceptor (bearer channel)', () => {
     it('401 → refresh success → replay with new token', async () => {
-      vi.mocked(getDecryptedToken).mockReturnValue('mock-refresh-token')
+      vi.mocked(decodeToken).mockReturnValue('mock-refresh-token')
       const newAccessToken = 'new-access-token'
       const originalUrl = '/test/api'
 
@@ -373,7 +373,7 @@ describe('request', () => {
       await getResponseHandler()?.(error)
 
       expect(mocks.staticPost).toHaveBeenCalledTimes(1)
-      expect(setEncryptedToken).toHaveBeenCalledWith('access_token', newAccessToken)
+      expect(encodeToken).toHaveBeenCalledWith('access_token', newAccessToken)
       expect(mocks.instanceGet).toHaveBeenCalled()
 
       const replayCallArgs = mocks.instanceGet.mock.calls[0][0] as {
@@ -385,7 +385,7 @@ describe('request', () => {
     })
 
     it('401 → refresh business failure → tolerant replay success (rotation race)', async () => {
-      vi.mocked(getDecryptedToken).mockReturnValue('mock-refresh-token')
+      vi.mocked(decodeToken).mockReturnValue('mock-refresh-token')
 
       // 刷新返回业务失败（旧 refresh 已被他处轮换）
       mocks.staticPost.mockResolvedValue({
@@ -405,7 +405,7 @@ describe('request', () => {
     })
 
     it('401 → refresh HTTP 401 → tolerant replay rejects without logout (replay not re-intercepted in mock)', async () => {
-      vi.mocked(getDecryptedToken).mockReturnValue('mock-refresh-token')
+      vi.mocked(decodeToken).mockReturnValue('mock-refresh-token')
 
       const refreshError = new Error('Request failed with status code 401') as Error & {
         isAxiosError: boolean
@@ -426,7 +426,7 @@ describe('request', () => {
     })
 
     it('refresh network error → transient retry once, keep session', async () => {
-      vi.mocked(getDecryptedToken).mockReturnValue('mock-refresh-token')
+      vi.mocked(decodeToken).mockReturnValue('mock-refresh-token')
 
       mocks.staticPost
         .mockRejectedValueOnce(makeNetworkError('/auth/token/refresh/'))
@@ -446,12 +446,12 @@ describe('request', () => {
       await getResponseHandler()?.(error)
 
       expect(mocks.staticPost).toHaveBeenCalledTimes(2)
-      expect(setEncryptedToken).toHaveBeenCalledWith('access_token', 'recovered-access')
+      expect(encodeToken).toHaveBeenCalledWith('access_token', 'recovered-access')
       expect(clearAllAuthTokens).not.toHaveBeenCalled()
     })
 
     it('refresh 429 → transient, no logout', async () => {
-      vi.mocked(getDecryptedToken).mockReturnValue('mock-refresh-token')
+      vi.mocked(decodeToken).mockReturnValue('mock-refresh-token')
 
       const rateLimitError = new Error('Request failed with status code 429') as Error & {
         isAxiosError: boolean
@@ -470,7 +470,7 @@ describe('request', () => {
     })
 
     it('refresh 5xx → transient, no logout', async () => {
-      vi.mocked(getDecryptedToken).mockReturnValue('mock-refresh-token')
+      vi.mocked(decodeToken).mockReturnValue('mock-refresh-token')
 
       const serverError = new Error('Request failed with status code 500') as Error & {
         isAxiosError: boolean
@@ -489,7 +489,7 @@ describe('request', () => {
     })
 
     it('concurrent two 401s → single flight (refresh called once)', async () => {
-      vi.mocked(getDecryptedToken).mockReturnValue('mock-refresh-token')
+      vi.mocked(decodeToken).mockReturnValue('mock-refresh-token')
 
       mocks.staticPost.mockResolvedValue({
         data: {
@@ -513,7 +513,7 @@ describe('request', () => {
     })
 
     it('no refresh_token → fatal logout', async () => {
-      vi.mocked(getDecryptedToken).mockReturnValue(null)
+      vi.mocked(decodeToken).mockReturnValue(null)
 
       const error = makeAxiosError(401, '/test/api')
       await expect(getResponseHandler()?.(error)).rejects.toBeDefined()
@@ -525,7 +525,7 @@ describe('request', () => {
 
     it('replay preserves original X-Request-ID', async () => {
       const existingTraceId = 'existing-trace-id'
-      vi.mocked(getDecryptedToken).mockReturnValue('mock-refresh-token')
+      vi.mocked(decodeToken).mockReturnValue('mock-refresh-token')
 
       mocks.staticPost.mockResolvedValueOnce({
         data: {
@@ -550,7 +550,7 @@ describe('request', () => {
     })
 
     it('retry limit exceeded (3rd 401) → no refresh, direct logout', async () => {
-      vi.mocked(getDecryptedToken).mockReturnValue('mock-refresh-token')
+      vi.mocked(decodeToken).mockReturnValue('mock-refresh-token')
 
       const error = makeAxiosError(401, '/test/api')
       error.config._retry = false
@@ -567,7 +567,7 @@ describe('request', () => {
     it('401 → cookie refresh (empty body + CSRF) → replay without Authorization', async () => {
       device.detectAuthChannel.mockReturnValue('cookie')
       csrf.getCsrfToken.mockReturnValue('csrf-token')
-      vi.mocked(getDecryptedToken).mockReturnValue(null)
+      vi.mocked(decodeToken).mockReturnValue(null)
 
       mocks.staticPost.mockResolvedValueOnce({
         data: {
@@ -597,13 +597,13 @@ describe('request', () => {
       const replayArgs = mocks.instanceGet.mock.calls[0][0] as { headers: Record<string, string> }
       expect(replayArgs.headers.Authorization).toBeUndefined()
       // cookie 通道不写 localStorage
-      expect(setEncryptedToken).not.toHaveBeenCalled()
+      expect(encodeToken).not.toHaveBeenCalled()
     })
 
     it('401 → cookie refresh business failure → tolerant replay', async () => {
       device.detectAuthChannel.mockReturnValue('cookie')
       csrf.getCsrfToken.mockReturnValue('csrf-token')
-      vi.mocked(getDecryptedToken).mockReturnValue(null)
+      vi.mocked(decodeToken).mockReturnValue(null)
 
       mocks.staticPost.mockResolvedValue({
         data: { code: 401, message: 'Token 无效或已过期', data: null },

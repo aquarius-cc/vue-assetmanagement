@@ -18,9 +18,9 @@ vi.mock('@/api/permissions', () => ({
   },
 }))
 
-vi.mock('@/utils/tokenCrypto', () => ({
-  setEncryptedToken: vi.fn(),
-  getDecryptedToken: vi.fn(),
+vi.mock('@/utils/tokenObfuscator', () => ({
+  encodeToken: vi.fn(),
+  decodeToken: vi.fn(),
   clearAllAuthTokens: vi.fn(),
   removeToken: vi.fn(),
 }))
@@ -105,10 +105,10 @@ describe('AuthStore permissionsLoaded (N1)', () => {
   })
 
   it('should remain false after initAuthState restores cached permissions (guard refreshes online)', async () => {
-    const { getDecryptedToken } = vi.mocked(await import('@/utils/tokenCrypto'))
+    const { decodeToken } = vi.mocked(await import('@/utils/tokenObfuscator'))
     const payload = { role: 'asset_admin', department_code: 'DEP001' }
     const token = `header.${btoa(JSON.stringify(payload))}.signature`
-    vi.mocked(getDecryptedToken).mockImplementation((key: string) => {
+    vi.mocked(decodeToken).mockImplementation((key: string) => {
       const map: Record<string, string> = {
         authInfo: JSON.stringify({ auth_id: 1, auth_username: 'admin', isactive: true }),
         access_token: token,

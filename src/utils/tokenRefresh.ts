@@ -14,7 +14,7 @@
  */
 import axios from 'axios'
 import { BASE_URL, REFRESH_NETWORK_RETRY, REFRESH_RETRY_DELAY, REFRESH_TIMEOUT } from '@/api/config'
-import { setEncryptedToken, getDecryptedToken } from '@/utils/tokenCrypto'
+import { encodeToken, decodeToken } from '@/utils/tokenObfuscator'
 import { getCsrfToken } from '@/utils/csrf'
 import { setInMemoryAccessToken } from '@/utils/tokenMemory'
 import { generateTraceId } from '@/utils/traceId'
@@ -46,9 +46,9 @@ function getBroadcastChannel(): BroadcastChannel | null {
     if (typeof msg.access !== 'string' || !msg.access) return
     setInMemoryAccessToken(msg.access)
     if (msg.channel === 'bearer') {
-      setEncryptedToken('access_token', msg.access)
+      encodeToken('access_token', msg.access)
       if (typeof msg.refresh === 'string' && msg.refresh) {
-        setEncryptedToken('refresh_token', msg.refresh)
+        encodeToken('refresh_token', msg.refresh)
       }
     }
   })
@@ -56,7 +56,7 @@ function getBroadcastChannel(): BroadcastChannel | null {
 }
 
 function broadcastNewToken(channel: AuthChannel, access: string): void {
-  const refresh = channel === 'bearer' ? getDecryptedToken('refresh_token') : undefined
+  const refresh = channel === 'bearer' ? decodeToken('refresh_token') : undefined
   getBroadcastChannel()?.postMessage({ type: 'access', channel, access, refresh })
 }
 
@@ -70,7 +70,7 @@ function parseRefreshResponse(data: RefreshResponse): string {
 }
 
 async function refreshBearer(): Promise<string> {
-  const refreshToken = getDecryptedToken('refresh_token')
+  const refreshToken = decodeToken('refresh_token')
   if (!refreshToken) throw new MissingRefreshTokenError('无 refresh_token')
   let attempt = 0
   for (;;) {
@@ -87,9 +87,9 @@ async function refreshBearer(): Promise<string> {
       // 轮换修复：ROTATE_REFRESH_TOKENS + BLACKLIST_AFTER_ROTATION 下，
       // 旧 refresh 已作废，必须持久化新 refresh，否则下次刷新直接 400 强退
       if (response.data.data?.refresh) {
-        setEncryptedToken('refresh_token', response.data.data.refresh)
+        encodeToken('refresh_token', response.data.data.refresh)
       }
-      setEncryptedToken('access_token', access)
+      encodeToken('access_token', access)
       return access
     } catch (error) {
       if (isTransientError(error) && attempt < REFRESH_NETWORK_RETRY) {

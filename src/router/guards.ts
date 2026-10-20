@@ -8,7 +8,7 @@
  * @dependsOn
  *   - vue-router (Router, RouteLocationNormalized)
  *   - @/stores/auth, @/stores/app, @/stores/groupedAssetSession
- *   - @/utils/tokenCrypto (getDecryptedToken)
+ *   - @/utils/tokenObfuscator (decodeToken)
  *   - element-plus (ElMessage)
  */
 

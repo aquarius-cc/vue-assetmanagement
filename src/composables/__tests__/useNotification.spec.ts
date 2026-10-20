@@ -8,7 +8,7 @@ vi.mock('element-plus', () => ({
 }))
 
 const mockToken = vi.hoisted(() => ({
-  getDecryptedToken: vi.fn(),
+  decodeToken: vi.fn(),
 }))
 
 const mockStore = vi.hoisted(() => ({
@@ -20,8 +20,8 @@ const mockTokenMemory = vi.hoisted(() => ({
   getInMemoryAccessToken: vi.fn(),
 }))
 
-vi.mock('@/utils/tokenCrypto', () => ({
-  getDecryptedToken: mockToken.getDecryptedToken,
+vi.mock('@/utils/tokenObfuscator', () => ({
+  decodeToken: mockToken.decodeToken,
 }))
 
 vi.mock('@/stores/auth', () => ({
@@ -86,7 +86,7 @@ describe('useNotification', () => {
     mockStore.authInfo = null
     mockStore.access_token = null
     mockTokenMemory.getInMemoryAccessToken.mockReturnValue(null)
-    mockToken.getDecryptedToken.mockImplementation((key: string) =>
+    mockToken.decodeToken.mockImplementation((key: string) =>
       key === 'authInfo'
         ? JSON.stringify({ auth_username: 'testuser' })
         : key === 'access_token'
@@ -283,7 +283,7 @@ describe('useNotification', () => {
   describe('branch coverage', () => {
     it('reads jobcode from authStore when available (cookie channel)', async () => {
       mockStore.authInfo = { auth_username: 'storeuser' }
-      mockToken.getDecryptedToken.mockImplementation((key: string) =>
+      mockToken.decodeToken.mockImplementation((key: string) =>
         key === 'access_token' ? 'test-token' : null,
       )
 
@@ -296,7 +296,7 @@ describe('useNotification', () => {
     })
 
     it('falls back to localStorage authInfo when store authInfo missing', async () => {
-      mockToken.getDecryptedToken.mockImplementation((key: string) =>
+      mockToken.decodeToken.mockImplementation((key: string) =>
         key === 'authInfo'
           ? JSON.stringify({ auth_username: 'legacyuser' })
           : key === 'access_token'
@@ -314,7 +314,7 @@ describe('useNotification', () => {
 
     it('prefers in-memory access token (cookie channel)', async () => {
       mockTokenMemory.getInMemoryAccessToken.mockReturnValue('mem-token')
-      mockToken.getDecryptedToken.mockImplementation((key: string) =>
+      mockToken.decodeToken.mockImplementation((key: string) =>
         key === 'authInfo' ? JSON.stringify({ auth_username: 'testuser' }) : null,
       )
 
@@ -328,7 +328,7 @@ describe('useNotification', () => {
 
     it('prefers authStore access token over localStorage', async () => {
       mockStore.access_token = 'store-token'
-      mockToken.getDecryptedToken.mockImplementation((key: string) =>
+      mockToken.decodeToken.mockImplementation((key: string) =>
         key === 'authInfo' ? JSON.stringify({ auth_username: 'testuser' }) : 'local-token',
       )
 
@@ -341,7 +341,7 @@ describe('useNotification', () => {
     })
 
     it('returns null and skips connect when authInfo is invalid JSON', async () => {
-      mockToken.getDecryptedToken.mockImplementation((key: string) =>
+      mockToken.decodeToken.mockImplementation((key: string) =>
         key === 'authInfo' ? '{invalid' : 'test-token',
       )
 
@@ -354,7 +354,7 @@ describe('useNotification', () => {
     })
 
     it('skips connect when jobcode missing', async () => {
-      mockToken.getDecryptedToken.mockImplementation((key: string) =>
+      mockToken.decodeToken.mockImplementation((key: string) =>
         key === 'authInfo' ? JSON.stringify({}) : 'test-token',
       )
 
@@ -367,7 +367,7 @@ describe('useNotification', () => {
     })
 
     it('skips connect when token missing', async () => {
-      mockToken.getDecryptedToken.mockImplementation((key: string) =>
+      mockToken.decodeToken.mockImplementation((key: string) =>
         key === 'authInfo' ? JSON.stringify({ auth_username: 'testuser' }) : null,
       )
 

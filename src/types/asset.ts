@@ -4,7 +4,6 @@
  * @exports
  *   - AssetCurrentStatus: 资产状态枚举
  *   - PhysicalGrade: 资产物理成色枚举
- *   - ASSET_STATUS_DISPLAY_MAPPING: 资产状态中文映射
  *   - AssetCreateForm/AssetCreateFormExtended/AssetUpdateForm: 资产表单接口
  *   - AssetSimpleReturn/Asset/AssetDetail/AssetListItem: 资产数据接口
  *   - AssetQueryParams: 资产查询参数

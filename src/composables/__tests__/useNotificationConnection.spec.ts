@@ -11,8 +11,8 @@ vi.mock('element-plus', () => ({
   ElMessage: { warning: vi.fn(), success: vi.fn(), error: vi.fn() },
 }))
 
-vi.mock('@/utils/tokenCrypto', () => ({
-  getDecryptedToken: vi.fn(() => null),
+vi.mock('@/utils/tokenObfuscator', () => ({
+  decodeToken: vi.fn(() => null),
 }))
 
 vi.mock('@/utils/tokenMemory', () => ({

@@ -19,12 +19,7 @@ import { ref } from 'vue'
 import { authAPI } from '@/api/auth'
 import { ElMessage } from 'element-plus'
 import type { LoginForm, AuthInfo } from '@/types/authuser'
-import {
-  setEncryptedToken,
-  getDecryptedToken,
-  removeToken,
-  clearAllAuthTokens,
-} from '@/utils/tokenCrypto'
+import { encodeToken, decodeToken, removeToken, clearAllAuthTokens } from '@/utils/tokenObfuscator'
 import { setInMemoryAccessToken, clearInMemoryAccessToken } from '@/utils/tokenMemory'
 import { detectAuthChannel } from '@/utils/device'
 import type { AuthChannel } from '@/utils/device'
@@ -97,8 +92,8 @@ export const useAuthStore = defineStore('AuthUser', () => {
   function persistTokensAfterLogin(channel: AuthChannel, access: string, refresh: string): void {
     if (channel === 'bearer') {
       refresh_token.value = refresh
-      setEncryptedToken('access_token', access)
-      setEncryptedToken('refresh_token', refresh)
+      encodeToken('access_token', access)
+      encodeToken('refresh_token', refresh)
       return
     }
     // cookie 通道：token 仅内存（HttpOnly 已接管持久化），清除历史 bearer token
@@ -112,7 +107,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
    * 从本地缓存恢复权限（降级用，守卫会联网刷新）
    */
   function restoreCachedPermissions(): void {
-    const savedPermsStr = getDecryptedToken('myPermissions')
+    const savedPermsStr = decodeToken('myPermissions')
     if (!savedPermsStr) return
     try {
       const savedPerms = JSON.parse(savedPermsStr) as {
@@ -131,9 +126,9 @@ export const useAuthStore = defineStore('AuthUser', () => {
    * bearer 通道：从加密存储恢复会话
    */
   async function restoreBearerSession(): Promise<boolean> {
-    const savedAuthInfoStr = getDecryptedToken('authInfo')
-    const savedAccessToken = getDecryptedToken('access_token')
-    const savedRefreshToken = getDecryptedToken('refresh_token')
+    const savedAuthInfoStr = decodeToken('authInfo')
+    const savedAccessToken = decodeToken('access_token')
+    const savedRefreshToken = decodeToken('refresh_token')
     if (!savedAuthInfoStr || !savedAccessToken || !savedRefreshToken) {
       return false
     }
@@ -214,7 +209,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
       persistTokensAfterLogin(channel, response.data.access, response.data.refresh)
 
       // 非敏感用户信息始终持久化（供 WS jobcode、记住用户名等场景）
-      setEncryptedToken('authInfo', JSON.stringify(authUserData))
+      encodeToken('authInfo', JSON.stringify(authUserData))
 
       // 登录成功后加载权限（不 await，避免阻塞登录返回）
       void loadMyPermissions()
@@ -232,7 +227,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
   const logout = async () => {
     try {
       const channel = detectAuthChannel()
-      const token = refresh_token.value || getDecryptedToken('refresh_token')
+      const token = refresh_token.value || decodeToken('refresh_token')
 
       if (channel === 'cookie' || token) {
         await authAPI.logout(token || undefined)
@@ -279,7 +274,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
   const updateAuthInfo = (newAuthInfo: Partial<AuthInfo>) => {
     if (authInfo.value) {
       authInfo.value = { ...authInfo.value, ...newAuthInfo }
-      setEncryptedToken('authInfo', JSON.stringify(authInfo.value))
+      encodeToken('authInfo', JSON.stringify(authInfo.value))
     }
   }
 
@@ -297,7 +292,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
           isactive: res.auth_is_active,
         }
         authInfo.value = userData
-        setEncryptedToken('authInfo', JSON.stringify(userData))
+        encodeToken('authInfo', JSON.stringify(userData))
         // RBAC 权威字段来自 profile（后端 DR-1 resolve_role_info 唯一实现）
         userRole.value = (res.role as string) || DEFAULT_ROLE
         userDepartmentCode.value = (res.department_code as string) || null
@@ -324,7 +319,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
         permissions.value = res.permissions
         dataScope.value = res.data_scope
         // 安全边界:此处为 XOR 混淆(非加密),真正安全依赖 httpOnly cookie + CSP + 短生命周期 JWT
-        setEncryptedToken('myPermissions', JSON.stringify(res))
+        encodeToken('myPermissions', JSON.stringify(res))
         permissionsLoaded.value = true
       } catch (error) {
         logError('stores/auth', '加载权限失败', error)

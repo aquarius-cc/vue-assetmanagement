@@ -23,7 +23,7 @@
  * @dependsOn
  *   - api/cache.ts: MemoryCache
  *   - api/config.ts: 全局常量
- *   - utils/tokenCrypto / tokenRefresh / device / csrf / requestErrors
+ *   - utils/tokenObfuscator / tokenRefresh / device / csrf / requestErrors
  *   - utils/fileDownload: resolveDownloadFilename（Content-Disposition 解析）
  */
 
@@ -35,7 +35,7 @@ import axios, {
 import { isAxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
 import { MemoryCache } from '@/api/cache'
-import { getDecryptedToken, clearAllAuthTokens } from '@/utils/tokenCrypto'
+import { decodeToken, clearAllAuthTokens } from '@/utils/tokenObfuscator'
 import { generateTraceId } from '@/utils/traceId'
 import { BASE_URL, TIMEOUT, MAX_REFRESH_RETRY_COUNT, EXPORT_TIMEOUT } from '@/api/config'
 import { detectAuthChannel } from '@/utils/device'
@@ -309,7 +309,7 @@ api.interceptors.request.use(
     }
 
     if (channel === 'bearer') {
-      const token = getDecryptedToken('access_token')
+      const token = decodeToken('access_token')
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
       }

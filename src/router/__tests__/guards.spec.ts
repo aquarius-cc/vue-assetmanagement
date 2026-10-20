@@ -1,12 +1,12 @@
 // TECHNICAL_DEBT: >500 lines（存量文件，2026-07-07 基线前已超限；本次修改新增 <50 行，暂不拆分）
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getDecryptedToken } from '@/utils/tokenCrypto'
+import { decodeToken } from '@/utils/tokenObfuscator'
 import { ElMessage } from 'element-plus'
 import { setupAuthGuard } from '../guards'
 import { routesMainSystem } from '../routes-main-system'
 
-vi.mock('@/utils/tokenCrypto', () => ({
-  getDecryptedToken: vi.fn(),
+vi.mock('@/utils/tokenObfuscator', () => ({
+  decodeToken: vi.fn(),
 }))
 
 vi.mock('element-plus', () => ({
@@ -97,7 +97,7 @@ describe('Router Guards', () => {
 
   describe('beforeEach guard', () => {
     it('should redirect to /login when user is not authenticated', async () => {
-      ;(getDecryptedToken as any).mockReturnValue(null)
+      ;(decodeToken as any).mockReturnValue(null)
       setupAndCapture()
 
       const to = { path: '/main', meta: {} }
@@ -108,7 +108,7 @@ describe('Router Guards', () => {
     })
 
     it('should allow access to whitelist pages', async () => {
-      ;(getDecryptedToken as any).mockReturnValue(null)
+      ;(decodeToken as any).mockReturnValue(null)
       setupAndCapture()
 
       const to = { path: '/login', meta: {} }
@@ -119,7 +119,7 @@ describe('Router Guards', () => {
     })
 
     it('should redirect authenticated user from /login to /main', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
 
@@ -133,7 +133,7 @@ describe('Router Guards', () => {
     })
 
     it('should allow access to pages with requiresAuth: false', async () => {
-      ;(getDecryptedToken as any).mockReturnValue(null)
+      ;(decodeToken as any).mockReturnValue(null)
       setupAndCapture()
 
       const to = { path: '/scan', meta: { requiresAuth: false } }
@@ -144,7 +144,7 @@ describe('Router Guards', () => {
     })
 
     it('should deny admin routes for regular users', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'regular_user'
@@ -161,7 +161,7 @@ describe('Router Guards', () => {
     })
 
     it('should allow admin access to admin routes', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'system_admin'
@@ -177,7 +177,7 @@ describe('Router Guards', () => {
     })
 
     it('should init auth state when authInitialized is false', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = false
       mockAuthStore.authInfo = null
       mockAuthStore.authInitialized = false
@@ -192,7 +192,7 @@ describe('Router Guards', () => {
     })
 
     it('should silentLogout on token verification failure', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.authInfo = null
@@ -211,7 +211,7 @@ describe('Router Guards', () => {
 
   describe('permissions loading (N1)', () => {
     function loginAsValidUser() {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.authInfo = { auth_id: 1, auth_username: 'test' }
@@ -311,7 +311,7 @@ describe('Router Guards', () => {
       '/main/departmentmanagement/departmentbatchimport',
       '/main/system',
     ])('should allow system_admin on %s', async (path) => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'system_admin'
@@ -332,7 +332,7 @@ describe('Router Guards', () => {
       '/main/departmentmanagement/userbatchimport',
       '/main/departmentmanagement/departmentbatchimport',
     ])('should deny regular_user on %s', async (path) => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'regular_user'
@@ -345,7 +345,7 @@ describe('Router Guards', () => {
     })
 
     it('should deny dept_manager on /main/departmentmanagement [I-7]', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'dept_manager'
@@ -361,7 +361,7 @@ describe('Router Guards', () => {
     })
 
     it('meta.requiredMinRole=system_admin 拦截 dept_manager（子路由独立加固）[I-7]', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'dept_manager'
@@ -387,7 +387,7 @@ describe('Router Guards', () => {
       '/main/unregisteredassetdetails',
       '/main/unregisteredassetbasicdetails',
     ])('should allow dept_manager on %s', async (path) => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'dept_manager'
@@ -400,7 +400,7 @@ describe('Router Guards', () => {
     })
 
     it('should deny regular_user on damagedassetdetails', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'regular_user'
@@ -418,7 +418,7 @@ describe('Router Guards', () => {
 
   describe('roleWhitelist — auditor routes', () => {
     it('should allow auditor on /main/auditlogdetails', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'auditor'
@@ -434,7 +434,7 @@ describe('Router Guards', () => {
     })
 
     it('should deny regular_user on /main/auditlogdetails', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'regular_user'
@@ -452,7 +452,7 @@ describe('Router Guards', () => {
 
   describe('checkRoleAccess — unlisted routes default to open', () => {
     it('should allow any authenticated role on /main/assetdetails', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'regular_user'
@@ -468,7 +468,7 @@ describe('Router Guards', () => {
     })
 
     it('should allow any role on /main/outassetdetails', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'regular_user'
@@ -486,7 +486,7 @@ describe('Router Guards', () => {
 
   describe('checkRoleAccess — longest prefix matching', () => {
     it('should match /main/userdetails before /main', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'regular_user'
@@ -502,7 +502,7 @@ describe('Router Guards', () => {
     })
 
     it('should match /main/damagedassetdetails prefix for nested paths', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'regular_user'
@@ -687,7 +687,7 @@ describe('Router Guards', () => {
 
   describe('login redirect', () => {
     it('should redirect authenticated user away from /login to /main', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
 
@@ -698,7 +698,7 @@ describe('Router Guards', () => {
     })
 
     it('should show warning when unauthenticated user tries to access protected route', async () => {
-      ;(getDecryptedToken as any).mockReturnValue(null)
+      ;(decodeToken as any).mockReturnValue(null)
       setupAndCapture()
 
       const result = await beforeEachCallback({ path: '/main', meta: {} }, { path: '/' })
@@ -707,7 +707,7 @@ describe('Router Guards', () => {
     })
 
     it('should redirect to /login on guard error', async () => {
-      ;(getDecryptedToken as any).mockReturnValue('valid-token')
+      ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.authInfo = null
@@ -724,7 +724,7 @@ describe('Router Guards', () => {
 
   describe('app state initialization', () => {
     it('should set loading to true before guard runs', async () => {
-      ;(getDecryptedToken as any).mockReturnValue(null)
+      ;(decodeToken as any).mockReturnValue(null)
       setupAndCapture()
 
       await beforeEachCallback({ path: '/login', meta: {} }, { path: '/' })

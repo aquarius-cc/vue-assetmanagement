@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { AxiosResponse } from 'axios'
 import { get } from '@/api/request'
 import { ElMessage } from 'element-plus'
-import { clearAllAuthTokens } from '@/utils/tokenCrypto'
+import { clearAllAuthTokens } from '@/utils/tokenObfuscator'
 import { refreshAccessToken, MissingRefreshTokenError } from '@/utils/tokenRefresh'
 import { isTransientError } from '@/utils/requestErrors'
 
@@ -73,8 +73,8 @@ vi.mock('element-plus', () => ({
   ElMessage: { error: vi.fn(), success: vi.fn() },
 }))
 
-vi.mock('@/utils/tokenCrypto', () => ({
-  getDecryptedToken: vi.fn(),
+vi.mock('@/utils/tokenObfuscator', () => ({
+  decodeToken: vi.fn(),
   clearAllAuthTokens: vi.fn(),
 }))
 

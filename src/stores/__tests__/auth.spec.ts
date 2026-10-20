@@ -33,9 +33,9 @@ vi.mock('@/api/permissions', () => ({
   },
 }))
 
-vi.mock('@/utils/tokenCrypto', () => ({
-  setEncryptedToken: vi.fn(),
-  getDecryptedToken: vi.fn(),
+vi.mock('@/utils/tokenObfuscator', () => ({
+  encodeToken: vi.fn(),
+  decodeToken: vi.fn(),
   clearAllAuthTokens: vi.fn(),
   removeToken: vi.fn(),
 }))
@@ -122,7 +122,7 @@ describe('AuthStore', () => {
     })
 
     it('应该调用clearAllAuthTokens和localStorage.removeItem', async () => {
-      const { clearAllAuthTokens } = vi.mocked(await import('@/utils/tokenCrypto'))
+      const { clearAllAuthTokens } = vi.mocked(await import('@/utils/tokenObfuscator'))
       const removeItemSpy = vi.spyOn(localStorage, 'removeItem')
 
       authStore.silentLogout()
@@ -157,7 +157,7 @@ describe('AuthStore', () => {
   describe('logout', () => {
     it('有refresh_token时应调用后端logout API', async () => {
       const { authAPI } = await import('@/api/auth')
-      const { clearAllAuthTokens } = vi.mocked(await import('@/utils/tokenCrypto'))
+      const { clearAllAuthTokens } = vi.mocked(await import('@/utils/tokenObfuscator'))
 
       authStore.refresh_token = 'refresh-token-123'
       vi.mocked(authAPI.logout).mockResolvedValue(undefined)
@@ -172,10 +172,10 @@ describe('AuthStore', () => {
 
     it('无refresh_token时应跳过API调用仅清除本地状态', async () => {
       const { authAPI } = await import('@/api/auth')
-      const { getDecryptedToken } = vi.mocked(await import('@/utils/tokenCrypto'))
+      const { decodeToken } = vi.mocked(await import('@/utils/tokenObfuscator'))
 
       authStore.refresh_token = null
-      vi.mocked(getDecryptedToken).mockReturnValue(null)
+      vi.mocked(decodeToken).mockReturnValue(null)
 
       await authStore.logout()
 
@@ -227,13 +227,13 @@ describe('AuthStore', () => {
 
   describe('initAuthState', () => {
     it('有保存的认证信息时应恢复登录状态', async () => {
-      const { getDecryptedToken } = vi.mocked(await import('@/utils/tokenCrypto'))
+      const { decodeToken } = vi.mocked(await import('@/utils/tokenObfuscator'))
 
       // 构造一个包含role的JWT payload (Base64编码)
       const payload = { role: 'admin', department_code: 'DEP001' }
       const token = `header.${btoa(JSON.stringify(payload))}.signature`
 
-      vi.mocked(getDecryptedToken).mockImplementation((key: string) => {
+      vi.mocked(decodeToken).mockImplementation((key: string) => {
         const map: Record<string, string> = {
           authInfo: JSON.stringify({ auth_id: 1, auth_username: 'admin', isactive: true }),
           access_token: token,
@@ -254,8 +254,8 @@ describe('AuthStore', () => {
     })
 
     it('无保存的认证信息时应返回false', async () => {
-      const { getDecryptedToken } = vi.mocked(await import('@/utils/tokenCrypto'))
-      vi.mocked(getDecryptedToken).mockReturnValue(null)
+      const { decodeToken } = vi.mocked(await import('@/utils/tokenObfuscator'))
+      vi.mocked(decodeToken).mockReturnValue(null)
 
       const result = await authStore.initAuthState()
 
@@ -264,9 +264,9 @@ describe('AuthStore', () => {
     })
 
     it('JSON解析失败时应调用silentLogout', async () => {
-      const { getDecryptedToken } = vi.mocked(await import('@/utils/tokenCrypto'))
+      const { decodeToken } = vi.mocked(await import('@/utils/tokenObfuscator'))
 
-      vi.mocked(getDecryptedToken).mockImplementation((key: string) => {
+      vi.mocked(decodeToken).mockImplementation((key: string) => {
         const map: Record<string, string> = {
           authInfo: 'invalid-json{{{',
           access_token: 'token',
@@ -319,9 +319,9 @@ describe('AuthStore', () => {
     })
 
     it('重复调用应直接返回已初始化状态', async () => {
-      const { getDecryptedToken } = vi.mocked(await import('@/utils/tokenCrypto'))
+      const { decodeToken } = vi.mocked(await import('@/utils/tokenObfuscator'))
       const token = `header.${btoa(JSON.stringify({ role: 'admin' }))}.signature`
-      vi.mocked(getDecryptedToken).mockImplementation((key: string) => {
+      vi.mocked(decodeToken).mockImplementation((key: string) => {
         const map: Record<string, string> = {
           authInfo: JSON.stringify({ auth_id: 1, auth_username: 'admin', isactive: true }),
           access_token: token,
@@ -331,17 +331,17 @@ describe('AuthStore', () => {
       })
 
       await authStore.initAuthState()
-      const callsAfterFirst = getDecryptedToken.mock.calls.length
+      const callsAfterFirst = decodeToken.mock.calls.length
 
       expect(await authStore.initAuthState()).toBe(true)
-      expect(getDecryptedToken.mock.calls.length).toBe(callsAfterFirst)
+      expect(decodeToken.mock.calls.length).toBe(callsAfterFirst)
     })
   })
 
   describe('getAuthInfo', () => {
     it('成功获取用户信息时应更新authInfo', async () => {
       const { authAPI } = await import('@/api/auth')
-      const { setEncryptedToken } = vi.mocked(await import('@/utils/tokenCrypto'))
+      const { encodeToken } = vi.mocked(await import('@/utils/tokenObfuscator'))
 
       vi.mocked(authAPI.getCurrentUserProfile).mockResolvedValue({
         auth_id: 1,
@@ -356,7 +356,7 @@ describe('AuthStore', () => {
         auth_username: 'testuser',
         isactive: true,
       })
-      expect(setEncryptedToken).toHaveBeenCalledWith(
+      expect(encodeToken).toHaveBeenCalledWith(
         'authInfo',
         JSON.stringify({ auth_id: 1, auth_username: 'testuser', isactive: true }),
       )
@@ -396,9 +396,7 @@ describe('AuthStore', () => {
   describe('login', () => {
     it('登录成功时应更新所有认证状态', async () => {
       const { authAPI } = await import('@/api/auth')
-      const { setEncryptedToken: _setEncryptedToken } = vi.mocked(
-        await import('@/utils/tokenCrypto'),
-      )
+      const { encodeToken: _encodeToken } = vi.mocked(await import('@/utils/tokenObfuscator'))
 
       // 构造JWT payload
       const jwtPayload = { role: 'system_admin', department_code: 'DEP001' }
@@ -432,7 +430,7 @@ describe('AuthStore', () => {
 
     it('登录成功时应持久化存储认证信息', async () => {
       const { authAPI } = await import('@/api/auth')
-      const { setEncryptedToken } = vi.mocked(await import('@/utils/tokenCrypto'))
+      const { encodeToken } = vi.mocked(await import('@/utils/tokenObfuscator'))
 
       vi.mocked(authAPI.login).mockResolvedValue({
         code: 0,
@@ -446,9 +444,9 @@ describe('AuthStore', () => {
 
       await authStore.login({ auth_username: 'admin', password: '123456' })
 
-      expect(setEncryptedToken).toHaveBeenCalledWith('access_token', 'access-token')
-      expect(setEncryptedToken).toHaveBeenCalledWith('refresh_token', 'refresh-token')
-      expect(setEncryptedToken).toHaveBeenCalledWith(
+      expect(encodeToken).toHaveBeenCalledWith('access_token', 'access-token')
+      expect(encodeToken).toHaveBeenCalledWith('refresh_token', 'refresh-token')
+      expect(encodeToken).toHaveBeenCalledWith(
         'authInfo',
         JSON.stringify({ auth_id: 1, auth_username: 'admin', isactive: true }),
       )
@@ -574,7 +572,7 @@ describe('AuthStore', () => {
     it('cookie通道登录不应持久化token，仅存内存并清除历史bearer token', async () => {
       device.detectAuthChannel.mockReturnValue('cookie')
       const { authAPI } = await import('@/api/auth')
-      const { setEncryptedToken, removeToken } = vi.mocked(await import('@/utils/tokenCrypto'))
+      const { encodeToken, removeToken } = vi.mocked(await import('@/utils/tokenObfuscator'))
       const { setInMemoryAccessToken } = vi.mocked(await import('@/utils/tokenMemory'))
 
       vi.mocked(authAPI.login).mockResolvedValue({
@@ -595,10 +593,10 @@ describe('AuthStore', () => {
       expect(setInMemoryAccessToken).toHaveBeenCalledWith('cookie-access')
       expect(removeToken).toHaveBeenCalledWith('access_token')
       expect(removeToken).toHaveBeenCalledWith('refresh_token')
-      expect(setEncryptedToken).not.toHaveBeenCalledWith('access_token', 'cookie-access')
-      expect(setEncryptedToken).not.toHaveBeenCalledWith('refresh_token', 'cookie-refresh')
+      expect(encodeToken).not.toHaveBeenCalledWith('access_token', 'cookie-access')
+      expect(encodeToken).not.toHaveBeenCalledWith('refresh_token', 'cookie-refresh')
       // 非敏感 authInfo 仍持久化
-      expect(setEncryptedToken).toHaveBeenCalledWith(
+      expect(encodeToken).toHaveBeenCalledWith(
         'authInfo',
         JSON.stringify({ auth_id: 1, auth_username: 'admin', isactive: true }),
       )
