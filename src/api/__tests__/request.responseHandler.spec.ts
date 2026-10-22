@@ -317,7 +317,8 @@ describe('request responseHandler', () => {
         .mockResolvedValueOnce({ data: stale })
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const result = await get('/rdg-stale', { v: 1 }, { useCache: true })
-      expect(result).toEqual(stale)
+      // [M-12] 降级返回需带 _degraded 标记
+      expect(result).toEqual({ ...stale, _degraded: true })
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('/rdg-stale'))
       warnSpy.mockRestore()
     })

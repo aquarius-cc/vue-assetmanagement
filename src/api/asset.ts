@@ -22,7 +22,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  *   - axios: 错误处理
  */
-import { request, unwrapResponse, getBlob } from '@/api/index'
+import { request, unwrapResponse, getBlob, clearCacheByPattern } from '@/api/index'
 import type { BlobDownload } from '@/api/request'
 import { BASE_URL } from '@/api/config'
 import { isAxiosError } from 'axios'
@@ -276,7 +276,7 @@ export const assetAPI = {
    * 对应后端 AssetViewSet.mark_broken action
    * 注意：asset 由 URL 中的 recordcode 标识（lookup_field="recordcode"）
    */
-  markAssetAsBroken: (
+  markAssetAsBroken: async (
     recordcode: string,
     data: {
       broken_reason?: string
@@ -284,7 +284,13 @@ export const assetAPI = {
       broken_date?: string
     },
   ): Promise<Asset> => {
-    return unwrapResponse(request.post<Asset>(`/assets/assets/${recordcode}/mark-broken/`, data))
+    const result = await unwrapResponse(
+      request.post<Asset>(`/assets/assets/${recordcode}/mark-broken/`, data),
+    )
+    // [M-19] 写后失效 getAssetByCode 的 5min 缓存：mark-broken 是 action 端点，
+    // 拦截器仅按写 URL（…/mark-broken/）清缓存，不会命中详情 GET（…/recordcode/）缓存
+    clearCacheByPattern(`/assets/assets/${recordcode}/`)
+    return result
   },
 
   /**
@@ -347,12 +353,18 @@ export const assetAPI = {
    * asset_code__in=ids 过滤并做 RBAC 范围校验（asset_view.py:357-367），
    * 与 detail 路由的 recordcode 约定不同，勿统一。
    */
-  batchDeleteAssets: (assetCodes: string[]): Promise<BatchDeleteResult> => {
-    return unwrapResponse(
+  batchDeleteAssets: async (assetCodes: string[]): Promise<BatchDeleteResult> => {
+    const result = await unwrapResponse(
       request.post<BatchDeleteResult>('/assets/assets/batch-delete/', {
         ids: assetCodes,
       }),
     )
+    // [M-19] 写后失效资产详情 GET 缓存：batch-delete 是 action 端点，拦截器仅按
+    // 写 URL（…/batch-delete/）清缓存，不会命中详情 GET（…/recordcode/）缓存。
+    // 按前缀清全部资产详情缓存（入参是 asset_code 非 recordcode，无法逐条精确失效；
+    // 前缀清除只导致缓存未命中的重取，不会返回错误数据）
+    clearCacheByPattern('/assets/assets/')
+    return result
   },
 
   /**

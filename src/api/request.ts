@@ -62,6 +62,11 @@ export interface ApiResponse<T> {
   code: number
   message: string
   data: T
+  /**
+   * [M-12] 降级标记：GET 失败但命中本地缓存时返回旧数据，此字段置 true。
+   * 消费方可据此提示「当前展示为缓存数据」，避免用户无限期看旧数据。
+   */
+  _degraded?: boolean
 }
 
 /** 请求选项（预留扩展） */
@@ -367,7 +372,8 @@ function tryFallbackCache<T>(url: string, cacheKey: string): ApiResponse<T> | nu
   const cached = cache.get(cacheKey)
   if (cached === undefined) return null
   logWarn('api/request', `[降级] 请求失败，返回缓存数据: ${url}`)
-  return cached as ApiResponse<T>
+  // [M-12] 标记降级：消费方（视图/store）可据此提示「当前为缓存数据」
+  return { ...(cached as ApiResponse<T>), _degraded: true }
 }
 
 /** 构建查询参数对象：过滤 null/undefined 值 */
@@ -395,6 +401,18 @@ function readCache<T>(cacheKey: string): ApiResponse<T> | undefined {
 /** 写入缓存：cacheTTL 缺省时使用默认 300_000 */
 function writeCache<T>(cacheKey: string, data: ApiResponse<T>, cacheTTL?: number): void {
   cache.set(cacheKey, data, cacheTTL ?? 300_000)
+}
+
+/**
+ * [M-19] 按 URL 模式清除请求缓存（导出供业务模块在写操作后精确失效关联 GET 缓存）。
+ *
+ * 背景：拦截器对写操作仅按写 URL 自身清缓存（如 `/assets/assets/X/mark-broken/`
+ * 只清含该串的 key），不会命中同实体的 GET 缓存（`/assets/assets/X/`）。
+ * mark-broken / batch-delete 等 action 端点改状态后，详情页 5min 缓存不自动失效，
+ * 需在写成功后调用本函数显式失效。
+ */
+export function clearCacheByPattern(pattern: string): void {
+  cache.clearByPattern(pattern)
 }
 
 // ---------- 重载签名（支持新/旧两种调用方式） ----------

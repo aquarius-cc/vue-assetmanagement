@@ -48,6 +48,7 @@ export interface GroupedAssetListReturn {
   selectedCodes: Ref<string[]>
   selectedGroupKeys: ComputedRef<string[]>
   search: (filters?: AssetGroupQueryParams) => Promise<void>
+  reload: () => Promise<void>
   changePage: (page: number) => Promise<void>
   isExpanded: (groupKey: string) => boolean
   setExpanded: (groupKey: string, expanded: boolean) => Promise<void>
@@ -91,11 +92,16 @@ export function useGroupedAssetList(options: GroupedAssetListOptions = {}): Grou
   /** 当前筛选条件（闭包持有，翻页时复用；不作为响应式暴露） */
   let lastFilters: AssetGroupQueryParams = {}
 
+  // [M-22] 汇总请求序号：仅最新请求的响应写入状态，丢弃慢响应防止翻页/筛选竞态覆盖
+  // 范式同 createEntityStore listRequestSeq
+  let summaryRequestSeq = 0
+
   const cache = useGroupChildrenCache({ childPageSize, getFilters: () => lastFilters })
   const selection = useGroupedAssetSelection(summaries)
 
   /** 拉取汇总分页 */
   const fetchSummaries = async (): Promise<void> => {
+    const seq = ++summaryRequestSeq
     summaryLoading.value = true
     try {
       const response = await assetAPI.getGroupedAssets({
@@ -103,21 +109,34 @@ export function useGroupedAssetList(options: GroupedAssetListOptions = {}): Grou
         page: currentPage.value,
         page_size: pageSize.value,
       })
+      if (seq !== summaryRequestSeq) return // 过期响应：被更新请求取代，跳过状态写回
       summaries.value = response.results
       summaryTotal.value = response.count
     } catch (error) {
+      if (seq !== summaryRequestSeq) return // 过期响应：跳过错误清空
       logError('composables/useGroupedAssetList', '[分组汇总]', error)
       ElMessage.error('加载资产分组汇总失败')
       summaries.value = []
       summaryTotal.value = 0
     } finally {
-      summaryLoading.value = false
+      if (seq === summaryRequestSeq) summaryLoading.value = false
     }
   }
 
   /** 执行筛选查询（回到第 1 页 + 清空明细缓存与展开态） */
   const search = async (filters?: AssetGroupQueryParams): Promise<void> => {
     lastFilters = filters ?? {}
+    currentPage.value = 1
+    cache.reset()
+    await fetchSummaries()
+  }
+
+  /**
+   * 保当前筛选刷新：回到第 1 页 + 清空明细缓存与展开态，不改写 lastFilters。
+   * M-04/AUD-22：refresh 出口专用——fetchSummaries/cache 经闭包读现值，
+   * 避免复用 search() 的清筛选重置语义（lastFilters 唯一写入口仍是 search）
+   */
+  const reload = async (): Promise<void> => {
     currentPage.value = 1
     cache.reset()
     await fetchSummaries()
@@ -142,6 +161,7 @@ export function useGroupedAssetList(options: GroupedAssetListOptions = {}): Grou
     selectedCodes: selection.selectedCodes,
     selectedGroupKeys: selection.selectedGroupKeys,
     search,
+    reload,
     changePage,
     isExpanded: cache.isExpanded,
     setExpanded: cache.setExpanded,

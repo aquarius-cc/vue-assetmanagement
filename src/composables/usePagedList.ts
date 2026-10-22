@@ -65,20 +65,27 @@ export function usePagedList<TItem>(options: PagedListOptions<TItem>): PagedList
 
   let lastExtraParams: Record<string, unknown> | undefined
 
+  // [M-14] 请求序号：仅最新请求的响应写入状态，丢弃慢响应防止覆盖新数据
+  // 范式同 createEntityStore listRequestSeq / dashboard trendRequestId
+  let listRequestSeq = 0
+
   /** 内部请求方法 */
   const fetchList = async (params: Record<string, unknown>) => {
+    const seq = ++listRequestSeq
     loading.value = true
     try {
       const response = await fetcher({ ...params, ...fixedParams })
+      if (seq !== listRequestSeq) return // 过期响应：被更新请求取代，跳过状态写回
       list.value = response.results
       total.value = response.count
     } catch (error) {
+      if (seq !== listRequestSeq) return // 过期响应：同样跳过错误清空
       logError('composables/usePagedList', `[${tag}]`, error)
       ElMessage.error(errorMessage)
       list.value = []
       total.value = 0
     } finally {
-      loading.value = false
+      if (seq === listRequestSeq) loading.value = false
     }
   }
 

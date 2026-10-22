@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockRequest, mockUnwrapResponse } = vi.hoisted(() => ({
+const { mockRequest, mockUnwrapResponse, mockClearCacheByPattern } = vi.hoisted(() => ({
   mockRequest: {
     get: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
     post: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
@@ -15,11 +15,13 @@ const { mockRequest, mockUnwrapResponse } = vi.hoisted(() => ({
       return res.data
     },
   ),
+  mockClearCacheByPattern: vi.fn(),
 }))
 
 vi.mock('@/api/index', () => ({
   request: mockRequest,
   unwrapResponse: mockUnwrapResponse,
+  clearCacheByPattern: mockClearCacheByPattern,
 }))
 
 vi.mock('axios', () => ({

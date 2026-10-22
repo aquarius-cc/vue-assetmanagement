@@ -62,7 +62,16 @@
  *   - api/permissions.ts: 导出 permissionsAPI
  *   - api/roles.ts: 导出 roleAPI
  */
-import { get, post, put, patch, del, getBlob, unwrapResponse } from '@/api/request'
+import {
+  get,
+  post,
+  put,
+  patch,
+  del,
+  getBlob,
+  unwrapResponse,
+  clearCacheByPattern,
+} from '@/api/request'
 export type { ApiResponse, BlobDownload, ExportResponseHeaders } from '@/api/request'
 
 // 重新包装为 request 对象，保证 API 文件无需改动
@@ -75,7 +84,7 @@ export const request = {
   getBlob, // 二进制下载（服务端导出），不进内存缓存
 }
 
-export { getBlob, unwrapResponse }
+export { getBlob, unwrapResponse, clearCacheByPattern }
 
 export { authAPI } from '@/api/auth'
 export { userAPI } from '@/api/user'

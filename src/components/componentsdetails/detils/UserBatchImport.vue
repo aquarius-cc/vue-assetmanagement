@@ -144,6 +144,7 @@ import { Upload, Download } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useUserStore, batchCreateUsers } from '@/stores/userStore'
 import { useDepartmentStore } from '@/stores/index'
+import type { Department } from '@/types/department'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import { USER_STATUS_INPUT_MAPPING } from '@/utils/Format'
 import { useBatchImport } from '@/composables/useBatchImport'
@@ -163,13 +164,15 @@ import {
 const router = useRouter()
 const userStore = useUserStore()
 const departmentStore = useDepartmentStore()
+// [M-25] 部门数据存本地 ref：silent 模式拉取，不污染 departmentStore.list
+const departmentOptions = ref<Department[]>([])
 const uploadRef = ref()
 const localIsSubmitting = ref(false)
 
-// ✅ 优化：部门名称→代码映射使用 computed，自动响应 departmentStore 数据变化
+// ✅ 优化：部门名称→代码映射使用 computed，自动响应 departmentOptions 数据变化
 const reverseDepartmentMapping = computed<Record<string, string>>(() => {
   const mapping: Record<string, string> = {}
-  for (const dept of departmentStore.list) {
+  for (const dept of departmentOptions.value) {
     if (dept.department_name && dept.department_code) {
       mapping[dept.department_name] = dept.department_code
     }
@@ -303,10 +306,11 @@ const handleExportTemplate = async () => {
   await downloadExcelTemplate('员工导入模板', headers, exampleRows, '员工批量导入模板.xlsx')
 }
 
-// 确保部门数据已加载（保证映射可用）
+// 确保部门数据已加载（保证映射可用）；[M-25] silent 模式，不污染 departmentStore
 onMounted(async () => {
-  if (departmentStore.list.length === 0) {
-    await departmentStore.getList()
+  if (departmentOptions.value.length === 0) {
+    const results = await departmentStore.getList({ page: 1, page_size: 100 }, { silent: true })
+    departmentOptions.value = (results ?? []) as Department[]
   }
 })
 </script>

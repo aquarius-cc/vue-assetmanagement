@@ -142,6 +142,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import type { EmployeeCreateForm, EmployeeExtended } from '@/types/user'
 import { useUserStore } from '@/stores'
 import { useDepartmentStore } from '@/stores'
+import type { Department } from '@/types/department'
 import { logError } from '@/utils/logger'
 
 // // 定义用户表单类型接口
@@ -232,8 +233,12 @@ const formRules = reactive<FormRules>({
   ],
 })
 
+// [M-25] 部门下拉数据：用 silent 模式拉取到本地 ref，不写 departmentStore.list
+// （原直接 getList 污染共享列表态，表单挂载会覆盖列表页的分页状态）
+const departmentOptions = ref<Department[]>([])
+
 const departmentList = computed(() => {
-  return departmentStore.list.map((item) => ({
+  return departmentOptions.value.map((item) => ({
     label: item.department_name,
     value: item.department_code,
   }))
@@ -278,22 +283,12 @@ const loadUserData = async () => {
  * 页面挂载时初始化
  */
 onMounted(async () => {
-  if (!departmentStore.list || departmentStore.list.length === 0) {
-    await departmentStore.getList({ page: 1, page_size: 100 }) // 与后端 MAX_PAGE_SIZE 对齐，超限会被静默钳位
-    /**
-     * - departmentStore 配置了 enablePagination: true, defaultPageSize: 20
-     * - 调用 departmentStore.getList() 不传参数 → 默认只加载 20 条
-     * 本质原因： 下拉框需要全量部门数据，但 getList() 带分页只返回单页。
-     * 后端 MAX_PAGE_SIZE 硬上限为 100，原传 9999 会被静默钳位为 100，故直接取上限 100；
-     * 部门总数超过 100 时下拉仍会缺项，由下方 pagination.total 检测并告警。
-     */
-    const totalDepartments = departmentStore.pagination.total
-    if (totalDepartments > departmentStore.list.length) {
-      logError(
-        'components/componentsdetails/detils/UserForm',
-        `部门共 ${totalDepartments} 条，超过单页返回上限，部门下拉仅展示前 ${departmentStore.list.length} 条`,
-      )
-    }
+  if (departmentOptions.value.length === 0) {
+    // [M-25] silent 模式拉取：结果写入本地 ref，不污染 departmentStore.list/pagination
+    // （原直接 getList 会覆盖列表页共享状态）。下拉框需要全量部门数据：
+    // 后端 MAX_PAGE_SIZE 硬上限为 100，传 9999 会被静默钳位为 100，故直接取上限 100。
+    const results = await departmentStore.getList({ page: 1, page_size: 100 }, { silent: true })
+    departmentOptions.value = (results ?? []) as Department[]
   }
   await loadUserData()
 })

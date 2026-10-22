@@ -34,7 +34,12 @@ export const useAuditLogStore = defineStore('auditLog', () => {
   const dateRange = ref<[string, string] | null>(null)
 
   // ===== 数据加载 =====
+  // [M-17] 请求序号：仅最新请求的响应写入状态，丢弃慢响应防止覆盖新数据
+  // 范式同 createEntityStore listRequestSeq
+  let loadDataSeq = 0
+
   async function loadData(onError?: () => void) {
+    const seq = ++loadDataSeq
     loading.value = true
     try {
       const params: AuditLogQueryParams = {
@@ -51,13 +56,15 @@ export const useAuditLogStore = defineStore('auditLog', () => {
         params.end_date = dateRange.value[1]
       }
       const response: AuditLogListResponse = await auditLogAPI.getAuditLogs(params)
+      if (seq !== loadDataSeq) return // 过期响应：被更新请求取代，跳过状态写回
       tableData.value = response.results
       total.value = response.count
     } catch {
+      if (seq !== loadDataSeq) return // 过期响应：跳过错误回调
       // 错误由调用方处理（组件可通过 onError 回调提示）
       onError?.()
     } finally {
-      loading.value = false
+      if (seq === loadDataSeq) loading.value = false
     }
   }
 
