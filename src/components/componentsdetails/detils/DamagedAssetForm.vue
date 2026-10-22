@@ -301,7 +301,10 @@ const storageLinkage = useFormLinkage<Storage>({
   displayField: 'storage_name_display',
   codeField: 'damaged_asset_storage_code',
   fetcher: async (q) => {
-    return await storageStore.getList({ search: q, page: 1, page_size: 20 })
+    // silent：autocomplete 不回写共享 store 列表态（M-05）
+    return (
+      (await storageStore.getList({ search: q, page: 1, page_size: 20 }, { silent: true })) ?? []
+    )
   },
   getDisplayValue: (item) => String(item.storage_name ?? ''),
   getCodeValue: (item) => String(item.storage_code ?? ''),

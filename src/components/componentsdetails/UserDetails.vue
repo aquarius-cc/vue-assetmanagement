@@ -179,7 +179,7 @@ const storeConfig: PaginationSearchConfig<EmployeeExtended> = {
       const response = await userStore.getList(params)
       return {
         count: userStore.pagination.total,
-        results: response,
+        results: response ?? [],
         next: null,
         previous: null,
       }

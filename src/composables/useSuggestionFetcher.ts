@@ -14,8 +14,8 @@ import { logError } from '@/utils/logger'
  *   - （无外部依赖，纯函数式工厂）
  */
 export interface SuggestionFetcherOptions<T, R> {
-  /** 获取原始数据的异步函数，参数为查询关键词 */
-  fetchData: (query: string) => Promise<T[]>
+  /** 获取原始数据的异步函数，参数为查询关键词；M-16：允许返回 undefined（seq 过期） */
+  fetchData: (query: string) => Promise<T[] | undefined>
   /** 可选：过滤函数（前端过滤） */
   filter?: (item: T) => boolean
   /** 可选：排序比较函数 */
@@ -51,8 +51,8 @@ export function createSuggestionFetcher<T, R>(options: SuggestionFetcherOptions<
     const seq = ++fetchSeq
 
     try {
-      // 1. 获取原始数据
-      let items = await fetchData(queryString.trim())
+      // 1. 获取原始数据（M-16：seq 过期时 fetchData 返回 undefined，按空数组处理）
+      let items = (await fetchData(queryString.trim())) ?? []
       if (seq !== fetchSeq) return // 过期响应丢弃，不覆盖新结果
 
       // 2. 前端过滤

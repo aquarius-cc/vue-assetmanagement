@@ -159,7 +159,7 @@ const fetchRoles = async () => {
       params.search = searchKeyword.value.trim()
     }
     const res = await roleStore.getList(params)
-    roles.value = res
+    roles.value = res ?? []
     total.value = roleStore.pagination.total
   } catch {
     ElMessage.error('获取角色列表失败')

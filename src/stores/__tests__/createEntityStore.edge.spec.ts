@@ -264,7 +264,8 @@ describe('createEntityStore 边界分支', () => {
         results: [{ id: '1', name: 'A', value: 1 }],
       })
       const resultA = await promiseA
-      expect(resultA).toEqual([])
+      // M-16：seq 过期返回 undefined（非 []），视图判空后保留现有数据
+      expect(resultA).toBeUndefined()
       // 状态仍为 B 的数据，未被 A 覆盖
       expect(store.list).toEqual([{ id: '3', name: 'C', value: 3 }])
       expect(store.pagination.page).toBe(2)
@@ -287,7 +288,8 @@ describe('createEntityStore 边界分支', () => {
       // A 后 resolve：声称 page 5 超出末页，但 seq 过期，不得把页码修正到 1（覆盖 B）
       slow.resolve({ count: 0, page: 5, page_size: 20, results: [] })
       const resultA = await promiseA
-      expect(resultA).toEqual([])
+      // M-16：seq 过期返回 undefined（非 []）
+      expect(resultA).toBeUndefined()
       expect(store.pagination.page).toBe(1)
       expect(store.list).toEqual([])
     })

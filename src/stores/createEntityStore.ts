@@ -193,12 +193,22 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
       entityState.value.ids = newIds
     }
 
-    const getList = async (params?: Q) => {
+    /**
+     * 拉取分页列表
+     * @param options.silent 静默查询（M-05）：结果仍正常返回，但跳过实体/分页回写——
+     *   供表单预载、autocomplete、详情单条查询等非列表形态使用，防止污染共享列表态
+     */
+    const getList = async (
+      params?: Q,
+      options?: { silent?: boolean; _retried?: boolean },
+    ): Promise<T[] | undefined> => {
       const getListApi = config.api.getList
       if (!getListApi) throw new Error('API "getList" not provided')
+      // silent 编入 key：与列表页同 params 并发时各自独立通道（withRequestControl 按 key 去重）
+      const requestKey = `list:${options?.silent ? 'silent:' : ''}${JSON.stringify(params || {})}`
       return withRequestControl(
         requestCtx,
-        `list:${JSON.stringify(params || {})}`,
+        requestKey,
         async () => {
           // ✅ 步骤1：标准化参数
           const queryParams: Record<string, unknown> = { ...(params || {}) }
@@ -210,7 +220,11 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
           const response = await getListApi(normalizedParams as Q)
 
           // [I-8] 过期响应：被更新请求取代，跳过页码校验与状态写回，防止慢响应覆盖新数据
-          if (seq !== listRequestSeq) return []
+          // M-16：返回 undefined（非 []），视图判空后保留现有数据，避免快速连点时被误当权威空镜像
+          if (seq !== listRequestSeq) return undefined
+
+          // M-05：silent 时两处写入路径（超界兜底 + 分页同步）均跳过
+          const effectiveSync = autoSync && !options?.silent
 
           // ✅ 步骤3：验证页码有效性（以后端实际返回值为准）
           const totalPages = response.total_pages ?? Math.ceil(response.count / requestedPageSize)
@@ -221,12 +235,19 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
               `[${storeId}] Invalid page: ${requestedPage}, ` +
                 `total pages: ${totalPages}, count: ${response.count}`,
             )
-            handleInvalidPage(totalPages, response.count)
+            if (effectiveSync) handleInvalidPage(totalPages, response.count)
+            // M-18：以修正后的末页补发一次 getList，避免清空后留下空表
+            if (effectiveSync && !options?._retried) {
+              return getList({ ...(params || {}), page: totalPages } as Q, {
+                ...options,
+                _retried: true,
+              })
+            }
             return []
           }
 
           // ✅ 步骤4：同步到状态
-          if (autoSync) {
+          if (effectiveSync) {
             syncListToState(response.results)
             // ✅ 以后端实际返回值为准（处理 clamp/默认值场景）
             pagination.value = {
@@ -276,12 +297,11 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
         async () => {
           const item = await getByIdApi(id)
           if (item && autoSync) {
-            // ✅ 仅当 item 存在时才同步到状态
+            // ✅ 仅当 item 存在时才同步到 entities 映射
+            // M-20：不再写入 ids —— getById 是详情查询，实体可能不在当前页，
+            // 污染 ids 会导致列表多出行（keep-alive 场景出现重复行）
             const idStr = getEntityId(item)
             entityState.value.entities[idStr] = item
-            if (!entityState.value.ids.includes(idStr)) {
-              entityState.value.ids.push(idStr)
-            }
           }
           return item // 可能为 null
         },
@@ -359,6 +379,8 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
               entityState.value.ids.unshift(idStr)
             }
           })
+          // M-21：同步递增 total，保持分页计数与列表一致
+          pagination.value.total += items.length
         }
         // ✅ 只有未禁用时才显示消息
         if (!config.disableAutoMessage) {
@@ -390,9 +412,14 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
       return withRequestControl(requestCtx, `delete:${id}`, async () => {
         const result = await config.api.delete(id) // 👈 调用的是 config.api.delete
         if (autoSync) {
+          // M-15：先判断实体是否在本地列表中，再同步递减 total（防止误减不存在的实体）
+          const existedLocally = entityState.value.ids.includes(id)
           delete entityState.value.entities[id]
           entityState.value.ids = entityState.value.ids.filter((_id) => _id !== id)
           if (currentEntityId.value === id) currentEntityId.value = null
+          if (existedLocally) {
+            pagination.value.total = Math.max(0, pagination.value.total - 1)
+          }
         }
         // 使用 displayName（中文名）或 storeId 作为显示名称
         const displayName = config.displayName || storeId

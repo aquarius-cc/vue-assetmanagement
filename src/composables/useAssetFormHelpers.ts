@@ -47,9 +47,24 @@ export interface UserSuggestion extends SuggestionItem {
 // ======================== 基础关联数据加载 ========================
 
 export function useAssetFormAssociations(
-  assetTypeStore: { getList: (params?: PaginationQuery) => Promise<AssetType[]> },
-  contractStore: { getList: (params?: PaginationQuery) => Promise<Contract[]> },
-  storageStore: { getList: (params?: PaginationQuery) => Promise<Storage[]> },
+  assetTypeStore: {
+    getList: (
+      params?: PaginationQuery,
+      options?: { silent?: boolean },
+    ) => Promise<AssetType[] | undefined>
+  },
+  contractStore: {
+    getList: (
+      params?: PaginationQuery,
+      options?: { silent?: boolean },
+    ) => Promise<Contract[] | undefined>
+  },
+  storageStore: {
+    getList: (
+      params?: PaginationQuery,
+      options?: { silent?: boolean },
+    ) => Promise<Storage[] | undefined>
+  },
 ) {
   const assetTypes = ref<AssetType[]>([]) as Ref<AssetType[]>
   const contracts = ref<Contract[]>([]) as Ref<Contract[]>
@@ -57,14 +72,15 @@ export function useAssetFormAssociations(
 
   const loadAssociations = async () => {
     try {
+      // silent：表单预载不回写共享 store 列表态（M-05），结果仍正常返回
       const [types, contractList, storageList] = await Promise.all([
-        assetTypeStore.getList({ page: 1, page_size: 100 }),
-        contractStore.getList({ page: 1, page_size: 100 }),
-        storageStore.getList({ page: 1, page_size: 100 }),
+        assetTypeStore.getList({ page: 1, page_size: 100 }, { silent: true }),
+        contractStore.getList({ page: 1, page_size: 100 }, { silent: true }),
+        storageStore.getList({ page: 1, page_size: 100 }, { silent: true }),
       ])
-      assetTypes.value = types
-      contracts.value = contractList
-      storages.value = storageList
+      assetTypes.value = types ?? []
+      contracts.value = contractList ?? []
+      storages.value = storageList ?? []
     } catch {
       ElMessage.error('获取基础数据失败')
     }

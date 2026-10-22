@@ -287,7 +287,7 @@ const storeConfig = computed<PaginationSearchConfig<OperationLog>>(() => ({
       const response = await operationLogStore.getList(mergedParams as PaginationQuery)
       return {
         count: operationLogStore.pagination.total,
-        results: response,
+        results: response ?? [],
         next: null,
         previous: null,
       }
@@ -349,7 +349,7 @@ const storeConfig = computed<PaginationSearchConfig<OperationLog>>(() => ({
       } as PaginationQuery)
       return {
         count: operationLogStore.pagination.total,
-        results: response,
+        results: response ?? [],
       }
     },
   },

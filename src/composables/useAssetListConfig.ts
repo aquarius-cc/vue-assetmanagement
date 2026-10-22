@@ -119,7 +119,7 @@ export function useAssetListConfig(options: AssetListConfigOptions = {}) {
         const response = await assetStore.getList(params)
         return {
           count: assetStore.pagination.total,
-          results: response,
+          results: response ?? [],
           next: null,
           previous: null,
         }

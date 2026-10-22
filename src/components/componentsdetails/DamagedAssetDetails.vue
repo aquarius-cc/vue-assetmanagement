@@ -192,7 +192,7 @@ const storeConfig = computed<PaginationSearchConfig<DamagedAsset>>(() => ({
       const response = await damagedAssetStore.getList(pendingParams)
       return {
         count: damagedAssetStore.pagination.total,
-        results: response,
+        results: response ?? [],
         next: null,
         previous: null,
       }
@@ -254,7 +254,7 @@ const storeConfig = computed<PaginationSearchConfig<DamagedAsset>>(() => ({
       })
       return {
         count: damagedAssetStore.pagination.total,
-        results: response,
+        results: response ?? [],
       }
     },
   },

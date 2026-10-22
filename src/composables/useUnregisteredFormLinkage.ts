@@ -25,10 +25,16 @@ export interface UnregisteredFormFields {
 export interface UnregisteredFormLinkageStores {
   assetStore: { getByName: (query: string) => Promise<AssetDetail[]> }
   assetTypeStore: {
-    getList: (q: { search: string; page: number; page_size: number }) => Promise<AssetType[]>
+    getList: (
+      q: { search: string; page: number; page_size: number },
+      options?: { silent?: boolean },
+    ) => Promise<AssetType[] | undefined>
   }
   storageStore: {
-    getList: (q: { search: string; page: number; page_size: number }) => Promise<Storage[]>
+    getList: (
+      q: { search: string; page: number; page_size: number },
+      options?: { silent?: boolean },
+    ) => Promise<Storage[] | undefined>
   }
 }
 
@@ -45,8 +51,12 @@ export function useUnregisteredFormLinkage(
   // ===== 资产类型编码联动 =====
   const fetchAssetTypeSuggestions = createSuggestionFetcher<AssetType, AssetTypeSuggestion>({
     fetchData: async (query: string) => {
-      const response = await assetTypeStore.getList({ search: query, page: 1, page_size: 20 })
-      return response
+      // silent：autocomplete 不回写共享 store 列表态（M-05）
+      const response = await assetTypeStore.getList(
+        { search: query, page: 1, page_size: 20 },
+        { silent: true },
+      )
+      return response ?? []
     },
     transform: (assetType: AssetType): AssetTypeSuggestion => ({
       value: assetType.type_code,
@@ -105,8 +115,12 @@ export function useUnregisteredFormLinkage(
 
   const fetchStorageSuggestions = createSuggestionFetcher<Storage, StorageSuggestion>({
     fetchData: async (query: string) => {
-      const response = await storageStore.getList({ search: query, page: 1, page_size: 20 })
-      return response
+      // silent：autocomplete 不回写共享 store 列表态（M-05）
+      const response = await storageStore.getList(
+        { search: query, page: 1, page_size: 20 },
+        { silent: true },
+      )
+      return response ?? []
     },
     transform: (storage: Storage): StorageSuggestion => ({
       value: storage.storage_code,

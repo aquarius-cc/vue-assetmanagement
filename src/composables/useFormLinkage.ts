@@ -25,8 +25,9 @@ export interface FormLinkageOptions<T> {
   /**
    * 数据获取函数：接收查询关键词，返回原始数据数组
    * 与 createSuggestionFetcher 的 fetchData 对齐
+   * M-16：getList seq 过期时返回 undefined，fetcher 允许返回 undefined
    */
-  fetcher: (query: string) => Promise<T[]>
+  fetcher: (query: string) => Promise<T[] | undefined>
   /** 从建议项中提取显示值（用于 handleSelect + handleBlur） */
   getDisplayValue: (item: Record<string, unknown>) => string
   /** 从建议项中提取编码值（用于 handleSelect + handleBlur） */

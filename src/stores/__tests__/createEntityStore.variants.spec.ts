@@ -320,12 +320,19 @@ describe('createEntityStore 变异杀灭补测', () => {
       expect(api.getById).toHaveBeenCalledTimes(1)
     })
 
-    it('请求超出有效页时应清空列表并给出精确告警日志', async () => {
+    it('请求超出有效页时应告警并以末页补发（M-18）', async () => {
       const store = makeStore<TestEntity>('var-log', api)
-      api.getList.mockResolvedValue({ count: 40, results: [{ id: '1', name: 'A', value: 1 }] })
+      // 第一次：page=99 超界（count=40 → totalPages=2）；第二次：补发 page=2
+      api.getList.mockResolvedValueOnce({ count: 40, results: [] }).mockResolvedValueOnce({
+        count: 40,
+        page: 2,
+        page_size: 20,
+        results: [{ id: '1', name: 'A', value: 1 }],
+      })
       const result = await store.getList({ page: 99, page_size: 20 })
-      expect(result).toEqual([])
-      expect(store.list).toHaveLength(0)
+      // M-18：自动以末页补发，返回数据而非空表
+      expect(result).toEqual([{ id: '1', name: 'A', value: 1 }])
+      expect(store.list).toHaveLength(1)
       expect(store.pagination).toMatchObject({ total: 40, page: 2 })
       expect(mockLogWarn).toHaveBeenCalledWith(
         'stores/createEntityStore',
@@ -386,12 +393,13 @@ describe('createEntityStore 变异杀灭补测', () => {
       expect(b?.name).toBe('B')
     })
 
-    it('enableCache=false 时重复 getById 不应重复收录 id', async () => {
+    it('getById 不应写入 ids（M-20：详情查询不污染列表）', async () => {
       const store = makeStore<TestEntity>('var-no-cache-push', api, { enableCache: false })
       api.getById.mockResolvedValue({ id: '1', name: 'A', value: 1 })
       await store.getById('1')
       await store.getById('1')
-      expect(store.list).toHaveLength(1)
+      // M-20：getById 只写 entities 映射，不写 ids
+      expect(store.list).toHaveLength(0)
     })
   })
 

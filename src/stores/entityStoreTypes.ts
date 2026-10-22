@@ -122,7 +122,7 @@ export interface EntityStore<T, Q extends PaginationQuery = PaginationQuery> {
   // 计算属性 & 方法
   getTotalPages: number
   isValidPage: (page: number) => boolean
-  navigateToValidPage: (page: number, page_size?: number) => Promise<T[]>
+  navigateToValidPage: (page: number, page_size?: number) => Promise<T[] | undefined>
 
   // 控制
   currentEntityId: Ref<string | null>
@@ -131,7 +131,8 @@ export interface EntityStore<T, Q extends PaginationQuery = PaginationQuery> {
   clearCache: () => void
 
   // CRUD 方法
-  getList: (params?: Q) => Promise<T[]>
+  // M-16：seq 过期时返回 undefined（非 []），视图判空后保留现有数据
+  getList: (params?: Q) => Promise<T[] | undefined>
   getById: (id: string) => Promise<T | null>
   getNameByCode: (code: string) => Promise<string | null>
   getByName: (name: string) => Promise<T[]>

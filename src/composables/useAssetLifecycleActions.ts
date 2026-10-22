@@ -14,7 +14,8 @@ import type { BlobDownload } from '@/api/request'
 export interface AssetLifecycleStore<T = Record<string, unknown>> {
   list: T[]
   pagination: { total: number }
-  getList: (params: { page: number; page_size: number }) => Promise<T[]>
+  // M-16：seq 过期时 getList 返回 undefined，视图判空
+  getList: (params: { page: number; page_size: number }) => Promise<T[] | undefined>
   remove: (recordcode: string) => Promise<unknown>
   removeBatch: (recordcodes: string[]) => Promise<unknown>
   setRefreshFlag?: (flag: boolean) => void

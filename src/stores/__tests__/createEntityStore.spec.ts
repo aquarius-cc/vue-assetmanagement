@@ -136,15 +136,22 @@ describe('createEntityStore', () => {
       expect(store.loading).toBe(false)
     })
 
-    it('超出总页数时应返回空数组', async () => {
-      vi.mocked(mockApi.getList).mockResolvedValue({
-        count: 20,
-        results: [{ id: '1', name: 'A', value: 1 }],
-      })
+    it('超出总页数时应自动补发末页并返回数据', async () => {
+      // M-18：超界页不再返回空表，而是以修正后的末页补发一次 getList
+      vi.mocked(mockApi.getList)
+        .mockResolvedValueOnce({ count: 20, results: [] })
+        .mockResolvedValueOnce({
+          count: 20,
+          page: 1,
+          page_size: 20,
+          results: [{ id: '1', name: 'A', value: 1 }],
+        })
 
       const result = await store.getList({ page: 10, page_size: 20 })
 
-      expect(result).toEqual([])
+      expect(mockApi.getList).toHaveBeenCalledTimes(2)
+      expect(result).toEqual([{ id: '1', name: 'A', value: 1 }])
+      expect(store.list).toHaveLength(1)
     })
 
     it('getList未提供api时应抛出异常', async () => {
@@ -156,15 +163,64 @@ describe('createEntityStore', () => {
     })
   })
 
+  // M-05：silent 非列表查询（表单预载/autocomplete/详情单条）不回写共享列表态
+  describe('getList silent', () => {
+    it('silent 查询应正常返回结果但不改写 entities/ids/pagination', async () => {
+      // 先 seed 列表态（模拟管理页已加载列表）
+      vi.mocked(mockApi.getList).mockResolvedValue({
+        count: 2,
+        results: [
+          { id: '1', name: '实体A', value: 100 },
+          { id: '2', name: '实体B', value: 200 },
+        ],
+      })
+      await store.getList({ page: 1, page_size: 20 })
+      const seededList = [...store.list]
+      const seededPagination = { ...store.pagination }
+
+      // silent 查询（模拟表单 page_size:100 预载）
+      vi.mocked(mockApi.getList).mockResolvedValue({
+        count: 100,
+        results: [{ id: '9', name: '预载X', value: 1 }],
+      })
+      const result = await store.getList({ page: 1, page_size: 100 }, { silent: true })
+
+      // 双职责：返回值正常（防误实现成丢结果）+ 共享列表态不变（防误实现成普通查询）
+      expect(result).toEqual([{ id: '9', name: '预载X', value: 1 }])
+      expect(store.list).toEqual(seededList)
+      expect(store.pagination).toEqual(seededPagination)
+    })
+
+    it('silent 超界页请求应零副作用返回空数组（不触发 handleInvalidPage）', async () => {
+      vi.mocked(mockApi.getList).mockResolvedValue({
+        count: 2,
+        results: [{ id: '1', name: 'A', value: 1 }],
+      })
+      await store.getList({ page: 1, page_size: 20 })
+      const seededList = [...store.list]
+      const seededPagination = { ...store.pagination }
+
+      vi.mocked(mockApi.getList).mockResolvedValue({ count: 20, results: [] })
+      const result = await store.getList({ page: 10, page_size: 20 }, { silent: true })
+
+      expect(result).toEqual([])
+      expect(store.list).toEqual(seededList)
+      expect(store.pagination).toEqual(seededPagination)
+    })
+  })
+
   describe('getById', () => {
-    it('应该获取实体详情并同步到状态', async () => {
+    it('应该获取实体详情并同步到 entities 映射（不写 ids）', async () => {
       vi.mocked(mockApi.getById).mockResolvedValue({ id: '1', name: '详情A', value: 100 })
 
       const result = await store.getById('1')
 
       expect(result).toEqual({ id: '1', name: '详情A', value: 100 })
-      expect(store.list).toHaveLength(1)
-      expect(store.list[0].id).toBe('1')
+      // M-20：getById 只写 entities 映射，不写 ids（详情实体可能不在当前页）
+      expect(store.list).toHaveLength(0)
+      // 但 entities 已同步，currentEntity 可命中
+      store.currentEntityId = '1'
+      expect(store.currentEntity?.name).toBe('详情A')
     })
 
     it('实体不存在时应返回null', async () => {

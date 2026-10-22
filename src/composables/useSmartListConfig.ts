@@ -19,7 +19,8 @@ import type { PaginationQuery } from '@/stores/createEntityStore'
  * 避免引入完整 Store 类型导致循环依赖
  */
 interface SmartStore<T> {
-  getList: (params: PaginationQuery) => Promise<T[]>
+  // M-16：seq 过期时 getList 返回 undefined，视图判空
+  getList: (params: PaginationQuery) => Promise<T[] | undefined>
   pagination: { page: number; page_size: number; total: number }
   list: T[]
   loading: boolean
@@ -80,7 +81,7 @@ export function useSmartListConfig<T>(options: SmartListConfigOptions<T>) {
             const results = await store.getList(params)
             return {
               count: store.pagination.total,
-              results,
+              results: results ?? [],
               next: null,
               previous: null,
             }
@@ -118,7 +119,7 @@ export function useSmartListConfig<T>(options: SmartListConfigOptions<T>) {
           return { count: resp.count, results: resp.results }
         }
         const results = await store.getList(params)
-        return { count: store.pagination.total, results }
+        return { count: store.pagination.total, results: results ?? [] }
       },
     },
     defaultPageSize,

@@ -176,7 +176,7 @@ const fetchContacts = async () => {
         page: currentPage.value,
         page_size: pageSize.value,
       })
-      contacts.value = res
+      contacts.value = res ?? []
       total.value = userStore.pagination.total
     }
   } catch (err) {
