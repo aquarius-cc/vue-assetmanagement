@@ -98,6 +98,7 @@ import type { TableColumn } from '@/types/list'
 import type { SmartListContainerExpose } from '@/types/common'
 import { useStorageStore } from '@/stores/storageStore'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
+import { useKeepAliveReload } from '@/composables/useKeepAliveReload'
 import type { Storage } from '@/types/storage'
 import { storageMapping } from '@/utils/Format'
 import { logError } from '@/utils/logger'
@@ -113,6 +114,9 @@ const storageStore = useStorageStore()
  * 使用 SmartListContainerExpose 类型确保类型安全
  */
 const smartListRef = ref<SmartListContainerExpose | null>(null)
+
+// BF-138 #3 返回即最新（A+D）：路由进入本页父路由（跨板块返回/表单子页返回）时保筛选保页码重取
+useKeepAliveReload(() => smartListRef.value?.refresh())
 
 /**
  * 子路由激活状态

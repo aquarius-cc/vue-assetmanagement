@@ -216,12 +216,15 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
             normalizePaginationParams(queryParams)
 
           // ✅ 步骤2：调用 API（[I-8] seq 竞态守卫，范式同 dashboard.ts trendRequestId）
-          const seq = ++listRequestSeq
+          // BF-138 #2：silent 豁免 seq——silent 不回写任何状态（effectiveSync 恒 false），
+          // 守卫对其零收益，且共享序会与 list 通道互作废（跨通道作废 → 调用方 ?? [] 假空）
+          const seq = options?.silent ? null : ++listRequestSeq
           const response = await getListApi(normalizedParams as Q)
 
           // [I-8] 过期响应：被更新请求取代，跳过页码校验与状态写回，防止慢响应覆盖新数据
           // M-16：返回 undefined（非 []），视图判空后保留现有数据，避免快速连点时被误当权威空镜像
-          if (seq !== listRequestSeq) return undefined
+          // BF-138 #2：undefined 语义收敛至 list 通道（silent 的 seq 恒 null，永不被作废）
+          if (seq !== null && seq !== listRequestSeq) return undefined
 
           // M-05：silent 时两处写入路径（超界兜底 + 分页同步）均跳过
           const effectiveSync = autoSync && !options?.silent

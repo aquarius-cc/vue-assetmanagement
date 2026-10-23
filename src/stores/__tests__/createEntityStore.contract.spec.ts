@@ -49,6 +49,16 @@ const makeStore = (storeId: string, api: ReturnType<typeof makeApi>, extra: obje
     ...extra,
   })()
 
+const deferred = <T>() => {
+  let resolve!: (v: T) => void
+  let reject!: (e: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
 describe('createEntityStore 批次 A 契约修复', () => {
   let api: ReturnType<typeof makeApi>
 
@@ -98,16 +108,6 @@ describe('createEntityStore 批次 A 契约修复', () => {
 
   // ===== M-16：seq 过期返回 undefined =====
   describe('M-16 seq 过期返回 undefined（非 []）', () => {
-    const deferred = <T>() => {
-      let resolve!: (v: T) => void
-      let reject!: (e: unknown) => void
-      const promise = new Promise<T>((res, rej) => {
-        resolve = res
-        reject = rej
-      })
-      return { promise, resolve, reject }
-    }
-
     it('慢响应过期时应返回 undefined 而非 []', async () => {
       const store = makeStore('m16-stale-undefined', api)
       const slow = deferred<ListResponse<TestEntity>>()
@@ -278,6 +278,55 @@ describe('createEntityStore 批次 A 契约修复', () => {
 
       expect(store.pagination.total).toBe(4)
       expect(store.list).toHaveLength(3)
+    })
+  })
+
+  // ===== BF-138 #2：silent/list 跨通道序隔离（先红后绿）=====
+  describe('BF-138 silent/list 跨通道序隔离', () => {
+    it('list 在途时 silent 后发：silent 不应作废 list（list 得真实结果）', async () => {
+      const store = makeStore('bf138-list-not-staled', api)
+      const slow = deferred<ListResponse<TestEntity>>()
+      const fast = deferred<ListResponse<TestEntity>>()
+      api.getList.mockReturnValueOnce(slow.promise).mockReturnValueOnce(fast.promise)
+
+      // list 通道在途，silent 预载后发（UserForm 拉部门的真实形态）
+      const promiseList = store.getList({ page: 1, page_size: 20 })
+      const promiseSilent = store.getList({ page: 1, page_size: 100 }, { silent: true })
+
+      // silent 先返回（本地预载数据）
+      fast.resolve({ count: 2, results: [{ id: '2', name: 'silent', value: 2 }] })
+      const silentResult = await promiseSilent
+      expect(silentResult).toEqual([{ id: '2', name: 'silent', value: 2 }])
+
+      // list 后返回：不得被 silent 的 seq bump 作废
+      slow.resolve({ count: 1, results: [{ id: '1', name: 'list', value: 1 }] })
+      const listResult = await promiseList
+      expect(listResult).toEqual([{ id: '1', name: 'list', value: 1 }])
+      // list 状态写入真实数据（非 undefined 导致的清空）
+      expect(store.list).toEqual([{ id: '1', name: 'list', value: 1 }])
+    })
+
+    it('silent 在途时 list 后发：list 不应作废 silent（silent 得真实结果）', async () => {
+      const store = makeStore('bf138-silent-not-staled', api)
+      const slow = deferred<ListResponse<TestEntity>>()
+      const fast = deferred<ListResponse<TestEntity>>()
+      api.getList.mockReturnValueOnce(slow.promise).mockReturnValueOnce(fast.promise)
+
+      // silent 预载在途，list 通道后发（真实场景：预载期间用户触发列表查询）
+      const promiseSilent = store.getList({ page: 1, page_size: 100 }, { silent: true })
+      const promiseList = store.getList({ page: 1, page_size: 20 })
+
+      // list 先返回并写入共享状态
+      fast.resolve({ count: 1, results: [{ id: '1', name: 'list', value: 1 }] })
+      const listResult = await promiseList
+      expect(listResult).toEqual([{ id: '1', name: 'list', value: 1 }])
+
+      // silent 后返回：不得被 list 的 seq bump 作废
+      slow.resolve({ count: 2, results: [{ id: '2', name: 'silent', value: 2 }] })
+      const silentResult = await promiseSilent
+      expect(silentResult).toEqual([{ id: '2', name: 'silent', value: 2 }])
+      // silent 仍不写共享状态（M-05 不污染语义保持）
+      expect(store.list).toEqual([{ id: '1', name: 'list', value: 1 }])
     })
   })
 })

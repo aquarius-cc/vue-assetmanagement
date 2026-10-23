@@ -54,7 +54,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AsideMenu from '@/components/AsideMenu.vue'
 import AppBreadcrumb from '@/components/commoncomponents/AppBreadcrumb.vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -101,15 +101,16 @@ const asideWidth = computed(() => (appStore.sidebarCollapsed ? '64px' : '200px')
 // 轻页头标题与显示条件：唯一实现见 composables/usePageHeader.ts（本组件与 AppBreadcrumb 共用）
 const { showPageHeader, pageTitle } = usePageHeader()
 
-// 动态计算需要缓存的组件名称（从路由 meta 中获取）
-const keepAliveComponents = computed<(string | RegExp)[]>(() => {
-  // 只缓存 meta.keepAlive 为 true 的组件（需组件声明 name 选项）
-  // 遍历所有匹配的路由（包括子路由），收集需要缓存的组件名称
-  return route.matched
-    .filter((item) => item.meta.keepAlive) // 筛选出开启缓存的路由
-    .map((item) => item.meta.componentName as string | RegExp) // 提取组件名称并断言类型
-    .filter(Boolean) // 过滤空值
-})
+// 需缓存的组件名：静态派生（BF-138 A1）——路由注册表一次性收集，不随 route.matched 变化。
+// 旧实现（动态 computed 取自 route.matched）导致离开板块即 include 变空 → KeepAlive prune
+// 销毁缓存，跨板块返回必重挂载：缓存名存实亡、筛选状态丢失（P0-1 先红实证 instanceSeq=2）。
+// 单一事实来源仍为路由 meta（keepAlive + componentName），不引入硬编码名单（DR-1）。
+const router = useRouter()
+const keepAliveComponents = router
+  .getRoutes()
+  .filter((item) => item.meta?.keepAlive)
+  .map((item) => item.meta.componentName as string | RegExp)
+  .filter(Boolean)
 </script>
 
 <style lang="scss" scoped>

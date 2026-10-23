@@ -152,6 +152,7 @@ import AssetTypeTree from '@/components/componentsdetails/components/AssetTypeTr
 import AssetTypeInfoCard from '@/components/componentsdetails/components/AssetTypeInfoCard.vue'
 import AssetTypeChildList from '@/components/componentsdetails/components/AssetTypeChildList.vue'
 import { logError } from '@/utils/logger'
+import { useKeepAliveReload } from '@/composables/useKeepAliveReload'
 
 const route = useRoute()
 const router = useRouter()
@@ -470,6 +471,10 @@ watch(
 onMounted(() => {
   fetchAllData()
 })
+
+// BF-138 #3 返回即最新（A+D）：路由进入本页父路由（跨板块返回/分类表单子页返回）时重取分类树数据
+// （其数据源为本地 allData + silent 预载，刷新入口即 fetchAllData）
+useKeepAliveReload(() => fetchAllData())
 </script>
 
 <style lang="scss" scoped src="./AssetTypeDetails.scss"></style>

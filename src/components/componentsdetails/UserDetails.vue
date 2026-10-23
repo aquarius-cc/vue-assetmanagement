@@ -126,6 +126,7 @@ import { useUserStore, setUserCurrentKeyword } from '@/stores/userStore'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import { userDetailsColumns as columns } from './userDetails.columns'
 import { createUserExcelExport } from '@/composables/useUserExcelExport'
+import { useKeepAliveReload } from '@/composables/useKeepAliveReload'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -138,6 +139,9 @@ const userStore = useUserStore()
  * 使用 SmartListContainerExpose 类型确保类型安全
  */
 const smartListRef = ref<SmartListContainerExpose | null>(null)
+
+// BF-138 #3 返回即最新（A+D）：路由进入本页父路由（跨板块返回/表单子页返回）时保筛选保页码重取
+useKeepAliveReload(() => smartListRef.value?.refresh())
 
 // 绑定弹窗
 const bindDialogVisible = ref(false)

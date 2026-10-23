@@ -90,6 +90,7 @@ import SmartListContainer from '@/components/commoncomponents/SmartListContainer
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { TableColumn } from '@/types/list'
 import { useSmartListConfig } from '@/composables/useSmartListConfig'
+import { useKeepAliveReload } from '@/composables/useKeepAliveReload'
 import type { Department } from '@/types/department'
 import { useDepartmentStore } from '@/stores/departmentStore'
 import type { SmartListContainerExpose } from '@/types/common'
@@ -106,6 +107,9 @@ const departmentStore = useDepartmentStore()
  * 使用 SmartListContainerExpose 类型确保类型安全
  */
 const smartListRef = ref<SmartListContainerExpose | null>(null)
+
+// BF-138 #3 返回即最新（A+D）：路由进入本页父路由（跨板块返回/表单子页返回）时保筛选保页码重取
+useKeepAliveReload(() => smartListRef.value?.refresh())
 
 /**
  * 子路由激活状态
