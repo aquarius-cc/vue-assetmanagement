@@ -50,9 +50,18 @@ describe('useAssetFormAssociations', () => {
     expect(assetTypes.value).toEqual([{ id: 1 }])
     expect(contracts.value).toEqual([{ id: 2 }])
     expect(storages.value).toEqual([{ id: 3 }])
-    expect(mockAssetTypeStore.getList).toHaveBeenCalledWith({ page: 1, page_size: 100 })
-    expect(mockContractStore.getList).toHaveBeenCalledWith({ page: 1, page_size: 100 })
-    expect(mockStorageStore.getList).toHaveBeenCalledWith({ page: 1, page_size: 100 })
+    expect(mockAssetTypeStore.getList).toHaveBeenCalledWith(
+      { page: 1, page_size: 100 },
+      { silent: true },
+    )
+    expect(mockContractStore.getList).toHaveBeenCalledWith(
+      { page: 1, page_size: 100 },
+      { silent: true },
+    )
+    expect(mockStorageStore.getList).toHaveBeenCalledWith(
+      { page: 1, page_size: 100 },
+      { silent: true },
+    )
   })
 
   it('should show error message when loadAssociations fails', async () => {

@@ -54,11 +54,8 @@ export function useRecycleFormAssociations() {
     try {
       // 请求后端获取仓库列表，可按类型过滤（需要后端支持 storage_type 参数）
       // 如果不支持，可前端过滤：.filter(s => s.storage_type === 'recycle')
-      const response = await storageStore.getList({
-        page: 1,
-        page_size: 100,
-        // 若后端支持：storage_type: 'recycle'
-      })
+      // silent：预载本地 storages 不回写共享 store 列表态（M-05）
+      const response = await storageStore.getList({ page: 1, page_size: 100 }, { silent: true })
       // 前端过滤仅保留回收仓库（若后端未过滤）
       const allStorages = response || []
       // storages.value = allStorages.filter(
@@ -93,7 +90,8 @@ export function useRecycleFormAssociations() {
     loading.value = true
     error.value = null
     try {
-      const response = await assetTypeStore.getList({ page: 1, page_size: 100 })
+      // silent：预载本地 assetTypes 不回写共享 store 列表态（M-05）
+      const response = await assetTypeStore.getList({ page: 1, page_size: 100 }, { silent: true })
       assetTypes.value = response || []
       assetTypesLoaded = true
     } catch (err) {

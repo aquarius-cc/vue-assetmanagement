@@ -167,11 +167,15 @@ onMounted(async () => {
   } else if (code) {
     // 通过 waste_asset_code 查询列表，取第一条记录
     try {
-      const response = await wasteAssetStore.getList({
-        waste_asset_code: code,
-        page: 1,
-        page_size: 1,
-      })
+      // silent：详情单条查询不回写共享 store 列表态（M-05）
+      const response = await wasteAssetStore.getList(
+        {
+          waste_asset_code: code,
+          page: 1,
+          page_size: 1,
+        },
+        { silent: true },
+      )
       if (response && response.length > 0) {
         detailData.value = response[0]
       } else {

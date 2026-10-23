@@ -51,7 +51,7 @@ describe('useRecycleFormAssociations', () => {
       const { loadStorages, storages } = useRecycleFormAssociations()
       const result = await loadStorages()
 
-      expect(mockStorageGetList).toHaveBeenCalledWith({ page: 1, page_size: 100 })
+      expect(mockStorageGetList).toHaveBeenCalledWith({ page: 1, page_size: 100 }, { silent: true })
       expect(storages.value).toEqual(items)
       expect(result).toEqual(items)
     })
@@ -119,7 +119,10 @@ describe('useRecycleFormAssociations', () => {
       const { loadAssetTypes, assetTypes } = useRecycleFormAssociations()
       const result = await loadAssetTypes()
 
-      expect(mockAssetTypeGetList).toHaveBeenCalledWith({ page: 1, page_size: 100 })
+      expect(mockAssetTypeGetList).toHaveBeenCalledWith(
+        { page: 1, page_size: 100 },
+        { silent: true },
+      )
       expect(assetTypes.value).toEqual(items)
       expect(result).toEqual(items)
     })

@@ -190,6 +190,7 @@ const {
   selectedCodes,
   selectedGroupKeys,
   search,
+  reload,
   changePage,
   setExpanded,
   goToChildPage,
@@ -339,7 +340,8 @@ const searchGrouped = (filters?: AssetGroupQueryParams): Promise<void> => search
 
 defineExpose({
   search: searchGrouped,
-  refresh: () => search(),
+  // 保持当前筛选刷新（回第 1 页）：不复用 search() 的清筛选重置语义（M-04/AUD-22）
+  refresh: reload,
   captureSession,
 })
 </script>

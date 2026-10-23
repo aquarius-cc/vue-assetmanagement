@@ -125,11 +125,14 @@ describe('useUnregisteredFormLinkage', () => {
     })
     const cb = vi.fn()
     await linkage.fetchAssetTypeSuggestions('硬', cb)
-    expect(assetTypeStore.getList).toHaveBeenCalledWith({
-      search: '硬',
-      page: 1,
-      page_size: 20,
-    })
+    expect(assetTypeStore.getList).toHaveBeenCalledWith(
+      {
+        search: '硬',
+        page: 1,
+        page_size: 20,
+      },
+      { silent: true },
+    )
     expect(cb).toHaveBeenCalledWith([{ value: 'AT_HW', type_code: 'AT_HW', type_name: '硬件' }])
   })
 
@@ -233,11 +236,14 @@ describe('useUnregisteredFormLinkage', () => {
     })
     const cb = vi.fn()
     await linkage.fetchStorageSuggestions('一号', cb)
-    expect(storageStore.getList).toHaveBeenCalledWith({
-      search: '一号',
-      page: 1,
-      page_size: 20,
-    })
+    expect(storageStore.getList).toHaveBeenCalledWith(
+      {
+        search: '一号',
+        page: 1,
+        page_size: 20,
+      },
+      { silent: true },
+    )
     expect(cb).toHaveBeenCalledWith([
       {
         value: 'S01',

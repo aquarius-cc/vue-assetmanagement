@@ -195,6 +195,62 @@ describe('useGroupedAssetList', () => {
     })
   })
 
+  // M-04/AUD-22 回归：refresh 曾复用 search() 的重置语义（lastFilters = {} →
+  // 界面有筛选、数据回全量）。reload 为「保筛选 + 回第 1 页 + 清缓存重查」专用出口。
+  // 边界声明：lastFilters 唯一写入口是 search()；reload 只读闭包现值，
+  // 不拾取 SearchBar 未提交的表单草稿（表单态与 lastFilters 非同一状态源）。
+  describe('reload', () => {
+    it('preserves last submitted filters and returns to page 1', async () => {
+      const { search, changePage, reload, currentPage } = useGroupedAssetList()
+      await search({ asset_current_status: 'in_use' })
+      vi.clearAllMocks()
+      mockGetGroupedAssets.mockResolvedValue(paged([SUMMARY_MULTI], 10))
+
+      await changePage(2)
+      expect(currentPage.value).toBe(2)
+
+      await reload()
+
+      expect(currentPage.value).toBe(1)
+      expect(mockGetGroupedAssets).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 1, asset_current_status: 'in_use' }),
+      )
+    })
+
+    it('keeps child detail closure on preserved filters after reload', async () => {
+      const api = useGroupedAssetList()
+      await api.search({ asset_current_status: 'in_use' })
+      vi.clearAllMocks()
+      mockGetGroupedAssets.mockResolvedValue(paged([SUMMARY_MULTI], 10))
+
+      await api.reload()
+      await api.toggleExpand(GROUP_MULTI)
+
+      // 明细请求经 pickPassThroughFilters(getFilters()) 透传白名单键；
+      // contract_code 不在 9 键白名单（已由 group_key 表达），故用 asset_current_status 断言
+      expect(mockGetGroupChildren).toHaveBeenCalledWith({
+        group_key: GROUP_MULTI,
+        page: 1,
+        page_size: 20,
+        asset_current_status: 'in_use',
+      })
+    })
+
+    it('clears expanded state and children cache but retains flat selection', async () => {
+      const api = useGroupedAssetList()
+      await api.search({ asset_current_status: 'in_use' })
+      api.setGroupSelection(GROUP_MULTI, ['ZC001'])
+      await api.toggleExpand(GROUP_MULTI)
+      expect(api.expandedKeys.value).toEqual([GROUP_MULTI])
+
+      await api.reload()
+
+      expect(api.expandedKeys.value).toEqual([])
+      expect(api.childrenOf(GROUP_MULTI)).toEqual([])
+      expect(api.selectedCodes.value).toEqual(['ZC001'])
+    })
+  })
+
   describe('singleton stays collapsed (BF-078)', () => {
     it('does not auto-expand groups with asset_count === 1', async () => {
       mockGetGroupedAssets.mockResolvedValue(paged([SUMMARY_MULTI, SUMMARY_SENTINEL], 2))
