@@ -62,6 +62,17 @@ vi.mock('@/stores/groupedAssetSession', () => ({
   useGroupedAssetSession: vi.fn(() => mockSessionStore),
 }))
 
+// [M-29] 过期续期依赖：refreshAccessToken 单飞刷新与 detectAuthChannel 通道识别
+const mockRefreshAccessToken = vi.fn()
+
+vi.mock('@/utils/tokenRefresh', () => ({
+  refreshAccessToken: (...args: unknown[]) => mockRefreshAccessToken(...args),
+}))
+
+vi.mock('@/utils/device', () => ({
+  detectAuthChannel: vi.fn(() => 'cookie'),
+}))
+
 describe('Router Guards', () => {
   let mockRouter: any
   let beforeEachCallback: any
@@ -71,6 +82,7 @@ describe('Router Guards', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockRefreshAccessToken.mockReset()
     mockAuthStore.authInfo = null
     mockAuthStore.isLoggedIn = false
     mockAuthStore.access_token = null
@@ -206,6 +218,74 @@ describe('Router Guards', () => {
 
       expect(result).toBe('/login')
       expect(mockSilentLogout).toHaveBeenCalled()
+    })
+  })
+
+  describe('[M-29] access exp 校验与过期续期', () => {
+    /** 构造带数值 exp 的三段式 JWT（btoa 对纯数字 JSON ASCII 安全，无需正则处理） */
+    function makeJwt(expSecondsFromNow: number): string {
+      const encode = (obj: unknown) => btoa(JSON.stringify(obj))
+      return `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({
+        exp: Math.floor(Date.now() / 1000) + expSecondsFromNow,
+      })}.sig`
+    }
+
+    const routeToMain = { path: '/main', meta: {} }
+    const routeFromRoot = { path: '/' }
+
+    it('合法 JWT 已过期且刷新成功 → 续期后继续已登录流程（access_token 写回新值）', async () => {
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = makeJwt(-60)
+      mockAuthStore.authInfo = { auth_id: 1 }
+      mockAuthStore.permissionsLoaded = true
+      mockRefreshAccessToken.mockResolvedValue('new-access-token')
+
+      setupAndCapture()
+      const result = await beforeEachCallback(routeToMain, routeFromRoot)
+
+      expect(mockRefreshAccessToken).toHaveBeenCalledTimes(1)
+      expect(mockAuthStore.access_token).toBe('new-access-token')
+      expect(result).toBe(true)
+      expect(mockSilentLogout).not.toHaveBeenCalled()
+    })
+
+    it('合法 JWT 已过期且刷新失败 → 会话真失效，静默登出并转 /login', async () => {
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = makeJwt(-60)
+      mockRefreshAccessToken.mockRejectedValue(new Error('refresh dead'))
+
+      setupAndCapture()
+      const result = await beforeEachCallback(routeToMain, routeFromRoot)
+
+      expect(mockRefreshAccessToken).toHaveBeenCalledTimes(1)
+      expect(mockSilentLogout).toHaveBeenCalled()
+      expect(result).toBe('/login')
+    })
+
+    it('真值但非 JWT 的 token 不触发刷新（交由 401 刷新链兜底，行为向后兼容）', async () => {
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = 'valid-token'
+      mockAuthStore.authInfo = { auth_id: 1 }
+      mockAuthStore.permissionsLoaded = true
+
+      setupAndCapture()
+      const result = await beforeEachCallback(routeToMain, routeFromRoot)
+
+      expect(mockRefreshAccessToken).not.toHaveBeenCalled()
+      expect(result).toBe(true)
+    })
+
+    it('未过期的合法 JWT 不触发刷新（exp 剩余有效期内直接放行）', async () => {
+      mockAuthStore.isLoggedIn = true
+      mockAuthStore.access_token = makeJwt(3600)
+      mockAuthStore.authInfo = { auth_id: 1 }
+      mockAuthStore.permissionsLoaded = true
+
+      setupAndCapture()
+      const result = await beforeEachCallback(routeToMain, routeFromRoot)
+
+      expect(mockRefreshAccessToken).not.toHaveBeenCalled()
+      expect(result).toBe(true)
     })
   })
 

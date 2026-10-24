@@ -272,25 +272,6 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
       return Math.ceil(pagination.value.total / pagination.value.page_size)
     })
 
-    // ✅ 新增：验证页码是否有效
-    const isValidPage = (page: number): boolean => {
-      return page > 0 && page <= getTotalPages.value
-    }
-
-    // ✅ 新增：跳转到有效页码
-    const navigateToValidPage = async (page: number, page_size?: number) => {
-      if (page_size) {
-        pagination.value.page_size = page_size
-      }
-
-      if (!isValidPage(page)) {
-        page = Math.min(page, getTotalPages.value)
-      }
-
-      pagination.value.page = page
-      return getList()
-    }
-
     const getById = async (id: string) => {
       const getByIdApi = config.api.getById
       if (!getByIdApi) throw new Error('API "getById" not provided')
@@ -555,8 +536,6 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
 
       // 计算属性和方法
       getTotalPages,
-      isValidPage,
-      navigateToValidPage,
 
       // 控制
       currentEntityId,

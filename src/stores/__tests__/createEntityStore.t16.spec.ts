@@ -6,7 +6,6 @@
  *   - [208:52] silent 编入 key：与 list 同 params 并发走独立通道（不被去重吞并）
  *   - [241:17] 超界兜底 handleInvalidPage 生效：补发失败也保持页码/实体一致状态
  *   - [271:32] enablePagination=false 时 getTotalPages 恒 0（不计算 ceil）
- *   - [282:11/22] navigateToValidPage(page, page_size) 必写入 page_size
  *   - [325:27] getNameByCode 本地缓存两分支：缺失回源 / 实体缺字段也回源（不误返回 undefined 串）
  *   - [333:11/334:11] getById 缺失时 logWarn 模块与文案精确锚定
  *   - [341:13/23] getNameByCode null/缺字段双分支返回 null（不崩溃、不输出 "undefined"）
@@ -20,7 +19,7 @@
  *   - [530:7] clearCache 在途期间抹 pending 标记（后续同键不复用在途 Promise）
  *   - [536:61] clear() 将 loading 归零（在途请求期间执行）
  * 等价体（未纳入本套件，已在 BF-138 登记说明）：208:64 / 265:9 / 265:22 / 271:32（右操作数
- *   与 ceil(total/size) 在 total=0 处同值）/ 286:11 / 71:24 / 221:48 / 454:14 / 524:9 /
+ *   与 ceil(total/size) 在 total=0 处同值）/ 71:24 / 221:48 / 454:14 / 524:9 /
  *   392:11 / 409:9 / 429:9（仅移除第二段 ?. 的同型短路）/ 531:27 / 532:7（debounceMap
  *   恒空：createEntityStore 从不传 debounced:true）。
  */
@@ -175,17 +174,6 @@ describe('createEntityStore T16 变异补杀（BF-138 批次 F）', () => {
       await store.getList()
 
       expect(store.getTotalPages).toBe(0)
-      expect(store.isValidPage(1)).toBe(false)
-    })
-
-    it('[282:11/282:22] navigateToValidPage 在列表补发失败前即写入 page_size（拒绝路径避开响应回写遮蔽）', async () => {
-      const store = makeStore('t16-nav-size', api)
-      // 响应带 page_size 会经 step4 回写遮蔽 282 体是否执行；用补发失败让中间态可见
-      api.getList.mockRejectedValueOnce(new Error('nav boom'))
-
-      await expect(store.navigateToValidPage(1, 50)).rejects.toThrow('nav boom')
-
-      expect(store.pagination.page_size).toBe(50)
     })
   })
 

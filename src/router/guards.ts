@@ -19,6 +19,9 @@ import { useGroupedAssetSession } from '@/stores/groupedAssetSession'
 import { ElMessage } from 'element-plus'
 import { ROLE_CODES, ROLE_HIERARCHY } from '@/constants/roles'
 import { logError } from '@/utils/logger'
+import { decodeJWTPayload } from '@/utils/decodeJwt'
+import { refreshAccessToken } from '@/utils/tokenRefresh'
+import { detectAuthChannel } from '@/utils/device'
 
 // 不需要认证的页面白名单
 const whiteList = ['/login']
@@ -82,6 +85,17 @@ function checkRoleAccess(
 // 应用状态初始化标志（仅在首次路由守卫执行时初始化一次）
 let appInitialized = false
 
+/**
+ * [M-29] access token 过期判定：仅当可解析出数值 exp 且已到期时返回 true。
+ * 无 exp 声明 / 非 JWT（不可解析）按未过期保守放行——交由请求层 401 刷新链兜底，
+ * 避免误踢仍持有效 refresh 的会话（cookie 长开页面、bearer 恢复旧 access 场景）。
+ */
+function isAccessExpired(token: string | null): boolean {
+  const exp = decodeJWTPayload(token)?.exp
+  if (typeof exp !== 'number') return false
+  return exp * 1000 <= Date.now()
+}
+
 // 设置路由守卫
 export const setupAuthGuard = (router: Router) => {
   // ===== P1-4 复杂度收敛：beforeEach 按阶段下沉（语义逐行等价）=====
@@ -129,6 +143,24 @@ export const setupAuthGuard = (router: Router) => {
     }
   }
 
+  /**
+   * [M-29] access 过期时先经单飞刷新续期（refreshAccessToken 与请求层 401 刷新链
+   * 同源、并发安全，DR-1），避免带病放行后首个请求才 401。
+   * @returns true = 可继续已登录流程；false = 刷新失败（会话真失效，已静默登出）
+   */
+  const ensureFreshAccess = async (): Promise<boolean> => {
+    const authStore = useAuthStore()
+    if (!isAccessExpired(authStore.access_token)) return true
+    try {
+      authStore.access_token = await refreshAccessToken(detectAuthChannel())
+      return true
+    } catch (error) {
+      logError('router/guards', 'Token 过期刷新失败', error)
+      authStore.silentLogout()
+      return false
+    }
+  }
+
   // 全局前置守卫
   router.beforeEach(async (to, _from) => {
     const authStore = useAuthStore()
@@ -160,7 +192,7 @@ export const setupAuthGuard = (router: Router) => {
         return true
       }
 
-      if (authStore.isLoggedIn && authStore.access_token) {
+      if (authStore.isLoggedIn && authStore.access_token && (await ensureFreshAccess())) {
         return await handleAuthenticated(to)
       }
       return handleUnauthenticated(to)

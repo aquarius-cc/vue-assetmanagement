@@ -103,8 +103,27 @@ function showErrorDedup(message: string): void {
   setTimeout(() => transientMessageShown.delete(message), LOGIN_EXPIRED_MESSAGE_DURATION)
 }
 
+/**
+ * [M-29] 构造带回跳参数的登录页 URL（纯函数，可测）。
+ * LogIn.vue 已消费 route.query.redirect（限定以 / 开头且非 //，防开放重定向），
+ * 会话失效重登后回跳原页面；登录页自身与根路径无回跳价值，保持裸 /login。
+ * pathname 缺失/非站内绝对路径（如测试桩 location 仅含 href）按无回跳目标处理。
+ */
+export function buildLoginRedirectUrl(back?: { pathname?: string; search?: string }): string {
+  const pathname = back?.pathname
+  if (typeof pathname !== 'string' || !pathname.startsWith('/') || pathname.startsWith('//')) {
+    return '/login'
+  }
+  if (pathname.startsWith('/login')) return '/login'
+  const search = typeof back?.search === 'string' ? back.search : ''
+  const backUrl = `${pathname}${search}`
+  if (backUrl === '/') return '/login'
+  return `/login?redirect=${encodeURIComponent(backUrl)}`
+}
+
 function redirectToLogin(): void {
-  window.location.href = '/login'
+  // [M-29] 登出跳转携带 redirect 回跳参数（原实现固定 /login，重登后丢失原页面）
+  window.location.href = buildLoginRedirectUrl(window.location)
 }
 
 function isSafeMethod(method: string | undefined): boolean {
@@ -457,7 +476,9 @@ export async function get<T>(
     const response = await api.get<ApiResponse<T>>(url, { params: paramsObj })
     const data = response.data
 
-    if (useCache) writeCache(cacheKey, data, options?.cacheTTL)
+    // [M-29] 仅 code===0 的成功响应入缓存：业务失败体（200 + code!==0）入缓存后，
+    // 后续 useCache 调用直接命中错误数据，绕过重试与错误提示
+    if (useCache && data.code === 0) writeCache(cacheKey, data, options?.cacheTTL)
     return data
   } catch (error: unknown) {
     // 降级：请求失败但有缓存时返回旧数据

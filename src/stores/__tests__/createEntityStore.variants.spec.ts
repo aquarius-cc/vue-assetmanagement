@@ -161,20 +161,6 @@ describe('createEntityStore 变异杀灭补测', () => {
     })
   })
 
-  describe('页码钳制', () => {
-    it('navigateToValidPage 超大页码应钳制到最后一页（getList 失败时可见钳制值）', async () => {
-      const store = makeStore<TestEntity>('var-clamp-high', api)
-      api.getList.mockResolvedValue({ count: 40, results: [] })
-      await store.getList({ page: 1, page_size: 20 })
-      expect(store.getTotalPages).toBe(2)
-
-      api.getList.mockRejectedValueOnce(new Error('boom'))
-      await expect(store.navigateToValidPage(99)).rejects.toThrow('boom')
-
-      expect(store.pagination.page).toBe(2)
-    })
-  })
-
   describe('removeBatch 分页钳制与防御校验', () => {
     it('成功数大于当前 total 时 total 应钳制为 0', async () => {
       const store = makeStore<TestEntity>('var-batch-clamp', api, { displayName: '批量钳制' })

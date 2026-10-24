@@ -96,7 +96,7 @@ vi.mock('@/utils/traceId', () => ({
 import { encodeToken, decodeToken, clearAllAuthTokens } from '@/utils/tokenObfuscator'
 import { generateTraceId } from '@/utils/traceId'
 import { ElMessage } from 'element-plus'
-import { unwrapResponse, get, post, put, patch, del } from '@/api/request'
+import { unwrapResponse, get, post, put, patch, del, buildLoginRedirectUrl } from '@/api/request'
 
 function getResponseHandler(): ErrorHandler | null {
   return handlerRef.fn
@@ -281,6 +281,58 @@ describe('request', () => {
 
       await get('/test/url')
       expect(mocks.instanceGet).toHaveBeenCalledWith('/test/url', { params: undefined })
+    })
+
+    it('[M-29] code===0 成功响应入缓存（第二次调用命中不发请求）', async () => {
+      const okData = { code: 0, data: { v: 1 }, message: '' }
+      mocks.instanceGet.mockResolvedValueOnce({ data: okData })
+
+      const first = await get('/m29/cache-hit', { page: 1 }, { useCache: true })
+      const second = await get('/m29/cache-hit', { page: 1 }, { useCache: true })
+
+      expect(first).toEqual(okData)
+      expect(second).toEqual(okData)
+      expect(mocks.instanceGet).toHaveBeenCalledTimes(1)
+    })
+
+    it('[M-29] code!==0 业务失败体不入缓存（二次调用不命中、真发请求）', async () => {
+      const failData = { code: 400, data: null, message: '业务失败' }
+      mocks.instanceGet.mockResolvedValueOnce({ data: failData })
+
+      const first = await get('/m29/cache-skip', { page: 1 }, { useCache: true })
+      expect(first).toEqual(failData)
+
+      const okData = { code: 0, data: { ok: true }, message: '' }
+      mocks.instanceGet.mockResolvedValueOnce({ data: okData })
+
+      const second = await get('/m29/cache-skip', { page: 1 }, { useCache: true })
+      expect(second).toEqual(okData)
+      expect(mocks.instanceGet).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('[M-29] buildLoginRedirectUrl 登出回跳 URL 构造', () => {
+    it('携带 pathname+search 的 encodeURIComponent 回跳参数', () => {
+      expect(buildLoginRedirectUrl({ pathname: '/main/assetdetails', search: '?code=A001' })).toBe(
+        '/login?redirect=%2Fmain%2Fassetdetails%3Fcode%3DA001',
+      )
+    })
+
+    it('根路径与登录页自身保持裸 /login（无回跳价值/防自指）', () => {
+      expect(buildLoginRedirectUrl({ pathname: '/', search: '' })).toBe('/login')
+      expect(buildLoginRedirectUrl({ pathname: '/login', search: '' })).toBe('/login')
+      expect(buildLoginRedirectUrl({ pathname: '/login', search: '?from=1' })).toBe('/login')
+    })
+
+    it('search 缺省时仅回跳 pathname', () => {
+      expect(buildLoginRedirectUrl({ pathname: '/main' })).toBe('/login?redirect=%2Fmain')
+    })
+
+    it('pathname 缺失/非站内路径（location 桩仅含 href）防御回退裸 /login', () => {
+      expect(buildLoginRedirectUrl(undefined)).toBe('/login')
+      expect(buildLoginRedirectUrl({})).toBe('/login')
+      expect(buildLoginRedirectUrl({ pathname: 'https://evil.example/x' })).toBe('/login')
+      expect(buildLoginRedirectUrl({ pathname: '//evil.example/x' })).toBe('/login')
     })
   })
 

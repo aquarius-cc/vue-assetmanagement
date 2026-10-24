@@ -121,8 +121,6 @@ export interface EntityStore<T, Q extends PaginationQuery = PaginationQuery> {
 
   // 计算属性 & 方法
   getTotalPages: number
-  isValidPage: (page: number) => boolean
-  navigateToValidPage: (page: number, page_size?: number) => Promise<T[] | undefined>
 
   // 控制
   currentEntityId: Ref<string | null>

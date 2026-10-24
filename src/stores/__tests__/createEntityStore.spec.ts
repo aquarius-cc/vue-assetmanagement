@@ -342,51 +342,6 @@ describe('createEntityStore', () => {
 
       expect(store.getTotalPages).toBe(3)
     })
-
-    it('isValidPage 应该验证页码有效性', async () => {
-      vi.mocked(mockApi.getList).mockResolvedValue({ count: 40, results: [] })
-      await store.getList({ page: 1, page_size: 20 })
-
-      expect(store.isValidPage(1)).toBe(true)
-      expect(store.isValidPage(2)).toBe(true)
-      expect(store.isValidPage(3)).toBe(false)
-      expect(store.isValidPage(0)).toBe(false)
-    })
-
-    it('navigateToValidPage 应该调用 getList 并更新分页', async () => {
-      vi.mocked(mockApi.getList).mockResolvedValue({
-        count: 40,
-        results: [{ id: '1', name: '第一页', value: 100 }],
-      })
-      await store.getList({ page: 1, page_size: 20 })
-
-      vi.mocked(mockApi.getList).mockResolvedValue({
-        count: 40,
-        results: [{ id: '21', name: '第二十一条', value: 210 }],
-      })
-
-      await store.navigateToValidPage(2)
-
-      expect(mockApi.getList).toHaveBeenCalled()
-      expect(store.list).toHaveLength(1)
-    })
-
-    it('navigateToValidPage 无效页码时应重定向到最后一页', async () => {
-      vi.mocked(mockApi.getList).mockResolvedValue({
-        count: 30,
-        results: [{ id: '1', name: 'A', value: 1 }],
-      })
-      await store.getList({ page: 1, page_size: 20 })
-
-      vi.mocked(mockApi.getList).mockResolvedValue({
-        count: 30,
-        results: [{ id: '21', name: 'B', value: 2 }],
-      })
-
-      await store.navigateToValidPage(99)
-
-      expect(mockApi.getList).toHaveBeenCalled()
-    })
   })
 
   describe('缓存', () => {
@@ -732,46 +687,6 @@ describe('createEntityStore', () => {
       await req2
 
       expect(store.loading).toBe(false)
-    })
-  })
-
-  describe('navigateToValidPage扩展', () => {
-    it('应支持自定义page_size参数', async () => {
-      vi.mocked(mockApi.getList).mockResolvedValue({ count: 100, results: [] })
-      await store.getList({ page: 1, page_size: 20 })
-
-      vi.mocked(mockApi.getList).mockResolvedValue({
-        count: 100,
-        results: [{ id: '1', name: 'A', value: 1 }],
-      })
-
-      await store.navigateToValidPage(2, 10)
-
-      expect(mockApi.getList).toHaveBeenCalled()
-    })
-
-    it('负数页码应重定向到第一页', async () => {
-      vi.mocked(mockApi.getList).mockResolvedValue({ count: 40, results: [] })
-      await store.getList({ page: 1, page_size: 20 })
-
-      vi.mocked(mockApi.getList).mockResolvedValue({
-        count: 40,
-        results: [{ id: '1', name: 'A', value: 1 }],
-      })
-
-      await store.navigateToValidPage(-1)
-
-      expect(mockApi.getList).toHaveBeenCalled()
-    })
-  })
-
-  describe('isValidPage边界', () => {
-    it('total为0时所有页码都无效', async () => {
-      vi.mocked(mockApi.getList).mockResolvedValue({ count: 0, results: [] })
-      await store.getList()
-
-      expect(store.isValidPage(1)).toBe(false)
-      expect(store.isValidPage(0)).toBe(false)
     })
   })
 
