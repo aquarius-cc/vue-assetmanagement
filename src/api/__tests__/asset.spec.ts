@@ -115,6 +115,17 @@ describe('assetAPI', () => {
     })
   })
 
+  it('markAssetAsBroken invalidates detail + list cache precisely (AUD-47)', async () => {
+    await assetAPI.markAssetAsBroken('A001', { broken_reason: 'crack' })
+    const patterns = mockClearCacheByPattern.mock.calls.map((c) => c[0] as string)
+    // 现有详情失效
+    expect(patterns).toContain('/assets/assets/A001/')
+    // 新增列表精确失效 (先红锚: 修复前只清详情, 列表 key 5min 旧状态)
+    expect(patterns).toContain('/assets/assets/?')
+    // 未用宽前缀 /assets/assets/ (避免放大 AUD-55 过宽面)
+    expect(patterns).not.toContain('/assets/assets/')
+  })
+
   it('getCombinedDetails calls GET /assets/assets/combined_details/', async () => {
     await assetAPI.getCombinedDetails('A001')
     expect(mockRequest.get).toHaveBeenCalledWith('/assets/assets/combined_details/', {

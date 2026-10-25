@@ -51,6 +51,21 @@ describe('MemoryCache', () => {
     expect(cache.get('/assets/contracts/?page=1')).toBe('data2')
   })
 
+  it('pattern "/assets/assets/?" hits only list keys, not detail/statistics (AUD-47 三点式)', () => {
+    cache.set('/assets/assets/?page=1', 'list1')
+    cache.set('/assets/assets/?page=2', 'list2')
+    cache.set('/assets/assets/A999/', 'other-detail')
+    cache.set('/assets/assets/statistics/?page=1', 'stats')
+    cache.clearByPattern('/assets/assets/?')
+    // ① 列表 key 全被清
+    expect(cache.get('/assets/assets/?page=1')).toBeUndefined()
+    expect(cache.get('/assets/assets/?page=2')).toBeUndefined()
+    // ② 他资产详情 key 保留 (不误清)
+    expect(cache.get('/assets/assets/A999/')).toBe('other-detail')
+    // ③ statistics 等聚合端点 key 保留 (不放大 AUD-55 过宽面)
+    expect(cache.get('/assets/assets/statistics/?page=1')).toBe('stats')
+  })
+
   it('evicts oldest entry when maxSize is reached', () => {
     const smallCache = new MemoryCache(2)
     smallCache.set('a', 1)

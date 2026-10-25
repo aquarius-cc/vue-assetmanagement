@@ -290,6 +290,9 @@ export const assetAPI = {
     // [M-19] 写后失效 getAssetByCode 的 5min 缓存：mark-broken 是 action 端点，
     // 拦截器仅按写 URL（…/mark-broken/）清缓存，不会命中详情 GET（…/recordcode/）缓存
     clearCacheByPattern(`/assets/assets/${recordcode}/`)
+    // [AUD-47] 补列表精确失效：列表 key 形态为 /assets/assets/?page=...，
+    // 用 "/assets/assets/?" 子串精确命中列表 key，不误清他资产详情与 statistics 缓存
+    clearCacheByPattern('/assets/assets/?')
     return result
   },
 
