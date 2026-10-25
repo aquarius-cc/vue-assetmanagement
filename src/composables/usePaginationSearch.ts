@@ -136,6 +136,16 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
     }
   }
 
+  /**
+   * [M-37] EP 事件入口吞错：loadList/performSearch 失败时已 logError + ElMessage 统一提示，
+   * 此处兜底捕获仅为阻断 unhandled rejection——EP 事件处理器与 void 调用不消费 rejection。
+   */
+  const swallowEntryRejection = (action: () => Promise<unknown>): Promise<void> =>
+    action().then(
+      () => undefined,
+      () => undefined, // 入口吞错（M-37）：用户提示已由内层统一发出
+    )
+
   // ===== 表格数据 =====
   const tableData = computed(() => {
     const hasSearch =
@@ -146,29 +156,31 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
   })
 
   // ===== 分页操作 =====
-  const handleSizeChange = async (newSize: number) => {
-    pageSize.value = newSize
-    // [M-3] 统一语义：改每页条数回第 1 页（业界惯例，消解 EP size-change/current-change 双触发）
-    currentPage.value = 1
-    await nextTick()
-    await runActiveSearch()
-  }
-
-  const handleCurrentChange = async (newPage: number) => {
-    currentPage.value = newPage
-    await nextTick()
-    const useSearchResults = hasParamsSearch() || (!!search.value.trim() && !!searchConfig)
-    await runActiveSearch()
-    const totalPages = Math.ceil(
-      (useSearchResults ? searchTotal.value : total.value) / pageSize.value,
-    )
-    if (newPage > totalPages && totalPages > 0) {
-      ElMessage.warning(`${messages.invalidPage}（${totalPages}）`)
-      currentPage.value = totalPages
+  const handleSizeChange = (newSize: number) =>
+    swallowEntryRejection(async () => {
+      pageSize.value = newSize
+      // [M-3] 统一语义：改每页条数回第 1 页（业界惯例，消解 EP size-change/current-change 双触发）
+      currentPage.value = 1
       await nextTick()
       await runActiveSearch()
-    }
-  }
+    })
+
+  const handleCurrentChange = (newPage: number) =>
+    swallowEntryRejection(async () => {
+      currentPage.value = newPage
+      await nextTick()
+      const useSearchResults = hasParamsSearch() || (!!search.value.trim() && !!searchConfig)
+      await runActiveSearch()
+      const totalPages = Math.ceil(
+        (useSearchResults ? searchTotal.value : total.value) / pageSize.value,
+      )
+      if (newPage > totalPages && totalPages > 0) {
+        ElMessage.warning(`${messages.invalidPage}（${totalPages}）`)
+        currentPage.value = totalPages
+        await nextTick()
+        await runActiveSearch()
+      }
+    })
 
   const resetToFirstPage = async () => {
     currentPage.value = 1
@@ -183,14 +195,12 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
    * 仅置 1 + 委托 performSearchWithParams；翻页/刷新路径仍走 performSearchWithParams
    * 原型（不复位），避免破坏 BF-083 搜索态路由与 routing.spec 的翻页契约。
    */
-  const searchWithReset = async (params: Record<string, string>) => {
+  const searchWithReset = (params: Record<string, string>) => {
     currentPage.value = 1
-    return performSearchWithParams(params)
+    return swallowEntryRejection(() => performSearchWithParams(params))
   }
 
-  const refreshCurrentPage = async () => {
-    await runActiveSearch()
-  }
+  const refreshCurrentPage = () => swallowEntryRejection(() => runActiveSearch())
 
   // ===== store loading =====
   const storeLoading = computed(() => readStoreValue<boolean>(store.loading) || false)

@@ -1,6 +1,7 @@
 // TECHNICAL_DEBT: >500 lines（存量文件，2026-07-07 基线前已超限；本次修改新增 <50 行，暂不拆分）
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ref, computed } from 'vue'
+import { ElMessage } from 'element-plus'
 import { usePaginationSearch } from '../usePaginationSearch'
 
 // Mock ElMessage
@@ -718,6 +719,41 @@ describe('usePaginationSearch', () => {
       fast.resolve({ count: 0, results: [] })
       await promiseB
       expect(isSearching.value).toBe(false)
+    })
+  })
+
+  describe('EP 事件入口吞错 [M-37]', () => {
+    it('handleCurrentChange 吞掉失败不产生 unhandled rejection，提示仍由内层发出', async () => {
+      mockStore.getList.mockRejectedValue(new Error('boom'))
+
+      const { handleCurrentChange } = usePaginationSearch({ store: mockStore })
+      await expect(handleCurrentChange(2)).resolves.toBeUndefined() // 修复前 rejects → 红
+      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith('加载数据失败')
+    })
+
+    it('handleSizeChange 吞掉失败', async () => {
+      mockStore.getList.mockRejectedValue(new Error('boom'))
+
+      const { handleSizeChange } = usePaginationSearch({ store: mockStore })
+      await expect(handleSizeChange(50)).resolves.toBeUndefined() // 修复前 rejects → 红
+    })
+
+    it('refreshCurrentPage 吞掉失败', async () => {
+      mockStore.getList.mockRejectedValue(new Error('boom'))
+
+      const { refreshCurrentPage } = usePaginationSearch({ store: mockStore })
+      await expect(refreshCurrentPage()).resolves.toBeUndefined() // 修复前 rejects → 红
+    })
+
+    it('searchWithReset 吞掉 performSearchWithParams 失败', async () => {
+      const { searchWithReset } = usePaginationSearch({
+        store: mockStore,
+        search: {
+          performSearch: vi.fn(),
+          performSearchWithParams: vi.fn().mockRejectedValue(new Error('boom')),
+        },
+      })
+      await expect(searchWithReset({ status: 'in_use' })).resolves.toBeUndefined() // 修复前 rejects → 红
     })
   })
 })

@@ -152,4 +152,65 @@ describe('useExportableAssets', () => {
       )
     })
   })
+
+  describe('race guard [M-39]', () => {
+    /** 按调用顺序登记的延迟 resolve/reject 队列（先红后绿红证 B 用） */
+    function deferredQueue() {
+      const resolvers: Array<(v: unknown) => void> = []
+      const rejecters: Array<(e: unknown) => void> = []
+      mockSearchAvailableAssets.mockImplementation(
+        () =>
+          new Promise((resolve, reject) => {
+            resolvers.push(resolve)
+            rejecters.push(reject)
+          }),
+      )
+      return { resolvers, rejecters }
+    }
+
+    it('requests write currentPage before response resolves (请求前写)', async () => {
+      const { resolvers } = deferredQueue()
+      const { changePage, currentPage } = useExportableAssets()
+
+      const pending = changePage(2)
+      expect(currentPage.value).toBe(2) // 修复前：响应后才回写（:34），此处仍为 1 → 红
+
+      resolvers[0](mockSuccessResponse())
+      await pending
+      expect(currentPage.value).toBe(2)
+    })
+
+    it('slow response does not overwrite newer result (seq 守卫)', async () => {
+      const { resolvers } = deferredQueue()
+      const { search, changePage, list, total, currentPage } = useExportableAssets()
+
+      const p1 = search() // 请求1 page=1（慢）
+      const p2 = changePage(2) // 请求2 page=2（快）
+      resolvers[1](mockSuccessResponse({ results: [{ asset_code: 'FRESH' }], count: 1 }))
+      await p2
+      resolvers[0](mockSuccessResponse({ results: [{ asset_code: 'STALE' }], count: 99 }))
+      await p1
+
+      expect(list.value).toEqual([{ asset_code: 'FRESH' }]) // 修复前：STALE 覆盖 → 红
+      expect(total.value).toBe(1)
+      expect(currentPage.value).toBe(2)
+    })
+
+    it('stale failure does not clear newer result (seq 守卫 catch 分支)', async () => {
+      const { resolvers, rejecters } = deferredQueue()
+      const { search, changePage, list, total } = useExportableAssets()
+
+      const p1 = search()
+      const p2 = changePage(2)
+      resolvers[1](mockSuccessResponse({ results: [{ asset_code: 'FRESH' }], count: 1 }))
+      await p2
+      mockElMessageError.mockClear()
+      rejecters[0](new Error('slow network fail'))
+      await p1
+
+      expect(list.value).toEqual([{ asset_code: 'FRESH' }]) // 修复前：过期失败清空 → 红
+      expect(total.value).toBe(1)
+      expect(mockElMessageError).not.toHaveBeenCalled()
+    })
+  })
 })

@@ -24,21 +24,29 @@ export function useExportableAssets() {
 
   let lastParams: Record<string, string | number> = {}
 
+  // [M-39] 请求序号：仅最新请求的响应写入状态，丢弃慢响应防止覆盖新数据
+  // 范式同 usePagedList [M-14] / useGroupedAssetList [M-22]
+  let listRequestSeq = 0
+
   const fetchList = async (page: number, extraParams: Record<string, string | number>) => {
+    const seq = ++listRequestSeq
     loading.value = true
+    // [M-39] 请求前写页码：防慢响应到达后才回写导致 currentPage 回退/竞态覆盖
+    currentPage.value = page
     try {
       const params = { page, page_size: pageSize.value, ...extraParams }
       const response: AssetListSimpleResponse = await assetAPI.searchAvailableAssets(params)
+      if (seq !== listRequestSeq) return // 过期响应：被更新请求取代，跳过状态写回
       list.value = response.results
       total.value = response.count
-      currentPage.value = page
     } catch (error) {
+      if (seq !== listRequestSeq) return // 过期响应：跳过错误清空
       logError('composables/useExportableAssets', '[useExportableAssets] 获取可出库资产失败', error)
       ElMessage.error('加载可出库资产列表失败')
       list.value = []
       total.value = 0
     } finally {
-      loading.value = false
+      if (seq === listRequestSeq) loading.value = false
     }
   }
 
