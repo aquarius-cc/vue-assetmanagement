@@ -155,7 +155,9 @@ export const assetAPI = {
       throw new Error('recordcode is required for update')
     }
     const { recordcode, ...payload } = data
-    const result = unwrapResponse(request.put<AssetDetail>(`/assets/assets/${recordcode}/`, payload))
+    const result = unwrapResponse(
+      request.put<AssetDetail>(`/assets/assets/${recordcode}/`, payload),
+    )
     // [AUD-55/BF-152] 写后列表精确失效：详情 key 由拦截器按写 URL 覆盖, 列表 key（?page=...）够不到
     clearCacheByPattern('/assets/assets/?')
     return result

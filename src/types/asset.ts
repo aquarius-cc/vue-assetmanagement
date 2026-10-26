@@ -36,7 +36,7 @@ import type { PaginatedResponse } from '@/types/common'
  * - in_store → in_use: 新资产出库
  * - in_use → recycled_pending: 资产回收
  * - recycled_pending → in_use: 回收资产重新发放
- * - in_use → damaged: 提交报废申请
+ * - recycled_pending → damaged: 提交报废申请（in_use 不可直接报废，须先回收 —— V2.8 业务规则）
  * - damaged → scrapped: 审批通过，完成报废
  * - damaged → original_status: 审批拒绝，回退申请前状态
  * - repairing → recycled_pending: 维修完成，转入待发放
