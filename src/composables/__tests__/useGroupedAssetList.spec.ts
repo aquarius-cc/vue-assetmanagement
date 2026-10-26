@@ -603,4 +603,23 @@ describe('useGroupedAssetList', () => {
       expect(api.selectedCodes.value).toEqual(['ZC001', 'ZC002', 'ZC003'])
     })
   })
+
+  describe('AUD-48 失败页码回滚 (BF-150)', () => {
+    it('changePage 失败时 currentPage 回滚到最近成功页且失败页可重试', async () => {
+      mockGetGroupedAssets.mockResolvedValueOnce(paged([makeSummary()], 1))
+      const api = useGroupedAssetList()
+      await api.search() // 第 1 页成功 (最近成功页锚 = 1)
+
+      mockGetGroupedAssets.mockRejectedValueOnce(new Error('boom'))
+      await api.changePage(2) // 失败
+      // 修复前：乐观写后不回滚 → currentPage=2, 被早退守卫锁死 → 红
+      expect(api.currentPage.value).toBe(1)
+      expect(api.summaries.value).toEqual([])
+
+      mockGetGroupedAssets.mockResolvedValueOnce(paged([makeSummary()], 1))
+      await api.changePage(2) // 修复前：被早退拦截, 请求不发 → 红
+      expect(mockGetGroupedAssets).toHaveBeenCalledTimes(3)
+      expect(api.currentPage.value).toBe(2)
+    })
+  })
 })

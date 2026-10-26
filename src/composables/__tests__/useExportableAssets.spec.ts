@@ -12,6 +12,10 @@ vi.mock('element-plus', () => ({
   ElMessage: { error: vi.fn() },
 }))
 
+vi.mock('@/utils/logger', () => ({
+  logError: vi.fn(),
+}))
+
 import { useExportableAssets } from '../useExportableAssets'
 import { ElMessage } from 'element-plus'
 
@@ -211,6 +215,32 @@ describe('useExportableAssets', () => {
       expect(list.value).toEqual([{ asset_code: 'FRESH' }]) // 修复前：过期失败清空 → 红
       expect(total.value).toBe(1)
       expect(mockElMessageError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('AUD-48 失败页码回滚 (BF-150)', () => {
+    it('changePage 失败时 currentPage 回滚到最近成功页', async () => {
+      const { search, changePage, currentPage, list, total } = useExportableAssets()
+      await search() // 第 1 页成功 (最近成功页锚 = 1)
+      mockSearchAvailableAssets.mockRejectedValueOnce(new Error('boom'))
+      await changePage(2)
+      // 修复前：乐观写后不回滚 → currentPage=2, 该页被早退守卫锁死 → 红
+      expect(currentPage.value).toBe(1)
+      expect(list.value).toEqual([])
+      expect(total.value).toBe(0)
+    })
+
+    it('失败页可重试 (回滚后再点同页不被早退拦截)', async () => {
+      const { search, changePage, currentPage } = useExportableAssets()
+      await search()
+      mockSearchAvailableAssets.mockRejectedValueOnce(new Error('boom'))
+      await changePage(2)
+      expect(currentPage.value).toBe(1)
+      mockSearchAvailableAssets.mockClear()
+      await changePage(2) // 修复前：被早退守卫拦截, 请求不发 → 红
+      expect(mockSearchAvailableAssets).toHaveBeenCalledTimes(1)
+      expect(mockSearchAvailableAssets).toHaveBeenCalledWith({ page: 2, page_size: 10 })
+      expect(currentPage.value).toBe(2)
     })
   })
 })

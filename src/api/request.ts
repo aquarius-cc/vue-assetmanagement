@@ -41,6 +41,7 @@ import { BASE_URL, TIMEOUT, MAX_REFRESH_RETRY_COUNT, EXPORT_TIMEOUT } from '@/ap
 import { detectAuthChannel } from '@/utils/device'
 import { refreshAccessToken, MissingRefreshTokenError } from '@/utils/tokenRefresh'
 import { isTransientError } from '@/utils/requestErrors'
+import { sanitizeRedirect } from '@/utils/redirect'
 import { getCsrfToken } from '@/utils/csrf'
 import { logError, logWarn } from '@/utils/logger'
 import { resolveDownloadFilename } from '@/utils/fileDownload'
@@ -110,10 +111,8 @@ function showErrorDedup(message: string): void {
  * pathname 缺失/非站内绝对路径（如测试桩 location 仅含 href）按无回跳目标处理。
  */
 export function buildLoginRedirectUrl(back?: { pathname?: string; search?: string }): string {
-  const pathname = back?.pathname
-  if (typeof pathname !== 'string' || !pathname.startsWith('/') || pathname.startsWith('//')) {
-    return '/login'
-  }
+  // [AUD-54] 站内路径防御收敛共享纯函数（// 协议相对与 /\ 反斜杠归一化均拒）
+  const pathname = sanitizeRedirect(back?.pathname, '/login')
   if (pathname.startsWith('/login')) return '/login'
   const search = typeof back?.search === 'string' ? back.search : ''
   const backUrl = `${pathname}${search}`

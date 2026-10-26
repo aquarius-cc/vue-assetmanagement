@@ -24,6 +24,9 @@ export function useExportableAssets() {
 
   let lastParams: Record<string, string | number> = {}
 
+  // [AUD-48] 回滚锚：最近一次成功加载的页码；新搜索前重置为 1（失败回 1 而非旧页）
+  let lastLoadedPage = 1
+
   // [M-39] 请求序号：仅最新请求的响应写入状态，丢弃慢响应防止覆盖新数据
   // 范式同 usePagedList [M-14] / useGroupedAssetList [M-22]
   let listRequestSeq = 0
@@ -39,12 +42,15 @@ export function useExportableAssets() {
       if (seq !== listRequestSeq) return // 过期响应：被更新请求取代，跳过状态写回
       list.value = response.results
       total.value = response.count
+      lastLoadedPage = page // [AUD-48] 成功锚定
     } catch (error) {
       if (seq !== listRequestSeq) return // 过期响应：跳过错误清空
       logError('composables/useExportableAssets', '[useExportableAssets] 获取可出库资产失败', error)
       ElMessage.error('加载可出库资产列表失败')
       list.value = []
       total.value = 0
+      // [AUD-48] 回滚乐观写的页码到最近成功页：失败页不被早退守卫锁死, 可重试
+      currentPage.value = lastLoadedPage
     } finally {
       if (seq === listRequestSeq) loading.value = false
     }
@@ -52,6 +58,7 @@ export function useExportableAssets() {
 
   const search = async (params?: Record<string, string | number>) => {
     if (params !== undefined) lastParams = params
+    lastLoadedPage = 1 // [AUD-48] 新查询重置锚：搜索失败回第 1 页
     await fetchList(1, lastParams)
   }
 

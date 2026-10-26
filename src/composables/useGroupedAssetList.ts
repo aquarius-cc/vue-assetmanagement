@@ -96,6 +96,9 @@ export function useGroupedAssetList(options: GroupedAssetListOptions = {}): Grou
   // 范式同 createEntityStore listRequestSeq
   let summaryRequestSeq = 0
 
+  // [AUD-48] 回滚锚：最近一次成功加载的页码；新查询前重置为 1（失败回 1 而非旧页）
+  let lastLoadedPage = 1
+
   const cache = useGroupChildrenCache({ childPageSize, getFilters: () => lastFilters })
   const selection = useGroupedAssetSelection(summaries)
 
@@ -112,12 +115,15 @@ export function useGroupedAssetList(options: GroupedAssetListOptions = {}): Grou
       if (seq !== summaryRequestSeq) return // 过期响应：被更新请求取代，跳过状态写回
       summaries.value = response.results
       summaryTotal.value = response.count
+      lastLoadedPage = currentPage.value // [AUD-48] 成功锚定
     } catch (error) {
       if (seq !== summaryRequestSeq) return // 过期响应：跳过错误清空
       logError('composables/useGroupedAssetList', '[分组汇总]', error)
       ElMessage.error('加载资产分组汇总失败')
       summaries.value = []
       summaryTotal.value = 0
+      // [AUD-48] 回滚乐观写的页码到最近成功页：失败页不被早退守卫锁死, 可重试
+      currentPage.value = lastLoadedPage
     } finally {
       if (seq === summaryRequestSeq) summaryLoading.value = false
     }
@@ -127,6 +133,7 @@ export function useGroupedAssetList(options: GroupedAssetListOptions = {}): Grou
   const search = async (filters?: AssetGroupQueryParams): Promise<void> => {
     lastFilters = filters ?? {}
     currentPage.value = 1
+    lastLoadedPage = 1 // [AUD-48] 新查询重置锚：搜索失败回第 1 页
     cache.reset()
     await fetchSummaries()
   }
@@ -138,6 +145,7 @@ export function useGroupedAssetList(options: GroupedAssetListOptions = {}): Grou
    */
   const reload = async (): Promise<void> => {
     currentPage.value = 1
+    lastLoadedPage = 1 // [AUD-48] 刷新回第 1 页，重置锚
     cache.reset()
     await fetchSummaries()
   }

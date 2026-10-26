@@ -68,6 +68,8 @@ describe('assetAPI', () => {
     expect(mockRequest.put).toHaveBeenCalledWith('/assets/assets/Asset-20260101-ABC12345/', {
       asset_name: 'Updated',
     })
+    // [AUD-55/BF-152] 写后列表精确失效（详情由拦截器按写 URL 覆盖）
+    expect(mockClearCacheByPattern).toHaveBeenCalledWith('/assets/assets/?')
   })
 
   it('updateAsset throws when recordcode is missing', () => {
@@ -79,6 +81,8 @@ describe('assetAPI', () => {
   it('deleteAsset calls DELETE /assets/assets/{recordcode}/', async () => {
     await assetAPI.deleteAsset('Asset-20260101-ABC12345')
     expect(mockRequest.delete).toHaveBeenCalledWith('/assets/assets/Asset-20260101-ABC12345/')
+    // [AUD-55/BF-152] 写后列表精确失效（详情由拦截器按写 URL 覆盖）
+    expect(mockClearCacheByPattern).toHaveBeenCalledWith('/assets/assets/?')
   })
 
   it('getAssetByName calls GET /assets/assets/get_asset_by_name/{name}/', async () => {
@@ -217,6 +221,8 @@ describe('assetAPI', () => {
     expect(mockRequest.post).toHaveBeenCalledWith('/assets/assets/batch-create/', {
       items: [{ asset_name: 'X' }],
     })
+    // [AUD-55/BF-152] 写后列表精确失效（拦截器按写 URL 够不到列表 key）
+    expect(mockClearCacheByPattern).toHaveBeenCalledWith('/assets/assets/?')
   })
 
   it('getQrCodeImageUrl returns BASE_URL-prefixed image URL without HTTP call', () => {

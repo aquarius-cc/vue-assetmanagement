@@ -65,6 +65,32 @@ describe('M-14 usePagedList seq 守卫', () => {
     expect(list.value).toEqual(['B'])
     expect(total.value).toBe(10)
   })
+
+  it('AUD-48 changePage 失败回滚 currentPage 且失败页可重试 (BF-150)', async () => {
+    const pageCalls: number[] = []
+    const fetcher = vi.fn((params: Record<string, unknown>) => {
+      pageCalls.push(params.page as number)
+      // 第 2 次调用（changePage(2) 首次）失败
+      if (pageCalls.length === 2) return Promise.reject(new Error('boom'))
+      return Promise.resolve({ results: ['x'], count: 1 })
+    })
+
+    const { search, changePage, currentPage } = usePagedList<string>({
+      fixedParams: {},
+      fetcher,
+      errorMessage: 'fail',
+      tag: 'test',
+    })
+
+    await search() // 第 1 页成功 (最近成功页锚 = 1)
+    await changePage(2) // 失败
+    // 修复前：乐观写后不回滚 → currentPage=2, 被早退守卫锁死 → 红
+    expect(currentPage.value).toBe(1)
+
+    await changePage(2) // 修复前：被早退拦截, 请求不发 → 红
+    expect(pageCalls).toEqual([1, 2, 2])
+    expect(currentPage.value).toBe(2)
+  })
 })
 
 // ======================== M-17 auditLogStore seq 守卫 ========================

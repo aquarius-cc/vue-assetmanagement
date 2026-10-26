@@ -99,6 +99,7 @@ import { useAppStore } from '@/stores/app'
 import { useNetworkStore } from '@/stores'
 import type { LoginForm } from '@/types/authuser'
 import { logError } from '@/utils/logger'
+import { sanitizeRedirect } from '@/utils/redirect'
 
 const route = useRoute()
 const router = useRouter()
@@ -235,12 +236,8 @@ const handleLogin = async () => {
         appStore.setPageTitle('首页')
 
         // 登录成功后跳转：优先回跳来源页（如扫码页 redirect 参数，R4-04），
-        // 仅接受以单个 / 开头的站内路径（防 //evil.com 协议相对跳转），否则回 /main
-        const redirect = route.query.redirect
-        const target =
-          typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')
-            ? redirect
-            : '/main'
+        // 仅接受站内绝对路径（//evil.com 协议相对与 /\evil.com 反斜杠归一化均拒, AUD-54），否则回 /main
+        const target = sanitizeRedirect(route.query.redirect, '/main')
         await router.push(target)
       } else {
         // 登录失败：在表单内显示详细错误信息（持久显示，直到用户手动关闭）

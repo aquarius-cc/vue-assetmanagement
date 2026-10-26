@@ -69,6 +69,9 @@ export function usePagedList<TItem>(options: PagedListOptions<TItem>): PagedList
   // 范式同 createEntityStore listRequestSeq / dashboard trendRequestId
   let listRequestSeq = 0
 
+  // [AUD-48] 回滚锚：最近一次成功加载的页码；新搜索前重置为 1（失败回 1 而非旧页）
+  let lastLoadedPage = 1
+
   /** 内部请求方法 */
   const fetchList = async (params: Record<string, unknown>) => {
     const seq = ++listRequestSeq
@@ -78,12 +81,15 @@ export function usePagedList<TItem>(options: PagedListOptions<TItem>): PagedList
       if (seq !== listRequestSeq) return // 过期响应：被更新请求取代，跳过状态写回
       list.value = response.results
       total.value = response.count
+      lastLoadedPage = params.page as number // [AUD-48] 成功锚定
     } catch (error) {
       if (seq !== listRequestSeq) return // 过期响应：同样跳过错误清空
       logError('composables/usePagedList', `[${tag}]`, error)
       ElMessage.error(errorMessage)
       list.value = []
       total.value = 0
+      // [AUD-48] 回滚乐观写的页码到最近成功页：失败页不被早退守卫锁死, 可重试
+      currentPage.value = lastLoadedPage
     } finally {
       if (seq === listRequestSeq) loading.value = false
     }
@@ -95,6 +101,7 @@ export function usePagedList<TItem>(options: PagedListOptions<TItem>): PagedList
       lastExtraParams = extraParams
     }
     currentPage.value = 1
+    lastLoadedPage = 1 // [AUD-48] 新查询重置锚：搜索失败回第 1 页
     await fetchList({ page: currentPage.value, page_size: pageSize.value, ...lastExtraParams })
   }
 

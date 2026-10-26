@@ -155,7 +155,10 @@ export const assetAPI = {
       throw new Error('recordcode is required for update')
     }
     const { recordcode, ...payload } = data
-    return unwrapResponse(request.put<AssetDetail>(`/assets/assets/${recordcode}/`, payload))
+    const result = unwrapResponse(request.put<AssetDetail>(`/assets/assets/${recordcode}/`, payload))
+    // [AUD-55/BF-152] 写后列表精确失效：详情 key 由拦截器按写 URL 覆盖, 列表 key（?page=...）够不到
+    clearCacheByPattern('/assets/assets/?')
+    return result
   },
 
   /**
@@ -164,7 +167,10 @@ export const assetAPI = {
    * 【ID-2/取键契约】路由定位键为 recordcode，入参实为 recordcode
    */
   deleteAsset: (recordcode: string): Promise<void> => {
-    return unwrapResponse(request.delete<void>(`/assets/assets/${recordcode}/`))
+    const result = unwrapResponse(request.delete<void>(`/assets/assets/${recordcode}/`))
+    // [AUD-55/BF-152] 写后列表精确失效：详情 key 由拦截器按写 URL 覆盖, 列表 key（?page=...）够不到
+    clearCacheByPattern('/assets/assets/?')
+    return result
   },
 
   /**
@@ -377,11 +383,14 @@ export const assetAPI = {
    * 一次性提交多条资产数据，后端逐条处理并返回成功和失败明细
    */
   batchCreateAssets: (items: AssetCreateForm[]): Promise<AssetBatchCreateResult> => {
-    return unwrapResponse(
+    const result = unwrapResponse(
       request.post<AssetBatchCreateResult>('/assets/assets/batch-create/', {
         items,
       }),
     )
+    // [AUD-55/BF-152] 写后列表精确失效：拦截器按写 URL（…/batch-create/）够不到列表 key
+    clearCacheByPattern('/assets/assets/?')
+    return result
   },
 
   /**
