@@ -213,17 +213,29 @@ async function handleUnauthorized(error: unknown): Promise<unknown> {
 const extractTopLevelMsg = (obj: Record<string, unknown> | null): unknown =>
   obj?.detail ?? obj?.message ?? obj?.error
 
+/** 嵌套错误值递归展开为 `路径: 首条消息`（DRF 3.18 起 many=True 错误为 index-keyed dict，BF-159） */
+const flattenFieldMsgs = (key: string, value: unknown, out: string[]): void => {
+  if (Array.isArray(value)) {
+    out.push(`${key}: ${String(value[0])}`)
+    return
+  }
+  if (value !== null && typeof value === 'object') {
+    for (const [childKey, childValue] of Object.entries(value as Record<string, unknown>)) {
+      flattenFieldMsgs(`${key}.${childKey}`, childValue, out)
+    }
+    return
+  }
+  out.push(`${key}: ${String(value)}`)
+}
+
 /** 字段级错误格式化：data 键下 `{field: msgs}` → `field: text | field2: text2` */
 const formatFieldErrors = (fieldErrors: unknown): string | null => {
   if (!fieldErrors || typeof fieldErrors !== 'object' || Array.isArray(fieldErrors)) return null
   const entries = Object.entries(fieldErrors as Record<string, unknown>)
   if (entries.length === 0) return null
-  return entries
-    .map(([field, msgs]) => {
-      const text = Array.isArray(msgs) ? msgs[0] : String(msgs)
-      return `${field}: ${text}`
-    })
-    .join(' | ')
+  const parts: string[] = []
+  for (const [field, msgs] of entries) flattenFieldMsgs(field, msgs, parts)
+  return parts.length > 0 ? parts.join(' | ') : null
 }
 
 function pickErrorMessage(data: unknown): string {

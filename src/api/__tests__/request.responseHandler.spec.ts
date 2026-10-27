@@ -227,6 +227,31 @@ describe('request responseHandler', () => {
       )
     })
 
+    it('DRF 3.18 index-keyed dict errors flatten to readable paths (BF-159)', async () => {
+      const error = makeHttpError(400, {
+        message: '参数验证失败',
+        data: {
+          items: { 0: { asset_name: ['此字段是必填项。'], asset_type: ['此字段是必填项。'] } },
+        },
+      })
+      await expect(handlers.resErr?.(error)).rejects.toBe(error)
+      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith(
+        'items.0.asset_name: 此字段是必填项。 | items.0.asset_type: 此字段是必填项。',
+      )
+    })
+
+    it('nested dict with scalar value formats as path scalar', async () => {
+      const error = makeHttpError(400, { message: '参数验证失败', data: { items: { 0: 'bad' } } })
+      await expect(handlers.resErr?.(error)).rejects.toBe(error)
+      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith('items.0: bad')
+    })
+
+    it('nested dict with only empty objects falls back to message', async () => {
+      const error = makeHttpError(400, { message: '参数验证失败', data: { items: {} } })
+      await expect(handlers.resErr?.(error)).rejects.toBe(error)
+      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith('参数验证失败')
+    })
+
     it('default status picks detail field', async () => {
       const error = makeHttpError(400, { detail: 'detail-msg' })
       await expect(handlers.resErr?.(error)).rejects.toBe(error)
