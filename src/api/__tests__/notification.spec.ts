@@ -16,6 +16,7 @@ vi.mock('@/api/request', () => ({
   get: mockGet,
   post: mockPost,
   unwrapResponse: mockUnwrapResponse,
+  clearCacheByPattern: vi.fn(),
 }))
 
 import { notificationAPI } from '@/api/notification'

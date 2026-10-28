@@ -12,6 +12,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
+import { invalidateAssetCache } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   RepairAssetExtended,
@@ -57,7 +58,10 @@ export const repairAssetAPI = {
    * @returns 创建的维修记录
    */
   createRepairAsset: (data: RepairAssetCreateForm): Promise<RepairAssetExtended> => {
-    return unwrapResponse(request.post<RepairAssetExtended>('/assets/repair-assets/', data))
+    // [M-RC-08] 送修改变资产状态；表单仅 asset_code（非 recordcode，精确 key 对不上）→ 宽失效
+    const result = unwrapResponse(request.post<RepairAssetExtended>('/assets/repair-assets/', data))
+    invalidateAssetCache()
+    return result
   },
 
   /**
@@ -122,9 +126,12 @@ export const repairAssetAPI = {
     recordcode: string,
     data: Omit<RepairAssetCreateForm, 'asset_code' | 'operator_jobcode'>,
   ): Promise<RepairAssetExtended> => {
-    return unwrapResponse(
+    // [M-RC-08] action 写 URL 比详情缓存 key 更深，需显式失效
+    const result = unwrapResponse(
       request.post<RepairAssetExtended>(`/assets/assets/${recordcode}/repair/`, data),
     )
+    invalidateAssetCache(recordcode)
+    return result
   },
 
   /**
@@ -140,9 +147,12 @@ export const repairAssetAPI = {
     recordcode: string,
     data: Pick<RepairAssetUpdateForm, 'actual_return_date' | 'physical_grade_after'>,
   ): Promise<RepairAssetExtended> => {
-    return unwrapResponse(
+    // [M-RC-08] action 写 URL 比详情缓存 key 更深，需显式失效
+    const result = unwrapResponse(
       request.post<RepairAssetExtended>(`/assets/assets/${recordcode}/repair-done/`, data),
     )
+    invalidateAssetCache(recordcode)
+    return result
   },
 
   /**
@@ -154,9 +164,12 @@ export const repairAssetAPI = {
    * @returns 维修记录详情
    */
   repairFailed: (recordcode: string): Promise<RepairAssetExtended> => {
-    return unwrapResponse(
+    // [M-RC-08] action 写 URL 比详情缓存 key 更深，需显式失效
+    const result = unwrapResponse(
       request.post<RepairAssetExtended>(`/assets/assets/${recordcode}/repair-failed/`),
     )
+    invalidateAssetCache(recordcode)
+    return result
   },
 
   /**

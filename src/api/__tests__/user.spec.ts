@@ -20,6 +20,7 @@ const { mockRequest, mockUnwrapResponse } = vi.hoisted(() => ({
 vi.mock('@/api/index', () => ({
   request: mockRequest,
   unwrapResponse: mockUnwrapResponse,
+  clearCacheByPattern: vi.fn(),
 }))
 
 import { userAPI } from '@/api/user'

@@ -12,6 +12,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
+import { invalidateAssetCache } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   FoundAssetExtended,
@@ -39,7 +40,10 @@ export const foundAssetAPI = {
   },
 
   createFoundAsset: (data: FoundAssetCreateForm): Promise<FoundAssetExtended> => {
-    return unwrapResponse(request.post<FoundAssetExtended>('/assets/found-assets/', data))
+    // [M-RC-08] 找回改变资产状态，失效资产详情/列表缓存
+    const result = unwrapResponse(request.post<FoundAssetExtended>('/assets/found-assets/', data))
+    invalidateAssetCache(data.asset_recordcode)
+    return result
   },
 
   updateFoundAsset: (data: Partial<FoundAssetUpdateForm>): Promise<FoundAssetExtended> => {

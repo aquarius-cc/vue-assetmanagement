@@ -12,6 +12,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
+import { invalidateAssetCache } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   LostAssetExtended,
@@ -54,7 +55,10 @@ export const lostAssetAPI = {
    * @returns 创建的遗失记录
    */
   createLostAsset: (data: LostAssetCreateForm): Promise<LostAssetExtended> => {
-    return unwrapResponse(request.post<LostAssetExtended>('/assets/lost-assets/', data))
+    // [M-RC-08] 标记遗失改变资产状态，失效资产详情/列表缓存
+    const result = unwrapResponse(request.post<LostAssetExtended>('/assets/lost-assets/', data))
+    invalidateAssetCache(data.asset_recordcode)
+    return result
   },
 
   /**
@@ -100,9 +104,12 @@ export const lostAssetAPI = {
    * 对应后端 LostAssetViewSet.batch_create action
    */
   batchCreateLostAssets: (data: LostAssetBatchCreateForm): Promise<LostAssetBatchCreateResult> => {
-    return unwrapResponse(
+    // [M-RC-08] 批量创建涉及多资产状态，宽失效全部资产缓存
+    const result = unwrapResponse(
       request.post<LostAssetBatchCreateResult>('/assets/lost-assets/batch-create/', data),
     )
+    invalidateAssetCache()
+    return result
   },
 
   /**
@@ -134,9 +141,12 @@ export const lostAssetAPI = {
       lost_date?: string | null
     },
   ): Promise<LostAssetExtended> => {
-    return unwrapResponse(
+    // [M-RC-08] action 写 URL 比详情缓存 key 更深，需显式失效
+    const result = unwrapResponse(
       request.post<LostAssetExtended>(`/assets/assets/${recordcode}/mark-lost/`, data),
     )
+    invalidateAssetCache(recordcode)
+    return result
   },
 
   /**
@@ -155,9 +165,12 @@ export const lostAssetAPI = {
       found_description?: string
     },
   ): Promise<LostAssetExtended> => {
-    return unwrapResponse(
+    // [M-RC-08] action 写 URL 比详情缓存 key 更深，需显式失效
+    const result = unwrapResponse(
       request.post<LostAssetExtended>(`/assets/assets/${recordcode}/found/`, data),
     )
+    invalidateAssetCache(recordcode)
+    return result
   },
 
   /**

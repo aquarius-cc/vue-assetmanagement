@@ -13,6 +13,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
+import { invalidateAssetCache } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   OutAssetDetail,
@@ -94,7 +95,10 @@ export const outAssetAPI = {
       ...rest,
       ...(asset_recordcode !== undefined && asset_recordcode !== null && { asset_recordcode }),
     }
-    return unwrapResponse(request.post<OutAssetDetail>('/assets/out-assets/', backendData))
+    // [M-RC-08] 出库改变资产状态，失效资产详情/列表缓存（解构自 Record<string,unknown>，需收窄）
+    const result = unwrapResponse(request.post<OutAssetDetail>('/assets/out-assets/', backendData))
+    invalidateAssetCache(typeof asset_recordcode === 'string' ? asset_recordcode : undefined)
+    return result
   },
 
   /**
@@ -130,7 +134,10 @@ export const outAssetAPI = {
    * @param recordcode 出库记录编码
    */
   deleteOutAsset: (recordcode: string): Promise<void> => {
-    return unwrapResponse(request.delete<void>(`/assets/out-assets/${recordcode}/`))
+    // [M-RC-08] URL 为 out rc（非资产 rc），宽失效
+    const result = unwrapResponse(request.delete<void>(`/assets/out-assets/${recordcode}/`))
+    invalidateAssetCache()
+    return result
   },
 
   /**
@@ -139,11 +146,14 @@ export const outAssetAPI = {
    * 对应后端 OutAssetViewSet.batch_delete action
    */
   batchDeleteOutAssets: (recordcodes: string[]): Promise<BatchDeleteResult> => {
-    return unwrapResponse(
+    // [M-RC-08] 批量删除涉及多资产状态，宽失效全部资产缓存
+    const result = unwrapResponse(
       request.post<BatchDeleteResult>('/assets/out-assets/batch-delete/', {
         ids: recordcodes,
       }),
     )
+    invalidateAssetCache()
+    return result
   },
 
   /**
@@ -153,11 +163,14 @@ export const outAssetAPI = {
    * 一次性提交多条出库数据，后端逐条处理并返回成功/失败明细
    */
   batchCreateOutAssets: (items: OutAssetCreateForm[]): Promise<OutAssetBatchCreateResult> => {
-    return unwrapResponse(
+    // [M-RC-08] 批量出库涉及多资产状态，宽失效全部资产缓存
+    const result = unwrapResponse(
       request.post<OutAssetBatchCreateResult>('/assets/out-assets/batch-create/', {
         items,
       }),
     )
+    invalidateAssetCache()
+    return result
   },
 
   /**

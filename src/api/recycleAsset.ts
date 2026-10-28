@@ -12,6 +12,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
+import { invalidateAssetCache } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   RecycleAssetExtended,
@@ -59,7 +60,12 @@ export const recycleAssetAPI = {
    * @returns 创建的回收记录
    */
   createRecycleAsset: (data: RecycleAssetCreateForm): Promise<RecycleAssetExtended> => {
-    return unwrapResponse(request.post<RecycleAssetExtended>('/assets/recycle-assets/', data))
+    // [M-RC-08] 回收改变资产状态；表单仅 outasset_recordcode（无资产 rc）→ 宽失效
+    const result = unwrapResponse(
+      request.post<RecycleAssetExtended>('/assets/recycle-assets/', data),
+    )
+    invalidateAssetCache()
+    return result
   },
 
   /**
@@ -83,7 +89,12 @@ export const recycleAssetAPI = {
    * @param outasset_recordcode 出库记录编码
    */
   deleteRecycleAsset: (outasset_recordcode: string): Promise<void> => {
-    return unwrapResponse(request.delete<void>(`/assets/recycle-assets/${outasset_recordcode}/`))
+    // [M-RC-08] 删除回收记录会恢复资产状态（cancel_recycle），URL 为 recycle rc → 宽失效
+    const result = unwrapResponse(
+      request.delete<void>(`/assets/recycle-assets/${outasset_recordcode}/`),
+    )
+    invalidateAssetCache()
+    return result
   },
 
   /**
@@ -92,11 +103,14 @@ export const recycleAssetAPI = {
    * 对应后端 RecycleAssetViewSet.batch_delete action
    */
   batchDeleteRecycleAssets: (outasset_recordcodes: string[]): Promise<BatchDeleteResult> => {
-    return unwrapResponse(
+    // [M-RC-08] 批量删除涉及多资产状态，宽失效全部资产缓存
+    const result = unwrapResponse(
       request.post<BatchDeleteResult>('/assets/recycle-assets/batch-delete/', {
         ids: outasset_recordcodes,
       }),
     )
+    invalidateAssetCache()
+    return result
   },
 
   /**
@@ -111,9 +125,12 @@ export const recycleAssetAPI = {
   batchCreateRecycleAssets: (
     data: RecycleAssetBatchCreateForm,
   ): Promise<RecycleAssetBatchCreateResult> => {
-    return unwrapResponse(
+    // [M-RC-08] 批量回收涉及多资产状态，宽失效全部资产缓存
+    const result = unwrapResponse(
       request.post<RecycleAssetBatchCreateResult>('/assets/recycle-assets/batch-create/', data),
     )
+    invalidateAssetCache()
+    return result
   },
 
   /**

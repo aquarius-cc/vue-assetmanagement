@@ -1,6 +1,34 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryCache } from '@/api/cache'
 
+const { mockRequest, mockUnwrapResponse, mockClearCacheByPattern } = vi.hoisted(() => ({
+  mockRequest: {
+    get: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
+    post: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
+    put: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
+    patch: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
+    delete: vi.fn().mockResolvedValue({ code: 0, data: {}, message: '' }),
+  },
+  mockUnwrapResponse: vi.fn(
+    async (promise: Promise<{ code: number; data: unknown; message: string }>) => {
+      const res = await promise
+      if (res.code !== 0) throw new Error(res.message || '请求失败')
+      return res.data
+    },
+  ),
+  mockClearCacheByPattern: vi.fn(),
+}))
+
+vi.mock('@/api/index', () => ({
+  request: mockRequest,
+  unwrapResponse: mockUnwrapResponse,
+  clearCacheByPattern: mockClearCacheByPattern,
+}))
+
+import { invalidateAssetCache } from '@/api/assetCache'
+import { repairAssetAPI } from '@/api/repairAsset'
+import { damagedAssetAPI } from '@/api/damagedAsset'
+
 describe('MemoryCache', () => {
   let cache: MemoryCache
 
@@ -82,5 +110,51 @@ describe('MemoryCache', () => {
     expect(cache.get('key1')).toBe('value1')
     vi.advanceTimersByTime(1)
     expect(cache.get('key1')).toBeUndefined()
+  })
+})
+
+describe('M-RC-08 状态写后失效', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('repair 成功后精确失效详情+列表 key（getAssetByCode 二次调用打网）', async () => {
+    await repairAssetAPI.repairAsset('RC-1', {} as never)
+    expect(mockClearCacheByPattern).toHaveBeenCalledWith('/assets/assets/RC-1/')
+    expect(mockClearCacheByPattern).toHaveBeenCalledWith('/assets/assets/?')
+  })
+
+  it('表单 asset_recordcode 为空 → 降级宽失效，不得静默跳过（damaged 可选字段常态）', async () => {
+    await damagedAssetAPI.createDamagedAsset({
+      asset_recordcode: null,
+      damaged_asset_number: 1,
+    } as never)
+    expect(mockClearCacheByPattern).toHaveBeenCalledWith('/assets/assets/')
+    expect(mockClearCacheByPattern).not.toHaveBeenCalledWith('/assets/assets/RC-1/')
+  })
+
+  it('invalidateAssetCache 空值（undefined/空串/null）均走宽失效', () => {
+    invalidateAssetCache(undefined)
+    invalidateAssetCache('')
+    invalidateAssetCache(null)
+    expect(mockClearCacheByPattern).toHaveBeenCalledTimes(3)
+    expect(mockClearCacheByPattern).toHaveBeenNthCalledWith(1, '/assets/assets/')
+    expect(mockClearCacheByPattern).toHaveBeenNthCalledWith(2, '/assets/assets/')
+    expect(mockClearCacheByPattern).toHaveBeenNthCalledWith(3, '/assets/assets/')
+  })
+
+  it('打网语义（MemoryCache 模式实证）：repair 精确两 pattern 联合清空详情与列表 key', () => {
+    const c = new MemoryCache()
+    c.set('/assets/assets/RC-1/?', 'detail-old')
+    c.set('/assets/assets/?page=1', 'list-old')
+    c.set('/assets/assets/RC-2/?', 'other-detail')
+    c.clearByPattern('/assets/assets/RC-1/')
+    c.clearByPattern('/assets/assets/?')
+    // 详情 key 被清 → 二次 getAssetByCode cache miss 打网
+    expect(c.get('/assets/assets/RC-1/?')).toBeUndefined()
+    // 列表 key 被清
+    expect(c.get('/assets/assets/?page=1')).toBeUndefined()
+    // 他资产详情不误伤
+    expect(c.get('/assets/assets/RC-2/?')).toBe('other-detail')
   })
 })

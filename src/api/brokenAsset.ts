@@ -12,6 +12,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
+import { invalidateAssetCache } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   BrokenAssetExtended,
@@ -41,7 +42,10 @@ export const brokenAssetAPI = {
   },
 
   createBrokenAsset: (data: BrokenAssetCreateForm): Promise<BrokenAssetExtended> => {
-    return unwrapResponse(request.post<BrokenAssetExtended>('/assets/broken-assets/', data))
+    // [M-RC-08] 损坏登记改变资产状态，失效资产详情/列表缓存
+    const result = unwrapResponse(request.post<BrokenAssetExtended>('/assets/broken-assets/', data))
+    invalidateAssetCache(data.asset_recordcode)
+    return result
   },
 
   updateBrokenAsset: (data: Partial<BrokenAssetUpdateForm>): Promise<BrokenAssetExtended> => {
@@ -69,9 +73,12 @@ export const brokenAssetAPI = {
   batchCreateBrokenAssets: (
     data: BrokenAssetBatchCreateForm,
   ): Promise<BrokenAssetBatchCreateResult> => {
-    return unwrapResponse(
+    // [M-RC-08] 批量登记涉及多资产状态，宽失效全部资产缓存
+    const result = unwrapResponse(
       request.post<BrokenAssetBatchCreateResult>('/assets/broken-assets/batch-create/', data),
     )
+    invalidateAssetCache()
+    return result
   },
 
   getBrokenAssetsByAsset: (asset_code: string): Promise<BrokenAssetListResponse> => {
