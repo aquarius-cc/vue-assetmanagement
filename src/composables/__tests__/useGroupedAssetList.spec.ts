@@ -153,7 +153,7 @@ describe('useGroupedAssetList', () => {
 
       await search()
 
-      expect(mockElMessageError).toHaveBeenCalledWith('加载资产分组汇总失败')
+      expect(mockElMessageError).toHaveBeenCalledWith('Network error')
       expect(summaries.value).toEqual([])
       expect(summaryTotal.value).toBe(0)
       expect(summaryLoading.value).toBe(false)
@@ -421,7 +421,7 @@ describe('useGroupedAssetList', () => {
 
       await api.toggleExpand(GROUP_MULTI)
 
-      expect(mockElMessageError).toHaveBeenCalledWith('加载组内资产明细失败')
+      expect(mockElMessageError).toHaveBeenCalledWith('Network error')
       expect(api.childrenOf(GROUP_MULTI)).toEqual([])
       expect(api.isLoadingChildren(GROUP_MULTI)).toBe(false)
     })

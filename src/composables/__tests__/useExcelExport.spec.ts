@@ -126,7 +126,7 @@ describe('useExcelExport', () => {
 
       await exportList(options)
 
-      expect(ElMessage.error).toHaveBeenCalledWith('获取全部数据失败，请重试')
+      expect(ElMessage.error).toHaveBeenCalledWith('Network error')
       expect(exportToExcel).not.toHaveBeenCalled()
     })
 

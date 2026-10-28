@@ -177,7 +177,7 @@ describe('useDashboardPage', () => {
 
       await refreshData()
 
-      expect(mockElMessageError).toHaveBeenCalledWith('刷新失败')
+      expect(mockElMessageError).toHaveBeenCalledWith('boom')
     })
   })
 
@@ -198,7 +198,7 @@ describe('useDashboardPage', () => {
 
       await refreshRecycleData()
 
-      expect(mockElMessageError).toHaveBeenCalledWith('刷新失败')
+      expect(mockElMessageError).toHaveBeenCalledWith('boom')
     })
   })
 

@@ -255,7 +255,7 @@ describe('useOutAssetAssetSelection', () => {
       }),
     })
     await handleAssetCodeChange('A001')
-    expect(mocks.elMessage.error).toHaveBeenCalledWith('系统错误，请稍后再试')
+    expect(mocks.elMessage.error).toHaveBeenCalledWith('boom')
     expect(form.outasset_name).toBe('')
     expect(form.outasset_code).toBe('')
   })

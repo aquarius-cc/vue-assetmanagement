@@ -18,6 +18,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { ColumnConfig } from '@/utils/excelExporter'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 export interface ExportOptions<T> {
   /** 实体名称（用于文件名和提示） */
@@ -98,7 +99,8 @@ async function resolveExportAll<T>(options: {
     return { exportData, fileName: `${entityName}列表_全部_${exportData.length}条.xlsx` }
   } catch (error) {
     logError('composables/useExcelExport', '获取全部数据失败:', error)
-    ElMessage.error('获取全部数据失败，请重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '获取全部数据失败，请重试')
     return null
   }
 }

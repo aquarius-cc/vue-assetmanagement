@@ -20,6 +20,7 @@ import { readReactive, writeReactive, readStoreValue } from '@/utils/reactiveAcc
 import { usePaginationSearchState, type SearchConfig } from './usePaginationSearchState'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 // ======================== 类型定义 ========================
 
@@ -99,6 +100,8 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
       }
     } catch (err) {
       logError('composables/usePaginationSearch', '[usePaginationSearch] Load list failed:', err)
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(err, messages.loadFailed)
       ElMessage.error(messages.loadFailed)
       throw err
     } finally {

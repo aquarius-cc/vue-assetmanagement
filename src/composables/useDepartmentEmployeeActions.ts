@@ -9,6 +9,7 @@ import { ref, type Ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { EmployeeExtended } from '@/types/user'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 /** 表格实例的最小接口（仅使用 clearSelection） */
 export interface SortableTableRef {
@@ -175,7 +176,8 @@ export function useDepartmentEmployeeActions(deps: DepartmentEmployeeActionsDeps
     } catch (error) {
       if (error === 'cancel') return // 用户取消删除
       logError('composables/useDepartmentEmployeeActions', '批量删除失败:', error)
-      ElMessage.error('批量删除失败，请重试')
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '批量删除失败，请重试')
     } finally {
       isBatchDeleting.value = false
     }

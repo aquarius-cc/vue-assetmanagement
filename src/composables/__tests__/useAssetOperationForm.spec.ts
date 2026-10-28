@@ -4,6 +4,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
+import { AxiosError } from 'axios'
+import { ElMessage } from 'element-plus'
 import { useAssetOperationForm } from '../useAssetOperationForm'
 
 // Mock vue-router
@@ -97,5 +99,55 @@ describe('useAssetOperationForm', () => {
     await handleSubmit({ reason: 'test' })
 
     expect(mockSubmitFn).not.toHaveBeenCalled()
+  })
+
+  it('should not double-toast on axios error (M-RC-09 单出口)', async () => {
+    const mockFormRef = {
+      validate: vi.fn((callback) => callback(true)),
+    }
+
+    const axiosErr = new AxiosError('x', 'ERR_BAD_REQUEST', undefined as never, undefined, {
+      status: 400,
+      data: { message: '后端消息' },
+      statusText: 'Bad Request',
+      headers: {},
+      config: {} as never,
+    })
+    mockSubmitFn.mockRejectedValue(axiosErr)
+
+    const { handleSubmit, formRef } = useAssetOperationForm({
+      submitFn: mockSubmitFn,
+      successMessage: '操作成功',
+      errorMessage: '操作失败，请稍后重试',
+    })
+
+    formRef.value = mockFormRef as any
+
+    await handleSubmit({ reason: 'test' })
+
+    // AxiosError 由拦截器已提示，表单层不再二次弹窗（旧实现会弹 options.errorMessage）
+    expect(ElMessage.error).not.toHaveBeenCalled()
+  })
+
+  it('should toast once with backend business message on non-axios error', async () => {
+    const mockFormRef = {
+      validate: vi.fn((callback) => callback(true)),
+    }
+
+    mockSubmitFn.mockRejectedValue(new Error('维修单号不存在'))
+
+    const { handleSubmit, formRef } = useAssetOperationForm({
+      submitFn: mockSubmitFn,
+      successMessage: '操作成功',
+      errorMessage: '操作失败，请稍后重试',
+    })
+
+    formRef.value = mockFormRef as any
+
+    await handleSubmit({ reason: 'test' })
+
+    // 非 AxiosError（业务错误）→ 弹一次，后端业务消息优先于 options.errorMessage
+    expect(ElMessage.error).toHaveBeenCalledTimes(1)
+    expect(ElMessage.error).toHaveBeenCalledWith('维修单号不存在')
   })
 })

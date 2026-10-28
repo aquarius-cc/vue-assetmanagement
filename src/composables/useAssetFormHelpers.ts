@@ -14,7 +14,7 @@
  *   - stores/createEntityStore: PaginationQuery
  */
 import { ref, type Ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { notifyCallerError } from '@/utils/errorHandler'
 import type { AssetType } from '@/types/assettype'
 import type { Contract } from '@/types/contract'
 import type { Storage } from '@/types/storage'
@@ -81,8 +81,9 @@ export function useAssetFormAssociations(
       assetTypes.value = types ?? []
       contracts.value = contractList ?? []
       storages.value = storageList ?? []
-    } catch {
-      ElMessage.error('获取基础数据失败')
+    } catch (error) {
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '获取基础数据失败')
     }
   }
 

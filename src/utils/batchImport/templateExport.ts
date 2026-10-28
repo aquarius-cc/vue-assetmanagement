@@ -7,6 +7,7 @@
 import ExcelJS from 'exceljs'
 import { ElMessage } from 'element-plus'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { XLSX_MIME, downloadBlob } from '@/utils/fileDownload'
 
 /**
@@ -48,6 +49,7 @@ export async function downloadExcelTemplate(
     ElMessage.success('模板下载成功')
   } catch (error) {
     logError('utils/batchImport/templateExport', '导出模板失败:', error)
-    ElMessage.error('导出模板失败，请稍后重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '导出模板失败，请稍后重试')
   }
 }

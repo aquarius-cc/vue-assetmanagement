@@ -229,8 +229,8 @@ import { useContractStore } from '@/stores/contractStore'
 import type { Contract, ContractCreateForm, ContractStatus } from '@/types/contract'
 import { formatDate, contractTypeMapping } from '@/utils/Format'
 import { CONTRACT_STATUS_MAP } from '@/utils/statusMapping'
-import { isAxiosError } from 'axios'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 // ========== 路由与状态==========
 const route = useRoute()
@@ -397,12 +397,8 @@ onMounted(async () => {
 
 /** 提交失败的用户提示（P1-4：从 submitForm 抽出，吸收 axios/Error 分支税） */
 const notifySubmitError = (error: unknown) => {
-  const errorMsg = isAxiosError(error)
-    ? `操作失败${error.response?.data?.message || '服务器错误'}`
-    : error instanceof Error
-      ? error.message
-      : '操作失败：未知错误'
-  ElMessage.error(errorMsg)
+  // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次（后端业务消息优先）
+  notifyCallerError(error, '操作失败，请重试')
   logError('components/componentsdetails/detils/ContractForm', '合同提交失败:', error)
 }
 

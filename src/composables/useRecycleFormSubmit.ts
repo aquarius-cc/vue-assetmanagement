@@ -13,7 +13,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { isAxiosError } from 'axios'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { recycleAssetAPI } from '@/api/recycleAsset'
 import type {
   RecycleAssetBatchItem,
@@ -87,12 +87,8 @@ export function useRecycleFormSubmit(options: {
       confirmVisible.value = false
       router.go(-1)
     } catch (error: unknown) {
-      const msg = isAxiosError(error)
-        ? error.response?.data?.message || '操作失败'
-        : error instanceof Error
-          ? error.message
-          : '未知错误'
-      ElMessage.error(msg)
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '操作失败')
     } finally {
       submitting.value = false
       options.setSubmitting(false)

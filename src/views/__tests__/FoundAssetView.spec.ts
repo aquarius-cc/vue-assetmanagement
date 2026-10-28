@@ -160,7 +160,7 @@ describe('FoundAssetView', () => {
     await flushPromises()
 
     expect(foundAssetMock).toHaveBeenCalled()
-    expect(elMessageError).toHaveBeenCalledWith('找回操作失败，请重试')
+    expect(elMessageError).toHaveBeenCalledWith('network down')
     expect(backMock).not.toHaveBeenCalled()
   })
 

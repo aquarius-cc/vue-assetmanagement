@@ -20,6 +20,7 @@ import { assetAPI } from '@/api/asset'
 import type { AssetDetail } from '@/types/asset'
 import { useOperationGuard } from '@/composables/useOperationGuard'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 /**
  * 资产操作表单选项
@@ -31,10 +32,8 @@ export interface UseAssetOperationFormOptions<T = Record<string, unknown>> {
   submitFn: (data: T) => Promise<unknown>
   /** 成功提示消息 */
   successMessage: string
-  /** 失败提示消息（可选） */
+  /** 失败提示消息（可选，仅作非 AxiosError 时的兜底；后端业务消息优先） */
   errorMessage?: string
-  /** @deprecated [修复] 抑制默认错误提示（拦截器已处理时使用），防止重复弹窗 */
-  suppressDefaultError?: boolean
 }
 
 /**
@@ -118,10 +117,9 @@ export function useAssetOperationForm<T = Record<string, unknown>>(
         logError('composables/useAssetOperationForm', '操作失败:', err)
         if (handleForbiddenError(err)) return // 403 处理
         if (handleConflictError(err)) return // 409 处理
-        // [修复] 仅当未抑制默认错误时才显示通用提示
-        if (!options.suppressDefaultError) {
-          ElMessage.error(options.errorMessage || '操作失败，请稍后重试')
-        }
+        // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次；
+        // 后端业务消息（err.message）优先，options.errorMessage 仅作兜底
+        notifyCallerError(err, options.errorMessage || '操作失败，请稍后重试')
       } finally {
         submitting.value = false
       }

@@ -9,6 +9,7 @@ import { ElMessage } from 'element-plus'
 import type { AssetDetail } from '@/types/asset'
 import type { OutAssetCreateExtended, AssetAutocompleteItem } from '@/types/outasset'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 /** assetStore 的最小类型（与组件内的 ExtendedAssetStore 一致的子集） */
 interface AssetSelectionStore {
@@ -76,7 +77,8 @@ export function useOutAssetAssetSelection(
       }
     } catch (error) {
       logError('composables/useOutAssetAssetSelection', '资产编码校验失败:', error)
-      ElMessage.error('系统错误，请稍后再试')
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '系统错误，请稍后再试')
       clearAssetInfo()
     }
   }

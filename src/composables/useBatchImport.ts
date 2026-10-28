@@ -16,6 +16,7 @@ import { submitBatch } from '@/utils/SubmitBatch'
 import type { SubmitBatchResult } from '@/utils/SubmitBatch'
 import { readExcelFile } from '@/utils/readExcelFile'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 export interface ValidatedRow<T> {
   data: T
@@ -135,8 +136,8 @@ export function useBatchImport<TExcel extends object, TApi extends object>(
       }
       return true
     } catch (error) {
-      const msg = error instanceof Error ? error.message : '导入过程发生未知错误'
-      ElMessage.error(`导入失败：${msg}`)
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '导入失败，请稍后重试')
       return false
     } finally {
       isSubmitting.value = false

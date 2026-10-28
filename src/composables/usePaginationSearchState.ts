@@ -10,9 +10,9 @@
  *   - utils/reactiveAccess: 3-way 响应式读写工具
  */
 import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import { readReactive } from '@/utils/reactiveAccess'
 import { logError, logWarn } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 export interface SearchConfig<T> {
   performSearch: (
@@ -108,7 +108,8 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
         '[usePaginationSearch] Search failed:',
         error,
       )
-      ElMessage.error(messages.searchFailed)
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, messages.searchFailed)
       searchResults.value = []
       searchTotal.value = 0
       throw error
@@ -202,7 +203,8 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
         '[usePaginationSearch] Search failed:',
         error,
       )
-      ElMessage.error(messages.searchFailed)
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, messages.searchFailed)
       searchResults.value = []
       searchTotal.value = 0
       throw error

@@ -20,9 +20,9 @@
  *   - utils/logger: logError
  */
 import { ref, type Ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import { assetAPI } from '@/api/asset'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { GROUPED_PASS_THROUGH_KEYS } from '@/constants/assetGroupedFilters'
 import type { AssetDetail, AssetGroupChildQueryParams, AssetGroupQueryParams } from '@/types/asset'
 
@@ -146,7 +146,8 @@ export function useGroupChildrenCache(
       childrenMap.value = next
     } catch (error) {
       logError('composables/useGroupChildrenCache', '[组内明细]', error)
-      ElMessage.error('加载组内资产明细失败')
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '加载组内资产明细失败')
     } finally {
       loadingKeys.value = loadingKeys.value.filter((key) => key !== groupKey)
     }

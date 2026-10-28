@@ -199,11 +199,11 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { EditPen } from '@element-plus/icons-vue'
-import { isAxiosError } from 'axios'
 import { useAssetStore } from '@/stores/assetStore'
 import { useContractStore } from '@/stores/contractStore'
 import { useStorageStore } from '@/stores/storageStore'
 import { useDamagedAssetStore } from '@/stores/damagedAssetStore'
+import { notifyCallerError } from '@/utils/errorHandler'
 import type { DamagedAssetCreateForm } from '@/types/damagedasset'
 import type { AssetDetail } from '@/types/asset'
 import type { Contract } from '@/types/contract'
@@ -413,13 +413,8 @@ const loadEditData = async (code: string) => {
 
 /** 提交失败的用户提示（P1-4：从 submitForm 抽出，吸收 axios/Error 分支税） */
 const notifySubmitError = (error: unknown) => {
-  if (isAxiosError(error)) {
-    ElMessage.error(`操作失败${error.response?.data?.message || error.message}`)
-  } else if (error instanceof Error) {
-    ElMessage.error(`操作失败${error.message}`)
-  } else {
-    ElMessage.error('操作失败，请重试')
-  }
+  // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次（后端业务消息优先）
+  notifyCallerError(error, '操作失败，请重试')
   logError('components/componentsdetails/detils/DamagedAssetForm', '待报废资产提交失败', error)
 }
 

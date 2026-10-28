@@ -19,6 +19,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatDate } from '@/utils/Format'
 import ExcelJS from 'exceljs'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { XLSX_MIME, downloadBlob } from '@/utils/fileDownload'
 
 // 定义通用的列配置接口
@@ -120,6 +121,7 @@ export const exportToExcel = async <T>(config: ExcelExportConfig<T>): Promise<vo
       return
     }
     logError('utils/excelExporter', '导出失败:', error)
-    ElMessage.error(config.errorMessage || '导出失败，请重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, config.errorMessage || '导出失败，请重试')
   }
 }

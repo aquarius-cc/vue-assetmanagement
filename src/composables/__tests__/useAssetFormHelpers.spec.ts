@@ -76,7 +76,7 @@ describe('useAssetFormAssociations', () => {
 
     await loadAssociations()
 
-    expect(ElMessage.error).toHaveBeenCalledWith('获取基础数据失败')
+    expect(ElMessage.error).toHaveBeenCalledWith('网络错误')
   })
 })
 

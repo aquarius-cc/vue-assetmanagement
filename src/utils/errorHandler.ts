@@ -67,3 +67,23 @@ export function showErrorMessage(err: unknown, fallback: string): void {
   logError('utils/errorHandler', fallback, err)
   ElMessage.error(getErrorMessage(err, fallback))
 }
+
+/**
+ * [M-RC-09] 调用方错误提示单出口（双轨契约的唯一实现，DR-4）。
+ *
+ * 判据推导（写死，勿改）：
+ * - AxiosError → 响应拦截器（request.ts）对非 401 的 status / 无响应 / 配置错误
+ *   三分支均已弹 toast，此处只 logError 补上下文，绝不二次弹窗；
+ * - 非 AxiosError（含 unwrapResponse 在 code!==0 时抛出的 `new Error(res.message)`、
+ *   本地构造的 Error）→ 拦截器未处理，由本函数弹一次，业务消息优先。
+ *
+ * @param err 捕获的错误对象
+ * @param fallback 非 AxiosError 时的兜底文案
+ */
+export function notifyCallerError(err: unknown, fallback: string): void {
+  if (isAxiosError(err)) {
+    logError('utils/errorHandler', `${fallback}（AxiosError 已由拦截器提示）`, err)
+    return
+  }
+  ElMessage.error(getErrorMessage(err, fallback))
+}

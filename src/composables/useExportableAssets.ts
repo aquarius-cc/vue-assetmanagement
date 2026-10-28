@@ -12,8 +12,8 @@
 import { ref } from 'vue'
 import { assetAPI } from '@/api/asset'
 import type { AssetSimpleReturn, AssetListSimpleResponse } from '@/types/asset'
-import { ElMessage } from 'element-plus'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 export function useExportableAssets() {
   const list = ref<AssetSimpleReturn[]>([])
@@ -46,7 +46,8 @@ export function useExportableAssets() {
     } catch (error) {
       if (seq !== listRequestSeq) return // 过期响应：跳过错误清空
       logError('composables/useExportableAssets', '[useExportableAssets] 获取可出库资产失败', error)
-      ElMessage.error('加载可出库资产列表失败')
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '加载可出库资产列表失败')
       list.value = []
       total.value = 0
       // [AUD-48] 回滚乐观写的页码到最近成功页：失败页不被早退守卫锁死, 可重试

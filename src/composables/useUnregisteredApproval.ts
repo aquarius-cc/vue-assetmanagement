@@ -9,6 +9,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { HandleType } from '@/types/unregisteredasset'
 import type { UnregisteredAsset } from '@/types/unregisteredasset'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 /** 审批操作依赖 */
 export interface UnregisteredApprovalDeps {
@@ -51,7 +52,8 @@ export function useUnregisteredApproval({
       store.setRefreshFlag(true)
     } catch (error) {
       logError('composables/useUnregisteredApproval', '审批操作失败:', error)
-      ElMessage.error('审批操作失败，请重试')
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '审批操作失败，请重试')
     }
   }
 
@@ -77,7 +79,8 @@ export function useUnregisteredApproval({
       // 用户取消操作不提示错误
       if (error === 'cancel' || error === 'close') return
       logError('composables/useUnregisteredApproval', '拒绝操作失败:', error)
-      ElMessage.error('拒绝操作失败，请重试')
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '拒绝操作失败，请重试')
     }
   }
 

@@ -130,7 +130,7 @@ describe('useUnregisteredApproval', () => {
     const pending = handleApprove()
     await clickFirstHandleType()
     await pending
-    expect(mocks.elMessage.error).toHaveBeenCalledWith('审批操作失败，请重试')
+    expect(mocks.elMessage.error).toHaveBeenCalledWith('boom')
     expect(loadDetail).not.toHaveBeenCalled()
     expect(store.setRefreshFlag).not.toHaveBeenCalled()
   })
@@ -186,6 +186,6 @@ describe('useUnregisteredApproval', () => {
     const { handleReject, api } = setup()
     api.approveUnregisteredAsset.mockRejectedValueOnce(new Error('boom'))
     await handleReject()
-    expect(mocks.elMessage.error).toHaveBeenCalledWith('拒绝操作失败，请重试')
+    expect(mocks.elMessage.error).toHaveBeenCalledWith('boom')
   })
 })

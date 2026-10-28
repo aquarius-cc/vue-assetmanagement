@@ -29,6 +29,7 @@ import { useDashboardCharts } from '@/composables/useDashboardCharts'
 import { useChartTheme } from '@/composables/useChartTheme'
 import { useDashboardUser, LOGIN_START_TIME_KEY } from '@/composables/useDashboardUser'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 export function useDashboardPage() {
   const dashboardStore = useDashboardStore()
@@ -191,8 +192,9 @@ export function useDashboardPage() {
       await dashboardStore.fetchRecentOutAssets(5)
       await dashboardStore.fetchDashboardOverview()
       ElMessage.success('发放数据刷新成功')
-    } catch {
-      ElMessage.error('刷新失败')
+    } catch (error) {
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '刷新失败')
     }
   }
 
@@ -202,8 +204,9 @@ export function useDashboardPage() {
       await dashboardStore.fetchRecentRecycleAssets(5)
       await dashboardStore.fetchDashboardOverview()
       ElMessage.success('回收数据刷新成功')
-    } catch {
-      ElMessage.error('刷新失败')
+    } catch (error) {
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '刷新失败')
     }
   }
 

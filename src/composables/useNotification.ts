@@ -17,12 +17,12 @@
  *   - useNotification: 通知 composable 函数（返回形状与拆分前一致）
  */
 import { ref, onMounted, onUnmounted } from 'vue'
-import { isAxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
 import { notificationAPI } from '@/api/notification'
 import { useNotificationConnection } from '@/composables/useNotificationConnection'
 import type { NotificationItem } from '@/types/notification'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 // 重新导出类型，保持向后兼容
 export type { NotificationItem as Notification } from '@/types/notification'
@@ -88,11 +88,8 @@ export function useNotification() {
       ElMessage.success('已全部标记为已读') // [修复] 新增成功反馈
     } catch (err) {
       logError('composables/useNotification', '标记全部已读失败:', err)
-      // [修复] 分类处理：业务错误拦截器未处理，需手动提示
-      if (!isAxiosError(err)) {
-        ElMessage.error((err as Error).message || '标记全部已读失败')
-      }
-      // AxiosError 由拦截器已弹窗，不重复
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(err, '标记全部已读失败')
     } finally {
       isMarkingAll.value = false
     }
@@ -115,10 +112,8 @@ export function useNotification() {
       }
     } catch (err) {
       logError('composables/useNotification', '加载通知列表失败:', err)
-      // [修复] 分类处理：业务错误拦截器未处理，需手动提示
-      if (!isAxiosError(err)) {
-        ElMessage.error((err as Error).message || '加载通知列表失败')
-      }
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(err, '加载通知列表失败')
       fetchError.value = true // [修复] 设置错误状态
     } finally {
       isLoading.value = false

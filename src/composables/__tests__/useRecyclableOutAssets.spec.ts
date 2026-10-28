@@ -123,7 +123,7 @@ describe('useRecyclableOutAssets', () => {
       const { search, list, total } = useRecyclableOutAssets()
       await search()
 
-      expect(mockElMessageError).toHaveBeenCalledWith('加载可回收资产列表失败')
+      expect(mockElMessageError).toHaveBeenCalledWith('Network error')
       expect(list.value).toEqual([])
       expect(total.value).toBe(0)
     })

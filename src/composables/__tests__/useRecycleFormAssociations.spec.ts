@@ -84,7 +84,7 @@ describe('useRecycleFormAssociations', () => {
       const { loadStorages, storages, error } = useRecycleFormAssociations()
       const result = await loadStorages()
 
-      expect(mockElMessageError).toHaveBeenCalledWith('加载仓库列表失败')
+      expect(mockElMessageError).toHaveBeenCalledWith('Network error')
       expect(storages.value).toEqual([])
       expect(error.value).toBe('加载仓库列表失败')
       expect(result).toEqual([])
@@ -144,7 +144,7 @@ describe('useRecycleFormAssociations', () => {
       const { loadAssetTypes, assetTypes, error } = useRecycleFormAssociations()
       const result = await loadAssetTypes()
 
-      expect(mockElMessageError).toHaveBeenCalledWith('加载资产类型失败')
+      expect(mockElMessageError).toHaveBeenCalledWith('Network error')
       expect(assetTypes.value).toEqual([])
       expect(error.value).toBe('加载资产类型失败')
       expect(result).toEqual([])

@@ -261,7 +261,7 @@ describe('useBatchImport', () => {
       const result = await submitBatchData()
 
       expect(result).toBe(false)
-      expect(ElMessage.error).toHaveBeenCalledWith('导入失败：网络错误')
+      expect(ElMessage.error).toHaveBeenCalledWith('网络错误')
     })
 
     it('should mark isSubmitting during submission', async () => {

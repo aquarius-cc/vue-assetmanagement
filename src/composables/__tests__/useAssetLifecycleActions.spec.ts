@@ -104,7 +104,7 @@ describe('useAssetLifecycleActions', () => {
       const { handleDelete } = useAssetLifecycleActions(makeParams(store))
 
       handleDelete({ recordcode: 'R1' })
-      await vi.waitFor(() => expect(mockElMessageError).toHaveBeenCalledWith('删除失败'))
+      await vi.waitFor(() => expect(mockElMessageError).toHaveBeenCalledWith('boom'))
 
       expect(mockElMessageSuccess).not.toHaveBeenCalled()
     })
@@ -161,7 +161,7 @@ describe('useAssetLifecycleActions', () => {
 
       await handleBatchDelete([{ recordcode: 'R1' }])
 
-      expect(mockElMessageError).toHaveBeenCalledWith('批量删除失败，请重试')
+      expect(mockElMessageError).toHaveBeenCalledWith('boom')
     })
   })
 

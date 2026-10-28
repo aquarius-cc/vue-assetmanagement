@@ -11,12 +11,12 @@
  */
 
 import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import { useStorageStore } from '@/stores/storageStore'
 import { useAssetTypeStore } from '@/stores/assetTypeStore'
 import type { Storage } from '@/types/storage'
 import type { AssetType } from '@/types/assettype'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 export function useRecycleFormAssociations() {
   const storageStore = useStorageStore()
@@ -65,7 +65,8 @@ export function useRecycleFormAssociations() {
       storagesLoaded = true
     } catch (err) {
       error.value = '加载仓库列表失败'
-      ElMessage.error(error.value)
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(err, error.value)
       logError(
         'composables/useRecycleFormAssociations',
         '[useRecycleFormAssociations] loadStorages error:',
@@ -96,7 +97,8 @@ export function useRecycleFormAssociations() {
       assetTypesLoaded = true
     } catch (err) {
       error.value = '加载资产类型失败'
-      ElMessage.error(error.value)
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(err, error.value)
       logError(
         'composables/useRecycleFormAssociations',
         '[useRecycleFormAssociations] loadAssetTypes error:',

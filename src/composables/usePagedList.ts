@@ -11,8 +11,8 @@
  *   - composables/useRecyclableOutAssets（薄包装）
  */
 import { type Ref, ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 /** 分页列表 Composable 的配置项 */
 export interface PagedListOptions<TItem> {
@@ -85,7 +85,8 @@ export function usePagedList<TItem>(options: PagedListOptions<TItem>): PagedList
     } catch (error) {
       if (seq !== listRequestSeq) return // 过期响应：同样跳过错误清空
       logError('composables/usePagedList', `[${tag}]`, error)
-      ElMessage.error(errorMessage)
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, errorMessage)
       list.value = []
       total.value = 0
       // [AUD-48] 回滚乐观写的页码到最近成功页：失败页不被早退守卫锁死, 可重试

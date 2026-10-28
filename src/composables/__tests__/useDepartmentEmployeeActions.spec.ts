@@ -238,6 +238,6 @@ describe('useDepartmentEmployeeActions', () => {
     })
     userStore.removeBatch.mockRejectedValueOnce(new Error('boom'))
     await handleBatchDelete()
-    expect(mocks.elMessage.error).toHaveBeenCalledWith('批量删除失败，请重试')
+    expect(mocks.elMessage.error).toHaveBeenCalledWith('boom')
   })
 })

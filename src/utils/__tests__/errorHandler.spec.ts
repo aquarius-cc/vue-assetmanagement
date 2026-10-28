@@ -11,6 +11,7 @@ import {
   getAxiosStatus,
   getAxiosResponseData,
   showErrorMessage,
+  notifyCallerError,
 } from '../errorHandler'
 
 describe('errorHandler', () => {
@@ -110,6 +111,37 @@ describe('errorHandler', () => {
       expect(spy).toHaveBeenCalledWith(expect.stringContaining('"message":"fallback"'))
       expect(ElMessage.error).toHaveBeenCalledWith('boom')
       spy.mockRestore()
+    })
+  })
+
+  describe('notifyCallerError — M-RC-09 单出口双轨契约', () => {
+    it('AxiosError → 只 logError 不弹（拦截器已提示，消灭双弹）', () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const err = new AxiosError('x', 'ERR_BAD_REQUEST', undefined as never, undefined, {
+        status: 400,
+        data: { message: '资产不存在' },
+        statusText: 'Bad Request',
+        headers: {},
+        config: {} as never,
+      })
+
+      notifyCallerError(err, 'fallback')
+
+      expect(ElMessage.error).not.toHaveBeenCalled()
+      expect(spy).toHaveBeenCalledWith(expect.stringContaining('已由拦截器提示'))
+      spy.mockRestore()
+    })
+
+    it('非 AxiosError（业务错误）→ 弹一次，业务消息优先', () => {
+      notifyCallerError(new Error('维修单号不存在'), '操作失败，请重试')
+      expect(ElMessage.error).toHaveBeenCalledTimes(1)
+      expect(ElMessage.error).toHaveBeenCalledWith('维修单号不存在')
+    })
+
+    it('非 AxiosError 且无 message → 弹兜底文案', () => {
+      notifyCallerError('oops', '操作失败，请重试')
+      expect(ElMessage.error).toHaveBeenCalledTimes(1)
+      expect(ElMessage.error).toHaveBeenCalledWith('操作失败，请重试')
     })
   })
 })

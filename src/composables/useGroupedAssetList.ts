@@ -21,9 +21,9 @@
  *   - composables/useGroupedAssetSelection: 级联三态选择
  */
 import { ref, type ComputedRef, type Ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import { assetAPI } from '@/api/asset'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { useGroupChildrenCache } from './useGroupChildrenCache'
 import { useGroupedAssetSelection } from './useGroupedAssetSelection'
 import type { AssetDetail, AssetGroupQueryParams, AssetGroupSummary } from '@/types/asset'
@@ -119,7 +119,8 @@ export function useGroupedAssetList(options: GroupedAssetListOptions = {}): Grou
     } catch (error) {
       if (seq !== summaryRequestSeq) return // 过期响应：跳过错误清空
       logError('composables/useGroupedAssetList', '[分组汇总]', error)
-      ElMessage.error('加载资产分组汇总失败')
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '加载资产分组汇总失败')
       summaries.value = []
       summaryTotal.value = 0
       // [AUD-48] 回滚乐观写的页码到最近成功页：失败页不被早退守卫锁死, 可重试
