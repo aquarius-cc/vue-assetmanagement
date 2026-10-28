@@ -33,6 +33,7 @@ import axios, {
   type AxiosResponse,
 } from 'axios'
 import { isAxiosError } from 'axios'
+import { reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { MemoryCache } from '@/api/cache'
 import { decodeToken, clearAllAuthTokens } from '@/utils/tokenObfuscator'
@@ -403,6 +404,8 @@ function tryFallbackCache<T>(url: string, cacheKey: string): ApiResponse<T> | nu
   if (cached === undefined) return null
   logWarn('api/request', `[降级] 请求失败，返回缓存数据: ${url}`)
   // [M-12] 标记降级：消费方（视图/store）可据此提示「当前为缓存数据」
+  // [M-RC-12] 同步置位全局降级信号（布局级 Banner 消费），成功 GET 后清位
+  degradedCacheKeys.add(cacheKey)
   return { ...(cached as ApiResponse<T>), _degraded: true }
 }
 
@@ -447,6 +450,14 @@ export function clearCacheByPattern(pattern: string): void {
 
 // ---------- 重载签名（支持新/旧两种调用方式） ----------
 
+/**
+ * [M-RC-12] 全局降级信号：GET 失败降级命中缓存的 cacheKey 集合（响应式）。
+ * 置位 = tryFallbackCache（失败但有旧缓存）；清位 = 同 URL 真实网络响应成功。
+ * 布局级 Banner（DegradedCacheBanner）按 size>0 渲染「当前为缓存数据」提示。
+ * 语义：按 cacheKey 维护而非全局布尔——A 页降级后跳 B 页成功不应熄灭 A 页的降级提示。
+ */
+export const degradedCacheKeys = reactive(new Set<string>())
+
 /** 新方式：使用 options 对象 */
 export async function get<T>(
   url: string,
@@ -490,6 +501,8 @@ export async function get<T>(
     // [M-29] 仅 code===0 的成功响应入缓存：业务失败体（200 + code!==0）入缓存后，
     // 后续 useCache 调用直接命中错误数据，绕过重试与错误提示
     if (useCache && data.code === 0) writeCache(cacheKey, data, options?.cacheTTL)
+    // [M-RC-12] 真实网络响应成功（含业务失败体）：网络已通、数据为最新，清同 URL 降级位
+    degradedCacheKeys.delete(cacheKey)
     return data
   } catch (error: unknown) {
     // 降级：请求失败但有缓存时返回旧数据

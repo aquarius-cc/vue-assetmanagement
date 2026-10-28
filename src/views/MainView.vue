@@ -21,6 +21,8 @@
       </el-aside>
       <el-container>
         <el-main class="common-main">
+          <!-- [M-RC-12] 全局降级数据提示条：GET 失败命中缓存时显示（业务布局内，登录/404 不含） -->
+          <DegradedCacheBanner />
           <!-- 轻页头：仅直接子页面显示（Dashboard 与详情/表单页自带页头，不重复） -->
           <div v-if="showPageHeader" class="page-header">
             <h2 class="page-title">{{ pageTitle }}</h2>
@@ -57,6 +59,7 @@
 import { useRoute, useRouter } from 'vue-router'
 import AsideMenu from '@/components/AsideMenu.vue'
 import AppBreadcrumb from '@/components/commoncomponents/AppBreadcrumb.vue'
+import DegradedCacheBanner from '@/components/commoncomponents/DegradedCacheBanner.vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Menu } from '@element-plus/icons-vue'
 import { useAppStore } from '@/stores/app'

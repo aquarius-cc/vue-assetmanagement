@@ -96,7 +96,16 @@ vi.mock('@/utils/traceId', () => ({
 import { encodeToken, decodeToken, clearAllAuthTokens } from '@/utils/tokenObfuscator'
 import { generateTraceId } from '@/utils/traceId'
 import { ElMessage } from 'element-plus'
-import { unwrapResponse, get, post, put, patch, del, buildLoginRedirectUrl } from '@/api/request'
+import {
+  unwrapResponse,
+  get,
+  post,
+  put,
+  patch,
+  del,
+  buildLoginRedirectUrl,
+  degradedCacheKeys,
+} from '@/api/request'
 
 function getResponseHandler(): ErrorHandler | null {
   return handlerRef.fn
@@ -669,6 +678,47 @@ describe('request', () => {
 
       expect(mocks.instanceGet).toHaveBeenCalled()
       expect(clearAllAuthTokens).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('M-RC-12 降级信号', () => {
+    it('GET 失败且命中缓存 → 置位降级信号，错误 toast 恰 1 次（无第二 toast）', async () => {
+      const stale = { code: 0, data: { v: 1 }, message: 'ok' }
+      // 嵌套构造（同 responseHandler.spec 既有降级用例范式）：
+      // 首次 axios 调用先经内层 get 写入缓存，再抛错 → 外层 catch 走 tryFallbackCache
+      mocks.instanceGet
+        .mockImplementationOnce(async () => {
+          await get('/assets/mrc12/', undefined, { useCache: true, cacheTTL: 30_000 })
+          throw new Error('network down')
+        })
+        .mockResolvedValueOnce({ data: stale })
+
+      const fallback = await get('/assets/mrc12/', undefined, { useCache: true })
+
+      expect(fallback._degraded).toBe(true)
+      expect(degradedCacheKeys.has('/assets/mrc12/?')).toBe(true)
+      // 非 AxiosError 拦截器不弹、降级返回不弹 → 调用方层 0 次额外 toast
+      expect(ElMessage.error).not.toHaveBeenCalled()
+    })
+
+    it('同 URL 真实网络响应成功 → 清位', async () => {
+      mocks.instanceGet.mockClear()
+      degradedCacheKeys.add('/assets/mrc12-clear/?')
+
+      mocks.instanceGet.mockResolvedValueOnce({
+        data: { code: 0, data: { v: 2 }, message: 'ok' },
+      })
+      await get('/assets/mrc12-clear/', undefined, true)
+
+      expect(degradedCacheKeys.has('/assets/mrc12-clear/?')).toBe(false)
+    })
+
+    it('失败且无缓存 → 不置位并抛出', async () => {
+      mocks.instanceGet.mockClear()
+      mocks.instanceGet.mockRejectedValueOnce(makeAxiosError(500, '/assets/mrc12-miss/'))
+
+      await expect(get('/assets/mrc12-miss/', undefined, true)).rejects.toThrow()
+      expect(degradedCacheKeys.has('/assets/mrc12-miss/?')).toBe(false)
     })
   })
 })
