@@ -104,7 +104,7 @@ describe('FoundAssetStore', () => {
 
       await store.create({ asset_name: '笔记本电脑', found_date: '2026-07-09' })
 
-      expect(ElMessage.success).toHaveBeenCalledWith('Found Asset创建成功')
+      expect(ElMessage.success).toHaveBeenCalledWith('找回资产创建成功')
       expect(store.list).toHaveLength(1)
       expect(store.list[0].recordcode).toBe('FA-001')
     })

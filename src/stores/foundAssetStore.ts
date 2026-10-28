@@ -25,7 +25,7 @@ export const useFoundAssetStore = createEntityStore<FoundAssetExtended, Paginati
   {
     idKey: 'recordcode',
     nameField: 'asset_name',
-    displayName: 'Found Asset',
+    displayName: '找回资产',
     api: {
       getList: async (params?: PaginationQuery) => {
         const safeParams: PaginationQuery = params || {

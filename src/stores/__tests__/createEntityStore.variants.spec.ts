@@ -295,6 +295,45 @@ describe('createEntityStore 变异杀灭补测', () => {
       await store.create({ name: 'A', value: 1 })
       expect(mockElMessage.success).not.toHaveBeenCalled()
     })
+
+    it('disableAutoMessage=true 时 update 不应弹成功提示（M-RC-10 统一守卫）', async () => {
+      const store = makeStore<TestEntity>('var-no-msg-update', api, {
+        displayName: '静默实体',
+        disableAutoMessage: true,
+        message: mockElMessage as never,
+      })
+      api.update.mockResolvedValue({ id: '1', name: 'A2', value: 2 })
+      await store.update({ id: '1', name: 'A2', value: 2 })
+      expect(mockElMessage.success).not.toHaveBeenCalled()
+    })
+
+    it('disableAutoMessage=true 时 remove 不应弹成功提示（M-RC-10 统一守卫）', async () => {
+      const store = makeStore<TestEntity>('var-no-msg-remove', api, {
+        displayName: '静默实体',
+        disableAutoMessage: true,
+        message: mockElMessage as never,
+      })
+      api.getList.mockResolvedValue({ count: 1, results: [{ id: '1', name: 'A', value: 1 }] })
+      await store.getList()
+      api.delete.mockResolvedValue(undefined)
+      await store.remove('1')
+      expect(mockElMessage.success).not.toHaveBeenCalled()
+    })
+
+    it('disableAutoMessage 未设置时 update/remove 仍正常弹出（非 flag 行为不变）', async () => {
+      const store = makeStore<TestEntity>('var-msg-default', api, {
+        displayName: '响亮实体',
+        message: mockElMessage as never,
+      })
+      api.update.mockResolvedValue({ id: '1', name: 'A2', value: 2 })
+      await store.update({ id: '1', name: 'A2', value: 2 })
+      expect(mockElMessage.success).toHaveBeenCalledWith('响亮实体更新成功')
+      api.delete.mockResolvedValue(undefined)
+      api.getList.mockResolvedValue({ count: 1, results: [{ id: '1', name: 'A2', value: 2 }] })
+      await store.getList()
+      await store.remove('1')
+      expect(mockElMessage.success).toHaveBeenCalledWith('响亮实体删除成功')
+    })
   })
 
   describe('第二轮：缓存/防重/日志/名称查询', () => {

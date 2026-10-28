@@ -177,7 +177,10 @@ describe('RecycleAssetStore', () => {
 
       await store.update({ recordcode: 'RC-001' } as never)
 
-      expect(ElMessage.success).toHaveBeenCalledWith('回收资产更新成功')
+      // [M-RC-10] recycleAssetStore 设 disableAutoMessage:true，update 守卫后不弹
+      // ——原断言 expect(ElMessage.success).toHaveBeenCalledWith('回收资产更新成功')
+      //   正是本守卫要消灭的双弹实证（视图 fetchRoles/update 调用方自有提示）
+      expect(ElMessage.success).not.toHaveBeenCalled()
       expect(recycleAssetAPI.updateRecycleAsset).toHaveBeenCalled()
     })
 

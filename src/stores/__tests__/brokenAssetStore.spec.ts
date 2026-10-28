@@ -104,7 +104,7 @@ describe('BrokenAssetStore', () => {
 
       await store.create({ asset_name: '损坏显示器', broken_date: '2026-07-09' })
 
-      expect(ElMessage.success).toHaveBeenCalledWith('Broken Asset创建成功')
+      expect(ElMessage.success).toHaveBeenCalledWith('损坏资产创建成功')
       expect(store.list).toHaveLength(1)
       expect(store.list[0].recordcode).toBe('BA-001')
     })

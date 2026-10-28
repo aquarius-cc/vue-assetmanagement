@@ -25,7 +25,7 @@ export const useBrokenAssetStore = createEntityStore<BrokenAssetExtended, Pagina
   {
     idKey: 'recordcode',
     nameField: 'asset_name',
-    displayName: 'Broken Asset',
+    displayName: '损坏资产',
     api: {
       getList: async (params?: PaginationQuery) => {
         const safeParams: PaginationQuery = params || {

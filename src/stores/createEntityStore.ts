@@ -391,7 +391,10 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
         }
         // 使用 displayName（中文名）或 storeId 作为显示名称
         const displayName = config.displayName || storeId
-        message?.success?.(`${displayName}更新成功`)
+        // [M-RC-10] disableAutoMessage 统一守卫：抑制时由调用方（表单/视图）负责唯一提示
+        if (!config.disableAutoMessage) {
+          message?.success?.(`${displayName}更新成功`)
+        }
         return updatedItem
       })
     }
@@ -413,7 +416,10 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
         }
         // 使用 displayName（中文名）或 storeId 作为显示名称
         const displayName = config.displayName || storeId
-        message?.success?.(`${displayName}删除成功`)
+        // [M-RC-10] disableAutoMessage 统一守卫：抑制时由调用方（表单/视图）负责唯一提示
+        if (!config.disableAutoMessage) {
+          message?.success?.(`${displayName}删除成功`)
+        }
         return result
       })
     }
@@ -506,6 +512,9 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
           }
 
           // 根据结果给出消息提示（适配后端 fail_items 格式）
+          // [M-RC-10] removeBatch 有意不走 disableAutoMessage 守卫：生产调用方
+          // （DamagedAssetDetails/RecycleAssetDetails 批删入口）视图自身不弹成功提示，
+          // 三段文案（notifyBatchDeleteResult）是该操作的唯一用户反馈，守卫会吞掉它。
           notifyBatchDeleteResult(result)
 
           return result
