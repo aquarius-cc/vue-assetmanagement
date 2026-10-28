@@ -193,6 +193,8 @@ export const routesMainSystem: RouteRecordRaw[] = [
       title: '资产录入',
       requiresAuth: true,
       showPageHeader: true,
+      // [R-3/M-RC-07] 资产录入为写入操作，RBAC 矩阵禁止 regular_user/auditor
+      requiredMinRole: 'asset_admin',
     },
   },
 ]

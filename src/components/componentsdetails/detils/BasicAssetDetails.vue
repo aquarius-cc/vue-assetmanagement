@@ -31,7 +31,16 @@
         </div>
       </div>
       <div class="action-buttons">
-        <el-button type="primary" :icon="Edit" @click="handleEdit" size="default"> 编辑 </el-button>
+        <!-- [R-3/M-RC-07] 编辑为写入操作，与同页其他操作按钮同用 canOperateAsset 口径 -->
+        <el-button
+          v-if="canOperateAsset"
+          type="primary"
+          :icon="Edit"
+          @click="handleEdit"
+          size="default"
+        >
+          编辑
+        </el-button>
         <el-button type="warning" :icon="Download" @click="handleExportExcel" size="default">
           导出
         </el-button>

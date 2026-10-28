@@ -47,6 +47,11 @@ vi.mock('@element-plus/icons-vue', () => ({
   Plus: { template: '<span />' },
 }))
 
+// [R-3/M-RC-07] AssetForm 于 onMounted 首行执行 guardOnMounted，此处放行以聚焦表单行为
+vi.mock('@/composables/useOperationGuard', () => ({
+  useOperationGuard: () => ({ guardOnMounted: () => true }),
+}))
+
 vi.mock('@/stores/index', () => ({
   useUserStore: () => ({ getByName: vi.fn(async () => []), getById: mockUserGetById }),
   useAssetStore: () => ({

@@ -92,6 +92,9 @@ export const routesStandalone: RouteRecordRaw[] = [
     meta: {
       title: '资产报废申请',
       requiresAuth: true,
+      // [R-3/M-RC-14] 与同批 7 条独立操作页对齐：此前缺失门槛，任意已登录角色可直访。
+      // 注：本页未接入 useAssetOperationForm（无 guardOnMounted 兜底），meta 为唯一防线
+      requiredMinRole: 'asset_admin',
     },
   },
   {

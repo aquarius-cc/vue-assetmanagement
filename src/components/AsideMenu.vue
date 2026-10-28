@@ -42,7 +42,7 @@
             </template>
             <el-menu-item index="/main/assetdetails">资产详情</el-menu-item>
             <el-menu-item index="/main/assetdetails/grouped">资产分组展开</el-menu-item>
-            <el-menu-item index="/main/assetform">资产录入</el-menu-item>
+            <el-menu-item index="/main/assetform" v-if="canOperateAsset">资产录入</el-menu-item>
             <el-menu-item index="/main/outassetdetails">资产出库</el-menu-item>
             <el-menu-item index="/main/recycleassetdetails">资产回收</el-menu-item>
             <el-menu-item index="/main/brokenassetdetails">损坏资产</el-menu-item>
@@ -157,7 +157,10 @@ import { logError } from '@/utils/logger'
 const router = useRouter()
 const route = useRoute()
 const appStore = useAppStore()
-const { hasPermission } = usePermission()
+// [R-3/M-RC-07] 菜单可见性须与路由守卫同口径（纯角色层级 ≥ asset_admin）：
+// 不用 hasPermission(asset:create)——其对非 admin 读 authStore.permissions，
+// 权限点表未种子化时会误隐藏菜单，与 meta.requiredMinRole 的层级判定不一致
+const { hasPermission, canOperateAsset } = usePermission()
 
 // 基于细粒度权限码的菜单可见性判断
 const canManageSystem = computed(() => hasPermission(PERMISSION_CODES.SYSTEM_CONFIG_MANAGE))

@@ -136,12 +136,13 @@
 <script lang="ts" setup>
 defineOptions({ name: 'AssetBatchImport' })
 
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile, UploadInstance } from 'element-plus'
 import { Upload } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useBatchImport } from '@/composables/useBatchImport'
+import { useOperationGuard } from '@/composables/useOperationGuard'
 import { usePreviewPagination } from '@/composables/usePreviewPagination'
 import { validationTagType, validationTagText } from '@/utils/batchImportHelpers'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
@@ -160,6 +161,13 @@ import {
 
 const router = useRouter()
 const assetStore = useAssetStore()
+const { guardOnMounted } = useOperationGuard()
+
+// [R-3/M-RC-07] 组件级兜底：路由守卫已按 meta.requiredMinRole 拦截，
+// 此处再拦一次（编程式导航 / 缓存复用场景），无权限即跳 /main
+onMounted(() => {
+  guardOnMounted()
+})
 
 // 上传组件 ref 和文件列表状态
 const uploadRef = ref<UploadInstance>()

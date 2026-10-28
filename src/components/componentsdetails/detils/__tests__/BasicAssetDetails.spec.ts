@@ -91,6 +91,8 @@ function mountDetail() {
 describe('BasicAssetDetails 操作跳转取键【BF-081 连带】', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // 本 describe 锚的是 recordcode 取键契约，非权限；编辑按钮需可见故置为有权限
+    permissionState.canOperateAsset = true
     currentQuery.value = { code: 'REC-001' }
     mockGetById.mockResolvedValue(makeDetail())
   })
@@ -110,6 +112,16 @@ describe('BasicAssetDetails 操作跳转取键【BF-081 连带】', () => {
       name: 'AssetForm',
       query: { code: 'REC-001' },
     })
+  })
+
+  it('无操作权限时「编辑」按钮不渲染【R-3/M-RC-07】', async () => {
+    permissionState.canOperateAsset = false
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    expect(wrapper.findAll('button').find((b) => b.text().includes('编辑'))).toBeUndefined()
+    // 只读入口不受影响
+    expect(wrapper.findAll('button').find((b) => b.text().includes('状态日志'))).toBeTruthy()
   })
 
   it('「状态日志」以 recordcode 进入日志页（既有契约回归）', async () => {

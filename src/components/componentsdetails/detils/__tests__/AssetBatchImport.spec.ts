@@ -33,6 +33,11 @@ vi.mock('@element-plus/icons-vue', () => ({
   Upload: { template: '<span />' },
 }))
 
+// [R-3/M-RC-07] AssetBatchImport 于 onMounted 执行 guardOnMounted，此处放行以聚焦导入行为
+vi.mock('@/composables/useOperationGuard', () => ({
+  useOperationGuard: () => ({ guardOnMounted: () => true }),
+}))
+
 vi.mock('@/composables/useBatchImport', async () => {
   const { ref, computed } = await import('vue')
   const previewData = ref<unknown[]>([])

@@ -88,6 +88,9 @@ export const routesMainCore: RouteRecordRaw[] = [
             meta: {
               title: '资产录入/编辑',
               requiresAuth: true,
+              // [R-3/M-RC-07] 子路由独立加固：父级 AssetContentDetails 为只读列表，
+              // meta 不可上提（否则连带拦掉 basicassetdetails 只读详情）
+              requiredMinRole: 'asset_admin',
             },
           },
           {
@@ -97,6 +100,8 @@ export const routesMainCore: RouteRecordRaw[] = [
             meta: {
               title: '资产批量导入',
               requiresAuth: true,
+              // [R-3/M-RC-07] 批量导入为写入操作，门槛同 AssetForm
+              requiredMinRole: 'asset_admin',
             },
           },
         ],

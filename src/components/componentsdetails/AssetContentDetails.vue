@@ -74,8 +74,8 @@
             :detail-route-name="'BasicAssetDetails'"
             :show-detail-button="true"
             :enable-search="true"
-            :enable-edit="true"
-            :enable-delete="true"
+            :enable-edit="canOperateAsset"
+            :enable-delete="canOperateAsset"
             :enable-selection="true"
             :action-column-width="180"
             :page-size-options="slotProps.pageSizeOptions"
@@ -107,10 +107,16 @@
           </CommonList>
 
           <div class="bottom-buttons">
-            <el-button type="success" @click="handleAddAsset">新增资产</el-button>
-            <el-button type="primary" @click="handleBatchImport">批量导入</el-button>
+            <el-button v-if="canOperateAsset" type="success" @click="handleAddAsset"
+              >新增资产</el-button
+            >
+            <el-button v-if="canOperateAsset" type="primary" @click="handleBatchImport"
+              >批量导入</el-button
+            >
             <el-button type="primary" @click="handleExportExcel">导出Excel</el-button>
+            <!-- 批量删除为写入操作；导出对 auditor 开放，不加权限门禁 -->
             <el-button
+              v-if="canOperateAsset"
               type="danger"
               :disabled="slotProps.selectedRows?.length === 0"
               @click="handleBatchDelete(slotProps.selectedRows)"
@@ -146,6 +152,7 @@ import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import type { TableColumn } from '@/types/list'
 import type { SmartListContainerExpose } from '@/types/common'
 import { useAssetListConfig } from '@/composables/useAssetListConfig'
+import { usePermission } from '@/composables/usePermission'
 import type { AssetDetail, AssetGroupQueryParams, AssetGroupSummary } from '@/types/asset'
 import { GROUPED_FILTER_KEY_MAP } from '@/constants/assetGroupedFilters'
 import { useGroupedAssetSession, type GroupedPageSnapshot } from '@/stores/groupedAssetSession'
@@ -181,6 +188,12 @@ const { searchFields, groupedSearchFields, storeConfig, exportColumns, assetStor
   useAssetListConfig({
     enableGrouping: props.enableGrouping,
   })
+
+/**
+ * [R-3/M-RC-07] 写入类操作门禁（新增/批量导入/批量删除/行内编辑删除）。
+ * 与路由 meta.requiredMinRole 同为纯角色层级口径（≥ asset_admin），避免菜单藏了 URL 却能进。
+ */
+const { canOperateAsset } = usePermission()
 
 /** 搜索栏字段集随模式切换：平铺 8 项 / 分组 9 项（值空间不同，见 useAssetListConfig） */
 const activeSearchFields = computed(() =>

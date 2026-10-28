@@ -29,6 +29,9 @@ export const routesMainOperations: RouteRecordRaw[] = [
         meta: {
           title: '资产发放录入/编辑',
           requiresAuth: true,
+          // [R-3/M-RC-07] 父前缀 /main/outassetdetails 不在 roleWhitelist，
+          // regular_user 此前可直达；meta 仅加子路由，列表页仍对受限角色开放
+          requiredMinRole: 'asset_admin',
         },
       },
       {
@@ -48,6 +51,8 @@ export const routesMainOperations: RouteRecordRaw[] = [
         meta: {
           title: '批量导入资产发放',
           requiresAuth: true,
+          // [R-3/M-RC-07] 门槛同 OutAssetForm
+          requiredMinRole: 'asset_admin',
         },
       },
     ],
@@ -69,6 +74,9 @@ export const routesMainOperations: RouteRecordRaw[] = [
         meta: {
           title: '资产回收录入/编辑',
           requiresAuth: true,
+          // [R-3/M-RC-07] 父前缀 /main/recycleassetdetails 不在 roleWhitelist；
+          // 回收族无 batchimport 路由，本条为其唯一写入页
+          requiredMinRole: 'asset_admin',
         },
       },
       {
@@ -138,7 +146,11 @@ export const routesMainOperations: RouteRecordRaw[] = [
         path: 'damagedassetform',
         name: 'DamagedAssetForm',
         component: () => import('@/components/componentsdetails/detils/DamagedAssetForm.vue'),
-        meta: { title: '待报废资产录入/编辑', requiresAuth: true },
+        meta: {
+          title: '待报废资产录入/编辑',
+          requiresAuth: true,
+          // [R-3] 禁补 requiredMinRole：父前缀已在 roleWhitelist(4/5 级)，补 3 级 meta 即扩权
+        },
       },
       {
         path: 'damagedassetbasicdetails',
@@ -153,7 +165,11 @@ export const routesMainOperations: RouteRecordRaw[] = [
         name: 'DamagedAssetBatchImport',
         component: () =>
           import('@/components/componentsdetails/detils/DamagedAssetBatchImport.vue'),
-        meta: { title: '批量导入待报废资产', requiresAuth: true },
+        meta: {
+          title: '批量导入待报废资产',
+          requiresAuth: true,
+          // [R-3] 禁补 requiredMinRole：父前缀已在 roleWhitelist(4/5 级)，补 3 级 meta 即扩权
+        },
       },
     ],
   },
@@ -185,7 +201,11 @@ export const routesMainOperations: RouteRecordRaw[] = [
         path: 'unregisteredassetform',
         name: 'UnregisteredAssetForm',
         component: () => import('@/components/componentsdetails/detils/UnregisteredAssetForm.vue'),
-        meta: { title: '未登记资产录入/编辑', requiresAuth: true },
+        meta: {
+          title: '未登记资产录入/编辑',
+          requiresAuth: true,
+          // [R-3] 禁补 requiredMinRole：父前缀已在 roleWhitelist(4/5 级)，补 3 级 meta 即扩权
+        },
       },
       {
         path: 'unregisteredassetbasicdetails',
@@ -200,7 +220,11 @@ export const routesMainOperations: RouteRecordRaw[] = [
         name: 'UnregisteredAssetBatchImport',
         component: () =>
           import('@/components/componentsdetails/detils/UnregisteredAssetBatchImport.vue'),
-        meta: { title: '批量导入未登记资产', requiresAuth: true },
+        meta: {
+          title: '批量导入未登记资产',
+          requiresAuth: true,
+          // [R-3] 禁补 requiredMinRole：父前缀已在 roleWhitelist(4/5 级)，补 3 级 meta 即扩权
+        },
       },
     ],
   },

@@ -85,6 +85,7 @@ import {
   useAssetFormAssociations,
   useAssetFormAssociationMethods,
 } from '@/composables/useAssetFormHelpers'
+import { useOperationGuard } from '@/composables/useOperationGuard'
 import AssetBasicInfo from '@/components/componentsdetails/detils/detilschildcomponents/AssetBasicInfo.vue'
 import AssetContractInfo from '@/components/componentsdetails/detils/detilschildcomponents/AssetContractInfo.vue'
 import AssetManagementInfo from '@/components/componentsdetails/detils/detilschildcomponents/AssetManagementInfo.vue'
@@ -92,6 +93,7 @@ import AssetStorageInfo from '@/components/componentsdetails/detils/detilschildc
 
 const router = useRouter()
 const route = useRoute()
+const { guardOnMounted } = useOperationGuard()
 const assetStore = useAssetStore()
 const userStore = useUserStore()
 const assetTypeStore = useAssetTypeStore()
@@ -437,6 +439,9 @@ const handleLotAdds = () =>
 const goBack = () => router.go(-1)
 
 onMounted(async () => {
+  // [R-3/M-RC-07] 组件级兜底：路由守卫已按 meta.requiredMinRole 拦截，
+  // 此处再拦一次（如经 router.push 的编程式导航、缓存复用场景），无权限即跳 /main
+  if (!guardOnMounted()) return
   await associations.loadAssociations()
   if (isEditMode.value) {
     const code = route.query.code as string
