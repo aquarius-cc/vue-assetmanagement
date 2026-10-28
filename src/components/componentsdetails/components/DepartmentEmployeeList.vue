@@ -218,6 +218,7 @@ import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import { useDepartmentEmployeeActions } from '@/composables/useDepartmentEmployeeActions'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 // ==================== Props ====================
 
@@ -352,7 +353,8 @@ const loadEmployeeList = async () => {
       '加载人员列表失败:',
       error,
     )
-    ElMessage.error('加载人员列表失败')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '加载人员列表失败')
   } finally {
     isLoading.value = false
   }
@@ -417,7 +419,8 @@ const handleDeleteEmployee = async (row: EmployeeExtended) => {
       '删除人员失败:',
       error,
     )
-    ElMessage.error('删除人员失败')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '删除人员失败')
   }
 }
 

@@ -152,6 +152,7 @@ import AssetTypeTree from '@/components/componentsdetails/components/AssetTypeTr
 import AssetTypeInfoCard from '@/components/componentsdetails/components/AssetTypeInfoCard.vue'
 import AssetTypeChildList from '@/components/componentsdetails/components/AssetTypeChildList.vue'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { useKeepAliveReload } from '@/composables/useKeepAliveReload'
 
 const route = useRoute()
@@ -238,7 +239,8 @@ const fetchAllData = async () => {
     }
   } catch (error) {
     logError('components/componentsdetails/AssetTypeDetails', '加载资产分类数据失败:', error)
-    ElMessage.error('加载资产分类数据失败')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '加载资产分类数据失败')
   } finally {
     isLoading.value = false
   }
@@ -323,8 +325,8 @@ const handleSubmitForm = async () => {
       formDialogVisible.value = false
       await fetchAllData()
     } catch (error) {
-      const msg = isAxiosError(error) ? error.response?.data?.message || error.message : '操作失败'
-      ElMessage.error(`操作失败：${msg}`)
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '操作失败')
     } finally {
       submitting.value = false
     }
@@ -362,10 +364,8 @@ const handleBatchAddSubmit = async () => {
     batchAddVisible.value = false
     await fetchAllData()
   } catch (error) {
-    const msg = isAxiosError(error)
-      ? error.response?.data?.message || error.message
-      : '批量新增失败'
-    ElMessage.error(`批量新增失败：${msg}`)
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '批量新增失败')
   } finally {
     submitting.value = false
   }
@@ -449,7 +449,8 @@ const handleBatchDelete = async (rows: AssetType[]) => {
     await fetchAllData()
   } catch (err) {
     if (err === 'cancel') return
-    ElMessage.error('批量删除失败，请重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(err, '批量删除失败，请重试')
   }
 }
 

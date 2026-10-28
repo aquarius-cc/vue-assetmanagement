@@ -157,6 +157,7 @@ import type { AssetDetail, AssetGroupQueryParams, AssetGroupSummary } from '@/ty
 import { GROUPED_FILTER_KEY_MAP } from '@/constants/assetGroupedFilters'
 import { useGroupedAssetSession, type GroupedPageSnapshot } from '@/stores/groupedAssetSession'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { readStoreValue } from '@/utils/reactiveAccess'
 import { useServerExcelExport } from '@/composables/useServerExcelExport'
 import { exportToExcel } from '@/utils/excelExporter'
@@ -364,7 +365,8 @@ const handleDeleteGroup = async (row: AssetGroupSummary) => {
   } catch (error) {
     if (error === 'cancel' || error === 'close') return
     logError('components/AssetContentDetails', '[分组删除]', error)
-    ElMessage.error('删除失败')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '删除失败')
   }
 }
 
@@ -423,7 +425,8 @@ const handleDelete = (row: AssetDetail) => {
       }
     })
     .catch((error) => {
-      if (error !== 'cancel') ElMessage.error(`删除失败: ${error.message || '未知错误'}`)
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      if (error !== 'cancel') notifyCallerError(error, '删除失败')
     })
 }
 
@@ -514,7 +517,8 @@ const handleBatchDelete = async (rows: AssetDetail[] | undefined) => {
   } catch (err) {
     if (err === 'cancel') return
     logError('components/componentsdetails/AssetContentDetails', '批量删除失败:', err)
-    ElMessage.error('批量删除失败，请重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(err, '批量删除失败，请重试')
   }
 }
 

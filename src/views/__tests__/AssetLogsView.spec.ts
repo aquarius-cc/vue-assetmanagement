@@ -155,7 +155,7 @@ describe('AssetLogsView', () => {
     const wrapper = mountLogs()
     await flushPromises()
 
-    expect(elMessageError).toHaveBeenCalledWith('获取资产信息失败，请稍后重试')
+    expect(elMessageError).toHaveBeenCalledWith('network down')
     expect(wrapper.text()).toContain('暂无状态日志记录')
     expect(getAssetTimelineMock).not.toHaveBeenCalled()
   })

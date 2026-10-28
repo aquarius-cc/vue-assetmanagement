@@ -98,10 +98,10 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
-import { isAxiosError } from 'axios'
 import { useAssetTypeStore } from '@/stores/assetTypeStore'
 import type { AssetTypeCreateForm, AssetTypeUpdateForm } from '@/types/assettype'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 const route = useRoute()
 const router = useRouter()
@@ -159,7 +159,8 @@ onMounted(async () => {
     }
   } catch (error) {
     logError('components/componentsdetails/detils/AssetTypeForm', '获取资产分类详情失败:', error)
-    ElMessage.error('加载数据失败，请稍后重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '加载数据失败，请稍后重试')
   }
 })
 
@@ -187,14 +188,8 @@ const submitForm = () => {
       assetTypeStore.setRefreshFlag(true)
       router.push('/main/assettypedetails')
     } catch (error: unknown) {
-      if (isAxiosError(error)) {
-        const msg = error.response?.data?.message || error.message
-        ElMessage.error(`操作失败：${msg}`)
-      } else if (error instanceof Error) {
-        ElMessage.error(`操作失败：${error.message}`)
-      } else {
-        ElMessage.error('操作失败，发生未知错误')
-      }
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '操作失败，发生未知错误')
       logError('components/componentsdetails/detils/AssetTypeForm', '资产分类操作失败：', error)
     }
   })

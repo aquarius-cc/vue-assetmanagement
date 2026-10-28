@@ -111,6 +111,7 @@ import { formatDate } from '@/utils/Format'
 import { getApprovalStatusText, getApprovalStatusTagType } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { useServerExcelExport } from '@/composables/useServerExcelExport'
 const { exportFromServer } = useServerExcelExport()
 
@@ -462,7 +463,8 @@ const handleBatchDelete = async (rows: DamagedAsset[] | undefined) => {
   } catch (err) {
     if (err === 'cancel') return
     logError('components/componentsdetails/DamagedAssetDetails', '批量删除失败:', err)
-    ElMessage.error('批量删除失败，请重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(err, '批量删除失败，请重试')
   }
 }
 

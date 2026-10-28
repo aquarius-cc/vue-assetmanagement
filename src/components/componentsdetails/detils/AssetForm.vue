@@ -69,9 +69,9 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Edit, Plus } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
-import { isAxiosError } from 'axios'
 import type { AssetCreateFormExtended, AssetDetail } from '@/types/asset'
 import { getAssetStatusText } from '@/utils/Format'
+import { notifyCallerError } from '@/utils/errorHandler'
 import {
   useUserStore,
   useAssetStore,
@@ -268,8 +268,9 @@ const loadAssetDetail = async (recordcode: string) => {
     }
     applyScalarDetail(detail)
     applyRelationDetail(detail)
-  } catch {
-    ElMessage.error('无法加载资产详情，请检查网络连接后刷新页面重试')
+  } catch (error) {
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '无法加载资产详情，请检查网络连接后刷新页面重试')
   }
 }
 
@@ -357,7 +358,9 @@ const submitForm = () => {
       assetStore.setRefreshFlag(true)
       router.go(-1)
     } catch (error: unknown) {
-      ElMessage.error(resolveSubmitError(error))
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      // （submitUpdate 抛出的『缺少记录编码』业务 Error 也经此弹出）
+      notifyCallerError(error, '操作失败，请检查网络连接后重试')
     } finally {
       submitting.value = false
     }
@@ -390,21 +393,6 @@ const submitCreate = async () => {
   )
   const assetCount = Array.isArray(createdAssets) ? createdAssets.length : 1
   ElMessage.success(`录入成功，共创建 ${assetCount} 条资产记录`)
-}
-
-/**
- * 将提交失败的异常解析为用户可读文案。
- * 分支与原 submitForm 内联三元逐一等价：axios 优先取响应 message（缺失时用操作失败兜底），
- * 其次取 Error.message，最后用未知错误兜底。
- */
-const resolveSubmitError = (error: unknown): string => {
-  if (isAxiosError(error)) {
-    return error.response?.data?.message || '操作失败，请检查网络连接后重试'
-  }
-  if (error instanceof Error) {
-    return error.message
-  }
-  return '未知错误'
 }
 
 const resetForm = () => {

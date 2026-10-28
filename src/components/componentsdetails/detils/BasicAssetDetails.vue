@@ -166,6 +166,7 @@ import { basicAssetDetailExportColumns } from './basicAssetDetailExport'
 import { usePermission } from '@/composables/usePermission'
 import { useAssetStatusChecks } from '@/composables/useAssetStatus'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 // import { useOperationGuard } from '@/composables/useOperationGuard'
 
 // ===== 路由与状态管理 =====
@@ -306,7 +307,8 @@ onMounted(async () => {
     }
   } catch (error) {
     logError('components/componentsdetails/detils/BasicAssetDetails', '获取资产详情失败', error)
-    ElMessage.error('获取资产详情失败，请重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '获取资产详情失败，请重试')
   } finally {
     isLoading.value = false
   }

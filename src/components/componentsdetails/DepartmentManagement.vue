@@ -143,6 +143,7 @@ import DepartmentEmployeeList from '@/components/componentsdetails/components/De
 import DepartmentFormDialog from '@/components/componentsdetails/components/DepartmentFormDialog.vue'
 import DepartmentBatchAddDialog from '@/components/componentsdetails/components/DepartmentBatchAddDialog.vue'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 const route = useRoute()
 const departmentStore = useDepartmentStore()
@@ -227,7 +228,8 @@ const loadDepartmentTree = async () => {
     }
   } catch (error) {
     logError('components/componentsdetails/DepartmentManagement', '加载部门树失败:', error)
-    ElMessage.error('加载部门树失败')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '加载部门树失败')
   } finally {
     isLoading.value = false
   }
@@ -376,7 +378,8 @@ const handleDeleteDepartment = async (department: Department) => {
   } catch (error: unknown) {
     if (error !== 'cancel') {
       logError('components/componentsdetails/DepartmentManagement', '删除部门失败:', error)
-      ElMessage.error(error?.toString() || '删除失败，请检查该部门下是否有子部门或人员')
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '删除失败，请检查该部门下是否有子部门或人员')
     }
   }
 }

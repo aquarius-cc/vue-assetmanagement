@@ -95,6 +95,7 @@ import type { Department } from '@/types/department'
 import { useDepartmentStore } from '@/stores/departmentStore'
 import type { SmartListContainerExpose } from '@/types/common'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -270,7 +271,8 @@ const handleBatchDelete = async (rows: Department[] | undefined) => {
   } catch (err) {
     if (err === 'cancel') return
     logError('components/componentsdetails/DepartmentDetails', '批量删除失败:', err)
-    ElMessage.error('批量删除失败，请重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(err, '批量删除失败，请重试')
   }
 }
 

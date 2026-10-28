@@ -67,11 +67,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Document } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
 import { useAssetStore } from '@/stores'
 import type { AssetDetail, AssetTimelineItem } from '@/types/asset'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import { logError, logWarn } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 const route = useRoute()
 const router = useRouter()
@@ -89,7 +89,8 @@ onMounted(async () => {
     asset.value = await assetStore.getById(assetCode.value)
   } catch (err) {
     logError('views/AssetLogsView', '获取资产详情失败:', err)
-    ElMessage.error('获取资产信息失败，请稍后重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(err, '获取资产信息失败，请稍后重试')
   }
 
   // 2) 状态时间线：取键契约为 asset_code（urls.py:82 / operation_log_selector.py:82），

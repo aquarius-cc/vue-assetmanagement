@@ -104,7 +104,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { User, Search, OfficeBuilding, Refresh } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/userStore'
 import { getDepartmentTree } from '@/stores/departmentStore'
 import type { EmployeeExtended } from '@/types/user'
@@ -113,6 +112,7 @@ import DepartmentTree from '@/components/componentsdetails/components/Department
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 const userStore = useUserStore()
 
@@ -138,7 +138,8 @@ const fetchDepartmentTree = async () => {
     departmentData.value = await getDepartmentTree()
   } catch (err) {
     logError('views/ContactsView', '获取部门树失败:', err)
-    ElMessage.error('获取部门数据失败')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(err, '获取部门数据失败')
   }
 }
 
@@ -183,7 +184,8 @@ const fetchContacts = async () => {
     }
   } catch (err) {
     logError('views/ContactsView', '获取通讯录失败:', err)
-    ElMessage.error('获取通讯录失败，请稍后重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(err, '获取通讯录失败，请稍后重试')
   } finally {
     loading.value = false
   }

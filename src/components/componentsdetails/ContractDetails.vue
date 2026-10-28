@@ -135,6 +135,7 @@ import { formatPrice, formatDate, contractTypeMapping } from '@/utils/Format'
 import { getContractStatusTagType, getContractStatusText } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { useServerExcelExport } from '@/composables/useServerExcelExport'
 import { useKeepAliveReload } from '@/composables/useKeepAliveReload'
 
@@ -291,13 +292,14 @@ const handleBatchDelete = async (rows: Contract[] | undefined) => {
   } catch (err) {
     if (err === 'cancel') return
     logError('components/componentsdetails/ContractDetails', '批量删除失败:', err)
-    ElMessage.error('批量删除失败，请重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(err, '批量删除失败，请重试')
   }
 }
 
 /**
  * 导出 Excel（支持当前页/全部数据）
- * @param row 行数捀 */
+ */
 const exportColumns: ColumnConfig<Contract>[] = [
   { title: '合同编码', key: 'contract_code', default: '' },
   { title: '合同名称', key: 'contract_name', default: '' },

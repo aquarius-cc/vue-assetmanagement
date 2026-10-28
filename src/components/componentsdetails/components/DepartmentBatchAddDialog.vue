@@ -114,6 +114,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { batchCreateDepartments } from '@/stores/departmentStore'
 import type { Department, DepartmentCreateForm } from '@/types/department'
 import type { DepartmentBatchCreateResult } from '@/stores/departmentStore'
@@ -212,8 +213,8 @@ const handleSubmit = async () => {
       ElMessage.error('所有部门创建失败')
     }
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : '批量创建失败'
-    ElMessage.error(msg)
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '批量创建失败')
   } finally {
     submitting.value = false
   }

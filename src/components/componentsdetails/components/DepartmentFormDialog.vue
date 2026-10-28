@@ -123,6 +123,7 @@ import type { Department, DepartmentCreateForm, DepartmentTreeNode } from '@/typ
 import { departmentFormStaticRules } from './departmentFormDialogRules'
 import { isDescendant, isDescendantByCode } from '@/utils/departmentTree'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 // ==================== Props & Emits ====================
 
@@ -437,8 +438,8 @@ const handleSubmit = async () => {
     emit('success')
   } catch (error: unknown) {
     logError('components/componentsdetails/components/DepartmentFormDialog', '提交失败:', error)
-    const errorMsg = error instanceof Error ? error.message : '操作失败'
-    ElMessage.error(errorMsg)
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '操作失败')
   } finally {
     isSubmitting.value = false
   }

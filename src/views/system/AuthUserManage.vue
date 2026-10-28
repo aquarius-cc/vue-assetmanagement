@@ -153,7 +153,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { User, Search, Plus } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { useAuthUserStore } from '@/stores/authUserStore'
-import { getErrorMessage } from '@/utils/errorHandler'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { usePermission } from '@/composables/usePermission'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
@@ -199,8 +199,9 @@ const fetchAuthUsers = async () => {
     authUsers.value = res
     total.value = authUserStore.pagination.total
     // bound_employee 已由后端列表接口内联返回，无需额外请求
-  } catch {
-    ElMessage.error('获取用户列表失败')
+  } catch (error) {
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '获取用户列表失败')
   } finally {
     loading.value = false
   }
@@ -297,7 +298,8 @@ const handleSubmit = async () => {
       dialogVisible.value = false
       fetchAuthUsers()
     } catch (error: unknown) {
-      ElMessage.error(getErrorMessage(error, isEdit.value ? '更新失败' : '创建失败'))
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, isEdit.value ? '更新失败' : '创建失败')
     } finally {
       submitting.value = false
     }
@@ -320,7 +322,8 @@ const handleDelete = async (row: AuthUser) => {
     ElMessage.success('删除成功')
     fetchAuthUsers()
   } catch (error: unknown) {
-    ElMessage.error(getErrorMessage(error, '删除失败'))
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '删除失败')
   }
 }
 

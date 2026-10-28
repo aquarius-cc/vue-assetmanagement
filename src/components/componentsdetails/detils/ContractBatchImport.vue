@@ -142,7 +142,7 @@ import {
   contractExampleRows as exampleRows,
 } from './contractBatchImport.config'
 import { useContractStore, batchCreateContracts } from '@/stores/contractStore'
-import { extractErrorMessage } from '@/utils/SubmitBatch'
+import { notifyCallerError } from '@/utils/errorHandler'
 import type { ContractCreateForm } from '@/types/contract'
 import type { ContractExcelRow } from '@/types/batch-import'
 
@@ -257,8 +257,8 @@ const handleSubmit = async () => {
       ElMessage.warning(`导入完成：成功 ${result.success_count} 条，失败 ${result.fail_count} 条`)
     }
   } catch (error) {
-    const msg = extractErrorMessage(error)
-    ElMessage.error(`导入失败：${msg}`)
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '导入失败，请稍后重试')
   } finally {
     localIsSubmitting.value = false
   }

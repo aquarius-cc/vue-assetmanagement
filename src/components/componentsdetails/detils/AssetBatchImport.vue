@@ -148,6 +148,7 @@ import { validationTagType, validationTagText } from '@/utils/batchImportHelpers
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { useAssetStore } from '@/stores/assetStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { isAxiosError } from 'axios'
 import { downloadExcelTemplate } from '@/utils/batchImport/templateExport'
 import type { AssetExcelRow } from '@/types/batch-import'
@@ -384,8 +385,8 @@ const handleSubmit = async () => {
       )
     }
   } catch (error) {
-    const msg = extractErrorMessage(error)
-    ElMessage.error(`导入失败：${msg}`)
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '导入失败，请稍后重试')
   } finally {
     localIsSubmitting.value = false
   }
