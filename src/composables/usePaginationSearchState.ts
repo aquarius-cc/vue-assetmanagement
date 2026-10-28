@@ -19,12 +19,12 @@ export interface SearchConfig<T> {
     keyword: string,
     page: number,
     page_size: number,
-  ) => Promise<{ count: number; results: T[] }>
+  ) => Promise<{ count: number; results: T[] } | undefined>
   performSearchWithParams?: (
     params: Record<string, string>,
     page: number,
     page_size: number,
-  ) => Promise<{ count: number; results: T[] }>
+  ) => Promise<{ count: number; results: T[] } | undefined>
   /**
    * 搜索态变更回调（可选，DRY：当前搜索词的单一事实来源）
    *
@@ -95,6 +95,8 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
       const response = await searchConfig.performSearch(keyword.trim(), getPage(), getSize())
       // [I-8] 过期响应：被更新请求取代，跳过结果写回
       if (seq !== searchSeq) return
+      // [M-RC-13] store 判定 stale 时返回 undefined：跳过写回，保留现有搜索结果
+      if (!response) return
       searchResults.value = response.results || []
       searchTotal.value = response.count ?? 0
       updateTotal(response.count)
@@ -187,6 +189,8 @@ export function usePaginationSearchState<T>(options: SearchStateOptions<T>) {
       const response = await searchConfig.performSearchWithParams(params, getPage(), getSize())
       // [I-8] 过期响应：被更新请求取代，跳过结果写回
       if (seq !== searchSeq) return
+      // [M-RC-13] store 判定 stale 时返回 undefined：跳过写回，保留现有搜索结果
+      if (!response) return
       searchResults.value = response.results || []
       searchTotal.value = response.count ?? 0
       updateTotal(response.count)

@@ -176,7 +176,9 @@ const fetchContacts = async () => {
         page: currentPage.value,
         page_size: pageSize.value,
       })
-      contacts.value = res ?? []
+      // [M-RC-13] stale：跳过写回，保留现有表格数据（不把 undefined 翻译成权威空集）
+      if (res === undefined) return
+      contacts.value = res
       total.value = userStore.pagination.total
     }
   } catch (err) {

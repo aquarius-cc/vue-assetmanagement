@@ -79,9 +79,11 @@ export function useSmartListConfig<T>(options: SmartListConfigOptions<T>) {
           }
         : async (params) => {
             const results = await store.getList(params)
+            // [M-RC-13] stale 直传 undefined：loadList 的 response 守卫天然跳过，不清 total
+            if (results === undefined) return undefined
             return {
               count: store.pagination.total,
-              results: results ?? [],
+              results,
               next: null,
               previous: null,
             }
@@ -119,7 +121,9 @@ export function useSmartListConfig<T>(options: SmartListConfigOptions<T>) {
           return { count: resp.count, results: resp.results }
         }
         const results = await store.getList(params)
-        return { count: store.pagination.total, results: results ?? [] }
+        // [M-RC-13] stale 直传 undefined：由 usePaginationSearchState 的 !response 守卫跳过写回
+        if (results === undefined) return undefined
+        return { count: store.pagination.total, results }
       },
     },
     defaultPageSize,

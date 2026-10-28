@@ -159,7 +159,9 @@ const fetchRoles = async () => {
       params.search = searchKeyword.value.trim()
     }
     const res = await roleStore.getList(params)
-    roles.value = res ?? []
+    // [M-RC-13] stale：跳过写回，保留现有表格数据（不把 undefined 翻译成权威空集）
+    if (res === undefined) return
+    roles.value = res
     total.value = roleStore.pagination.total
   } catch {
     ElMessage.error('获取角色列表失败')

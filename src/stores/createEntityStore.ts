@@ -365,6 +365,8 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
           })
           // M-21：同步递增 total，保持分页计数与列表一致
           pagination.value.total += items.length
+          // M-RC-18：作废在途旧 getList，防写后旧响应回滚（在状态写入完成之后 bump）
+          listRequestSeq++
         }
         // ✅ 只有未禁用时才显示消息
         if (!config.disableAutoMessage) {
@@ -384,6 +386,8 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
         const updatedItem = await config.api.update(data)
         if (autoSync) {
           entityState.value.entities[idStr] = updatedItem
+          // M-RC-18：作废在途旧 getList，防写后旧响应回滚（在状态写入完成之后 bump）
+          listRequestSeq++
         }
         // 使用 displayName（中文名）或 storeId 作为显示名称
         const displayName = config.displayName || storeId
@@ -404,6 +408,8 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
           if (existedLocally) {
             pagination.value.total = Math.max(0, pagination.value.total - 1)
           }
+          // M-RC-18：作废在途旧 getList，防写后旧响应回滚（在状态写入完成之后 bump）
+          listRequestSeq++
         }
         // 使用 displayName（中文名）或 storeId 作为显示名称
         const displayName = config.displayName || storeId
@@ -495,6 +501,8 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
 
           if (autoSync) {
             pruneDeletedEntities(result.success_ids, result.success_count)
+            // M-RC-18：作废在途旧 getList，防写后旧响应回滚（在状态写入完成之后 bump）
+            listRequestSeq++
           }
 
           // 根据结果给出消息提示（适配后端 fail_items 格式）
@@ -523,6 +531,8 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
         page_size: defaultPageSize,
         total: 0,
       }
+      // M-RC-18：清空后作废在途旧 getList，防止旧响应回填已清空状态（与写路径同机理）
+      listRequestSeq++
     }
     // 注意：Pinia setup store 会自动解包 ref/computed
     // 返回的对象会被 Pinia 处理，外部访问时得到解包后的值

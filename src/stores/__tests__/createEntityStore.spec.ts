@@ -705,4 +705,157 @@ describe('createEntityStore', () => {
       expect(store.getTotalPages).toBe(2)
     })
   })
+
+  describe('M-RC-18 写后 seq bump', () => {
+    /** 造一个挂起的在途 getList（旧快照），返回 [请求 promise, resolve 函数] */
+    function makeStaleListRequest(s: ReturnType<typeof useTestStore>) {
+      let resolveStale!: (v: ListResponse<TestEntity>) => void
+      const req = new Promise<ListResponse<TestEntity>>((r) => (resolveStale = r))
+      vi.mocked(mockApi.getList).mockReturnValueOnce(req)
+      const pending = s.getList()
+      return { pending, resolveStale }
+    }
+
+    it('update 后在途旧 getList 被作废：entities 保持新值', async () => {
+      vi.mocked(mockApi.getList).mockResolvedValueOnce({
+        count: 2,
+        results: [
+          { id: '1', name: 'A', value: 1 },
+          { id: '2', name: 'B', value: 2 },
+        ],
+      })
+      await store.getList()
+
+      const { pending, resolveStale } = makeStaleListRequest(store)
+      vi.mocked(mockApi.update).mockResolvedValue({ id: '1', name: 'A2', value: 9 })
+      await store.update({ id: '1', name: 'A2', value: 9 })
+
+      resolveStale!({
+        count: 2,
+        results: [
+          { id: '1', name: 'A', value: 1 },
+          { id: '2', name: 'B', value: 2 },
+        ],
+      })
+      const staleResult = await pending
+
+      expect(staleResult).toBeUndefined()
+      expect(store.list.find((e) => e.id === '1')?.name).toBe('A2')
+      expect(store.pagination.total).toBe(2)
+    })
+
+    it('create 后在途旧 getList 被作废：新建行不被抹除', async () => {
+      vi.mocked(mockApi.getList).mockResolvedValueOnce({ count: 0, results: [] })
+      await store.getList()
+
+      const { pending, resolveStale } = makeStaleListRequest(store)
+      vi.mocked(mockApi.create).mockResolvedValue({ id: '9', name: 'N', value: 3 })
+      await store.create({ id: '9', name: 'N', value: 3 })
+
+      resolveStale!({ count: 0, results: [] })
+      const staleResult = await pending
+
+      expect(staleResult).toBeUndefined()
+      expect(store.list.some((e) => e.id === '9')).toBe(true)
+      expect(store.pagination.total).toBe(1)
+    })
+
+    it('remove 后在途旧 getList 被作废：已删行不复活', async () => {
+      vi.mocked(mockApi.getList).mockResolvedValueOnce({
+        count: 2,
+        results: [
+          { id: '1', name: 'A', value: 1 },
+          { id: '2', name: 'B', value: 2 },
+        ],
+      })
+      await store.getList()
+
+      const { pending, resolveStale } = makeStaleListRequest(store)
+      vi.mocked(mockApi.delete).mockResolvedValue(undefined)
+      await store.remove('1')
+
+      resolveStale!({
+        count: 2,
+        results: [
+          { id: '1', name: 'A', value: 1 },
+          { id: '2', name: 'B', value: 2 },
+        ],
+      })
+      const staleResult = await pending
+
+      expect(staleResult).toBeUndefined()
+      expect(store.list.some((e) => e.id === '1')).toBe(false)
+      expect(store.pagination.total).toBe(1)
+    })
+
+    it('removeBatch 后在途旧 getList 被作废：已批删行不复活', async () => {
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const batchStore = useBatchDeleteStore()
+      vi.mocked(mockApi.getList).mockResolvedValueOnce({
+        count: 3,
+        results: [
+          { id: '1', name: 'A', value: 1 },
+          { id: '2', name: 'B', value: 2 },
+          { id: '3', name: 'C', value: 3 },
+        ],
+      })
+      await batchStore.getList()
+
+      let resolveStale!: (v: ListResponse<TestEntity>) => void
+      const staleReq = new Promise<ListResponse<TestEntity>>((r) => (resolveStale = r))
+      vi.mocked(mockApi.getList).mockReturnValueOnce(staleReq)
+      const pending = batchStore.getList()
+
+      vi.mocked(mockApiWithBatchDelete.batchDelete).mockResolvedValue({
+        total: 1,
+        success_count: 1,
+        fail_count: 0,
+        success_ids: ['1'],
+        fail_items: [],
+      })
+      await batchStore.removeBatch(['1'])
+
+      resolveStale!({
+        count: 3,
+        results: [
+          { id: '1', name: 'A', value: 1 },
+          { id: '2', name: 'B', value: 2 },
+          { id: '3', name: 'C', value: 3 },
+        ],
+      })
+      const staleResult = await pending
+
+      expect(staleResult).toBeUndefined()
+      expect(batchStore.list.some((e) => e.id === '1')).toBe(false)
+      expect(batchStore.pagination.total).toBe(2)
+    })
+
+    it('clear 后在途旧 getList 被作废：空表不回填', async () => {
+      vi.mocked(mockApi.getList).mockResolvedValueOnce({
+        count: 2,
+        results: [
+          { id: '1', name: 'A', value: 1 },
+          { id: '2', name: 'B', value: 2 },
+        ],
+      })
+      await store.getList()
+
+      const { pending, resolveStale } = makeStaleListRequest(store)
+      store.clear()
+
+      resolveStale!({
+        count: 2,
+        results: [
+          { id: '1', name: 'A', value: 1 },
+          { id: '2', name: 'B', value: 2 },
+        ],
+      })
+      const staleResult = await pending
+
+      expect(staleResult).toBeUndefined()
+      expect(store.list).toEqual([])
+      expect(store.pagination.total).toBe(0)
+    })
+  })
 })

@@ -72,6 +72,27 @@ describe('useSmartListConfig', () => {
       expect(customGetList).toHaveBeenCalledWith({ page: 1, page_size: 10 })
       expect(result).toEqual({ count: 3, results: [{ id: 2 }], next: null, previous: null })
     })
+
+    it('store 判定 stale（getList resolve undefined）→ 直传 undefined，不造权威空集', async () => {
+      const store = makeStore()
+      store.getList.mockResolvedValue(undefined)
+      const { config } = useConfig(store)
+
+      const result = await config.store.getList({ page: 1, page_size: 20 })
+
+      expect(result).toBeUndefined()
+    })
+
+    it('搜索路径 stale → performSearch 直传 undefined（由状态层 !response 守卫跳过写回）', async () => {
+      const store = makeStore()
+      store.getList.mockResolvedValue(undefined)
+      store.pagination.total = 5
+      const { config } = useConfig(store)
+
+      const result = await config.search.performSearch('kw', 1, 20)
+
+      expect(result).toBeUndefined()
+    })
   })
 
   describe('分页转发', () => {

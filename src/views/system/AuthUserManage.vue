@@ -194,7 +194,9 @@ const fetchAuthUsers = async () => {
       params.search = searchKeyword.value.trim()
     }
     const res = await authUserStore.getList(params)
-    authUsers.value = res ?? []
+    // [M-RC-13] stale：跳过写回，保留现有表格数据（不把 undefined 翻译成权威空集）
+    if (res === undefined) return
+    authUsers.value = res
     total.value = authUserStore.pagination.total
     // bound_employee 已由后端列表接口内联返回，无需额外请求
   } catch {

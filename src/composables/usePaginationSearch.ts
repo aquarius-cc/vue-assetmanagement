@@ -32,13 +32,16 @@ export interface PaginationData {
 
 export interface PaginationSearchConfig<T> {
   store: {
-    getList: (params: PaginationQuery) => Promise<{
-      count: number
-      results: T[]
-      total_pages?: number
-      next?: string | null
-      previous?: string | null
-    }>
+    getList: (params: PaginationQuery) => Promise<
+      | {
+          count: number
+          results: T[]
+          total_pages?: number
+          next?: string | null
+          previous?: string | null
+        }
+      | undefined
+    >
     pagination: PaginationRef
     list: ComputedRef<T[]> | T[] | (() => T[])
     loading: ComputedRef<boolean> | boolean | (() => boolean)
