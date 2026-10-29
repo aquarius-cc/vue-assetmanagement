@@ -66,7 +66,10 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
     const {
       message,
       autoSync = true,
-      enableCache = true,
+      // [M-RC-16] 默认值翻转 true→false：生产 19/19 工厂系 store 全显式 enableCache:false，
+      // 旧默认 true 使缓存读写恒不生效、clearCache 零调用（死层）；翻转后未来新 store
+      // 忘设不再静默启用。缓存层为死层，整体拆除为后续独立候选（本批不采纳，留痕见 §3.1.6）
+      enableCache = false,
       cacheTTL = 5 * 60 * 1000, // 5 分钟
       enableDebounce = true,
       debounceDelay = 300,

@@ -337,12 +337,20 @@ describe('createEntityStore 变异杀灭补测', () => {
   })
 
   describe('第二轮：缓存/防重/日志/名称查询', () => {
-    it('默认 enableCache=true 时重复 getById 应命中缓存仅调用一次', async () => {
-      const store = makeStore<TestEntity>('var-cache-default', api)
+    it('显式 enableCache=true 时重复 getById 应命中缓存仅调用一次', async () => {
+      const store = makeStore<TestEntity>('var-cache-explicit', api, { enableCache: true })
       api.getById.mockResolvedValue({ id: '1', name: 'A', value: 1 })
       await store.getById('1')
       await store.getById('1')
       expect(api.getById).toHaveBeenCalledTimes(1)
+    })
+
+    it('默认 enableCache=false（M-RC-16 新默认锁定）时重复 getById 应打两次 API', async () => {
+      const store = makeStore<TestEntity>('var-cache-default-off', api)
+      api.getById.mockResolvedValue({ id: '1', name: 'A', value: 1 })
+      await store.getById('1')
+      await store.getById('1')
+      expect(api.getById).toHaveBeenCalledTimes(2)
     })
 
     it('请求超出有效页时应告警并以末页补发（M-18）', async () => {
@@ -481,8 +489,8 @@ describe('createEntityStore 变异杀灭补测', () => {
       expect(b).toHaveLength(1)
     })
 
-    it('getByName 相同名称两次应命中缓存仅调用一次', async () => {
-      const store = makeStore<TestEntity>('var-nb-cache', api)
+    it('getByName 显式 enableCache=true 时相同名称两次应命中缓存仅调用一次', async () => {
+      const store = makeStore<TestEntity>('var-nb-cache', api, { enableCache: true })
       api.getByName.mockResolvedValue([{ id: '1', name: 'A', value: 1 }])
       await store.getByName('x')
       await store.getByName('x')
