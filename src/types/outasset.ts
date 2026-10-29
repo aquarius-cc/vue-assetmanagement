@@ -26,6 +26,7 @@ import type { PaginatedResponse } from '@/types/common'
  * 出库类型枚举
  * receive: 领用
  * borrow: 借用
+ * reissue: 重新发放(后端 out_asset.py REISSUE 同枚举,Format.ts 映射同文案,M-AUD-2)
  */
 export enum OutAssetType {
   RECEIVE = 'receive',
