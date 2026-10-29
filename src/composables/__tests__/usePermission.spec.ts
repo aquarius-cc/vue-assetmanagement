@@ -292,4 +292,65 @@ describe('usePermission', () => {
       expect(hasPermission('asset:read')).toBe(false)
     })
   })
+
+  // ==================== M-RC-17：四判据层级口径矩阵（菜单/守卫/后端三方同口径） ====================
+  describe('M-RC-17 四判据层级矩阵', () => {
+    // 期望矩阵（与 guards.ts roleWhitelist / 后端 permission_classes 层级同口径）：
+    //                    canManageSystem canApproveDamaged canHandleUnregistered canViewAuditLog
+    // regular_user            F                F                   F                   F
+    // auditor                 F                F                   F                   T
+    // dept_manager            F                T                   T                   F
+    // asset_admin             F                F                   F                   F
+    // system_admin            T                T                   T                   T
+    const matrix: Array<[string, boolean, boolean, boolean, boolean]> = [
+      ['regular_user', false, false, false, false],
+      ['auditor', false, false, false, true],
+      ['dept_manager', false, true, true, false],
+      ['asset_admin', false, false, false, false],
+      ['system_admin', true, true, true, true],
+    ]
+
+    for (const [role, sys, damaged, unregistered, audit] of matrix) {
+      it(`矩阵：${role}`, () => {
+        mockAuthStore.userRole = role
+        mockAuthStore.isSuperuser = false
+        mockAuthStore.permissions = [] // 层级口径不依赖权限码表
+        const p = usePermission()
+
+        expect(p.canManageSystem.value).toBe(sys)
+        expect(p.canApproveDamaged.value).toBe(damaged)
+        expect(p.canHandleUnregistered.value).toBe(unregistered)
+        expect(p.canViewAuditLog.value).toBe(audit)
+      })
+    }
+
+    it('有码低角色仍 false：regular_user + damaged:approve（锁定层级口径，防改回权限码）', () => {
+      mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.permissions = ['damaged:approve']
+      const { canApproveDamaged } = usePermission()
+      expect(canApproveDamaged.value).toBe(false)
+    })
+
+    it('有码低角色仍 false：regular_user + unregistered:approve', () => {
+      mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.permissions = ['unregistered:approve']
+      const { canHandleUnregistered } = usePermission()
+      expect(canHandleUnregistered.value).toBe(false)
+    })
+
+    it('有码低角色仍 false：regular_user + auditlog:read（原权限码实现为 true，属行为变更，显式锁定）', () => {
+      mockAuthStore.userRole = 'regular_user'
+      mockAuthStore.permissions = ['auditlog:read']
+      const { canViewAuditLog } = usePermission()
+      expect(canViewAuditLog.value).toBe(false)
+    })
+  })
+
+  describe('M-RC-17 AsideMenu 源码守卫（?raw）', () => {
+    it('AsideMenu 不得再消费权限码（PERMISSION_CODES / hasPermission( 双轨归零）', async () => {
+      const asideSource = (await import('@/components/AsideMenu.vue?raw')).default
+      expect(asideSource).not.toContain('PERMISSION_CODES')
+      expect(asideSource).not.toContain('hasPermission(')
+    })
+  })
 })

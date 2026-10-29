@@ -145,10 +145,9 @@ import {
   Bell,
 } from '@element-plus/icons-vue'
 import { useRouter, useRoute, onBeforeRouteUpdate } from 'vue-router'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { usePermission } from '@/composables/usePermission'
-import { PERMISSION_CODES } from '@/constants/permissionCodes'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
 import NotificationBell from '@/components/commoncomponents/NotificationBell.vue'
 import AssetQuickScan from '@/components/commoncomponents/AssetQuickScan.vue'
@@ -158,15 +157,21 @@ const router = useRouter()
 const route = useRoute()
 const appStore = useAppStore()
 // [R-3/M-RC-07] 菜单可见性须与路由守卫同口径（纯角色层级 ≥ asset_admin）：
-// 不用 hasPermission(asset:create)——其对非 admin 读 authStore.permissions，
-// 权限点表未种子化时会误隐藏菜单，与 meta.requiredMinRole 的层级判定不一致
-const { hasPermission, canOperateAsset } = usePermission()
-
-// 基于细粒度权限码的菜单可见性判断
-const canManageSystem = computed(() => hasPermission(PERMISSION_CODES.SYSTEM_CONFIG_MANAGE))
-const canApproveDamaged = computed(() => hasPermission(PERMISSION_CODES.DAMAGED_APPROVE))
-const canHandleUnregistered = computed(() => hasPermission(PERMISSION_CODES.UNREGISTERED_APPROVE))
-const canViewAuditLog = computed(() => hasPermission(PERMISSION_CODES.AUDITLOG_READ))
+// 不用细粒度权限码（如 asset:create 的 hasPermission 判定）——其对非 admin
+// 读 authStore.permissions，权限点表未种子化时会误隐藏菜单，与
+// meta.requiredMinRole 的层级判定不一致
+// [M-RC-17] 五判据全部复用 usePermission 层级口径实现（DR-4 单一来源）：
+// 菜单（本组件）+ 路由守卫（guards.ts roleWhitelist）+ 后端 permission_classes
+// （IsAuthenticated / IsAssetAdminOrAbove 层级）三方同口径，权限码双轨归零；
+// 权限码为种子态展示位，不作为菜单事实来源（RolePermDialog 手工授权他角色
+// 后菜单仍以层级为准——与守卫行为一致，见 merge-audit §3.1.8）
+const {
+  canOperateAsset,
+  canManageSystem,
+  canApproveDamaged,
+  canHandleUnregistered,
+  canViewAuditLog,
+} = usePermission()
 
 const currentRoute = ref(route.path)
 
