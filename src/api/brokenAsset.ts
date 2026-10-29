@@ -12,7 +12,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
-import { invalidateAssetCache } from './assetCache'
+import { invalidateAssetCache, invalidateSubResourceCache } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   BrokenAssetExtended,
@@ -58,16 +58,22 @@ export const brokenAssetAPI = {
     )
   },
 
-  deleteBrokenAsset: (recordcode: string): Promise<void> => {
-    return unwrapResponse(request.delete<void>(`/assets/broken-assets/${recordcode}/`))
+  deleteBrokenAsset: async (recordcode: string): Promise<void> => {
+    // [M-CACHE-1] 单删命中不了列表 key（/assets/broken-assets/?page=… 不含写 URL），显式失效
+    await unwrapResponse(request.delete<void>(`/assets/broken-assets/${recordcode}/`))
+    invalidateSubResourceCache('/assets/broken-assets/', [recordcode])
   },
 
-  batchDeleteBrokenAssets: (recordcodes: string[]): Promise<BatchDeleteResult> => {
-    return unwrapResponse(
+  batchDeleteBrokenAssets: async (recordcodes: string[]): Promise<BatchDeleteResult> => {
+    const result = await unwrapResponse(
       request.post<BatchDeleteResult>('/assets/broken-assets/batch-delete/', {
         ids: recordcodes,
       }),
     )
+    // [M-CACHE-1] 批删 URL 两者皆不命中；同源：success_ids 为记录 recordcode，缺失回退入参（保守过清）
+    const successIds = Array.isArray(result.success_ids) ? result.success_ids : recordcodes
+    invalidateSubResourceCache('/assets/broken-assets/', successIds)
+    return result
   },
 
   batchCreateBrokenAssets: (

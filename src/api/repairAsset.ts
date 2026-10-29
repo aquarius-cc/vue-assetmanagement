@@ -12,7 +12,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
-import { invalidateAssetCache } from './assetCache'
+import { invalidateAssetCache, invalidateSubResourceCache } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   RepairAssetExtended,
@@ -84,8 +84,10 @@ export const repairAssetAPI = {
    * 删除维修记录
    * @param recordcode 维修记录编码
    */
-  deleteRepairAsset: (recordcode: string): Promise<void> => {
-    return unwrapResponse(request.delete<void>(`/assets/repair-assets/${recordcode}/`))
+  deleteRepairAsset: async (recordcode: string): Promise<void> => {
+    // [M-CACHE-1] 单删命中不了列表 key（/assets/repair-assets/?page=… 不含写 URL），显式失效
+    await unwrapResponse(request.delete<void>(`/assets/repair-assets/${recordcode}/`))
+    invalidateSubResourceCache('/assets/repair-assets/', [recordcode])
   },
 
   /**
@@ -93,12 +95,16 @@ export const repairAssetAPI = {
    * POST /api/assets/repair-assets/batch-delete/
    * 对应后端 RepairAssetViewSet.batch_delete action
    */
-  batchDeleteRepairAssets: (recordcodes: string[]): Promise<BatchDeleteResult> => {
-    return unwrapResponse(
+  batchDeleteRepairAssets: async (recordcodes: string[]): Promise<BatchDeleteResult> => {
+    const result = await unwrapResponse(
       request.post<BatchDeleteResult>('/assets/repair-assets/batch-delete/', {
         ids: recordcodes,
       }),
     )
+    // [M-CACHE-1] 批删 URL 两者皆不命中；同源：success_ids 优先，运行时缺失回退入参（保守过清）
+    const successIds = Array.isArray(result.success_ids) ? result.success_ids : recordcodes
+    invalidateSubResourceCache('/assets/repair-assets/', successIds)
+    return result
   },
 
   /**
