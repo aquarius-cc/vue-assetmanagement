@@ -44,7 +44,7 @@ import { refreshAccessToken, MissingRefreshTokenError } from '@/utils/tokenRefre
 import { isTransientError } from '@/utils/requestErrors'
 import { sanitizeRedirect } from '@/utils/redirect'
 import { getCsrfToken } from '@/utils/csrf'
-import { logError, logWarn } from '@/utils/logger'
+import { logError, logWarn, syncTraceId } from '@/utils/logger'
 import { resolveDownloadFilename } from '@/utils/fileDownload'
 
 // ---------- 扩展 Axios 类型，添加自定义属性 _retry ----------
@@ -343,6 +343,9 @@ api.interceptors.request.use(
     if (!config.headers['X-Request-ID']) {
       config.headers['X-Request-ID'] = generateTraceId()
     }
+    // [M-RC-11] 请求发起时同步 trace_id（外部注入的 header 同步该值，保持幂等）：
+    // 前端 console 日志 trace_id == X-Request-ID == 后端日志 trace_id，双端互查闭环
+    syncTraceId(config.headers['X-Request-ID'] as string)
 
     if (channel === 'bearer') {
       const token = decodeToken('access_token')

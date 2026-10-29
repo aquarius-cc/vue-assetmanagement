@@ -33,6 +33,18 @@ export function resetTraceId(): void {
   sessionTraceId = null
 }
 
+/**
+ * [M-RC-11] 同步外部 trace_id 到会话变量（请求层注入，保证前后端同源）。
+ * 全仓唯一 trace 写入点（DR-4）：请求拦截器 / tokenRefresh 生成 X-Request-ID 后
+ * 调用本函数，使前端 console 日志的 trace_id 与发往后端的请求头同值，
+ * 后端 request_context 信任 HTTP_X_REQUEST_ID → 日志可双端互查。
+ * 口径：每请求唯一（OC-1 合规）；会话内前端日志归属最近一次请求；
+ * 首请求前的日志为前端本地懒生成 id，不回传后端。
+ */
+export function syncTraceId(id: string): void {
+  sessionTraceId = id
+}
+
 function emit(
   level: LogLevel,
   module: string,

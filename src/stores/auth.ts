@@ -28,7 +28,7 @@ import { permissionsAPI } from '@/api/permissions'
 import type { DataScope } from '@/types/permission'
 import { DEFAULT_ROLE } from '@/constants/roles'
 import { decodeJWTPayload } from '@/utils/decodeJwt'
-import { logError, logWarn } from '@/utils/logger'
+import { logError, logWarn, resetTraceId } from '@/utils/logger'
 
 export const useAuthStore = defineStore('AuthUser', () => {
   const authInfo = ref<AuthInfo | null>(null) // 认证用户信息
@@ -71,6 +71,8 @@ export const useAuthStore = defineStore('AuthUser', () => {
     clearInMemoryAccessToken()
     localStorage.removeItem('authInfo')
     localStorage.removeItem('myPermissions')
+    // [M-RC-11] 会话级 trace_id 随认证态一并重置（logout/silentLogout 共用，DR-1）
+    resetTraceId()
   }
 
   // ===== 私有 helper（复用 DR-1） =====
@@ -206,6 +208,8 @@ export const useAuthStore = defineStore('AuthUser', () => {
 
       // RBAC: 从 JWT 解析（login 响应始终含 access token，双通道可用）
       applyRbacFromJwt(response.data.access)
+      // [M-RC-11] 新会话重置 trace_id（登出时已 reset，登录成功再归零一次保证幂等）
+      resetTraceId()
       persistTokensAfterLogin(channel, response.data.access, response.data.refresh)
 
       // 非敏感用户信息始终持久化（供 WS jobcode、记住用户名等场景）

@@ -18,8 +18,16 @@ import { encodeToken, decodeToken } from '@/utils/tokenObfuscator'
 import { getCsrfToken } from '@/utils/csrf'
 import { setInMemoryAccessToken } from '@/utils/tokenMemory'
 import { generateTraceId } from '@/utils/traceId'
+import { syncTraceId } from '@/utils/logger'
 import { isTransientError } from '@/utils/requestErrors'
 import type { AuthChannel } from '@/utils/device'
+
+/** [M-RC-11] 生成请求 id 并同步会话 trace（裸 axios 链路的单一入口，DR-4） */
+function syncWithTrace(): string {
+  const rid = generateTraceId()
+  syncTraceId(rid)
+  return rid
+}
 
 export class RefreshSessionError extends Error {}
 
@@ -79,7 +87,11 @@ async function refreshBearer(): Promise<string> {
         `${BASE_URL}/auth/token/refresh/`,
         { refresh: refreshToken },
         {
-          headers: { 'X-Request-ID': generateTraceId(), 'X-Requested-With': 'XMLHttpRequest' },
+          // [M-RC-11] 裸 axios 绕过 api 拦截器，trace 同源须在此显式同步
+          headers: {
+            'X-Request-ID': syncWithTrace(),
+            'X-Requested-With': 'XMLHttpRequest',
+          },
           timeout: REFRESH_TIMEOUT,
         },
       )
@@ -107,7 +119,7 @@ async function refreshCookie(): Promise<string> {
   for (;;) {
     try {
       const headers: Record<string, string> = {
-        'X-Request-ID': generateTraceId(),
+        'X-Request-ID': syncWithTrace(),
         'X-Requested-With': 'XMLHttpRequest',
       }
       const csrfToken = getCsrfToken()
