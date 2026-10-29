@@ -4,7 +4,6 @@
  * @exports
  *   - useAssetStore: 资产管理状态 Store（含 searchAssets、combineSearch 扩展方法）
  * @callers
- *   - services/assetLifecycleService.ts
  *   - composables/useAssetListConfig.ts
  *   - composables/useWastedAssets.ts
  *   - composables/useScrapableAssets.ts

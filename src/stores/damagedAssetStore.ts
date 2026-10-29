@@ -4,7 +4,6 @@
  * @exports
  *   - useDamagedAssetStore: 待报废资产管理状态 Store
  * @callers
- *   - services/assetLifecycleService.ts
  *   - components/componentsdetails/DamagedAssetDetails.vue
  *   - components/componentsdetails/detils/DamagedAssetForm.vue
  *   - components/componentsdetails/detils/DamagedAssetBatchImport.vue
@@ -53,7 +52,7 @@ export const useDamagedAssetStore = createEntityStore<DamagedAsset, PaginationQu
       batchDelete: (codes) => damagedAssetAPI.batchDeleteDamagedAssets(codes),
     },
     message: ElMessage,
-    // 【修复双弹】调用方（DamagedAssetForm/AssetBatchImport/assetLifecycleService/ScrapAssetView）
+    // 【修复双弹】调用方（DamagedAssetForm/AssetBatchImport/ScrapAssetView）
     // 均自带成功消息，此处禁用工厂自动弹窗，避免「创建成功」与调用方消息重复
     disableAutoMessage: true,
     idToString: (code: unknown) => String(code),

@@ -5,7 +5,6 @@
  *   - useOutAssetStore: 出库资产管理状态 Store
  *   - batchCreateOutAssets: 批量创建出库资产（出库批量导入数据访问入口）
  * @callers
- *   - services/assetLifecycleService.ts
  *   - components/componentsdetails/OutAssetDetails.vue
  *   - components/componentsdetails/detils/OutAssetForm.vue
  *   - components/componentsdetails/detils/OutAssetBatchImport.vue

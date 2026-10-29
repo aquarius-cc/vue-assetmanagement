@@ -23,7 +23,6 @@
  * @callers
  *   - stores/dashboard
  *   - composables/useAssetInfoCards, useAssetExtendedInfoCards, useOutAssetDetailCards, useRecycleAssetDetailCards, useAssetListConfig
- *   - services/assetLifecycleService
  * @dependsOn
  *   - vue (isRef)
  *   - @/types/contract, @/types/user, @/types/department, @/types/asset, @/types/outasset

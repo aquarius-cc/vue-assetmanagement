@@ -4,7 +4,6 @@
  * @exports
  *   - useRecycleAssetStore: 回收资产管理状态 Store
  * @callers
- *   - services/assetLifecycleService.ts
  *   - components/componentsdetails/RecycleAssetDetails.vue
  *   - components/componentsdetails/detils/RecycleAssetForm.vue
  *   - components/componentsdetails/detils/RecycleAssetBasicDetails.vue
@@ -52,7 +51,7 @@ export const useRecycleAssetStore = createEntityStore<RecycleAssetExtended, Pagi
       batchDelete: (codes) => recycleAssetAPI.batchDeleteRecycleAssets(codes),
     },
     message: ElMessage,
-    // 【修复双弹】调用方（RecycleAssetForm/assetLifecycleService/RecycleAssetView）
+    // 【修复双弹】调用方（RecycleAssetForm/RecycleAssetView）
     // 均自带成功消息，此处禁用工厂自动弹窗，避免「创建成功」与调用方消息重复
     disableAutoMessage: true,
     enablePagination: true,

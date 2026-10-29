@@ -4,7 +4,6 @@
  * @exports
  *   - useWasteAssetStore: 已报废资产管理状态 Store
  * @callers
- *   - services/assetLifecycleService.ts
  *   - components/componentsdetails/WasteAssetDetails.vue
  *   - components/componentsdetails/detils/WasteAssetForm.vue
  *   - components/componentsdetails/detils/WasteAssetBasicDetails.vue
