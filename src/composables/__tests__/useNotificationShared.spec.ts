@@ -114,7 +114,9 @@ describe('useNotification 共享连接单例 [M-21]', () => {
     wrapper.unmount()
 
     // 卸载后到达的推送不得再触达已卸载消费者（其数据态应保持不变）
-    ws.onmessage?.({ data: JSON.stringify({ type: 'notification', data: { id: 1, is_read: false } }) })
+    ws.onmessage?.({
+      data: JSON.stringify({ type: 'notification', data: { id: 1, is_read: false } }),
+    })
     expect(MockWebSocket.instances).toHaveLength(1)
   })
 })

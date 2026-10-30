@@ -10,22 +10,75 @@ import DashboardDistribution from '../DashboardDistribution.vue'
 import DashboardAssetTrend from '../DashboardAssetTrend.vue'
 
 const ctx2dStub = {
-  save() {}, restore() {}, beginPath() {}, closePath() {}, moveTo() {}, lineTo() {},
-  stroke() {}, fill() {}, arc() {}, arcTo() {}, rect() {}, clearRect() {}, fillRect() {},
-  strokeRect() {}, clip() {}, quadraticCurveTo() {}, bezierCurveTo() {}, translate() {},
-  rotate() {}, scale() {}, setTransform() {}, transform() {}, resetTransform() {},
-  drawImage() {}, fillText() {}, strokeText() {}, setLineDash() {}, getLineDash() { return [] },
-  createLinearGradient() { return { addColorStop() {} } },
-  createRadialGradient() { return { addColorStop() {} } },
-  createPattern() { return null },
-  measureText() { return { width: 0 } },
-  getImageData() { return { data: new Uint8ClampedArray() } },
-  putImageData() {}, isPointInPath() { return false },
-  font: '', fillStyle: '', strokeStyle: '', lineWidth: 1, textAlign: 'left',
-  textBaseline: 'alphabetic', globalAlpha: 1, lineCap: 'butt', lineJoin: 'miter',
-  lineDashOffset: 0, miterLimit: 10, shadowBlur: 0, shadowColor: '', shadowOffsetX: 0,
-  shadowOffsetY: 0, globalCompositeOperation: 'source-over', direction: 'ltr',
-  filter: 'none', imageSmoothingEnabled: true, imageSmoothingQuality: 'low',
+  save() {},
+  restore() {},
+  beginPath() {},
+  closePath() {},
+  moveTo() {},
+  lineTo() {},
+  stroke() {},
+  fill() {},
+  arc() {},
+  arcTo() {},
+  rect() {},
+  clearRect() {},
+  fillRect() {},
+  strokeRect() {},
+  clip() {},
+  quadraticCurveTo() {},
+  bezierCurveTo() {},
+  translate() {},
+  rotate() {},
+  scale() {},
+  setTransform() {},
+  transform() {},
+  resetTransform() {},
+  drawImage() {},
+  fillText() {},
+  strokeText() {},
+  setLineDash() {},
+  getLineDash() {
+    return []
+  },
+  createLinearGradient() {
+    return { addColorStop() {} }
+  },
+  createRadialGradient() {
+    return { addColorStop() {} }
+  },
+  createPattern() {
+    return null
+  },
+  measureText() {
+    return { width: 0 }
+  },
+  getImageData() {
+    return { data: new Uint8ClampedArray() }
+  },
+  putImageData() {},
+  isPointInPath() {
+    return false
+  },
+  font: '',
+  fillStyle: '',
+  strokeStyle: '',
+  lineWidth: 1,
+  textAlign: 'left',
+  textBaseline: 'alphabetic',
+  globalAlpha: 1,
+  lineCap: 'butt',
+  lineJoin: 'miter',
+  lineDashOffset: 0,
+  miterLimit: 10,
+  shadowBlur: 0,
+  shadowColor: '',
+  shadowOffsetX: 0,
+  shadowOffsetY: 0,
+  globalCompositeOperation: 'source-over',
+  direction: 'ltr',
+  filter: 'none',
+  imageSmoothingEnabled: true,
+  imageSmoothingQuality: 'low',
 }
 
 beforeAll(() => {
@@ -66,4 +119,3 @@ describe('M-26 echarts 按需注册冒烟', () => {
     expect(wrapper.html()).toContain('_echarts_instance_')
   })
 })
-

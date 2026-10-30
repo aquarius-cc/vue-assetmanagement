@@ -89,9 +89,7 @@ describe('AuthUserManage [M-27/M-25]', () => {
   })
 
   it('有数据（total>0）：分页显示', async () => {
-    getListMock.mockResolvedValue([
-      { auth_id: 1, auth_username: 'alice', email: 'a@x.com' },
-    ])
+    getListMock.mockResolvedValue([{ auth_id: 1, auth_username: 'alice', email: 'a@x.com' }])
     totalRef.total = 1
 
     const wrapper = mountPage()

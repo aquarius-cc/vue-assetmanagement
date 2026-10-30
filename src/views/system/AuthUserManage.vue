@@ -39,51 +39,58 @@
       <!-- [M-27] 表格区弹性自滚容器（复用 CommonList flex 模式）：fixed 列在容器内
            滚动不再错位，分页常驻可见；零数据时 el-table 常驻，EP 默认空文案在场 -->
       <div class="table-container">
-        <el-table v-loading="loading" :data="authUsers" stripe height="100%" fit style="width: 100%">
-        <el-table-column prop="auth_id" label="用户ID" width="80" align="center" />
-        <el-table-column prop="auth_username" label="用户名" width="140" />
-        <el-table-column prop="email" label="邮箱" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="auth_phone" label="联系电话" width="140" />
-        <el-table-column prop="auth_is_active" label="状态" width="80" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.auth_is_active ? 'success' : 'info'" size="small">
-              {{ row.auth_is_active ? '激活' : '禁用' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="绑定员工" width="160">
-          <template #default="{ row }">
-            <span v-if="row.bound_employee">
-              {{ row.bound_employee.employee_name }} ({{ row.bound_employee.employee_jobcode }})
-            </span>
-            <span v-else class="unbound-hint">未绑定</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="last_login" label="最后登录" width="160">
-          <template #default="{ row }">
-            {{ row.last_login ? formatDate(row.last_login) : '从未登录' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="240" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-button v-if="isAdmin" size="small" @click="openBindDialog(row)">绑定</el-button>
-            <el-button v-if="isAdmin" size="small" @click="openRoleDialog(row)">角色</el-button>
-            <el-button v-if="isAdmin" size="small" type="primary" @click="openEditDialog(row)"
-              >编辑</el-button
-            >
-            <el-popconfirm
-              v-if="isAdmin"
-              :title="`确认删除用户「${row.auth_username}」？`"
-              :confirm-button-text="'确认'"
-              :cancel-button-text="'取消'"
-              @confirm="handleDelete(row)"
-            >
-              <template #reference>
-                <el-button size="small" type="danger">删除</el-button>
-              </template>
-            </el-popconfirm>
-          </template>
-        </el-table-column>
+        <el-table
+          v-loading="loading"
+          :data="authUsers"
+          stripe
+          height="100%"
+          fit
+          style="width: 100%"
+        >
+          <el-table-column prop="auth_id" label="用户ID" width="80" align="center" />
+          <el-table-column prop="auth_username" label="用户名" width="140" />
+          <el-table-column prop="email" label="邮箱" min-width="180" show-overflow-tooltip />
+          <el-table-column prop="auth_phone" label="联系电话" width="140" />
+          <el-table-column prop="auth_is_active" label="状态" width="80" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.auth_is_active ? 'success' : 'info'" size="small">
+                {{ row.auth_is_active ? '激活' : '禁用' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="绑定员工" width="160">
+            <template #default="{ row }">
+              <span v-if="row.bound_employee">
+                {{ row.bound_employee.employee_name }} ({{ row.bound_employee.employee_jobcode }})
+              </span>
+              <span v-else class="unbound-hint">未绑定</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="last_login" label="最后登录" width="160">
+            <template #default="{ row }">
+              {{ row.last_login ? formatDate(row.last_login) : '从未登录' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="240" align="center" fixed="right">
+            <template #default="{ row }">
+              <el-button v-if="isAdmin" size="small" @click="openBindDialog(row)">绑定</el-button>
+              <el-button v-if="isAdmin" size="small" @click="openRoleDialog(row)">角色</el-button>
+              <el-button v-if="isAdmin" size="small" type="primary" @click="openEditDialog(row)"
+                >编辑</el-button
+              >
+              <el-popconfirm
+                v-if="isAdmin"
+                :title="`确认删除用户「${row.auth_username}」？`"
+                :confirm-button-text="'确认'"
+                :cancel-button-text="'取消'"
+                @confirm="handleDelete(row)"
+              >
+                <template #reference>
+                  <el-button size="small" type="danger">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </template>
+          </el-table-column>
         </el-table>
       </div>
 

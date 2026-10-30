@@ -206,9 +206,7 @@ describe('M-19 仅写 deny 路由守卫', () => {
     it.each(WRITE_LEAVES.map((l) => [l.name, l.path, l.meta] as const))(
       '%s 必有显式门槛（requiredMinRole 或白名单前缀）',
       (_name, path, meta) => {
-        expect(
-          hasExplicitWriteGate(path, meta.requiredMinRole as string | undefined),
-        ).toBe(true)
+        expect(hasExplicitWriteGate(path, meta.requiredMinRole as string | undefined)).toBe(true)
       },
     )
   })
