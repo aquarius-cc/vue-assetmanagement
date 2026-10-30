@@ -17,6 +17,7 @@ import { ref, computed, nextTick, watch } from 'vue'
 import type { Ref, ComputedRef } from 'vue'
 import { ElMessage } from 'element-plus'
 import { readReactive, writeReactive, readStoreValue } from '@/utils/reactiveAccess'
+import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import { usePaginationSearchState, type SearchConfig } from './usePaginationSearchState'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import { logError } from '@/utils/logger'
@@ -51,7 +52,7 @@ export interface PaginationSearchConfig<T> {
   }
   defaultPageSize?: number
   search?: SearchConfig<T>
-  pageSizeOptions?: number[]
+  pageSizeOptions?: readonly number[]
   messages?: Partial<{ loadFailed?: string; searchFailed?: string; invalidPage?: string }>
 }
 
@@ -64,7 +65,7 @@ interface PaginationRef {
 // ======================== 主 Composable ========================
 
 export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
-  const { store, search: searchConfig, pageSizeOptions = [20, 50, 100, 200, 500] } = config
+  const { store, search: searchConfig, pageSizeOptions = PAGE_SIZE_OPTIONS } = config
   const messages = {
     loadFailed: '加载数据失败',
     searchFailed: '搜索失败',
@@ -78,7 +79,15 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
     set: (val: number) => writeReactive(store.pagination.page, val),
   })
   const pageSize = computed({
-    get: () => readReactive<number>(store.pagination.page_size) || 20,
+    // [M-23] 就近吸附归一化：URL/残留态（经 createEntityStore:162 进入）可能携带
+    // 已下线的非法档位（如 200/500），直接消费会产生「选了没生效」的请求与首帧
+    // 显示异常。向下吸附至最近合法项（500→100、40→20），无合法项兜底 20。
+    get: () => {
+      const raw = readReactive<number>(store.pagination.page_size) || 20
+      if (pageSizeOptions.includes(raw)) return raw
+      const smaller = pageSizeOptions.filter((o) => o <= raw).sort((a, b) => b - a)[0]
+      return smaller ?? 20
+    },
     set: (val: number) => writeReactive(store.pagination.page_size, val),
   })
   const total = computed(() => readReactive<number>(store.pagination.total) || 0)

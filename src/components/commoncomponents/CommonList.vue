@@ -98,6 +98,7 @@ import CommonListColumn from './CommonListColumn.vue'
 import CommonListActions from './CommonListActions.vue'
 import { useContainerWidth } from '@/composables/useContainerWidth'
 import type { TableColumn } from '@/types/list'
+import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 
 interface Props {
   data: T[]
@@ -105,7 +106,7 @@ interface Props {
   currentPage?: number
   pageSize?: number
   total?: number
-  pageSizeOptions?: number[]
+  pageSizeOptions?: readonly number[]
   loading?: boolean
   search?: string
   enableSearch?: boolean
@@ -140,7 +141,7 @@ const props = withDefaults(defineProps<Props>(), {
   currentPage: 1,
   pageSize: 20,
   total: 0,
-  pageSizeOptions: () => [20, 50, 100, 200, 500],
+  pageSizeOptions: () => [...PAGE_SIZE_OPTIONS],
   loading: false,
   search: '',
   enableSearch: true,

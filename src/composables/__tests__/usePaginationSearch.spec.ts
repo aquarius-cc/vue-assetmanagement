@@ -70,7 +70,19 @@ describe('usePaginationSearch', () => {
         store: mockStore,
       })
 
-      expect(pageSizeOptions).toEqual([20, 50, 100, 200, 500])
+      expect(pageSizeOptions).toEqual([20, 50, 100])
+    })
+
+    it('[M-23] getter 就近吸附：URL/残留态携带已下线档位 500 → 归一化为 100', () => {
+      mockStore.pagination.page_size = 500
+      const { pageSize } = usePaginationSearch({ store: mockStore })
+      expect(pageSize.value).toBe(100)
+    })
+
+    it('[M-23] getter 就近吸附：非法档位 40 → 向下吸附 20', () => {
+      mockStore.pagination.page_size = 40
+      const { pageSize } = usePaginationSearch({ store: mockStore })
+      expect(pageSize.value).toBe(20)
     })
   })
 

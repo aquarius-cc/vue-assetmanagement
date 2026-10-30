@@ -91,7 +91,7 @@ describe('CommonList', () => {
       expect(pagination.props('currentPage')).toBe(1)
       expect(pagination.props('pageSize')).toBe(20)
       expect(pagination.props('total')).toBe(0)
-      expect(pagination.props('pageSizes')).toEqual([20, 50, 100, 200, 500])
+      expect(pagination.props('pageSizes')).toEqual([20, 50, 100])
 
       expect(wrapper.findComponent({ name: 'CommonListActions' }).props('showActions')).toBe(true)
       expect(wrapper.findComponent({ name: 'CommonListActions' }).props('enableSearch')).toBe(true)

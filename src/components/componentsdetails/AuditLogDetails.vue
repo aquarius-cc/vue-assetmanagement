@@ -134,7 +134,7 @@
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[20, 50, 100]"
+          :page-sizes="[...PAGE_SIZE_OPTIONS]"
           :total="total"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
@@ -158,6 +158,7 @@ import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import { useAuditLogStore, auditLogExportExcel } from '@/stores/auditLogStore'
 import type { AuditLog } from '@/types/auditlog'
 import {

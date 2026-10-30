@@ -17,9 +17,10 @@
  */
 import type { TableColumn } from '@/types/list'
 import type { AssetGroupSummary } from '@/types/asset'
+import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 
-/** 组内分页条可选页长 */
-export const CHILD_PAGE_SIZE_OPTIONS = [20, 50, 100] as const
+/** 组内分页条可选页长（[M-23] alias 至唯一常量，消除第五处字面量散点） */
+export const CHILD_PAGE_SIZE_OPTIONS = PAGE_SIZE_OPTIONS
 
 /** 空值展示占位符（决策 2：无合同哨兵组 → 显 "—"），单一常量防字面量漂移 */
 export const NULL_DISPLAY = '—'
