@@ -88,6 +88,7 @@ export const routesMainCore: RouteRecordRaw[] = [
             meta: {
               title: '资产录入/编辑',
               requiresAuth: true,
+              write: true, // [M-19] 写语义标记：仅写 deny 兜底判据
               // [R-3/M-RC-07] 子路由独立加固：父级 AssetContentDetails 为只读列表，
               // meta 不可上提（否则连带拦掉 basicassetdetails 只读详情）
               requiredMinRole: 'asset_admin',
@@ -100,6 +101,7 @@ export const routesMainCore: RouteRecordRaw[] = [
             meta: {
               title: '资产批量导入',
               requiresAuth: true,
+              write: true, // [M-19] 写语义标记：仅写 deny 兜底判据
               // [R-3/M-RC-07] 批量导入为写入操作，门槛同 AssetForm
               requiredMinRole: 'asset_admin',
             },
@@ -138,6 +140,7 @@ export const routesMainCore: RouteRecordRaw[] = [
         meta: {
           title: '合同表格',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/contractdetails 已是显式门槛
         },
       },
 
@@ -148,6 +151,7 @@ export const routesMainCore: RouteRecordRaw[] = [
         meta: {
           title: '合同批量导入',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/contractdetails 已是显式门槛
         },
       },
     ],
@@ -173,6 +177,7 @@ export const routesMainCore: RouteRecordRaw[] = [
         meta: {
           title: '资产分类类型表格',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/assettypedetails 已是显式门槛
         },
       },
       {
@@ -182,6 +187,7 @@ export const routesMainCore: RouteRecordRaw[] = [
         meta: {
           title: '资产分类批量导入',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/assettypedetails 已是显式门槛
         },
       },
     ],
@@ -206,6 +212,7 @@ export const routesMainCore: RouteRecordRaw[] = [
         meta: {
           title: '仓库录入/编辑',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/storagedetails 已是显式门槛
         },
       },
       {
@@ -215,6 +222,7 @@ export const routesMainCore: RouteRecordRaw[] = [
         meta: {
           title: '仓库批量导入',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/storagedetails 已是显式门槛
         },
       },
     ],
@@ -239,6 +247,7 @@ export const routesMainCore: RouteRecordRaw[] = [
         meta: {
           title: '用户录入/编辑',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/userdetails 已是显式门槛
         },
       },
       {
@@ -248,6 +257,7 @@ export const routesMainCore: RouteRecordRaw[] = [
         meta: {
           title: '批量导入用户',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/userdetails 已是显式门槛
         },
       },
     ],

@@ -29,6 +29,7 @@ export const routesMainOperations: RouteRecordRaw[] = [
         meta: {
           title: '资产发放录入/编辑',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：仅写 deny 兜底判据
           // [R-3/M-RC-07] 父前缀 /main/outassetdetails 不在 roleWhitelist，
           // regular_user 此前可直达；meta 仅加子路由，列表页仍对受限角色开放
           requiredMinRole: 'asset_admin',
@@ -51,6 +52,7 @@ export const routesMainOperations: RouteRecordRaw[] = [
         meta: {
           title: '批量导入资产发放',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：仅写 deny 兜底判据
           // [R-3/M-RC-07] 门槛同 OutAssetForm
           requiredMinRole: 'asset_admin',
         },
@@ -74,6 +76,7 @@ export const routesMainOperations: RouteRecordRaw[] = [
         meta: {
           title: '资产回收录入/编辑',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：仅写 deny 兜底判据
           // [R-3/M-RC-07] 父前缀 /main/recycleassetdetails 不在 roleWhitelist；
           // 回收族无 batchimport 路由，本条为其唯一写入页
           requiredMinRole: 'asset_admin',
@@ -149,6 +152,7 @@ export const routesMainOperations: RouteRecordRaw[] = [
         meta: {
           title: '待报废资产录入/编辑',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/damagedassetdetails 已是显式门槛
           // [R-3] 禁补 requiredMinRole：父前缀已在 roleWhitelist(4/5 级)，补 3 级 meta 即扩权
         },
       },
@@ -168,6 +172,7 @@ export const routesMainOperations: RouteRecordRaw[] = [
         meta: {
           title: '批量导入待报废资产',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/damagedassetdetails 已是显式门槛
           // [R-3] 禁补 requiredMinRole：父前缀已在 roleWhitelist(4/5 级)，补 3 级 meta 即扩权
         },
       },
@@ -204,6 +209,7 @@ export const routesMainOperations: RouteRecordRaw[] = [
         meta: {
           title: '未登记资产录入/编辑',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/unregisteredassetdetails 已是显式门槛
           // [R-3] 禁补 requiredMinRole：父前缀已在 roleWhitelist(4/5 级)，补 3 级 meta 即扩权
         },
       },
@@ -223,6 +229,7 @@ export const routesMainOperations: RouteRecordRaw[] = [
         meta: {
           title: '批量导入未登记资产',
           requiresAuth: true,
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/unregisteredassetdetails 已是显式门槛
           // [R-3] 禁补 requiredMinRole：父前缀已在 roleWhitelist(4/5 级)，补 3 级 meta 即扩权
         },
       },

@@ -55,12 +55,18 @@ const roleWhitelist: Record<string, string[]> = {
  * 超级管理员短路放行（authStore.isSuperuser，cookie 通道来自 profile、bearer 来自 JWT）
  *
  * 优先读取 to.meta.requiredMinRole（静态声明），fallback 到 roleWhitelist 前缀匹配
+ *
+ * [M-19 仅写 deny] to.meta.write === true 且上述两条显式门槛均未命中 → 拒绝。
+ * 读路由维持 allow-by-default（与白名单命中=已有门槛的判据相容，R-3 反向断言不破坏）：
+ * 判据不能用「必须有 requiredMinRole」——Damaged/Unregistered Form 系受白名单前缀
+ * （4/5 级）保护，补 meta 反而扩权。
  */
 function checkRoleAccess(
   targetPath: string,
   userRole: string,
   isSuperuser: boolean,
   requiredMinRole?: string,
+  isWrite?: boolean,
 ): boolean {
   // 超级管理员拥有所有路由的访问权限
   if (isSuperuser) return true
@@ -79,7 +85,21 @@ function checkRoleAccess(
       return roleWhitelist[prefix].includes(userRole)
     }
   }
-  return true // 未列出的路由默认放行
+
+  // [M-19] 写语义路由兜底 deny：白名单前缀未命中（上循环 return 已终止）且无 meta 门槛
+  if (isWrite) return false
+
+  return true // 未列出的读路由默认放行
+}
+
+/**
+ * [M-19] 判定路由是否已有显式写门槛：自身 requiredMinRole 或 roleWhitelist 前缀命中。
+ * 供 guards-write-deny.spec.ts 的「write 路由完整性不变量」使用（漏标门槛 → CI 红），
+ * 与 checkRoleAccess 同源读取 roleWhitelist（DR-1）。
+ */
+export function hasExplicitWriteGate(targetPath: string, requiredMinRole?: string): boolean {
+  if (requiredMinRole) return true
+  return Object.keys(roleWhitelist).some((prefix) => targetPath.startsWith(prefix))
 }
 
 // 应用状态初始化标志（仅在首次路由守卫执行时初始化一次）
@@ -129,6 +149,7 @@ export const setupAuthGuard = (router: Router) => {
           authStore.userRole,
           authStore.isSuperuser,
           to.meta.requiredMinRole as string,
+          to.meta.write === true,
         )
       ) {
         ElMessage.error('您没有权限访问该页面')
