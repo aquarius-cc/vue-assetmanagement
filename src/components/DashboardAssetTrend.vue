@@ -6,7 +6,9 @@
  */
 import { ref, type PropType } from 'vue'
 import type { EChartsOption } from 'echarts'
-import VChart from 'vue-echarts'
+// [M-26] 统一从按需注册插件导入：直连 'vue-echarts' 会绕过 plugins/echarts.ts
+// 的组件注册，依赖同页其他组件的注册副作用（隐式耦合）
+import { VChart } from '@/plugins/echarts'
 
 const props = defineProps({
   chartOption: {
