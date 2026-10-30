@@ -37,38 +37,42 @@
         </div>
       </template>
 
-      <el-table v-loading="loading" :data="roles" stripe style="width: 100%">
-        <el-table-column prop="role_code" label="角色编码" width="160" />
-        <el-table-column prop="role_name" label="角色名称" width="140" />
-        <el-table-column prop="role_level" label="层级" width="80" align="center" />
-        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="is_system" label="系统内置" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.is_system ? 'info' : 'success'" size="small">
-              {{ row.is_system ? '是' : '否' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="240" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-button v-if="isAdmin" size="small" @click="openPermDialog(row)">权限</el-button>
-            <el-button v-if="isAdmin" size="small" type="primary" @click="openEditDialog(row)"
-              >编辑</el-button
-            >
-            <el-popconfirm
-              v-if="isAdmin"
-              :title="`确认删除角色「${row.role_name}」？`"
-              :confirm-button-text="'确认'"
-              :cancel-button-text="'取消'"
-              @confirm="handleDelete(row)"
-            >
-              <template #reference>
-                <el-button size="small" type="danger" :disabled="row.is_system">删除</el-button>
-              </template>
-            </el-popconfirm>
-          </template>
-        </el-table-column>
-      </el-table>
+      <!-- [M-27] 表格区弹性自滚容器（复用 CommonList flex 模式）：fixed 列在容器内
+           滚动不再错位，分页常驻可见；零数据时 el-table 常驻，EP 默认空文案在场 -->
+      <div class="table-container">
+        <el-table v-loading="loading" :data="roles" stripe height="100%" fit style="width: 100%">
+          <el-table-column prop="role_code" label="角色编码" width="160" />
+          <el-table-column prop="role_name" label="角色名称" width="140" />
+          <el-table-column prop="role_level" label="层级" width="80" align="center" />
+          <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+          <el-table-column prop="is_system" label="系统内置" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.is_system ? 'info' : 'success'" size="small">
+                {{ row.is_system ? '是' : '否' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="240" align="center" fixed="right">
+            <template #default="{ row }">
+              <el-button v-if="isAdmin" size="small" @click="openPermDialog(row)">权限</el-button>
+              <el-button v-if="isAdmin" size="small" type="primary" @click="openEditDialog(row)"
+                >编辑</el-button
+              >
+              <el-popconfirm
+                v-if="isAdmin"
+                :title="`确认删除角色「${row.role_name}」？`"
+                :confirm-button-text="'确认'"
+                :cancel-button-text="'取消'"
+                @confirm="handleDelete(row)"
+              >
+                <template #reference>
+                  <el-button size="small" type="danger" :disabled="row.is_system">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
 
       <el-pagination
         v-if="total > 0"
@@ -287,14 +291,41 @@ onMounted(() => {
 <style scoped>
 .role-manage {
   padding: 24px;
+  /* [M-27] App 壳式布局：卡片撑满、表格区自滚、分页常驻（原 overflow-y:auto 整页滚动
+     致 fixed 列错位，复用 CommonList.vue flex 容器模式） */
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   background: var(--background-color);
 }
 
 .main-card {
   border-radius: 8px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-card :deep(.el-card__header) {
+  flex-shrink: 0;
+}
+
+.main-card :deep(.el-card__body) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-container {
+  width: 100%;
+  /* 表格区自滚（上下+左右），滚动条位于本容器 */
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  box-sizing: border-box;
 }
 
 .card-header {
@@ -321,5 +352,7 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   margin-top: 16px;
+  /* [M-27] 常驻可见：不被表格滚动区压缩 */
+  flex-shrink: 0;
 }
 </style>
