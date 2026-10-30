@@ -9,8 +9,6 @@
  *   - exceljs
  */
 
-import ExcelJS from 'exceljs'
-
 /** 将 Date 对象格式化为本地时区 YYYY-MM-DD */
 const toLocalISODate = (d: Date): string =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -30,6 +28,8 @@ export async function readExcelFile<T extends object>(
     reader.onload = async (e) => {
       try {
         const data = e.target?.result as ArrayBuffer
+        // [M-24] 按需加载：exceljs 约 1MB，仅解析导入文件时动态拉取，不进首屏 chunk
+        const ExcelJS = (await import('exceljs')).default
         const workbook = new ExcelJS.Workbook()
         await workbook.xlsx.load(data)
 

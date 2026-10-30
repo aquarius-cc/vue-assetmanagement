@@ -4,7 +4,6 @@
  * 使用 ExcelJS 生成 .xlsx 模板并触发浏览器下载。
  * 实现逻辑与原各组件内 handleExportTemplate 保持一致，仅做物理提取，零行为变更。
  */
-import ExcelJS from 'exceljs'
 import { ElMessage } from 'element-plus'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
@@ -30,6 +29,8 @@ export async function downloadExcelTemplate(
 ): Promise<void> {
   try {
     // 使用 ExcelJS 创建模板工作簿
+    // [M-24] 按需加载：exceljs 约 1MB，仅导出模板时动态拉取，不进首屏 chunk
+    const ExcelJS = (await import('exceljs')).default
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet(worksheetName)
 

@@ -17,7 +17,6 @@
 
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatDate } from '@/utils/Format'
-import ExcelJS from 'exceljs'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
 import { XLSX_MIME, downloadBlob } from '@/utils/fileDownload'
@@ -91,6 +90,8 @@ export const exportToExcel = async <T>(config: ExcelExportConfig<T>): Promise<vo
     })
 
     // 3. 创建 ExcelJS 工作簿
+    // [M-24] 按需加载：exceljs 约 1MB，静态导入会进列表页首屏 chunk，仅在导出时动态拉取
+    const ExcelJS = (await import('exceljs')).default
     const workbook = new ExcelJS.Workbook()
     const sheetName = config.sheetName || 'Sheet1'
     const worksheet = workbook.addWorksheet(sheetName)
