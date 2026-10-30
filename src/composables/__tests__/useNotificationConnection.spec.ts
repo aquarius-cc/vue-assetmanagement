@@ -194,4 +194,43 @@ describe('useNotificationConnection [BF-095/I-9]', () => {
 
     expect(MockWebSocket.instances).toHaveLength(1)
   })
+
+  it('M-22 connect 入口清 pending 重连定时器：手动建连后旧 timer 到期不再新建连接（churn 消除）', () => {
+    vi.useFakeTimers()
+    const conn = useNotificationConnection()
+    conn.connect()
+    MockWebSocket.last.simulateOpen()
+
+    // 断线 → scheduleReconnect 挂起重连定时器（3s 后到期）
+    MockWebSocket.last.simulateClose(1006)
+    expect(MockWebSocket.instances).toHaveLength(1)
+
+    // 定时器未到期期间手动建连（用户点重连 / 切回前台）
+    conn.connect()
+    expect(MockWebSocket.instances).toHaveLength(2)
+
+    // 旧 pending timer 若未清理，到期会打断刚建立的连接再建第三只（连接 churn）
+    vi.advanceTimersByTime(30000)
+    expect(MockWebSocket.instances).toHaveLength(2)
+  })
+
+  it('M-22 scheduleReconnect 先清后置：定时器句柄不被覆盖丢失，连续断线仅一个重连定时器生效', () => {
+    vi.useFakeTimers()
+    const conn = useNotificationConnection()
+    conn.connect()
+    const first = MockWebSocket.last
+    first.simulateOpen()
+
+    // 第一次断线挂定时器 A；随后手动建连又断线挂定时器 B
+    first.simulateClose(1006)
+    conn.connect()
+    const second = MockWebSocket.last
+    second.simulateOpen()
+    second.simulateClose(1006)
+
+    vi.advanceTimersByTime(30000)
+    // 先清后置: A 被清、仅 B 到期建 1 只 → 共 3 只；
+    // 若 A 句柄被覆盖丢失: A、B 双双到期 → 5 只（B 到期还会关旧建新）
+    expect(MockWebSocket.instances).toHaveLength(3)
+  })
 })

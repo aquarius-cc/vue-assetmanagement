@@ -70,9 +70,23 @@ export function useNotificationConnection() {
   }
 
   /**
+   * 清理 pending 重连定时器（M-22：connect 入口与 scheduleReconnect 共用的唯一清理点，DR-1）
+   */
+  function clearPendingReconnectTimer() {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer)
+      reconnectTimer = null
+    }
+  }
+
+  /**
    * 建立 WebSocket 连接（携带 JWT token 进行认证）
    */
   function connect() {
+    // [M-22] 入口先清 pending 重连定时器：断线挂起的重连 timer 若在手动建连后到期，
+    // 会打断刚建立的连接再建新 socket（连接 churn + reconnectAttempts 计数污染）
+    clearPendingReconnectTimer()
+
     const jobcode = getJobcode()
     if (!jobcode) return
 
@@ -156,6 +170,8 @@ export function useNotificationConnection() {
       ElMessage.warning('实时通知连接已断开，请检查网络或点击重新连接')
       return
     }
+    // [M-22] 先清后置：防旧句柄被覆盖丢失后，旧新两个定时器双双到期各建一条连接
+    clearPendingReconnectTimer()
     reconnectTimer = setTimeout(
       () => {
         reconnectAttempts++
