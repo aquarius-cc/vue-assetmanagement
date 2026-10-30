@@ -217,6 +217,14 @@ export function useNotificationConnection() {
   }
 
   /**
+   * [M-21] 注销消息处理器（唯一注销入口，DR-1：不另提供 onMessage 返回 disposer 的第二套 API）
+   * 共享连接下单例长存，消费者卸载时必须摘除 handler，否则泄漏 + 重复分发
+   */
+  function offMessage(handler: (data: WSMessage) => void) {
+    messageHandlers.delete(handler)
+  }
+
+  /**
    * 通过当前连接发送消息，未连接时静默丢弃
    */
   function send(data: unknown): boolean {
@@ -248,6 +256,7 @@ export function useNotificationConnection() {
     disconnect,
     manualReconnect,
     onMessage,
+    offMessage,
     send,
   }
 }

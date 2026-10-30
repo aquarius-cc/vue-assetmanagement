@@ -16,7 +16,7 @@
  * @returns
  *   - useNotification: 通知 composable 函数（返回形状与拆分前一致）
  */
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, effectScope, type EffectScope } from 'vue'
 import { ElMessage } from 'element-plus'
 import { notificationAPI } from '@/api/notification'
 import { useNotificationConnection } from '@/composables/useNotificationConnection'
@@ -31,11 +31,48 @@ export type { NotificationItem as Notification } from '@/types/notification'
 const isMarkingAll = ref(false)
 const fetchError = ref(false)
 
+// ==========================================================================
+// [M-21] 共享连接单例（仅连接层；数据态 notifications/unreadCount/isLoading
+// 维持实例级——桌面铃铛与抽屉铃铛永不同时可见，分实例无实际危害，且避免
+// 碎掉既有「initialize with default values」初值断言）
+// ==========================================================================
+interface SharedNotificationConnection {
+  scope: EffectScope
+  connection: ReturnType<typeof useNotificationConnection>
+  refCount: number
+}
+
+let shared: SharedNotificationConnection | null = null
+
+function getSharedConnection(): SharedNotificationConnection {
+  if (!shared) {
+    // detached scope: 连接层 watch(access_token) 与首个消费者的组件生命周期解耦，
+    // 消费者卸载不再使单例失去 token 复位重连能力；scope.stop() 供测试重置
+    const scope = effectScope(true)
+    const connection = scope.run(() => useNotificationConnection())!
+    shared = { scope, connection, refCount: 0 }
+  }
+  return shared
+}
+
+/**
+ * [M-21] 仅供测试重置共享连接单例（beforeEach 调用，防跨用例状态污染）。
+ * 禁止放宽断言来掩盖状态残留；生产代码不得调用。
+ */
+export function resetSharedNotificationConnectionForTest() {
+  if (shared) {
+    shared.scope.stop()
+    shared = null
+  }
+}
+
 export function useNotification() {
   const notifications = ref<NotificationItem[]>([])
   const unreadCount = ref(0)
   const isLoading = ref(false)
 
+  // [M-21] 连接层走模块级单例（同一消费者组共享一条 WebSocket），数据态仍实例级
+  const sharedConn = getSharedConnection()
   const {
     isConnected,
     isConnectionExhausted,
@@ -43,8 +80,9 @@ export function useNotification() {
     disconnect,
     manualReconnect,
     onMessage,
+    offMessage,
     send,
-  } = useNotificationConnection()
+  } = sharedConn.connection
 
   /**
    * 处理 WebSocket 消息
@@ -132,14 +170,24 @@ export function useNotification() {
     }
   }
 
-  // 自动连接
+  // 自动连接（[M-21] 引用计数：0→1 才 connect + fetchUnreadCount（消除重复 REST 调用），
+  // 归零才 disconnect——防移动端抽屉关闭误断桌面铃铛的连接）
   onMounted(() => {
-    connect()
-    fetchUnreadCount()
+    sharedConn.refCount++
+    if (sharedConn.refCount === 1) {
+      connect()
+      fetchUnreadCount()
+    }
   })
 
   onUnmounted(() => {
-    disconnect()
+    // [M-21] 卸载必须摘除 handler（offMessage 为唯一注销入口），否则共享单例
+    // 上泄漏的 handler 造成重复分发
+    offMessage(handleWSMessage)
+    sharedConn.refCount--
+    if (sharedConn.refCount <= 0) {
+      disconnect()
+    }
   })
 
   return {

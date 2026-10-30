@@ -76,11 +76,12 @@ vi.stubGlobal('localStorage', {
   clear: vi.fn(),
 })
 
-import { useNotification } from '../useNotification'
+import { resetSharedNotificationConnectionForTest, useNotification } from '../useNotification'
 
 describe('useNotification', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetSharedNotificationConnectionForTest() // [M-21] 单例跨用例状态归零，禁放宽断言掩盖
     wsInstances.length = 0
     wsIdCounter = 0
     mockStore.authInfo = null
