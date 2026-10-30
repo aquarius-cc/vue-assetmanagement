@@ -43,6 +43,11 @@ vi.mock('@/utils/statusMapping', () => ({
   },
 }))
 
+vi.mock('@/utils/logger', () => ({
+  logError: vi.fn(),
+  logWarn: vi.fn(),
+}))
+
 describe('DashboardStore 边界分支', () => {
   let store: ReturnType<typeof useDashboardStore>
 
@@ -117,10 +122,13 @@ describe('DashboardStore 边界分支', () => {
       },
     ]
 
+    const { logError } = await import('@/utils/logger')
+
     for (const c of cases) {
       vi.mocked(c.api).mockRejectedValue(new Error(''))
       await expect(c.run()).rejects.toThrow()
       expect(ElMessage.error).toHaveBeenCalledWith(c.msg)
+      expect(logError).toHaveBeenCalledWith('stores/dashboard', c.msg, expect.anything())
     }
   })
 
