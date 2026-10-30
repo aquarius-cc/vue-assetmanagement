@@ -105,7 +105,10 @@ import {
   del,
   buildLoginRedirectUrl,
   degradedCacheKeys,
+  setRedirectToLoginForTest,
+  resetSessionLogoutForTest,
 } from '@/api/request'
+import { MAX_REFRESH_RETRY_COUNT } from '@/api/config'
 
 function getResponseHandler(): ErrorHandler | null {
   return handlerRef.fn
@@ -165,6 +168,8 @@ describe('request', () => {
     vi.mocked(decodeToken).mockReturnValue(null)
     device.detectAuthChannel.mockReturnValue('bearer')
     csrf.getCsrfToken.mockReturnValue(null)
+    setRedirectToLoginForTest(vi.fn()) // [M-28] 跳转 stub（避免真实 window.location 跳转）
+    resetSessionLogoutForTest() // [M-28] 登出幂等旗跨用例归零
     vi.spyOn(global, 'setTimeout').mockImplementation((fn: () => void) => {
       fn()
       return 0 as unknown as ReturnType<typeof setTimeout>
@@ -621,6 +626,60 @@ describe('request', () => {
 
       expect(mocks.staticPost).not.toHaveBeenCalled()
       expect(clearAllAuthTokens).toHaveBeenCalled()
+    })
+  })
+
+  describe('[M-28] 401 登出幂等（会话失效三连只触发一次）', () => {
+    it('并发 401 + 刷新失败（无 refresh token）→ 三连各仅 1 次', async () => {
+      const redirect = vi.fn()
+      setRedirectToLoginForTest(redirect)
+      vi.mocked(decodeToken).mockReturnValue(null) // refreshBearer → MissingRefreshTokenError
+
+      const handler = getResponseHandler()
+      const e1 = makeAxiosError(401, '/api/a')
+      const e2 = makeAxiosError(401, '/api/b')
+      await Promise.allSettled([handler?.(e1), handler?.(e2)])
+
+      expect(clearAllAuthTokens).toHaveBeenCalledTimes(1)
+      expect(ElMessage.error).toHaveBeenCalledTimes(1)
+      expect(ElMessage.error).toHaveBeenCalledWith('登录已过期，请重新登录')
+      expect(redirect).toHaveBeenCalledTimes(1)
+    })
+
+    it('重试上限路径并发 → 三连各仅 1 次', async () => {
+      const redirect = vi.fn()
+      setRedirectToLoginForTest(redirect)
+      vi.mocked(decodeToken).mockReturnValue('mock-refresh-token')
+
+      const handler = getResponseHandler()
+      const e1 = makeAxiosError(401, '/api/a')
+      e1.config._retryCount = MAX_REFRESH_RETRY_COUNT
+      const e2 = makeAxiosError(401, '/api/b')
+      e2.config._retryCount = MAX_REFRESH_RETRY_COUNT
+      await Promise.allSettled([handler?.(e1), handler?.(e2)])
+
+      expect(clearAllAuthTokens).toHaveBeenCalledTimes(1)
+      expect(ElMessage.error).toHaveBeenCalledTimes(1)
+      expect(redirect).toHaveBeenCalledTimes(1)
+    })
+
+    it('瞬时错误（refresh 429）不登出：幂等旗不吞合法路径', async () => {
+      const redirect = vi.fn()
+      setRedirectToLoginForTest(redirect)
+      vi.mocked(decodeToken).mockReturnValue('mock-refresh-token')
+
+      const rateLimitError = new Error('Request failed with status code 429') as Error & {
+        isAxiosError: boolean
+        response: { status: number; data: Record<string, unknown> }
+      }
+      rateLimitError.isAxiosError = true
+      rateLimitError.response = { status: 429, data: {} }
+      mocks.staticPost.mockRejectedValue(rateLimitError)
+
+      await expect(getResponseHandler()?.(makeAxiosError(401, '/test/api'))).rejects.toBeDefined()
+
+      expect(clearAllAuthTokens).not.toHaveBeenCalled()
+      expect(redirect).not.toHaveBeenCalled()
     })
   })
 

@@ -9,6 +9,8 @@
  *   - patch: PATCH 请求方法
  *   - del: DELETE 请求方法
  *   - getBlob: 二进制下载通道（服务端导出）
+ *   - buildLoginRedirectUrl: 登出回跳 URL 构造（纯函数）
+ *   - setRedirectToLoginForTest / resetSessionLogoutForTest: 仅测试注入/重置（生产禁调）
  *   - unwrapResponse: 响应解包函数
  *   - ApiResponse: 统一响应类型定义
  *   - BlobDownload / ExportResponseHeaders: 导出下载结果类型
@@ -121,9 +123,42 @@ export function buildLoginRedirectUrl(back?: { pathname?: string; search?: strin
   return `/login?redirect=${encodeURIComponent(backUrl)}`
 }
 
-function redirectToLogin(): void {
+function defaultRedirectToLogin(): void {
   // [M-29] 登出跳转携带 redirect 回跳参数（原实现固定 /login，重登后丢失原页面）
   window.location.href = buildLoginRedirectUrl(window.location)
+}
+
+// [M-28] 跳转实现提取为可注入模块：测试可 stub 实现，避免真实 window.location 跳转
+let redirectToLoginImpl: () => void = defaultRedirectToLogin
+
+/** [M-28] 仅供测试：注入跳转 stub（传 null 恢复原实现）；生产代码不得调用 */
+export function setRedirectToLoginForTest(impl: (() => void) | null): void {
+  redirectToLoginImpl = impl ?? defaultRedirectToLogin
+}
+
+function redirectToLogin(): void {
+  redirectToLoginImpl()
+}
+
+// ======================== [M-28] 会话失效登出幂等 ========================
+
+// [M-28] 并发 401 + 刷新失败可从多入口进入登出（handleRefreshFailure /
+// handleUnauthorized 重试上限）；三连（clearAllAuthTokens + showLoginExpired +
+// redirectToLogin）只执行一次，消除重复跳转与重复提示。logError 不入幂等块：
+// 两调用点 reason 各异（诊断信息不可互相吞没），并发等待者数本身是排障有效信号。
+let sessionLogoutPerformed = false
+
+function performSessionLogout(): void {
+  if (sessionLogoutPerformed) return
+  sessionLogoutPerformed = true
+  clearAllAuthTokens()
+  showLoginExpired()
+  redirectToLogin()
+}
+
+/** [M-28] 仅供测试：重置登出幂等旗（防跨用例状态污染）；生产代码不得调用 */
+export function resetSessionLogoutForTest(): void {
+  sessionLogoutPerformed = false
 }
 
 function isSafeMethod(method: string | undefined): boolean {
@@ -158,9 +193,8 @@ async function handleRefreshFailure(
     return api(originalRequest)
   }
   logError('api/request', `Token 刷新失败（会话失效）: ${detail}`)
-  clearAllAuthTokens()
-  showLoginExpired()
-  redirectToLogin()
+  // [M-28] 登出三连收敛进幂等旗（logError 留块外，reason 各异）
+  performSessionLogout()
   return undefined
 }
 
@@ -181,9 +215,8 @@ async function handleUnauthorized(error: unknown): Promise<unknown> {
   originalRequest._retryCount = originalRequest._retryCount || 0
   if (originalRequest._retryCount >= MAX_REFRESH_RETRY_COUNT) {
     logError('api/request', 'Token 刷新重试次数超过上限')
-    clearAllAuthTokens()
-    showLoginExpired()
-    redirectToLogin()
+    // [M-28] 登出三连收敛进幂等旗（logError 留块外，reason 各异）
+    performSessionLogout()
     return Promise.reject(error)
   }
 
