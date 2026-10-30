@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { AxiosResponse } from 'axios'
-import { get } from '@/api/request'
+import { get, resetSessionLogoutForTest } from '@/api/request'
 import { ElMessage } from 'element-plus'
 import { clearAllAuthTokens } from '@/utils/tokenObfuscator'
 import { refreshAccessToken, MissingRefreshTokenError } from '@/utils/tokenRefresh'
@@ -134,6 +134,7 @@ describe('request responseHandler', () => {
     mocks.instancePut.mockReset()
     mocks.instancePatch.mockReset()
     mocks.instanceDelete.mockReset()
+    resetSessionLogoutForTest() // [M-28] 登出幂等旗跨用例归零（模块级状态，前序登出用例会吞后续三连）
     vi.mocked(refreshAccessToken).mockReset()
     vi.mocked(clearAllAuthTokens).mockClear()
     vi.mocked(ElMessage.error).mockClear()
