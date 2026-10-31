@@ -30,7 +30,8 @@ const whiteList = ['/login']
 // key: 路由路径前缀, value: 允许访问的角色列表
 // 未列出的路由默认所有已认证角色可访问
 // 注意：静态路由的权限由 roleWhitelist 前缀匹配 + meta.requiredMinRole 双重保护
-const roleWhitelist: Record<string, string[]> = {
+// [M-32] 导出供 guards-write-deny.spec 负向断言（死条目防回归：已删前缀不得再命中）
+export const roleWhitelist: Record<string, string[]> = {
   // 系统配置：仅系统管理员
   '/main/assettypedetails': [ROLE_CODES.SYSTEM_ADMIN],
   '/main/storagedetails': [ROLE_CODES.SYSTEM_ADMIN],
@@ -39,7 +40,8 @@ const roleWhitelist: Record<string, string[]> = {
   '/main/departmentdetails': [ROLE_CODES.SYSTEM_ADMIN],
   // [I-7] 通讯录管理（用户录入/批量导入/部门批量导入）：仅系统管理员
   '/main/departmentmanagement': [ROLE_CODES.SYSTEM_ADMIN],
-  '/main/system': [ROLE_CODES.SYSTEM_ADMIN],
+  // [M-32] 死条目 '/main/system' 已删除：全仓无此前缀路由（Dept* 子树实挂
+  // /main/departmentmanagement），保留会让「前缀命中=已有门槛」判据出现幽灵门槛
   // 报废审批：部门经理及以上
   '/main/damagedassetdetails': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER],
   '/main/damagedassetbasicdetails': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.DEPT_MANAGER],

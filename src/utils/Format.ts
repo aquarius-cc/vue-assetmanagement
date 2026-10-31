@@ -70,20 +70,18 @@ const formatDate = (date: Date | number | string | null | undefined): string | n
   }
 
   // 格式化日期为 YYYY-MM-DD
-  const year = dateObj.getFullYear()
-  const month = String(dateObj.getMonth() + 1).padStart(2, '0')
-  const day = String(dateObj.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-  //下面效果等效上面
-  // const d = new Date(date)
-  // return d.toISOString().split('T')[0] // 返回 YYYY-MM-DD 格式
-  // return `${dateObj.getFullYear()}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getDate().toString().padStart(2, '0')}`
+  // [M-33] 拼接收敛至 toLocalDateString 单一事实源
+  return toLocalDateString(dateObj)
+}
+
+/** [M-33] 本地时区日期拼接的唯一底层（YYYY-MM-DD），全仓禁止再手写 getFullYear 拼接 */
+export function toLocalDateString(d: Date): string {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
 /** 返回本地时区的今天 YYYY-MM-DD（避免 toISOString 的 UTC 偏移） */
 const todayLocalISO = (): string => {
-  const d = new Date()
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return toLocalDateString(new Date())
 }
 
 const pad = (n: number): string => String(n).padStart(2, '0')
@@ -99,14 +97,26 @@ const formatDateTimeFull = (dateStr: string | null | undefined): string => {
   if (!dateStr) return ''
   const d = new Date(dateStr)
   if (isNaN(d.getTime())) return ''
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  return `${toLocalDateString(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 const exactFormatDate = (date: string | null | undefined): string => {
-  if (!date) return ''
-  const d = new Date(date)
-  if (isNaN(d.getTime())) return ''
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  // [M-33] 与 formatDateTimeFull 逐字节相同的重复实现，收敛为委托（导出名保留）
+  return formatDateTimeFull(date)
+}
+
+/**
+ * [M-33] 相对时间文案（与 NotificationBell 原 formatTime 行为逐字节对齐后收敛单源）：
+ * 刚刚 / N分钟前 / N小时前 / M/D HH:mm
+ */
+export function formatRelativeTime(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const diff = now.getTime() - d.getTime()
+  if (diff < 60000) return '刚刚'
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
+  return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 // 金额格式化函数：转为 ￥xxxxx.xx 格式
@@ -425,11 +435,8 @@ const parseExcelDate = (dateStr: string): string | null => {
 
   // 验证日期是否有效
   if (date && !isNaN(date.getTime())) {
-    // 转换为YYYY-MM-DD 格式
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
+    // [M-33] 转换为YYYY-MM-DD 格式（收敢单源）
+    return toLocalDateString(date)
   }
 
   // return null

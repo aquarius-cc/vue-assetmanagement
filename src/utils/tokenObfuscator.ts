@@ -21,7 +21,7 @@ import { logError, logWarn } from '@/utils/logger'
  *   - 环境变量 VITE_TOKEN_CRYPTO_KEY（构建时必须配置）
  */
 
-// 构建时验证：必须配置加密密钥，否则构建失败
+// [M-35] 构建时验证：必须配置混淆密钥（XOR 混淆非加密），否则构建失败
 // 这样可以防止使用默认密钥导致的零安全问题
 const CRYPTO_KEY = import.meta.env.VITE_TOKEN_CRYPTO_KEY
 if (!CRYPTO_KEY) {
@@ -36,15 +36,15 @@ if (!CRYPTO_KEY) {
 if (CRYPTO_KEY.length < 16) {
   logWarn(
     'utils/tokenObfuscator',
-    '[tokenObfuscator] 加密密钥长度不足16字符，建议使用更长的密钥以提高安全性',
+    '[tokenObfuscator] 混淆密钥长度不足16字符，建议使用更长的密钥以降低可读性',
   )
 }
 
 /**
  * XOR + Base64 混淆（非加密，见模块文档安全声明）
- * @param text - 要加密的文本
- * @param key - 加密密钥
- * @returns 加密后的文本（Base64 编码）
+ * @param text - 要混淆的文本
+ * @param key - 混淆密钥
+ * @returns 混淆后的文本（Base64 编码）
  */
 function xorEncrypt(text: string, key: string): string {
   let result = ''
@@ -56,7 +56,7 @@ function xorEncrypt(text: string, key: string): string {
 
 /**
  * 简单的 XOR 解密
- * @param encoded - 加密后的文本（Base64 编码）
+ * @param encoded - 混淆后的文本（Base64 编码）
  * @param key - 解密密钥
  * @returns 解密后的文本
  */
@@ -74,7 +74,7 @@ function xorDecrypt(encoded: string, key: string): string {
 }
 
 /**
- * 存储加密后的 Token
+ * 存储混淆后的 Token
  * @param key - localStorage 键名
  * @param value - Token 值
  */
@@ -83,8 +83,8 @@ export function encodeToken(key: string, value: string): void {
     const encrypted = xorEncrypt(value, CRYPTO_KEY)
     localStorage.setItem(key, encrypted)
   } catch (error) {
-    logError('utils/tokenObfuscator', 'Token 加密存储失败:', error)
-    throw new Error(`[tokenObfuscator] 加密失败，拒绝明文存储 Token: ${error}`)
+    logError('utils/tokenObfuscator', 'Token 混淆存储失败:', error)
+    throw new Error(`[tokenObfuscator] 混淆失败，拒绝明文存储 Token: ${error}`)
   }
 }
 
@@ -114,7 +114,7 @@ export function decodeToken(key: string): string | null {
 }
 
 /**
- * 清除 Token（同时处理加密和明文两种情况）
+ * 清除 Token（同时处理混淆和明文两种情况）
  * @param key - localStorage 键名
  */
 export function removeToken(key: string): void {

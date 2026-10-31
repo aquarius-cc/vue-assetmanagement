@@ -83,7 +83,7 @@ describe('tokenObfuscator', () => {
       })
 
       expect(() => encodeToken(key, value)).toThrow(
-        '[tokenObfuscator] 加密失败，拒绝明文存储 Token',
+        '[tokenObfuscator] 混淆失败，拒绝明文存储 Token',
       )
 
       // Restore btoa

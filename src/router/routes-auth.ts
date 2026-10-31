@@ -7,11 +7,11 @@
  *   - src/router/index.ts
  * @dependsOn
  *   - vue-router (RouteRecordRaw 类型)
- *   - @/views/LogIn.vue
+ *   - @/views/LogIn.vue（[M-29] 懒加载：LogIn 是唯一静态 import 的路由组件，
+ *     会进主入口 chunk；改动态 import 后与「路由全量懒加载」约定一致）
  */
 
 import type { RouteRecordRaw } from 'vue-router'
-import Login from '@/views/LogIn.vue'
 
 export const routesAuth: RouteRecordRaw[] = [
   {
@@ -23,7 +23,8 @@ export const routesAuth: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'Login',
-    component: Login,
+    // [M-29] 懒加载，移出主入口 chunk
+    component: () => import('@/views/LogIn.vue'),
     meta: {
       title: '用户登录',
       requiresAuth: false,

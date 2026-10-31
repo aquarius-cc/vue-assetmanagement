@@ -389,7 +389,7 @@ describe('Router Guards', () => {
       '/main/departmentmanagement/userform',
       '/main/departmentmanagement/userbatchimport',
       '/main/departmentmanagement/departmentbatchimport',
-      '/main/system',
+      // [M-32 受控例外] 死条目 '/main/system' 移除：全仓无此前缀路由，断言改用真实路径
     ])('should allow system_admin on %s', async (path) => {
       ;(decodeToken as any).mockReturnValue('valid-token')
       mockAuthStore.isLoggedIn = true
@@ -830,7 +830,7 @@ describe('Router Guards', () => {
       expect(result).toBe(true)
     })
 
-    it('should allow superuser access to /main/system', async () => {
+    it('should allow superuser access to admin routes ([M-32 受控例外] 改用真实路径)', async () => {
       mockAuthStore.isLoggedIn = true
       mockAuthStore.access_token = 'valid-token'
       mockAuthStore.userRole = 'regular_user'
@@ -839,7 +839,10 @@ describe('Router Guards', () => {
 
       setupAndCapture()
 
-      const result = await beforeEachCallback({ path: '/main/system', meta: {} }, { path: '/' })
+      const result = await beforeEachCallback(
+        { path: '/main/departmentmanagement', meta: {} },
+        { path: '/' },
+      )
       expect(result).toBe(true)
     })
 

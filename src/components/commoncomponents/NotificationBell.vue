@@ -62,7 +62,7 @@
             >
               <div class="item-header">
                 <el-tag :type="getTagType(n.type)" size="small">{{ getTypeLabel(n.type) }}</el-tag>
-                <span class="item-time">{{ formatTime(n.created_at) }}</span>
+                <span class="item-time">{{ formatRelativeTime(n.created_at) }}</span>
               </div>
               <div class="item-title">{{ n.title }}</div>
               <div class="item-message">{{ n.message }}</div>
@@ -79,6 +79,7 @@ import { ref } from 'vue'
 import { safeNavigate } from '@/utils/navigation'
 import { Bell, Close } from '@element-plus/icons-vue'
 import { useNotification, type Notification } from '@/composables/useNotification'
+import { formatRelativeTime } from '@/utils/Format'
 
 const {
   notifications,
@@ -129,16 +130,6 @@ function getTypeLabel(type: string) {
     system: '系统',
   }
   return map[type] || type
-}
-
-function formatTime(iso: string) {
-  const d = new Date(iso)
-  const now = new Date()
-  const diff = now.getTime() - d.getTime()
-  if (diff < 60000) return '刚刚'
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
-  return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
 }
 </script>
 

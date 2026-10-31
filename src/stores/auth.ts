@@ -5,7 +5,8 @@
  *   - useAuthStore: 用户认证状态 Store
  * @description
  *   双认证通道（与后端 authentication.py / views.py 契约一致，DR-1）：
- *   - bearer 通道（移动端）：access/refresh 加密持久化到 localStorage
+ *   - bearer 通道（移动端）：access/refresh 经 XOR 混淆持久化到 localStorage
+ *     （[M-35] 混淆非加密，不构成安全边界；Web 端由 httpOnly Cookie 承担边界）
  *   - cookie 通道（PC）：HttpOnly Cookie 承载，token 仅存内存（供 WS），
  *     localStorage 仅保留非敏感的 authInfo；刷新/验证走 refresh 端点
  * @callers
@@ -125,7 +126,7 @@ export const useAuthStore = defineStore('AuthUser', () => {
   }
 
   /**
-   * bearer 通道：从加密存储恢复会话
+   * bearer 通道：从混淆存储恢复会话（[M-35] XOR 混淆非加密）
    */
   async function restoreBearerSession(): Promise<boolean> {
     const savedAuthInfoStr = decodeToken('authInfo')

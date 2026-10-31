@@ -129,6 +129,7 @@ export const routesStandalone: RouteRecordRaw[] = [
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/NotFound.vue'),
-    meta: { title: '页面未找到' },
+    // [M-30] 匿名可见：未登录访问未知路径直达 404，而非重定向登录页
+    meta: { title: '页面未找到', requiresAuth: false },
   },
 ]

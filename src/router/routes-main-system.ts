@@ -71,8 +71,7 @@ export const routesMainSystem: RouteRecordRaw[] = [
           write: true, // [M-19] 写语义标记：仅写 deny 兜底判据
           // [M-20] 后端写门槛为 IsAssetAdminOrAbove（hard_disk_sn_view.py:71-81），
           // 前端对齐 asset_admin——不采用「子树整体 system_admin」（会造成后端放行、
-          // 前端拦截的跨端不一致）；父级 /main/harddisksndetails 不在 roleWhitelist，
-          // 本条 meta 是该写页的唯一显式门槛。父前缀不在 /main/system 白名单内。
+          // 前端拦截的跨端不一致）；[M-32] 门槛为自身 meta，不依赖任何白名单前缀。
           requiredMinRole: 'asset_admin',
         },
       },
@@ -113,10 +112,10 @@ export const routesMainSystem: RouteRecordRaw[] = [
         meta: {
           title: '用户录入',
           requiresAuth: true,
-          write: true, // [M-19] 写语义标记：白名单前缀 /main/system 已是显式门槛
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/departmentmanagement 已是显式门槛
           // [I-7] 子路由独立加固：vue-router mergeMetaFields 会父→子合并 meta（原注释
           // 「父级 meta 不自动继承」与运行时事实不符，M-20 订正）；子级显式声明为
-          // 纵深防御，父级 /main/system 白名单为另一重门槛，二者并存不冲突
+          // 纵深防御，父级 /main/departmentmanagement 白名单为另一重门槛，二者并存不冲突
           requiredMinRole: 'system_admin',
         },
       },
@@ -127,10 +126,10 @@ export const routesMainSystem: RouteRecordRaw[] = [
         meta: {
           title: '批量导入用户',
           requiresAuth: true,
-          write: true, // [M-19] 写语义标记：白名单前缀 /main/system 已是显式门槛
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/departmentmanagement 已是显式门槛
           // [I-7] 子路由独立加固：vue-router mergeMetaFields 会父→子合并 meta（原注释
           // 「父级 meta 不自动继承」与运行时事实不符，M-20 订正）；子级显式声明为
-          // 纵深防御，父级 /main/system 白名单为另一重门槛，二者并存不冲突
+          // 纵深防御，父级 /main/departmentmanagement 白名单为另一重门槛，二者并存不冲突
           requiredMinRole: 'system_admin',
         },
       },
@@ -141,10 +140,10 @@ export const routesMainSystem: RouteRecordRaw[] = [
         meta: {
           title: '批量导入部门',
           requiresAuth: true,
-          write: true, // [M-19] 写语义标记：白名单前缀 /main/system 已是显式门槛
+          write: true, // [M-19] 写语义标记：白名单前缀 /main/departmentmanagement 已是显式门槛
           // [I-7] 子路由独立加固：vue-router mergeMetaFields 会父→子合并 meta（原注释
           // 「父级 meta 不自动继承」与运行时事实不符，M-20 订正）；子级显式声明为
-          // 纵深防御，父级 /main/system 白名单为另一重门槛，二者并存不冲突
+          // 纵深防御，父级 /main/departmentmanagement 白名单为另一重门槛，二者并存不冲突
           requiredMinRole: 'system_admin',
         },
       },

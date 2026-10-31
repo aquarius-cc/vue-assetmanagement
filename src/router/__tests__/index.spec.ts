@@ -91,11 +91,26 @@ describe('Router Configuration', () => {
     expect(loginRoute.meta.title).toBe('用户登录')
   })
 
+  it('[M-29] /login component 为懒加载函数（不进主入口 chunk）', async () => {
+    const { capturedConfig } = await loadRouter()
+    const loginRoute = capturedConfig.routes.find((r: any) => r.path === '/login')
+    expect(typeof loginRoute.component).toBe('function')
+  })
+
+  it('[M-30] NotFound 匿名可达（requiresAuth: false）且带 title', async () => {
+    const { capturedConfig } = await loadRouter()
+    const notFound = capturedConfig.routes.find((r: any) => r.name === 'NotFound')
+    expect(notFound).toBeDefined()
+    expect(notFound.meta.requiresAuth).toBe(false)
+    expect(notFound.meta.title).toBe('页面未找到')
+  })
+
   it('should have /main route with requiresAuth: true', async () => {
     const { capturedConfig } = await loadRouter()
     const mainRoute = capturedConfig.routes.find((r: any) => r.path === '/main')
     expect(mainRoute).toBeDefined()
     expect(mainRoute.meta.requiresAuth).toBe(true)
+    expect(mainRoute.meta.title).toBe('首页')
   })
 
   it('should have child routes under /main', async () => {

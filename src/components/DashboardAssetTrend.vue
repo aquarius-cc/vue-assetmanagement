@@ -25,18 +25,21 @@ const emit = defineEmits<{
   (e: 'month-change', value: string): void
 }>()
 
+// [M-33] 本地日期/月份拼接收敛至 Format.ts 单一事实源（toLocalDateString）
+import { toLocalDateString } from '@/utils/Format'
+
 const now = new Date()
-const selectedMonth = ref(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
+const selectedMonth = ref(toLocalDateString(now).slice(0, 7))
 
 const handleMonthChange = (val: string | Date) => {
   if (!val) return
   const d = val instanceof Date ? val : new Date(val)
   const year = d.getFullYear()
   const month = d.getMonth() + 1
-  const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+  const startDate = toLocalDateString(new Date(year, month - 1, 1))
   const lastDay = new Date(year, month, 0).getDate()
-  const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`
-  selectedMonth.value = `${year}-${String(month).padStart(2, '0')}`
+  const endDate = toLocalDateString(new Date(year, month - 1, lastDay))
+  selectedMonth.value = startDate.slice(0, 7)
   emit('month-change', `${startDate}|${endDate}`)
 }
 </script>

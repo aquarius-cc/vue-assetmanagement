@@ -23,6 +23,7 @@ export const routesMain: RouteRecordRaw[] = [
     component: () => import('@/views/MainView.vue'),
     meta: {
       requiresAuth: true,
+      title: '首页', // [M-30] 面包屑由 guards 跳过 /main，不重复层级
     },
     children: [...routesMainCore, ...routesMainOperations, ...routesMainSystem],
   },

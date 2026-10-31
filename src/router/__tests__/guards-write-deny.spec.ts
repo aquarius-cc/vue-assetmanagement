@@ -20,7 +20,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ElMessage } from 'element-plus'
-import { hasExplicitWriteGate, setupAuthGuard } from '../guards'
+import { hasExplicitWriteGate, roleWhitelist, setupAuthGuard } from '../guards'
 import { routesMainCore } from '../routes-main-core'
 import { routesMainOperations } from '../routes-main-operations'
 import { routesMainSystem } from '../routes-main-system'
@@ -218,8 +218,11 @@ describe('M-19 仅写 deny 路由守卫', () => {
       expect(ElMessage.error).not.toHaveBeenCalled()
     })
 
-    it('NotFound（/:pathMatch(.*)*，meta 无 requiresAuth）不被误伤', async () => {
-      const result = await navigateAs('regular_user', '/nonexistent-page', {})
+    it('NotFound（/:pathMatch(.*)*，[M-30] meta requiresAuth:false）走旁路直达 404', async () => {
+      const result = await navigateAs('regular_user', '/nonexistent-page', {
+        title: '页面未找到',
+        requiresAuth: false,
+      })
       expect(result).toBe(true)
     })
 
@@ -245,6 +248,14 @@ describe('M-19 仅写 deny 路由守卫', () => {
       // 此处静态断言硬Disk 父页 meta 无 write
       const parent = findRecord(routesMainSystem, 'HardDiskSNDetails')
       expect(parent?.meta?.write).toBeUndefined()
+    })
+
+    it('[M-32 负向断言] 已删死条目 /main/system 不得再命中任何白名单前缀', () => {
+      // CT-4 回归屏障：防止死条目被悄悄加回（幽灵门槛会破坏「前缀命中=已有门槛」判据）
+      expect(roleWhitelist['/main/system']).toBeUndefined()
+      expect(Object.keys(roleWhitelist).some((p) => '/main/systemdetails'.startsWith(p))).toBe(
+        false,
+      )
     })
   })
 })

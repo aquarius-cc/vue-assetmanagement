@@ -9,9 +9,8 @@
  *   - exceljs
  */
 
-/** 将 Date 对象格式化为本地时区 YYYY-MM-DD */
-const toLocalISODate = (d: Date): string =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+/** [M-33] 本地时区日期拼接收敛至 Format.ts 单一事实源（原 toLocalISODate 已删除） */
+import { toLocalDateString } from '@/utils/Format'
 
 /**
  * 读取 Excel 文件并解析为对象数组
@@ -74,7 +73,7 @@ export async function readExcelFile<T extends object>(
 
         /** 归一单元格值：Date → ISO；日期列数字 → YYYY-MM-DD；其余非空 → String().trim() */
         const normalizeCellValue = (rawValue: unknown, header: string): unknown => {
-          if (rawValue instanceof Date) return toLocalISODate(rawValue)
+          if (rawValue instanceof Date) return toLocalDateString(rawValue)
           if (typeof rawValue === 'number') {
             return isDateColumnHeader(header) ? excelSerialToDate(rawValue) : rawValue
           }
