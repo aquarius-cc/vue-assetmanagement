@@ -13,6 +13,7 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix",
+    "lint:ci": "eslint .",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "test": "vitest run",
