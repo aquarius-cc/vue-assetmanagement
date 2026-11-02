@@ -149,7 +149,9 @@ describe('useAssetInfoCards', () => {
   it('D4: contract_amount 缺失时不渲染金额行且不抛错', () => {
     const base = createMockAsset()
     const briefContract = { ...(base.asset_contract as object), contract_amount: undefined }
-    const assetDetail = ref(createMockAsset({ asset_contract: briefContract }) as unknown as AssetDetail)
+    const assetDetail = ref(
+      createMockAsset({ asset_contract: briefContract }) as unknown as AssetDetail,
+    )
     const { contractCard } = useAssetInfoCards(assetDetail)
 
     expect(() => contractCard.value).not.toThrow()

@@ -95,7 +95,9 @@ describe('useRecycleAssetDetailCards', () => {
   it('D4: detail.asset.contract 无 contract_amount 时不渲染金额行且不抛错', () => {
     const data = ref(createFullData())
     // D4 Brief：资产上下文合同剥离财务字段后 contract_amount 为 undefined
-    ;(data.value.detail as unknown as { asset: { asset_contract: Record<string, unknown> } }).asset.asset_contract = {
+    ;(
+      data.value.detail as unknown as { asset: { asset_contract: Record<string, unknown> } }
+    ).asset.asset_contract = {
       contract_code: 'C001',
       contract_name: '采购合同',
       supplier_name: '供应商A',
