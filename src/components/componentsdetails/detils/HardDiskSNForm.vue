@@ -150,7 +150,6 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { EditPen } from '@element-plus/icons-vue'
-import { isAxiosError } from 'axios'
 import { useAssetStore } from '@/stores/assetStore'
 import {
   useHardDiskSnStore,
@@ -163,6 +162,7 @@ import { HardDiskStatus } from '@/types/harddisksn'
 import type { AssetDetail } from '@/types/asset'
 import type { AssetSuggestion } from '@/types/form-helpers'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { logError } from '@/utils/logger'
 
 // ===== 状态与实例 =====
@@ -350,7 +350,8 @@ const loadEditData = async (_assetCode: string, harddiskSnCode: string) => {
     originalFormData.value = JSON.parse(JSON.stringify(formData))
   } catch (error) {
     logError('components/componentsdetails/detils/HardDiskSNForm', '加载硬盘记录失败:', error)
-    ElMessage.error('加载数据失败，请刷新重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '加载数据失败，请刷新重试')
     router.back()
   } finally {
     isLoading.value = false
@@ -435,13 +436,8 @@ const submitForm = () => {
       harddiskSnStore.setRefreshFlag(true)
       router.push({ name: 'HardDiskSNDetails' })
     } catch (error: unknown) {
-      if (isAxiosError(error)) {
-        ElMessage.error(`操作失败${error.response?.data?.message || error.message}`)
-      } else if (error instanceof Error) {
-        ElMessage.error(`操作失败${error.message}`)
-      } else {
-        ElMessage.error('操作失败，请重试')
-      }
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '操作失败，请重试')
       logError('components/componentsdetails/detils/HardDiskSNForm', '硬盘序列号提交失败', error)
     }
   })

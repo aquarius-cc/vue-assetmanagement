@@ -103,7 +103,7 @@ describe('SmartListContainer', () => {
       mountContainer({})
       await vi.waitFor(() => expect(hoisted.messageError).toHaveBeenCalledTimes(1))
 
-      expect(hoisted.messageError).toHaveBeenCalledWith('自定义加载失败')
+      expect(hoisted.messageError).toHaveBeenCalledWith('network down')
       expect(hoisted.logError).toHaveBeenCalledWith(
         'components/commoncomponents/SmartListContainer',
         '[SmartListContainer] 初始加载失败:',
@@ -112,11 +112,22 @@ describe('SmartListContainer', () => {
     })
 
     it('falls back to a generic message when storeConfig.messages is absent', async () => {
-      hoisted.getList.mockRejectedValueOnce(new Error('boom'))
+      // [M-RC-09] fallback 语义锚：非 Error 抛出物（无 message）两侧绿，防 fallback 链被误删
+      hoisted.getList.mockRejectedValueOnce('disk-full')
       mountContainer({ storeConfig: { store: { getList: hoisted.getList } } })
       await vi.waitFor(() => expect(hoisted.messageError).toHaveBeenCalledTimes(1))
 
       expect(hoisted.messageError).toHaveBeenCalledWith('加载数据失败')
+    })
+
+    it('does not double-toast AxiosError (interceptor already notified)', async () => {
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，组件层不再直弹（修复前 1 弹 → 红）
+      const failure = Object.assign(new Error('intercepted'), { isAxiosError: true })
+      hoisted.getList.mockRejectedValueOnce(failure)
+      mountContainer({})
+      await vi.waitFor(() => expect(hoisted.logError).toHaveBeenCalled())
+
+      expect(hoisted.messageError).not.toHaveBeenCalled()
     })
   })
 

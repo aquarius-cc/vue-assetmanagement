@@ -46,8 +46,8 @@
 
 <script setup lang="ts" generic="T extends object">
 import { computed, onMounted, ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import { usePaginationSearch, type PaginationSearchConfig } from '@/composables/usePaginationSearch'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { logError, logWarn } from '@/utils/logger'
 
 // ======================================================================
@@ -171,7 +171,8 @@ onMounted(async () => {
       '[SmartListContainer] 初始加载失败:',
       error,
     )
-    ElMessage.error(props.storeConfig.messages?.loadFailed ?? '加载数据失败')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, props.storeConfig.messages?.loadFailed ?? '加载数据失败')
     hasLoaded.value = false
   }
 })

@@ -93,12 +93,12 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Edit, Plus } from '@element-plus/icons-vue'
-import { isAxiosError } from 'axios'
 import type { FormInstance, FormRules } from 'element-plus'
 
 // Stores
 import { useStorageStore } from '@/stores/storageStore'
 import type { StorageCreateForm } from '@/types/storage'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { logError } from '@/utils/logger'
 
 // ==================== 路由与状态 ====================
@@ -158,7 +158,8 @@ const loadEditData = async (code: string) => {
     formData.id = detail.id
   } catch (error) {
     logError('components/componentsdetails/detils/StorageForm', '加载仓库数据失败:', error)
-    ElMessage.error('加载数据失败，请重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '加载数据失败，请重试')
     router.push({ name: 'StorageDetails' })
   }
 }
@@ -193,12 +194,8 @@ const submitForm = () => {
       // 跳转回列表页
       router.push({ name: 'StorageDetails' })
     } catch (error: unknown) {
-      const msg = isAxiosError(error)
-        ? error.response?.data?.message || '操作失败'
-        : error instanceof Error
-          ? error.message
-          : '未知错误'
-      ElMessage.error(msg)
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次（消息提取收敛 getErrorMessage 单源）
+      notifyCallerError(error, '操作失败')
       logError('components/componentsdetails/detils/StorageForm', '提交失败:', error)
     }
   })

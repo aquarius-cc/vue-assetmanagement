@@ -404,7 +404,8 @@ const loadEditData = async (code: string) => {
       '加载待报废资产详情失败',
       error,
     )
-    ElMessage.error('加载数据失败，请刷新重试')
+    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+    notifyCallerError(error, '加载数据失败，请刷新重试')
     router.back()
   } finally {
     isLoading.value = false
