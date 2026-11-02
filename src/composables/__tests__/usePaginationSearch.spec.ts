@@ -740,7 +740,29 @@ describe('usePaginationSearch', () => {
 
       const { handleCurrentChange } = usePaginationSearch({ store: mockStore })
       await expect(handleCurrentChange(2)).resolves.toBeUndefined() // 修复前 rejects → 红
-      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith('加载数据失败')
+      // [M-05] 单出口后仅 1 次 toast（非 AxiosError 走 notifyCallerError，文案取 err.message）
+      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledTimes(1)
+    })
+
+    it('[M-05] 非 AxiosError：仅弹 1 次，文案取 err.message（M-RC-09 双轨契约）', async () => {
+      mockStore.getList.mockRejectedValue(new Error('boom'))
+
+      const { handleCurrentChange } = usePaginationSearch({ store: mockStore })
+      await expect(handleCurrentChange(2)).resolves.toBeUndefined()
+
+      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith('boom')
+    })
+
+    it('[M-05] AxiosError：拦截器已提示，此处 0 次弹窗', async () => {
+      mockStore.getList.mockRejectedValue(
+        Object.assign(new Error('intercepted'), { isAxiosError: true }),
+      )
+
+      const { handleCurrentChange } = usePaginationSearch({ store: mockStore })
+      await expect(handleCurrentChange(2)).resolves.toBeUndefined()
+
+      expect(vi.mocked(ElMessage.error)).not.toHaveBeenCalled()
     })
 
     it('handleSizeChange 吞掉失败', async () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 vi.mock('element-plus', () => {
   const fn = vi.fn().mockResolvedValue('confirm')
@@ -23,6 +23,10 @@ import { exportToExcel } from '@/utils/excelExporter'
 describe('useExcelExport', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   describe('exportList', () => {
@@ -182,6 +186,24 @@ describe('useExcelExport', () => {
           sheetName: '自定义Sheet',
         }),
       )
+    })
+
+    it('[OP-13] 文件名用本地时间戳（UTC 跨日不偏移）', async () => {
+      vi.useFakeTimers()
+      // TZ=Asia/Shanghai（vitest.config.ts）→ 本地 2026-11-03 07:30:00
+      // 修复前 toISOString 取到 2026-11-02（UTC），本地凌晨时段文件名日期少一天，本断言必红
+      vi.setSystemTime(new Date('2026-11-02T23:30:00Z'))
+      ;(ElMessageBox as any).mockResolvedValue('confirm')
+
+      const { exportDetail } = useExcelExport()
+      const entity = { id: 1 }
+      const columns = [{ title: 'ID', key: 'id' as keyof typeof entity }]
+      await exportDetail(entity, columns, '资产')
+
+      expect(exportToExcel).toHaveBeenCalledTimes(1)
+      const arg = vi.mocked(exportToExcel).mock.calls[0][0] as { fileName: string }
+      expect(arg.fileName).toContain('资产_2026-11-03_07-30-00')
+      expect(arg.fileName).not.toContain('2026-11-02')
     })
   })
 })

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useLostAssetStore } from '../lostAssetStore'
+import { ElMessage } from 'element-plus'
 
 // Mock依赖模块
 vi.mock('@/api/lostAsset', () => ({
@@ -144,6 +145,8 @@ describe('LostAssetStore', () => {
       await lostAssetStore.remove('lost-001')
 
       expect(lostAssetAPI.deleteLostAsset).toHaveBeenCalledWith('lost-001')
+      // [M-06] disableAutoMessage 后工厂不再自动弹「遗失资产删除成功」，调用方（详情页 composable）负责唯一提示
+      expect(ElMessage.success).not.toHaveBeenCalled()
     })
   })
 

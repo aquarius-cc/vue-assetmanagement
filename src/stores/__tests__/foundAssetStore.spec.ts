@@ -104,7 +104,8 @@ describe('FoundAssetStore', () => {
 
       await store.create({ asset_name: '笔记本电脑', found_date: '2026-07-09' })
 
-      expect(ElMessage.success).toHaveBeenCalledWith('找回资产创建成功')
+      // [M-06] disableAutoMessage 后工厂不再自动弹「找回资产创建成功」，调用方（表单/详情页）负责唯一提示
+      expect(ElMessage.success).not.toHaveBeenCalled()
       expect(store.list).toHaveLength(1)
       expect(store.list[0].recordcode).toBe('FA-001')
     })

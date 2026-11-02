@@ -318,7 +318,7 @@ export interface AssetQueryParams {
   page?: number
   /** 每页条数 */
   page_size?: number
-  /** 资产状态 (in_store/in_use/damaged/scrapped) */
+  /** 资产状态精确过滤，取值见 AssetCurrentStatus（完整 8 态：in_store/in_use/recycled_pending/broken/repairing/lost/damaged/scrapped） */
   asset_current_status?: string
   /** 资产类型编码 */
   asset_type?: string
@@ -361,7 +361,7 @@ export interface AssetGroupQueryParams {
   page?: number
   /** 每页条数（默认 20） */
   page_size?: number
-  /** 资产状态 (in_store/in_use/damaged/scrapped...) 精确 */
+  /** 资产状态精确过滤，取值见 AssetCurrentStatus（完整 8 态全集；分组筛选发生在聚合前的精确匹配上） */
   asset_current_status?: string
   /** 资产类型 recordcode 精确（值取 AssetType.recordcode，非 type_code） */
   asset_type_recordcode?: string

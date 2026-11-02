@@ -17,6 +17,7 @@ import { h } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { exportToExcel } from '@/utils/excelExporter'
 import type { ColumnConfig } from '@/utils/excelExporter'
+import { formatDateTimeFull } from '@/utils/Format'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
 
@@ -162,7 +163,11 @@ export function useExcelExport() {
     await exportToExcel({
       data: [entity],
       columns,
-      fileName: `${entityName}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.xlsx`,
+      // [OP-13] 本地时区时间戳做文件名：toISOString 是 UTC，本地凌晨时段日期会少一天；
+      // 复用 Format.formatDateTimeFull（M-33 单源）保留到秒防同日撞名；用字符串参数 replaceAll 规避正则
+      fileName: `${entityName}_${formatDateTimeFull(new Date().toISOString())
+        .replaceAll(' ', '_')
+        .replaceAll(':', '-')}.xlsx`,
       sheetName,
       confirmMessage: `确定要导出该${entityName}详情吗？`,
       emptyMessage: `无${entityName}数据`,

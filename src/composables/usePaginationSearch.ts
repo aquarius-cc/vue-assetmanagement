@@ -110,8 +110,8 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
     } catch (err) {
       logError('composables/usePaginationSearch', '[usePaginationSearch] Load list failed:', err)
       // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      // [M-05] 修复双 toast：原先 notifyCallerError 之后又无条件 ElMessage.error，此处收敛
       notifyCallerError(err, messages.loadFailed)
-      ElMessage.error(messages.loadFailed)
       throw err
     } finally {
       loading.value = false

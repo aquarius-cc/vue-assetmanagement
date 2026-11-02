@@ -45,6 +45,9 @@ export const useFoundAssetStore = createEntityStore<FoundAssetExtended, Paginati
       batchDelete: (codes) => foundAssetAPI.batchDeleteFoundAssets(codes),
     },
     message: ElMessage,
+    // [M-06] 调用方（FoundAssetDetails 经 useAssetLifecycleActions.handleDelete）自带「删除成功」，
+    // 禁用工厂自动弹窗，避免「找回资产删除成功」与调用方消息重复（与 recycle/damaged 对齐）
+    disableAutoMessage: true,
     enablePagination: true,
     defaultPageSize: 20,
     enableCache: false,

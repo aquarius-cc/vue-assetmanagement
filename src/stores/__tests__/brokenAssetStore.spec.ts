@@ -104,7 +104,8 @@ describe('BrokenAssetStore', () => {
 
       await store.create({ asset_name: '损坏显示器', broken_date: '2026-07-09' })
 
-      expect(ElMessage.success).toHaveBeenCalledWith('损坏资产创建成功')
+      // [M-06] disableAutoMessage 后工厂不再自动弹「损坏资产创建成功」，调用方（表单/详情页）负责唯一提示
+      expect(ElMessage.success).not.toHaveBeenCalled()
       expect(store.list).toHaveLength(1)
       expect(store.list[0].recordcode).toBe('BA-001')
     })

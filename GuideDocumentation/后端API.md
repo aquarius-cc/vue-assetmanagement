@@ -2043,7 +2043,7 @@ Authorization: Bearer {access_token}
 | damaged_asset_code | string | 是 | 资产编码 |
 | damaged_asset_storage_code | string | 是 | 仓库编码 |
 | damaged_asset_reason | string | 否 | 报废原因 |
-| damaged_asset_date | date | 否 | 申请日期 |
+| damaged_date | date | 否 | 申请日期 |
 | damaged_asset_description | string | 否 | 描述 |
 
 ---

@@ -2,7 +2,8 @@
  * @file 出库资产数据模型定义，包括出库类型、状态、表单、详情等类型
  * @module types/outasset
  * @exports
- *   - OutAssetType/OutAssetCurrentStatus: 出库类型与状态枚举
+ *   - OutAssetType: 出库类型枚举
+ *   - OutAssetCurrentStatus: 出库状态（[OP-14] 别名 re-export @/types/asset 的 AssetCurrentStatus，8 态单源）
  *     （状态映射为 @/utils/statusMapping 的 OUTASSET_STATUS_MAP,本文件不含映射）
  *   - OutAssetCreateForm/OutAssetUpdateForm/OutAssetCreateExtended: 出库资产表单接口
  *   - OutAsset/OutAssetDetail: 出库资产基础与详情接口
@@ -19,6 +20,7 @@
 import type { Employee } from '@/types/user'
 import type { ContractBrief } from '@/types/contract'
 import type { PaginatedResponse } from '@/types/common'
+import type { AssetCurrentStatus } from '@/types/asset'
 
 // ==================== 枚举类型定义 ====================
 
@@ -35,7 +37,7 @@ export enum OutAssetType {
 }
 
 /**
- * 出库资产状态枚举 * 对齐后端 outasset_current_status 语义（read_only，直取关联资产的 8 态,
+ * 出库资产状态 * 对齐后端 outasset_current_status 语义（read_only，直取关联资产的 8 态,
  * 见 OutAssetCreateForm 注释 HR-02）:
  * - in_store: 在库
  * - in_use: 在用
@@ -45,17 +47,12 @@ export enum OutAssetType {
  * - lost: 已遗失
  * - damaged: 待报废
  * - scrapped: 已报废
+ *
+ * [OP-14/DR-1] 原 OutAssetCurrentStatus 枚举与 AssetCurrentStatus（@/types/asset）8 值完全重复，
+ * 且无任何消费者，收敛为别名 re-export 消除第二份 8 态真值源（导出名保留，状态映射见
+ * @/utils/statusMapping 的 OUTASSET_STATUS_MAP，本文件不含映射）。
  */
-export enum OutAssetCurrentStatus {
-  IN_STORE = 'in_store',
-  IN_USE = 'in_use',
-  RECYCLED_PENDING = 'recycled_pending',
-  BROKEN = 'broken',
-  REPAIRING = 'repairing',
-  LOST = 'lost',
-  DAMAGED = 'damaged',
-  SCRAPPED = 'scrapped',
-}
+export { AssetCurrentStatus as OutAssetCurrentStatus } from '@/types/asset'
 
 // ==================== 基础接口定义 ====================
 
@@ -122,8 +119,8 @@ export interface OutAsset extends OutAssetCreateForm {
   outasset_applicant_name?: string
   outasset_manager_name?: string
   outasset_manager_jobcode: string | null
-  /** 出库资产状态*/
-  outasset_current_status: string | null
+  /** 出库资产状态（后端 read_only，直取关联资产 8 态；取值见 AssetCurrentStatus [OP-14]）*/
+  outasset_current_status: AssetCurrentStatus | null
   /** 归还日期 */
   return_date: string | null
   /** 出库类型 */
