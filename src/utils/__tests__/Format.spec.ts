@@ -183,6 +183,19 @@ describe('Format', () => {
       expect(result.contract_type).toBeUndefined()
     })
 
+    it('D4: contract_amount undefined → undefined（资产上下文剥离后不产 NaN）', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const result = contractiInfoFormate({
+        contract_code: 'C002',
+        contract_amount: undefined,
+        amount_paid: undefined,
+      } as any)
+      expect(result.contract_amount).toBeUndefined()
+      expect(result.amount_paid).toBe(0)
+      expect(String(result.contract_amount)).not.toContain('NaN')
+      warnSpy.mockRestore()
+    })
+
     it('works with vue ref input', async () => {
       const { ref } = await import('vue')
       const input = ref({

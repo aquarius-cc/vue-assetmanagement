@@ -167,15 +167,12 @@ const contractiInfoFormate = (
     contract_start_date: formatDate(rawData.contract_start_date),
     initial_check_date: formatDate(rawData.initial_check_date),
     final_check_date: formatDate(rawData.final_check_date),
-    // 数字字段处理（兼容 undefined，避免 Number(undefined) 转为 NaN）
-    contract_amount: rawData.contract_amount !== null ? Number(rawData.contract_amount) : undefined,
+    // 数字字段处理（兼容 undefined/null，避免 Number(undefined) 转为 NaN）
+    contract_amount: rawData.contract_amount != null ? Number(rawData.contract_amount) : undefined,
     contract_warranty_period:
-      rawData.contract_warranty_period !== null
-        ? Number(rawData.contract_warranty_period)
-        : undefined,
-    settlemented_price:
-      rawData.settlemented_price !== null ? Number(rawData.settlemented_price) : null,
-    amount_paid: rawData.amount_paid !== null ? Number(rawData.amount_paid) : 0,
+      rawData.contract_warranty_period != null ? Number(rawData.contract_warranty_period) : undefined,
+    settlemented_price: rawData.settlemented_price != null ? Number(rawData.settlemented_price) : null,
+    amount_paid: rawData.amount_paid != null ? Number(rawData.amount_paid) : 0,
     // 字符串字段处理（兼容 undefined，避免 String(undefined) 转为 "undefined"）
     contract_type:
       rawData.contract_type !== null ? String(rawData.contract_type).trim() : undefined,

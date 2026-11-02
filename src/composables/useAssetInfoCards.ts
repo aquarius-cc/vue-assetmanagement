@@ -86,12 +86,17 @@ export function useAssetInfoCards(assetDetail: Ref<AssetDetail | null>) {
           { label: '供应商', value: contract?.supplier_name },
         ],
         [
-          {
-            label: '合同金额',
-            value: contract?.contract_amount,
-            isPrice: true,
-            formatter: (v: unknown) => `¥${formatNumber(v as string | number)}`,
-          },
+          // D4：资产上下文合同为 Brief 白名单，金额字段可选——有值才出（避免 NaN）
+          ...(contract?.contract_amount != null
+            ? [
+                {
+                  label: '合同金额',
+                  value: contract.contract_amount,
+                  isPrice: true,
+                  formatter: (v: unknown) => `¥${formatNumber(v as string | number)}`,
+                },
+              ]
+            : []),
           {
             label: '签订日期',
             value: contract?.contract_start_date,

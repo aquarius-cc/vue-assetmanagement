@@ -21,7 +21,7 @@
 
 import type { AssetType } from '@/types/assettype'
 import type { EmployeeExtended } from '@/types/user'
-import type { Contract } from '@/types/contract'
+import type { ContractBrief } from '@/types/contract'
 import type { Storage } from '@/types/storage'
 import type { HardDiskSN } from '@/types/harddisksn'
 import type { PaginatedResponse } from '@/types/common'
@@ -260,8 +260,8 @@ export interface Asset {
 export interface AssetDetail extends Asset {
   /** 资产类型完整信息（外键关联对象） */
   asset_type?: AssetType
-  /** 关联合同完整信息（外键关联对象） */
-  asset_contract?: Contract
+  /** 关联合同摘要信息（外键关联对象；D4 白名单，财务字段剥离后可选） */
+  asset_contract?: ContractBrief
   /** 存储仓库完整信息（外键关联对象） */
   asset_storage?: Storage
   /** 入库人完整信息（外键关联对象） */

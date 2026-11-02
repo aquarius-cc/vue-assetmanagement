@@ -146,6 +146,18 @@ describe('useAssetInfoCards', () => {
     expect(typeField?.formatter?.('purchase')).toBe('采购合同')
   })
 
+  it('D4: contract_amount 缺失时不渲染金额行且不抛错', () => {
+    const base = createMockAsset()
+    const briefContract = { ...(base.asset_contract as object), contract_amount: undefined }
+    const assetDetail = ref(createMockAsset({ asset_contract: briefContract }) as unknown as AssetDetail)
+    const { contractCard } = useAssetInfoCards(assetDetail)
+
+    expect(() => contractCard.value).not.toThrow()
+    const labels = contractCard.value.fields.flat().map((f) => f.label)
+    expect(labels).not.toContain('合同金额')
+    expect(labels).toContain('合同状态')
+  })
+
   it('should show entryPersonCard only when asset_entry_person exists', () => {
     const withPerson = ref(createMockAsset())
     const { entryPersonCard: cardWith } = useAssetInfoCards(withPerson)

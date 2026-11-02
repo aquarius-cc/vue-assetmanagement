@@ -92,6 +92,22 @@ describe('useOutAssetDetailCards', () => {
     expect(result.managerInfoConfig).toBeDefined()
   })
 
+  it('D4: contract 缺失 contract_amount 时合同总价显示 N/A 且不抛错', () => {
+    const data = ref(createFullData())
+    // D4 Brief：出库详情合同剥离财务字段后 contract_amount 为 undefined（defaultValue N/A 保留）
+    ;(data.value.detail as unknown as { contract: Record<string, unknown> }).contract = {
+      contract_code: 'C001',
+      contract_name: '采购合同',
+      supplier_name: '供应商A',
+    }
+    const result = useOutAssetDetailCards(data)
+
+    expect(() => result.contractInfoConfig.value).not.toThrow()
+    const labels = result.contractInfoConfig.value.fields.flat().map((f) => f.label)
+    expect(labels).toContain('合同总价')
+    expect(labels).not.toContain('NaN')
+  })
+
   describe('basicInfoConfig', () => {
     it('shows correct title and icon', () => {
       const data = ref(createFullData())

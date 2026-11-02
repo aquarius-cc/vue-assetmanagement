@@ -17,7 +17,7 @@
  */
 
 import type { Employee } from '@/types/user'
-import type { Contract } from '@/types/contract'
+import type { ContractBrief } from '@/types/contract'
 import type { PaginatedResponse } from '@/types/common'
 
 // ==================== 枚举类型定义 ====================
@@ -152,8 +152,8 @@ export interface OutAssetDetail extends OutAsset {
   outasset_manager?: Employee
   /** 出库保管人工号*/
   manager_jobcode?: string | null
-  /** 关联合同完整信息 (外键关联对象) */
-  contract?: Contract
+  /** 关联合同摘要信息 (外键关联对象；D4 白名单，财务字段剥离后可选) */
+  contract?: ContractBrief
   /** 出库使用地点 */
   using_location?: string | null
   asset_specification?: string | null

@@ -321,3 +321,41 @@ export interface ValidatedContractData {
   /** 验证错误信息 */
   validationError: string
 }
+
+/**
+ * 合同摘要（BF-170 批次 3 D4 白名单，资产上下文嵌套专用）
+ *
+ * 后端 ContractBriefSerializer 剥离合同财务域字段，资产上下文
+ * （AssetDetail.asset_contract / OutAssetDetail.contract）不再下发；
+ * 四个金额字段保留为可选（兼容豁免端点 contract_by_asset 的全量响应）。
+ * 纯合同域页面（contracts/）继续使用完整 Contract 类型。
+ */
+export type ContractBrief = Omit<
+  Contract,
+  | 'receive_check_date'
+  | 'project_change'
+  | 'project_change_type'
+  | 'project_change_description'
+  | 'paid_record'
+  | 'has_payment'
+  | 'created_at'
+  | 'updated_at'
+  | 'version'
+  | 'settlemented_price'
+  | 'amount_paid'
+  | 'amount_unpaid'
+  | 'contract_amount'
+> & {
+  /** 合同金额（D4：资产上下文剥离后可选，有值才渲染金额行） */
+  contract_amount?: number | string
+  /** 结算金额（可选） */
+  settlemented_price?: number | string
+  /** 已支付金额（可选） */
+  amount_paid?: number | string
+  /** 未支付金额（可选） */
+  amount_unpaid?: number | string
+  /** 初步验收日期（Brief 白名单外，存在才渲染） */
+  initial_check_date?: string | null
+  /** 最终验收日期（Brief 白名单外，存在才渲染） */
+  final_check_date?: string | null
+}

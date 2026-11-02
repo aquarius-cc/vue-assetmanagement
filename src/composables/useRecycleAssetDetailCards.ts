@@ -14,7 +14,7 @@ import { computed, type Ref } from 'vue'
 import type { InfoCardConfig } from '@/types/info-card'
 import type { RecycleAssetExtended } from '@/types/recycleasset'
 import type { EmployeeExtended } from '@/types/user'
-import type { Contract } from '@/types/contract'
+import type { Contract, ContractBrief } from '@/types/contract'
 import type { Storage } from '@/types/storage'
 import { formatDate } from '@/utils/Format'
 // import { userAPI } from '@/api'
@@ -101,16 +101,18 @@ export function useRecycleAssetDetailCards(data: Ref<RecycleAssetDetailCardData>
     }
   })
 
-  /** 合同信息卡片左列字段（编码/名称/金额/供应商） */
-  const buildContractLeftColumn = (c: Contract | null | undefined) => [
+  /** 合同信息卡片左列字段（编码/名称/金额/供应商；D4 金额字段可选，有值才出） */
+  const buildContractLeftColumn = (c: ContractBrief | null | undefined) => [
     { label: '合同编码', value: c?.contract_code, defaultValue: 'N/A' },
     { label: '合同名称', value: c?.contract_name, defaultValue: 'N/A' },
-    { label: '合同金额', value: c?.contract_amount, isPrice: true },
+    ...(c?.contract_amount != null
+      ? [{ label: '合同金额', value: c.contract_amount, isPrice: true }]
+      : []),
     { label: '合同供应商', value: c?.supplier_name, defaultValue: 'N/A' },
   ]
 
   /** 合同信息卡片右列字段（签订日期/保修期/初验日期/终验日期） */
-  const buildContractRightColumn = (c: Contract | null | undefined) => [
+  const buildContractRightColumn = (c: ContractBrief | null | undefined) => [
     {
       label: '签订日期',
       value: c?.contract_start_date,
