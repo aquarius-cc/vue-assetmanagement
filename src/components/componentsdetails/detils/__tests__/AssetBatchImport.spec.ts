@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { ref } from 'vue'
 import AssetBatchImport from '../AssetBatchImport.vue'
 import type { AssetExcelRow } from '@/types/batch-import'
+import { usePreviewPagination, PREVIEW_PAGE_SIZE } from '@/composables/usePreviewPagination'
 
 const h = vi.hoisted(() => ({
   mockGo: vi.fn(),
@@ -283,5 +285,37 @@ describe('AssetBatchImport 行/条双计数（W-5）', () => {
     await vi.waitFor(() => expect(h.mockSuccess).toHaveBeenCalled())
 
     expect(h.mockSuccess).toHaveBeenCalledWith('全部导入成功！成功 2 行，生成 2 条资产')
+  })
+})
+
+// ======================== usePreviewPagination（OP-07 并入锚，本组件预览分页共用源） ========================
+describe('usePreviewPagination', () => {
+  it('页大小固定 10，翻页切片/越界页为空', () => {
+    const rows = ref(Array.from({ length: 23 }, (_, i) => i))
+    const p = usePreviewPagination(rows)
+    expect(p.previewPageSize).toBe(10)
+    expect(PREVIEW_PAGE_SIZE).toBe(10)
+    expect(p.paginatedPreviewData.value).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    p.handlePreviewPageChange(3)
+    expect(p.paginatedPreviewData.value).toEqual([20, 21, 22])
+    p.handlePreviewPageChange(4)
+    expect(p.paginatedPreviewData.value).toEqual([])
+  })
+
+  it('getter 输入同样生效；解析新文件后 resetPreviewPage 回第一页', () => {
+    const list = Array.from({ length: 15 }, (_, i) => i)
+    const p = usePreviewPagination(() => list)
+    p.handlePreviewPageChange(2)
+    expect(p.paginatedPreviewData.value).toEqual([10, 11, 12, 13, 14])
+    p.resetPreviewPage()
+    expect(p.paginatedPreviewData.value).toEqual(list.slice(0, 10))
+  })
+
+  it('rows 变化后切片随源更新（响应式）', () => {
+    const rows = ref([1])
+    const p = usePreviewPagination(rows)
+    expect(p.paginatedPreviewData.value).toEqual([1])
+    rows.value = [1, 2, 3]
+    expect(p.paginatedPreviewData.value).toEqual([1, 2, 3])
   })
 })

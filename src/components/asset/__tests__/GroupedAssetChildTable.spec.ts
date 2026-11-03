@@ -10,10 +10,12 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { mount } from '@vue/test-utils'
+import { defineComponent, h, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GroupedAssetChildTable from '../GroupedAssetChildTable.vue'
 import type { TableColumn } from '@/types/list'
 import type { AssetDetail } from '@/types/asset'
+import { useContainerWidth } from '@/composables/useContainerWidth'
 
 const ElTableStub = {
   name: 'ElTable',
@@ -213,5 +215,70 @@ describe('GroupedAssetChildTable · 固定格不透底源码锁（BF-083 透底�
   it('表头禁回 transparent 且 font-weight:600 保留', () => {
     expect(src).not.toMatch(/\.el-table__header th\)[^}]*background:\s*transparent/)
     expect(src).toMatch(/\.el-table__header th\)[^}]*font-weight:\s*600/)
+  })
+})
+
+// ======================== useContainerWidth（OP-07 并入锚，两消费方共用判据源） ========================
+describe('useContainerWidth', () => {
+  let roCallback: ResizeObserverCallback | null = null
+  let observeSpy: ReturnType<typeof vi.fn> | null = null
+  let disconnectSpy: ReturnType<typeof vi.fn> | null = null
+
+  class FakeRO {
+    constructor(callback: ResizeObserverCallback) {
+      roCallback = callback
+      observeSpy = vi.fn()
+      disconnectSpy = vi.fn()
+    }
+    observe(el: Element): void {
+      observeSpy?.(el)
+    }
+    unobserve(): void {}
+    disconnect(): void {
+      disconnectSpy?.()
+    }
+  }
+
+  const mountProbe = () => {
+    const Probe = defineComponent({
+      setup() {
+        const el = ref<HTMLElement | null>(null)
+        const { containerWidth } = useContainerWidth(el)
+        return () => h('div', { ref: el, 'data-width': String(containerWidth.value) }, 'probe')
+      },
+    })
+    return mount(Probe)
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    roCallback = null
+    observeSpy = null
+    disconnectSpy = null
+  })
+
+  it('RO 缺失（jsdom）时保持初始 +∞ 判定', () => {
+    const wrapper = mountProbe()
+    expect(wrapper.find('[data-width]').attributes('data-width')).toBe('Infinity')
+  })
+
+  it('RO 存在：observe 目标元素，回调注入 contentRect.width 驱动降级判据', async () => {
+    vi.stubGlobal('ResizeObserver', FakeRO)
+    const wrapper = mountProbe()
+    expect(observeSpy, '挂载即注册观察').not.toHaveBeenCalledWith(null as unknown as Element)
+    expect(observeSpy).toHaveBeenCalledTimes(1)
+    roCallback?.(
+      [{ contentRect: { width: 640 } } as unknown as ResizeObserverEntry],
+      {} as ResizeObserver,
+    )
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-width]').attributes('data-width')).toBe('640')
+  })
+
+  it('unmount 触发 disconnect 清理观察器', () => {
+    vi.stubGlobal('ResizeObserver', FakeRO)
+    const wrapper = mountProbe()
+    wrapper.unmount()
+    expect(disconnectSpy).toHaveBeenCalled()
   })
 })

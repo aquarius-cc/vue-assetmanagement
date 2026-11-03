@@ -11,6 +11,95 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 
+// ======================== 全局 mock（OP-08 提升至顶层） ========================
+// 仅服务 M-12/M-19 request.ts 缓存契约（axios 替身 + request.ts 依赖链）；
+// vitest 对 vi.mock/vi.hoisted 在 transform 时即强制按顶层执行（嵌套写法自
+// vitest 4.1.11 起出 warning，未来版本将报错 → CT-5 假红），此处显式化零语义变更。
+// 其余 describe 经 describe 内 vi.doMock 拦 API 层（依赖 resetModules 时序），原位不动。
+const mocks = vi.hoisted(() => ({
+  instanceGet: vi.fn(),
+  instancePost: vi.fn(),
+}))
+
+const handlers = vi.hoisted(() => ({
+  resErr: null as ((e: unknown) => unknown) | null,
+  reqOk: null as
+    | ((c: { method?: string; url?: string; headers: Record<string, string> }) => {
+        headers: Record<string, string>
+      })
+    | null,
+}))
+
+vi.mock('axios', () => {
+  const mockInstance = Object.assign(
+    vi.fn((config: { method?: string }) => {
+      const m = config?.method?.toLowerCase()
+      if (m === 'get') return mocks.instanceGet(config)
+      if (m === 'post') return mocks.instancePost(config)
+      return Promise.resolve({ data: {} })
+    }),
+    {
+      interceptors: {
+        request: {
+          use: vi.fn((ok: unknown) => {
+            handlers.reqOk = ok as typeof handlers.reqOk
+          }),
+          eject: vi.fn(),
+        },
+        response: {
+          use: vi.fn((_ok: unknown, err: unknown) => {
+            handlers.resErr = err as typeof handlers.resErr
+          }),
+          eject: vi.fn(),
+        },
+      },
+      get: mocks.instanceGet,
+      post: mocks.instancePost,
+    },
+  )
+  return {
+    default: { create: vi.fn(() => mockInstance) },
+    isAxiosError: vi.fn((e: unknown) => (e as { isAxiosError?: boolean })?.isAxiosError === true),
+  }
+})
+
+vi.mock('element-plus', () => ({
+  ElMessage: { error: vi.fn(), success: vi.fn() },
+}))
+
+vi.mock('@/utils/tokenObfuscator', () => ({
+  decodeToken: vi.fn(),
+  clearAllAuthTokens: vi.fn(),
+}))
+
+vi.mock('@/utils/tokenRefresh', () => ({
+  refreshAccessToken: vi.fn(),
+  MissingRefreshTokenError: class MissingRefreshTokenError extends Error {},
+}))
+
+vi.mock('@/utils/requestErrors', () => ({
+  isTransientError: vi.fn(() => false),
+}))
+
+vi.mock('@/utils/device', () => ({
+  detectAuthChannel: vi.fn(() => 'cookie'),
+}))
+
+vi.mock('@/utils/csrf', () => ({
+  getCsrfToken: vi.fn(() => 'csrf-token'),
+}))
+
+vi.mock('@/utils/traceId', () => ({
+  generateTraceId: vi.fn(() => 'trace-1'),
+}))
+
+vi.mock('@/api/config', () => ({
+  BASE_URL: '/api',
+  TIMEOUT: 5000,
+  MAX_REFRESH_RETRY_COUNT: 2,
+  EXPORT_TIMEOUT: 30000,
+}))
+
 // ======================== M-14 usePagedList seq 守卫 ========================
 
 describe('M-14 usePagedList seq 守卫', () => {
@@ -222,90 +311,7 @@ describe('M-12/M-19 request.ts 缓存契约', () => {
   let get: typeof import('@/api/request').get
   let clearCacheByPattern: typeof import('@/api/request').clearCacheByPattern
 
-  const mocks = vi.hoisted(() => ({
-    instanceGet: vi.fn(),
-    instancePost: vi.fn(),
-  }))
-
-  const handlers = vi.hoisted(() => ({
-    resErr: null as ((e: unknown) => unknown) | null,
-    reqOk: null as
-      | ((c: { method?: string; url?: string; headers: Record<string, string> }) => {
-          headers: Record<string, string>
-        })
-      | null,
-  }))
-
-  vi.mock('axios', () => {
-    const mockInstance = Object.assign(
-      vi.fn((config: { method?: string }) => {
-        const m = config?.method?.toLowerCase()
-        if (m === 'get') return mocks.instanceGet(config)
-        if (m === 'post') return mocks.instancePost(config)
-        return Promise.resolve({ data: {} })
-      }),
-      {
-        interceptors: {
-          request: {
-            use: vi.fn((ok: unknown) => {
-              handlers.reqOk = ok as typeof handlers.reqOk
-            }),
-            eject: vi.fn(),
-          },
-          response: {
-            use: vi.fn((_ok: unknown, err: unknown) => {
-              handlers.resErr = err as typeof handlers.resErr
-            }),
-            eject: vi.fn(),
-          },
-        },
-        get: mocks.instanceGet,
-        post: mocks.instancePost,
-      },
-    )
-    return {
-      default: { create: vi.fn(() => mockInstance) },
-      isAxiosError: vi.fn((e: unknown) => (e as { isAxiosError?: boolean })?.isAxiosError === true),
-    }
-  })
-
-  vi.mock('element-plus', () => ({
-    ElMessage: { error: vi.fn(), success: vi.fn() },
-  }))
-
-  vi.mock('@/utils/tokenObfuscator', () => ({
-    decodeToken: vi.fn(),
-    clearAllAuthTokens: vi.fn(),
-  }))
-
-  vi.mock('@/utils/tokenRefresh', () => ({
-    refreshAccessToken: vi.fn(),
-    MissingRefreshTokenError: class MissingRefreshTokenError extends Error {},
-  }))
-
-  vi.mock('@/utils/requestErrors', () => ({
-    isTransientError: vi.fn(() => false),
-  }))
-
-  vi.mock('@/utils/device', () => ({
-    detectAuthChannel: vi.fn(() => 'cookie'),
-  }))
-
-  vi.mock('@/utils/csrf', () => ({
-    getCsrfToken: vi.fn(() => 'csrf-token'),
-  }))
-
-  vi.mock('@/utils/traceId', () => ({
-    generateTraceId: vi.fn(() => 'trace-1'),
-  }))
-
-  vi.mock('@/api/config', () => ({
-    BASE_URL: '/api',
-    TIMEOUT: 5000,
-    MAX_REFRESH_RETRY_COUNT: 2,
-    EXPORT_TIMEOUT: 30000,
-  }))
-
+  // 全局 axios mock / vi.hoisted 已提升至文件顶层（OP-08，向后兼容零语义变更）
   beforeEach(async () => {
     vi.resetModules()
     mocks.instanceGet.mockReset()

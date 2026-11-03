@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const { mockDashboardStore, mockAuthInfoContainer, mockAuthLogout } = vi.hoisted(() => {
   const mockAuthInfoContainer: { current: unknown } = { current: null }
@@ -33,6 +33,7 @@ vi.mock('element-plus', () => ({
 }))
 
 import { useDashboardPage } from '../useDashboardPage'
+import { useDashboardUser, LOGIN_START_TIME_KEY } from '../useDashboardUser'
 import { ElMessage } from 'element-plus'
 
 const mockElMessageInfo = vi.mocked(ElMessage.info)
@@ -236,5 +237,60 @@ describe('useDashboardPage', () => {
       expect(mockAuthLogout).toHaveBeenCalledTimes(1)
       expect(reloadSpy).not.toHaveBeenCalled()
     })
+  })
+})
+
+// ======================== useDashboardUser（OP-07 并入锚，Dashboard 用户会话共用源） ========================
+describe('useDashboardUser', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockAuthInfoContainer.current = null
+    vi.mocked(mockAuthLogout).mockResolvedValue()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+  it('authInfo：无用户默认文案 / 有用户映射 / 用户名空回退', () => {
+    mockAuthInfoContainer.current = null
+    expect(useDashboardUser().authInfo.value).toEqual({
+      real_name: '暂无用户',
+      auth_name: '暂无管理员用户名',
+    })
+    mockAuthInfoContainer.current = { auth_username: 'root', isactive: true }
+    expect(useDashboardUser().authInfo.value).toEqual({
+      real_name: 'root',
+      auth_name: 'root',
+      isactive: true,
+    })
+    mockAuthInfoContainer.current = { auth_username: '', isactive: false }
+    expect(useDashboardUser().authInfo.value).toEqual({
+      real_name: '暂无用户',
+      auth_name: '暂无管理员用户名',
+      isactive: false,
+    })
+  })
+
+  it('logout 清理 LOGIN_START_TIME_KEY 后经 store 登出并 reload', async () => {
+    stubLocationReload()
+    const removeSpy = vi.spyOn(sessionStorage, 'removeItem')
+    await useDashboardUser().logout()
+    expect(removeSpy).toHaveBeenCalledWith(LOGIN_START_TIME_KEY)
+    expect(mockAuthLogout).toHaveBeenCalledTimes(1)
+  })
+
+  it('logout 失败：logError 落痕且仍 reload', async () => {
+    stubLocationReload()
+    mockAuthInfoContainer.current = null
+    const removeSpy = vi.spyOn(sessionStorage, 'removeItem').mockImplementation(() => {})
+    sessionStorage.setItem(LOGIN_START_TIME_KEY, 't')
+    vi.mocked(mockAuthLogout).mockRejectedValueOnce(new Error('net'))
+    const logSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await useDashboardUser().logout()
+
+    expect(removeSpy).toHaveBeenCalledWith(LOGIN_START_TIME_KEY)
+    expect(logSpy).toHaveBeenCalled()
+    logSpy.mockRestore()
   })
 })
