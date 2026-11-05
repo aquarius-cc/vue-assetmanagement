@@ -17,7 +17,7 @@
  *   - api/storage: 仓库 API 接口
  *   - stores/createEntityStore: 实体 Store 工厂
  */
-import { createEntityStore } from '@/stores/createEntityStore'
+import { createEntityStore, withPaginationDefaults } from '@/stores/createEntityStore'
 import { storageAPI } from '@/api/storage'
 import type { Storage, StorageCreateForm, StorageUpdateForm } from '@/types/storage'
 import { ElMessage } from 'element-plus'
@@ -47,10 +47,7 @@ export const useStorageStore = createEntityStore<Storage, PaginationQuery>('stor
   displayName: '仓库',
   api: {
     getList: async (params?: PaginationQuery) => {
-      const safeParams: PaginationQuery = params || {
-        page: 1,
-        page_size: 10,
-      }
+      const safeParams = withPaginationDefaults(params)
       const response = await storageAPI.getStorages(safeParams)
       return {
         count: response.count,

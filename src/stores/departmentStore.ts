@@ -22,7 +22,7 @@
  *   - types/department: 部门相关类型定义
  *   - types/user: 员工类型定义
  */
-import { createEntityStore } from '@/stores/createEntityStore'
+import { createEntityStore, withPaginationDefaults } from '@/stores/createEntityStore'
 import { departmentAPI } from '@/api/department'
 import type {
   Department,
@@ -96,10 +96,7 @@ export const useDepartmentStore = createEntityStore<Department, PaginationQuery>
   displayName: '部门',
   api: {
     getList: async (params?: PaginationQuery) => {
-      const safeParams: PaginationQuery = params || {
-        page: 1,
-        page_size: 10,
-      }
+      const safeParams = withPaginationDefaults(params)
       const response = await departmentAPI.getDepartmentList(safeParams)
       return {
         count: response.count,

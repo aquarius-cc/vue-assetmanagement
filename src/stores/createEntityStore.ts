@@ -37,6 +37,13 @@ import type {
   BatchDeleteResult,
 } from './entityStoreTypes'
 import { logError, logWarn } from '@/utils/logger'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
+
+/** 列表请求参数兜底（M-20，替代 19 处 store 内联 `{ page: 1, page_size: N }` 字面量，DR-1）：
+ *  仅在调用方完全未传参时生效；传入参数（含空对象）原样返回 */
+export function withPaginationDefaults(params?: PaginationQuery): PaginationQuery {
+  return params ?? { page: 1, page_size: DEFAULT_PAGE_SIZE }
+}
 
 // 重新导出类型，保持向后兼容（38 个消费者文件无需修改导入路径）
 export type {
@@ -75,7 +82,7 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
       debounceDelay = 300,
       //新增配置
       enablePagination = true, //默认开启分页
-      defaultPageSize = 20, //默认每页20条
+      defaultPageSize = DEFAULT_PAGE_SIZE,
     } = config
 
     const cache = getCache(storeId)

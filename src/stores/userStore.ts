@@ -19,7 +19,7 @@
  *   - types/user: 员工相关类型定义
  */
 import { ref, type Ref } from 'vue'
-import { createEntityStore } from '@/stores/createEntityStore'
+import { createEntityStore, withPaginationDefaults } from '@/stores/createEntityStore'
 import { userAPI } from '@/api/user'
 import type {
   EmployeeExtended,
@@ -197,10 +197,7 @@ const baseUserStoreDef = createEntityStore<EmployeeExtended, PaginationQuery>('u
   displayName: '员工',
   api: {
     getList: async (params?: PaginationQuery) => {
-      const safeParams: PaginationQuery = params || {
-        page: 1,
-        page_size: 20,
-      }
+      const safeParams = withPaginationDefaults(params)
       const response = await userAPI.getUserList(safeParams)
       return {
         count: response.count,

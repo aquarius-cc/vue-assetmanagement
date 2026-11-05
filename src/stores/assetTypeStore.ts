@@ -14,7 +14,7 @@
  *   - api/assetType: 资产类型 API 接口
  *   - stores/createEntityStore: 实体 Store 工厂
  */
-import { createEntityStore } from '@/stores/createEntityStore'
+import { createEntityStore, withPaginationDefaults } from '@/stores/createEntityStore'
 import { assetTypeAPI } from '@/api/assetType'
 import type { AssetTypeBatchCreateResult } from '@/api/assetType'
 import type { AssetType, AssetTypeCreateForm, AssetTypeUpdateForm } from '@/types/assettype'
@@ -32,10 +32,7 @@ export const useAssetTypeStore = createEntityStore<AssetType, PaginationQuery>('
   displayName: '资产类型',
   api: {
     getList: async (params?: PaginationQuery) => {
-      const safeParams: PaginationQuery = params || {
-        page: 1,
-        page_size: 10,
-      }
+      const safeParams = withPaginationDefaults(params)
       const response = await assetTypeAPI.getAssetTypes(safeParams)
       return {
         count: response.count,

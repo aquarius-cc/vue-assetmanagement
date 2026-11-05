@@ -11,7 +11,7 @@
  *   - api/wasteAsset: 报废资产 API 接口
  *   - stores/createEntityStore: 实体 Store 工厂
  */
-import { createEntityStore } from '@/stores/createEntityStore'
+import { createEntityStore, withPaginationDefaults } from '@/stores/createEntityStore'
 import { wasteAssetAPI } from '@/api/wasteAsset'
 import type { WasteAsset, WasteAssetCreateForm, WasteAssetUpdateForm } from '@/types/wasteasset'
 import { ElMessage } from 'element-plus'
@@ -27,10 +27,7 @@ export const useWasteAssetStore = createEntityStore<WasteAsset, PaginationQuery>
   displayName: '已报废资产',
   api: {
     getList: async (params?: PaginationQuery) => {
-      const safeParams: PaginationQuery = params || {
-        page: 1,
-        page_size: 10,
-      }
+      const safeParams = withPaginationDefaults(params)
       const response = await wasteAssetAPI.getWasteAssets(safeParams)
       return {
         count: response.count,

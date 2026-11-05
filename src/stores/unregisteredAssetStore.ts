@@ -13,7 +13,7 @@
  *   - api/unregisteredAsset: 未登记资产 API 接口
  *   - stores/createEntityStore: 实体 Store 工厂
  */
-import { createEntityStore } from '@/stores/createEntityStore'
+import { createEntityStore, withPaginationDefaults } from '@/stores/createEntityStore'
 import { unregisteredAssetAPI } from '@/api/unregisteredAsset'
 import { ElMessage } from 'element-plus'
 import type {
@@ -50,10 +50,7 @@ export const useUnregisteredAssetStore = createEntityStore<UnregisteredAsset, Pa
     displayName: '未登记资产',
     api: {
       getList: async (params?: PaginationQuery) => {
-        const safeParams: PaginationQuery = params || {
-          page: 1,
-          page_size: 10,
-        }
+        const safeParams = withPaginationDefaults(params)
         const response = await unregisteredAssetAPI.getUnregisteredAssets(safeParams)
         return {
           count: response.count,

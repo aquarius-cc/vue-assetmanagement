@@ -14,7 +14,7 @@
  *   - types/permission: 权限相关类型定义
  *   - stores/createEntityStore: 实体 Store 工厂
  */
-import { createEntityStore } from '@/stores/createEntityStore'
+import { createEntityStore, withPaginationDefaults } from '@/stores/createEntityStore'
 import { roleAPI, type RolePermissionForm } from '@/api/roles'
 import { permissionsAPI } from '@/api/permissions'
 import type { Role, RoleCreateUpdateForm, RoleListResponse } from '@/types/roles'
@@ -62,10 +62,7 @@ const baseRoleStoreDef = createEntityStore<Role, PaginationQuery>('role', {
   displayName: '角色',
   api: {
     getList: async (params?: PaginationQuery) => {
-      const safeParams: PaginationQuery = params || {
-        page: 1,
-        page_size: 20,
-      }
+      const safeParams = withPaginationDefaults(params)
       const response = await roleAPI.getRoles(safeParams)
       return {
         count: response.count,

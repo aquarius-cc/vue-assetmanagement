@@ -9,7 +9,7 @@
  *   - api/foundAsset: 拾获资产 API 接口
  *   - stores/createEntityStore: 实体 Store 工厂
  */
-import { createEntityStore } from '@/stores/createEntityStore'
+import { createEntityStore, withPaginationDefaults } from '@/stores/createEntityStore'
 import { foundAssetAPI } from '@/api/foundAsset'
 import type {
   FoundAssetExtended,
@@ -28,10 +28,7 @@ export const useFoundAssetStore = createEntityStore<FoundAssetExtended, Paginati
     displayName: '找回资产',
     api: {
       getList: async (params?: PaginationQuery) => {
-        const safeParams: PaginationQuery = params || {
-          page: 1,
-          page_size: 10,
-        }
+        const safeParams = withPaginationDefaults(params)
         const response = await foundAssetAPI.getFoundAssets(safeParams)
         return {
           count: response.count,

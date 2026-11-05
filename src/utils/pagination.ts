@@ -13,3 +13,6 @@ export const PAGE_SIZE_OPTIONS = [20, 50, 100] as const
 
 /** 后端单页上限镜像（唯一真值在 backend core/constants.py MAX_PAGE_SIZE），供一致性断言 */
 export const MAX_PAGE_SIZE = 100
+
+/** 默认页容量（唯一事实源，M-20）。store 分页兜底必须引用此处，禁止写 10/20 字面量（DR-1） */
+export const DEFAULT_PAGE_SIZE = 20

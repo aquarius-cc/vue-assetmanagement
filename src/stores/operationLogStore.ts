@@ -10,7 +10,7 @@
  *   - api/operationLog: 操作日志 API 接口
  *   - stores/createEntityStore: 实体 Store 工厂
  */
-import { createEntityStore } from '@/stores/createEntityStore'
+import { createEntityStore, withPaginationDefaults } from '@/stores/createEntityStore'
 import { operationLogAPI } from '@/api/operationLog'
 import type { OperationLog } from '@/types/operationlog'
 import type { PaginationQuery } from '@/stores/createEntityStore'
@@ -27,10 +27,7 @@ export const useOperationLogStore = createEntityStore<OperationLog, PaginationQu
     displayName: '操作日志',
     api: {
       getList: async (params?: PaginationQuery) => {
-        const safeParams: PaginationQuery = params || {
-          page: 1,
-          page_size: 10,
-        }
+        const safeParams = withPaginationDefaults(params)
         const response = await operationLogAPI.getOperationLogs(safeParams)
         return {
           count: response.count,

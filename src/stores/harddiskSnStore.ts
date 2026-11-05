@@ -13,7 +13,7 @@
  *   - api/harddiskSn: 硬盘序列号 API 接口
  *   - stores/createEntityStore: 实体 Store 工厂
  */
-import { createEntityStore } from '@/stores/createEntityStore'
+import { createEntityStore, withPaginationDefaults } from '@/stores/createEntityStore'
 import { harddiskSnAPI } from '@/api/harddiskSn'
 import type {
   HardDiskSN,
@@ -63,10 +63,7 @@ export const useHardDiskSnStore = createEntityStore<HardDiskSN, PaginationQuery>
   api: {
     /** 获取硬盘序列号列表 */
     getList: async (params?: PaginationQuery) => {
-      const safeParams: PaginationQuery = params || {
-        page: 1,
-        page_size: 10,
-      }
+      const safeParams = withPaginationDefaults(params)
       const response = await harddiskSnAPI.getHardDiskSNs(safeParams)
       return {
         count: response.count,

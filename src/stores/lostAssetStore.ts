@@ -11,7 +11,7 @@
  *   - api/lostAsset: 遗失资产 API 接口
  *   - stores/createEntityStore: 实体 Store 工厂
  */
-import { createEntityStore } from '@/stores/createEntityStore'
+import { createEntityStore, withPaginationDefaults } from '@/stores/createEntityStore'
 import { lostAssetAPI } from '@/api/lostAsset'
 import type { LostAssetExtended, LostAssetCreateForm, LostAssetUpdateForm } from '@/types/lostasset'
 import { ElMessage } from 'element-plus'
@@ -62,10 +62,7 @@ const baseLostAssetStoreDef = createEntityStore<LostAssetExtended, PaginationQue
   displayName: '遗失资产',
   api: {
     getList: async (params?: PaginationQuery) => {
-      const safeParams: PaginationQuery = params || {
-        page: 1,
-        page_size: 10,
-      }
+      const safeParams = withPaginationDefaults(params)
       const response = await lostAssetAPI.getLostAssets(safeParams)
       return {
         count: response.count,
