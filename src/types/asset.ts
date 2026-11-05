@@ -39,6 +39,8 @@ import type { PaginatedResponse } from '@/types/common'
  * - recycled_pending → damaged: 提交报废申请（in_use 不可直接报废，须先回收 —— V2.8 业务规则）
  * - damaged → scrapped: 审批通过，完成报废
  * - damaged → original_status: 审批拒绝，回退申请前状态
+ *   （多态回退：目标 5 种可能 broken/lost/in_use/recycled_pending/repairing，由 original_status 字段决定，
+ *    缺失/非法时兜底 recycled_pending；取消报废同规则）
  * - repairing → recycled_pending: 维修完成，转入待发放
  * - lost → recycled_pending: 遗失资产找回，转入待发放
  */

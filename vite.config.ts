@@ -218,7 +218,9 @@ export default defineConfig(({ mode }) => {
     },
     // 开发服务器配置
     server: {
-      host: '0.0.0.0', // 允许外部访问
+      // [M-21-F17] 开发服务器绑定地址: 默认仅环回 (127.0.0.1);
+      // 局域网调试时在 .env 显式设 VITE_DEV_HOST=0.0.0.0 (见 .env.development.example)
+      host: env.VITE_DEV_HOST || '127.0.0.1',
       // 从 .env 读取端口，若无则默认 5173
       port: env.VITE_PORT ? parseInt(env.VITE_PORT, 10) : 5173,
       // port: 5173,

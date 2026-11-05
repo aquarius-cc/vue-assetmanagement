@@ -100,6 +100,7 @@ import { useNetworkStore } from '@/stores'
 import type { LoginForm } from '@/types/authuser'
 import { logError } from '@/utils/logger'
 import { sanitizeRedirect } from '@/utils/redirect'
+import { isRememberMeEnabled, persistRememberMe, readSavedUsername } from '@/utils/rememberMe'
 
 const route = useRoute()
 const router = useRouter()
@@ -126,7 +127,7 @@ onMounted(async () => {
   // 如果已登录（通过 token 验证），直接跳转到主页
   if (authStore.isLoggedIn && authStore.access_token) {
     // 恢复记住密码的用户名（优先从store获取，其次从加密存储读取）
-    const savedRememberMe = localStorage.getItem('rememberMe') === 'true'
+    const savedRememberMe = isRememberMeEnabled()
 
     if (savedRememberMe && authStore.authInfo) {
       loginForm.auth_username = authStore.authInfo.auth_username
@@ -223,14 +224,8 @@ const handleLogin = async () => {
       const result = await authStore.login(loginData)
 
       if (result.success) {
-        // 处理记住密码
-        if (loginForm.rememberMe) {
-          localStorage.setItem('savedUsername', loginForm.auth_username)
-          localStorage.setItem('rememberMe', 'true')
-        } else {
-          localStorage.removeItem('savedUsername')
-          localStorage.removeItem('rememberMe')
-        }
+        // 处理记住密码（OP-21②：经 utils/rememberMe 单点, 清空分支收敛为一次调用）
+        persistRememberMe(loginForm.rememberMe ?? false, loginForm.auth_username)
 
         // 设置页面标题
         appStore.setPageTitle('首页')
@@ -267,7 +262,7 @@ const resetForm = () => {
 
   // 保留记住密码的用户名
   if (loginForm.rememberMe) {
-    const savedUsername = localStorage.getItem('savedUsername')
+    const savedUsername = readSavedUsername()
     if (savedUsername) {
       loginForm.auth_username = savedUsername
     }

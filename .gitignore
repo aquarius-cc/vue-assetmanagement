@@ -12,14 +12,17 @@ node_modules
 dist
 dist-ssr
 coverage
+/coverage-summary.json
+/coverage-run.log
 reports
 .stryker-tmp
 *.local
 .env.local
 .env.*.local
 .env.development
-.env.production
-.env.production.test
+# [OP-20b] .env.production / .env.production.test 为已跟踪的非密前端环境模板（2026-11-05 登记豁免）：
+# 原两行 ignore 对已跟踪文件无效（死行），删除防「这两文件被忽略」误读；
+# 含真实密钥的 env 文件永不入库（根仓钩子 check_secret_tracking + CI 断言双轨拦截）。
 
 # Legacy scaffold generated dir (start_django.py, since removed)
 asset_backend/
