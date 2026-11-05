@@ -2,9 +2,7 @@
 @file 员工列表管理页面，展示所有员工信息并支持增删改查及批量操作
 @component UserDetails.vue
 @usedBy
-  - views/system/UserDetails.vue: 通过 router-view 渲染员工列表
-  - views/system/UserManagementPage.vue: 用户管理页面中渲染员工列表
-  - components/system/UserRoleAssignDialog.vue: 用户角色分配弹窗
+  - router/routes-main-core.ts: path 'userdetails' 懒加载本组件（员工管理页, requiredMinRole=system_admin）
   - api/userAPI: getUserRoles/assignUserRoles 用户角色相关接口
   - api/roleAPI: getRolePermissions 获取角色权限码列表接口
   - api/permissionAPI: getPermissionList 获取权限列表接口
