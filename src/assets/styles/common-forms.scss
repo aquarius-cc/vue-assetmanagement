@@ -11,6 +11,24 @@
 $breakpoint-mobile: 768px;
 $breakpoint-tablet: 1024px;
 
+// ========== 0. 分段标题单源（B-26） ==========
+/**
+ * 分段标题 (section-title-block)
+ * B-26 收敛：原 form-container 内 .section-title 内联 8 属性与 4 组件本地副本同款，收敛为单一 mixin。
+ * 命名强制 -block：@mixin section-title 已被 _dashboard-sections.scss:20 占用（D-9 命名冲突警示）。
+ * B-26-②：背景取 var(--gradient-card-highlight) 单一来源，亮/暗主题随变量切换（订正见 D-9）。
+ */
+@mixin section-title-block {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 28px 0 20px;
+  padding: 12px 16px;
+  background: var(--gradient-card-highlight);
+  border-left: 4px solid var(--color-primary);
+  border-radius: 4px;
+}
+
 // ========== 1. 通用表单容器 ==========
 /**
  * 表单页面容器 (form-container)
@@ -70,20 +88,9 @@ $breakpoint-tablet: 1024px;
     }
   }
 
-  // 分段标题样式
+  // 分段标题样式（B-26 单源；与 dashboard 的 @mixin section-title 严格异名，防 @use as * 同名静默覆盖——D-9 留痕）
   .section-title {
-    color: var(--text-primary);
-    font-size: 16px;
-    font-weight: 600;
-    margin: 28px 0 20px 0;
-    padding: 12px 16px;
-    background: linear-gradient(
-      135deg,
-      var(--color-primary-lighter, #f0f7ff) 0%,
-      var(--color-primary-lighter, #e8f4ff) 100%
-    );
-    border-left: 4px solid var(--color-primary);
-    border-radius: 4px;
+    @include section-title-block;
   }
 
   // 底部按钮组

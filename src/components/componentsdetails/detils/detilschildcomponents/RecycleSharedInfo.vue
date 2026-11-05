@@ -122,15 +122,10 @@ defineEmits<{
 }>()
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '@/assets/styles/common-forms.scss' as *;
+
 .section-title {
-  color: var(--text-primary);
-  font-size: 16px;
-  font-weight: 600;
-  margin: 28px 0 20px;
-  padding: 12px 16px;
-  background: var(--gradient-card-highlight);
-  border-left: 4px solid var(--color-primary);
-  border-radius: 4px;
+  @include section-title-block;
 }
 </style>

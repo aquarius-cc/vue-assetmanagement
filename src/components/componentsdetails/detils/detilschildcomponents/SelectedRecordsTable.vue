@@ -45,7 +45,9 @@ defineEmits<{
 }>()
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '@/assets/styles/common-forms.scss' as *;
+
 .selected-records {
   margin-bottom: 16px;
   padding: 12px;
@@ -59,14 +61,9 @@ defineEmits<{
   justify-content: space-between;
   margin-bottom: 8px;
 }
+// B-26-① 拍板：表格容器内不保留纵向留白，属有意差异，显式覆写保留 margin: 0
 .section-title {
-  color: var(--text-primary);
-  font-size: 16px;
-  font-weight: 600;
+  @include section-title-block;
   margin: 0;
-  padding: 12px 16px;
-  background: var(--gradient-card-highlight);
-  border-left: 4px solid var(--color-primary);
-  border-radius: 4px;
 }
 </style>
