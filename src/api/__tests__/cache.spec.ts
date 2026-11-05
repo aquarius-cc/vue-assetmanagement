@@ -25,7 +25,7 @@ vi.mock('@/api/index', () => ({
   clearCacheByPattern: mockClearCacheByPattern,
 }))
 
-import { invalidateAssetCache } from '@/api/assetCache'
+import { invalidateAssetCache, invalidateAssetListCache } from '@/api/assetCache'
 import { repairAssetAPI } from '@/api/repairAsset'
 import { damagedAssetAPI } from '@/api/damagedAsset'
 
@@ -111,6 +111,45 @@ describe('MemoryCache', () => {
     vi.advanceTimersByTime(1)
     expect(cache.get('key1')).toBeUndefined()
   })
+
+  // ---------- [M-13] 失效代际与竞态安全写入 ----------
+
+  it('[M-13] 代际自增边界：clear/clearByPattern 各 +1；clearExpired 与过期 get 不 +1', () => {
+    cache.set('a', 1)
+    expect(cache.getEpoch()).toBe(0)
+    cache.clearByPattern('a')
+    expect(cache.getEpoch()).toBe(1)
+    cache.set('b', 2)
+    cache.clear()
+    expect(cache.getEpoch()).toBe(2)
+    cache.set('c', 3, 1000)
+    vi.advanceTimersByTime(1001)
+    cache.clearExpired()
+    expect(cache.get('c')).toBeUndefined()
+    expect(cache.getEpoch()).toBe(2) // 过期删除非正确性失效，代际不变
+  })
+
+  it('[M-13] setIfFresh 代际不符 → 拒绝写入，条目不得回填', () => {
+    const e0 = cache.getEpoch()
+    cache.clearByPattern('k') // 代际 +1（模拟在途期间的写后失效）
+    expect(cache.setIfFresh('k', 'stale', e0, Date.now())).toBe(false)
+    expect(cache.get('k')).toBeUndefined()
+  })
+
+  it('[M-13] setIfFresh 存在更新鲜条目 → 拒绝写入，保留先至值', () => {
+    cache.set('k', 'fresh') // 先至条目（timestamp = now）
+    const e = cache.getEpoch()
+    expect(cache.setIfFresh('k', 'stale', e, Date.now() - 1000)).toBe(false)
+    expect(cache.get('k')).toBe('fresh')
+  })
+
+  it('[M-13] setIfFresh 条目已过期 → 允许写入新值', () => {
+    cache.set('k', 'old', 1000)
+    vi.advanceTimersByTime(1001)
+    const e = cache.getEpoch()
+    expect(cache.setIfFresh('k', 'new', e, Date.now())).toBe(true)
+    expect(cache.get('k')).toBe('new')
+  })
 })
 
 describe('M-RC-08 状态写后失效', () => {
@@ -141,6 +180,12 @@ describe('M-RC-08 状态写后失效', () => {
     expect(mockClearCacheByPattern).toHaveBeenNthCalledWith(1, '/assets/assets/')
     expect(mockClearCacheByPattern).toHaveBeenNthCalledWith(2, '/assets/assets/')
     expect(mockClearCacheByPattern).toHaveBeenNthCalledWith(3, '/assets/assets/')
+  })
+
+  it('[M-13] invalidateAssetListCache() 恰产列表 pattern（P0-3 同构，禁止宽清）', () => {
+    invalidateAssetListCache()
+    expect(mockClearCacheByPattern).toHaveBeenCalledTimes(1)
+    expect(mockClearCacheByPattern).toHaveBeenCalledWith('/assets/assets/?')
   })
 
   it('打网语义（MemoryCache 模式实证）：repair 精确两 pattern 联合清空详情与列表 key', () => {

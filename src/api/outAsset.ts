@@ -13,7 +13,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
-import { invalidateAssetCache, invalidateSubResourceCache } from './assetCache'
+import { invalidateAssetCache, invalidateSubResourceCache, writeThenInvalidate } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   OutAssetDetail,
@@ -95,10 +95,12 @@ export const outAssetAPI = {
       ...rest,
       ...(asset_recordcode !== undefined && asset_recordcode !== null && { asset_recordcode }),
     }
-    // [M-RC-08] 出库改变资产状态，失效资产详情/列表缓存（解构自 Record<string,unknown>，需收窄）
-    const result = unwrapResponse(request.post<OutAssetDetail>('/assets/out-assets/', backendData))
-    invalidateAssetCache(typeof asset_recordcode === 'string' ? asset_recordcode : undefined)
-    return result
+    // [M-RC-08/M-13] 出库改变资产状态；解构自 Record<string, unknown>，需收窄为 string 才能走精确失效
+    return writeThenInvalidate(
+      request.post<OutAssetDetail>('/assets/out-assets/', backendData),
+      () =>
+        invalidateAssetCache(typeof asset_recordcode === 'string' ? asset_recordcode : undefined),
+    )
   },
 
   /**
@@ -133,33 +135,32 @@ export const outAssetAPI = {
    * 删除出库记录
    * @param recordcode 出库记录编码
    */
-  deleteOutAsset: async (recordcode: string): Promise<void> => {
-    // [M-RC-08] URL 为 out rc（非资产 rc），宽失效
-    const result = await unwrapResponse(request.delete<void>(`/assets/out-assets/${recordcode}/`))
-    // [M-CACHE-1] 资产侧宽失效（既有）+ 子资源精确失效（新增，命中不了列表 key），职责不重叠
-    invalidateAssetCache()
-    invalidateSubResourceCache('/assets/out-assets/', [recordcode])
-    return result
-  },
+  deleteOutAsset: (recordcode: string): Promise<void> =>
+    // [M-RC-08/M-CACHE-1/M-13] 资产侧宽失效 + 子资源精确失效（命中不了列表 key），职责不重叠
+    writeThenInvalidate(request.delete<void>(`/assets/out-assets/${recordcode}/`), () => {
+      invalidateAssetCache()
+      invalidateSubResourceCache('/assets/out-assets/', [recordcode])
+    }),
 
   /**
    * 批量删除出库资产
    * POST /api/assets/out-assets/batch-delete/
    * 对应后端 OutAssetViewSet.batch_delete action
    */
-  batchDeleteOutAssets: async (recordcodes: string[]): Promise<BatchDeleteResult> => {
-    // [M-RC-08] 批量删除涉及多资产状态，宽失效全部资产缓存
-    const result = await unwrapResponse(
+  batchDeleteOutAssets: (recordcodes: string[]): Promise<BatchDeleteResult> =>
+    // [M-RC-08/M-CACHE-1/M-13] 资产侧宽失效 + 子资源精确失效（同源：success_ids 优先，缺失回退入参）
+    writeThenInvalidate(
       request.post<BatchDeleteResult>('/assets/out-assets/batch-delete/', {
         ids: recordcodes,
       }),
-    )
-    // [M-RC-08] 资产侧宽失效（既有）+ [M-CACHE-1] 子资源精确失效（同源：success_ids 优先，缺失回退入参）
-    invalidateAssetCache()
-    const successIds = Array.isArray(result.success_ids) ? result.success_ids : recordcodes
-    invalidateSubResourceCache('/assets/out-assets/', successIds)
-    return result
-  },
+      (result) => {
+        invalidateAssetCache()
+        invalidateSubResourceCache(
+          '/assets/out-assets/',
+          Array.isArray(result.success_ids) ? result.success_ids : recordcodes,
+        )
+      },
+    ),
 
   /**
    * 批量创建出库记录
@@ -167,16 +168,12 @@ export const outAssetAPI = {
    * 对应后端 OutAssetViewSet.batch_create action
    * 一次性提交多条出库数据，后端逐条处理并返回成功/失败明细
    */
-  batchCreateOutAssets: (items: OutAssetCreateForm[]): Promise<OutAssetBatchCreateResult> => {
-    // [M-RC-08] 批量出库涉及多资产状态，宽失效全部资产缓存
-    const result = unwrapResponse(
-      request.post<OutAssetBatchCreateResult>('/assets/out-assets/batch-create/', {
-        items,
-      }),
-    )
-    invalidateAssetCache()
-    return result
-  },
+  batchCreateOutAssets: (items: OutAssetCreateForm[]): Promise<OutAssetBatchCreateResult> =>
+    // [M-RC-08/M-13] 批量出库涉及多资产状态，宽失效全部资产缓存
+    writeThenInvalidate(
+      request.post<OutAssetBatchCreateResult>('/assets/out-assets/batch-create/', { items }),
+      () => invalidateAssetCache(),
+    ),
 
   /**
    * 服务端 Excel 导出（P2-04）

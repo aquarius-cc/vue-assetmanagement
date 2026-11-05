@@ -12,7 +12,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
-import { invalidateAssetCache, invalidateSubResourceCache } from './assetCache'
+import { invalidateAssetCache, invalidateSubResourceCache, writeThenInvalidate } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   BrokenAssetExtended,
@@ -41,12 +41,11 @@ export const brokenAssetAPI = {
     )
   },
 
-  createBrokenAsset: (data: BrokenAssetCreateForm): Promise<BrokenAssetExtended> => {
-    // [M-RC-08] 损坏登记改变资产状态，失效资产详情/列表缓存
-    const result = unwrapResponse(request.post<BrokenAssetExtended>('/assets/broken-assets/', data))
-    invalidateAssetCache(data.asset_recordcode)
-    return result
-  },
+  createBrokenAsset: (data: BrokenAssetCreateForm): Promise<BrokenAssetExtended> =>
+    // [M-RC-08/M-13] 损坏登记改变资产状态；写成功后才失效
+    writeThenInvalidate(request.post<BrokenAssetExtended>('/assets/broken-assets/', data), () =>
+      invalidateAssetCache(data.asset_recordcode),
+    ),
 
   updateBrokenAsset: (data: Partial<BrokenAssetUpdateForm>): Promise<BrokenAssetExtended> => {
     const recordcode = (data as Record<string, unknown>).recordcode || data.id
@@ -58,34 +57,33 @@ export const brokenAssetAPI = {
     )
   },
 
-  deleteBrokenAsset: async (recordcode: string): Promise<void> => {
-    // [M-CACHE-1] 单删命中不了列表 key（/assets/broken-assets/?page=… 不含写 URL），显式失效
-    await unwrapResponse(request.delete<void>(`/assets/broken-assets/${recordcode}/`))
-    invalidateSubResourceCache('/assets/broken-assets/', [recordcode])
-  },
+  deleteBrokenAsset: (recordcode: string): Promise<void> =>
+    // [M-CACHE-1/M-13] 单删命中不了列表 key（/assets/broken-assets/?page=… 不含写 URL），显式失效
+    writeThenInvalidate(request.delete<void>(`/assets/broken-assets/${recordcode}/`), () =>
+      invalidateSubResourceCache('/assets/broken-assets/', [recordcode]),
+    ),
 
-  batchDeleteBrokenAssets: async (recordcodes: string[]): Promise<BatchDeleteResult> => {
-    const result = await unwrapResponse(
+  batchDeleteBrokenAssets: (recordcodes: string[]): Promise<BatchDeleteResult> =>
+    // [M-CACHE-1/M-13] 批删 URL 两者皆不命中；同源：success_ids 为记录 recordcode，缺失回退入参（保守过清）
+    writeThenInvalidate(
       request.post<BatchDeleteResult>('/assets/broken-assets/batch-delete/', {
         ids: recordcodes,
       }),
-    )
-    // [M-CACHE-1] 批删 URL 两者皆不命中；同源：success_ids 为记录 recordcode，缺失回退入参（保守过清）
-    const successIds = Array.isArray(result.success_ids) ? result.success_ids : recordcodes
-    invalidateSubResourceCache('/assets/broken-assets/', successIds)
-    return result
-  },
+      (result) =>
+        invalidateSubResourceCache(
+          '/assets/broken-assets/',
+          Array.isArray(result.success_ids) ? result.success_ids : recordcodes,
+        ),
+    ),
 
   batchCreateBrokenAssets: (
     data: BrokenAssetBatchCreateForm,
-  ): Promise<BrokenAssetBatchCreateResult> => {
-    // [M-RC-08] 批量登记涉及多资产状态，宽失效全部资产缓存
-    const result = unwrapResponse(
+  ): Promise<BrokenAssetBatchCreateResult> =>
+    // [M-RC-08/M-13] 批量登记涉及多资产状态，宽失效全部资产缓存
+    writeThenInvalidate(
       request.post<BrokenAssetBatchCreateResult>('/assets/broken-assets/batch-create/', data),
-    )
-    invalidateAssetCache()
-    return result
-  },
+      () => invalidateAssetCache(),
+    ),
 
   getBrokenAssetsByAsset: (asset_code: string): Promise<BrokenAssetListResponse> => {
     return unwrapResponse(

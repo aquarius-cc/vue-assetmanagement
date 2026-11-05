@@ -12,7 +12,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
-import { invalidateAssetCache, invalidateSubResourceCache } from './assetCache'
+import { invalidateAssetCache, invalidateSubResourceCache, writeThenInvalidate } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   DamagedAsset,
@@ -22,6 +22,12 @@ import type {
   DamagedAssetQueryParams,
 } from '@/types/damagedasset'
 import type { BatchDeleteResult } from '@/stores/createEntityStore'
+
+/** 审批通过响应（原匿名类型写了两遍，此处单点定义） */
+interface DamagedApproveResult {
+  damaged_asset: DamagedAsset
+  waste_asset: Record<string, unknown>
+}
 
 /**
  * 损坏资产管理 API
@@ -57,12 +63,11 @@ export const damagedAssetAPI = {
    * @param data 损坏记录创建表单数据
    * @returns 创建的损坏记录
    */
-  createDamagedAsset: (data: DamagedAssetCreateForm): Promise<DamagedAsset> => {
-    // [M-RC-08] 待报废改变资产状态；表单 asset_recordcode 可空 → 空值降级宽失效
-    const result = unwrapResponse(request.post<DamagedAsset>('/assets/damaged-assets/', data))
-    invalidateAssetCache(data.asset_recordcode)
-    return result
-  },
+  createDamagedAsset: (data: DamagedAssetCreateForm): Promise<DamagedAsset> =>
+    // [M-RC-08/M-13] 表单 asset_recordcode 可空 → 空值降级宽失效（不得静默跳过）
+    writeThenInvalidate(request.post<DamagedAsset>('/assets/damaged-assets/', data), () =>
+      invalidateAssetCache(data.asset_recordcode),
+    ),
 
   /**
    * 更新损坏记录
@@ -81,34 +86,29 @@ export const damagedAssetAPI = {
    * 删除损坏记录
    * @param code 损坏资产编码
    */
-  deleteDamagedAsset: async (code: string): Promise<void> => {
-    // [M-RC-08] URL 为 damaged rc（非资产 rc），宽失效
-    const result = await unwrapResponse(request.delete<void>(`/assets/damaged-assets/${code}/`))
-    // [M-CACHE-1] 资产侧宽失效（既有）+ 子资源精确失效（新增，命中不了列表 key），职责不重叠
-    invalidateAssetCache()
-    invalidateSubResourceCache('/assets/damaged-assets/', [code])
-    return result
-  },
+  deleteDamagedAsset: (code: string): Promise<void> =>
+    // [M-RC-08/M-CACHE-1/M-13] 资产侧宽失效 + 子资源精确失效（命中不了列表 key），职责不重叠
+    writeThenInvalidate(request.delete<void>(`/assets/damaged-assets/${code}/`), () => {
+      invalidateAssetCache()
+      invalidateSubResourceCache('/assets/damaged-assets/', [code])
+    }),
 
   /**
    * 批量删除待报废资产
    * POST /api/assets/damaged-assets/batch-delete/
    * 对应后端 DamagedAssetViewSet.batch_delete action
    */
-  batchDeleteDamagedAssets: async (codes: string[]): Promise<BatchDeleteResult> => {
-    // [M-RC-08] 批量删除涉及多资产状态，宽失效全部资产缓存
-    const result = await unwrapResponse(
-      request.post<BatchDeleteResult>('/assets/damaged-assets/batch-delete/', {
-        ids: codes,
-      }),
-    )
-    // [M-RC-08] 资产侧宽失效（既有）+ [M-CACHE-1] 子资源宽失效——非同源：
+  batchDeleteDamagedAssets: (codes: string[]): Promise<BatchDeleteResult> =>
+    // [M-RC-08/M-CACHE-1/M-13] 资产侧宽失效 + 子资源宽失效——非同源：
     // ids/success_ids 均为资产 recordcode，够不到 /assets/damaged-assets/{损坏单 rc}/?，
     // 禁止逐条精确（宽失效清详情+列表，仅缓存未命中重取，不会返回错误数据）
-    invalidateAssetCache()
-    invalidateSubResourceCache('/assets/damaged-assets/')
-    return result
-  },
+    writeThenInvalidate(
+      request.post<BatchDeleteResult>('/assets/damaged-assets/batch-delete/', { ids: codes }),
+      () => {
+        invalidateAssetCache()
+        invalidateSubResourceCache('/assets/damaged-assets/')
+      },
+    ),
 
   /**
    * 根据资产编码获取损坏记录
@@ -130,18 +130,12 @@ export const damagedAssetAPI = {
   approveDamagedAsset: (
     code: string,
     data?: { approver_jobcode?: string; operator_name?: string },
-  ): Promise<{
-    damaged_asset: DamagedAsset
-    waste_asset: Record<string, unknown>
-  }> => {
-    // [M-RC-08] 审批改变资产状态（→已报废），URL 为 damaged rc，宽失效
-    const result = unwrapResponse<{
-      damaged_asset: DamagedAsset
-      waste_asset: Record<string, unknown>
-    }>(request.post(`/assets/damaged-assets/${code}/approve/`, data))
-    invalidateAssetCache()
-    return result
-  },
+  ): Promise<DamagedApproveResult> =>
+    // [M-RC-08/M-13] 审批改变资产状态（→已报废），URL 为 damaged rc，宽失效
+    writeThenInvalidate(
+      request.post<DamagedApproveResult>(`/assets/damaged-assets/${code}/approve/`, data),
+      () => invalidateAssetCache(),
+    ),
 
   /**
    * 审批拒绝待报废资产
@@ -152,14 +146,12 @@ export const damagedAssetAPI = {
   rejectDamagedAsset: (
     code: string,
     data?: { approver_jobcode?: string; operator_name?: string },
-  ): Promise<DamagedAsset> => {
-    // [M-RC-08] 驳回改变资产状态（回到在用），URL 为 damaged rc，宽失效
-    const result = unwrapResponse<DamagedAsset>(
-      request.post(`/assets/damaged-assets/${code}/reject/`, data),
-    )
-    invalidateAssetCache()
-    return result
-  },
+  ): Promise<DamagedAsset> =>
+    // [M-RC-08/M-13] 驳回改变资产状态（回到在用），URL 为 damaged rc，宽失效
+    writeThenInvalidate(
+      request.post<DamagedAsset>(`/assets/damaged-assets/${code}/reject/`, data),
+      () => invalidateAssetCache(),
+    ),
 
   /**
    * 服务端 Excel 导出（P2-04）

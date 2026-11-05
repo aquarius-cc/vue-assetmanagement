@@ -467,9 +467,15 @@ function readCache<T>(cacheKey: string): ApiResponse<T> | undefined {
   return cache.get(cacheKey) as ApiResponse<T> | undefined
 }
 
-/** 写入缓存：cacheTTL 缺省时使用默认 300_000 */
-function writeCache<T>(cacheKey: string, data: ApiResponse<T>, cacheTTL?: number): void {
-  cache.set(cacheKey, data, cacheTTL ?? 300_000)
+/** 写入缓存：[M-13] 经代际守卫，失效期间的在途响应不得回填；cacheTTL 缺省时使用默认 300_000 */
+function writeCache<T>(
+  cacheKey: string,
+  data: ApiResponse<T>,
+  requestEpoch: number,
+  requestStartedAt: number,
+  cacheTTL?: number,
+): boolean {
+  return cache.setIfFresh(cacheKey, data, requestEpoch, requestStartedAt, cacheTTL ?? 300_000)
 }
 
 /**
@@ -530,13 +536,19 @@ export async function get<T>(
     if (cached !== undefined) return cached
   }
 
+  // [M-13] 代际快照与发起时刻必须在 await 之前取
+  const requestEpoch = cache.getEpoch()
+  const requestStartedAt = Date.now()
+
   try {
     const response = await api.get<ApiResponse<T>>(url, { params: paramsObj })
     const data = response.data
 
     // [M-29] 仅 code===0 的成功响应入缓存：业务失败体（200 + code!==0）入缓存后，
     // 后续 useCache 调用直接命中错误数据，绕过重试与错误提示
-    if (useCache && data.code === 0) writeCache(cacheKey, data, options?.cacheTTL)
+    // [M-13] 再叠代际守卫：在途期间发生过失效的旧响应放弃回填
+    if (useCache && data.code === 0)
+      writeCache(cacheKey, data, requestEpoch, requestStartedAt, options?.cacheTTL)
     // [M-RC-12] 真实网络响应成功（含业务失败体）：网络已通、数据为最新，清同 URL 降级位
     degradedCacheKeys.delete(cacheKey)
     return data

@@ -192,6 +192,49 @@ describe('request responseHandler', () => {
     })
   })
 
+  describe('[M-13] 在途 GET 与代际守卫（setIfFresh）', () => {
+    function deferred<T>() {
+      let resolve!: (v: T) => void
+      const promise = new Promise<T>((res) => {
+        resolve = res
+      })
+      return { promise, resolve }
+    }
+
+    it('在途 GET 遇写响应清缓存 → 旧响应不回填，下次 get 仍打网', async () => {
+      const d = deferred<{ data: { code: number; data: unknown; message: string } }>()
+      mocks.instanceGet.mockReturnValueOnce(d.promise) // 在途详情 GET
+      const pending = get('/m13/detail/A1/', undefined, { useCache: true })
+      await Promise.resolve() // 让 get 先发起请求（取代际快照）
+      handlers.resOk?.(makeRes('delete', '/m13/detail/A1/')) // 写响应清缓存（代际 +1）
+      d.resolve({ data: { code: 0, data: { v: 'stale' }, message: '' } })
+      await pending
+      // 旧响应未回填 → 第二次 get 必须再打网
+      mocks.instanceGet.mockResolvedValueOnce({
+        data: { code: 0, data: { v: 'fresh' }, message: '' },
+      })
+      const result = await get('/m13/detail/A1/', undefined, { useCache: true })
+      expect(result.data).toEqual({ v: 'fresh' })
+      expect(mocks.instanceGet).toHaveBeenCalledTimes(2)
+    })
+
+    it('并发 GET 乱序返回 → 先至值保留、后至旧值不覆盖，第三次调用零打网', async () => {
+      const d1 = deferred<{ data: { code: number; data: unknown; message: string } }>()
+      const d2 = deferred<{ data: { code: number; data: unknown; message: string } }>()
+      mocks.instanceGet.mockReturnValueOnce(d1.promise) // 先发（旧）
+      mocks.instanceGet.mockReturnValueOnce(d2.promise) // 后发（新）
+      const p1 = get('/m13/race/', undefined, { useCache: true })
+      const p2 = get('/m13/race/', undefined, { useCache: true })
+      d2.resolve({ data: { code: 0, data: { v: 'fresh' }, message: '' } }) // 后发先至
+      await p2
+      d1.resolve({ data: { code: 0, data: { v: 'stale' }, message: '' } }) // 先发后至
+      await p1
+      const result = await get('/m13/race/', undefined, { useCache: true })
+      expect(result.data).toEqual({ v: 'fresh' })
+      expect(mocks.instanceGet).toHaveBeenCalledTimes(2) // 第三次零打网
+    })
+  })
+
   describe('response rejected handler - error messages', () => {
     it('403 shows no-permission message', async () => {
       const error = makeHttpError(403, { detail: 'forbidden' })

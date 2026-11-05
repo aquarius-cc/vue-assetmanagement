@@ -1,17 +1,21 @@
 /**
- * @file 资产与子资源缓存失效 helper（M-RC-08 + M-CACHE-1，DR-1 单一实现）
+ * @file 资产与子资源缓存失效 helper（M-RC-08 + M-CACHE-1 + M-13，DR-1 单一实现）
  * @module api/assetCache
  * @exports
- *   - invalidateAssetCache: 资产状态写端点成功后的缓存失效入口（M-RC-08，24 处）
+ *   - writeThenInvalidate: 写端点统一时序内核（M-13）：等写成功 → 失效 → 返回 data；写失败不失效
+ *   - invalidateAssetCache: 资产状态写端点成功后的缓存失效入口（M-RC-08 + M-13，28 处 = 7 模块 24 + asset.ts 4）
  *   - invalidateSubResourceCache: 子资源单删/批删写端点成功后的缓存失效入口（M-CACHE-1，14 处）
+ *   - invalidateAssetListCache: 仅清资产列表缓存（M-13 批量创建列表薄壳，P0-3 同构）
  * @callers
  *   - api/{repairAsset,lostAsset,damagedAsset,recycleAsset,outAsset,brokenAsset,foundAsset}.ts
- *   - api/asset.ts（既有 5 处 mark-broken/create/update/delete/batch 失效，非本 helper 接入范围）
+ *   - api/asset.ts（5 处：update/delete/mark-broken/batch-delete → invalidateAssetCache；
+ *     batch-create → invalidateAssetListCache）
  * @dependsOn
- *   - api/request (clearCacheByPattern)
+ *   - api/request (clearCacheByPattern / unwrapResponse)
  */
 
-import { clearCacheByPattern } from '@/api/index'
+import { clearCacheByPattern, unwrapResponse } from '@/api/index'
+import type { ApiResponse } from '@/api/index'
 
 /**
  * 内部公共核（DR-1 唯一实现，不导出）。
@@ -43,7 +47,7 @@ function invalidateByRoot(root: string, codes?: readonly string[] | null): void 
 }
 
 /**
- * 资产状态写端点成功后失效资产相关缓存（M-RC-08，24 处接入，签名不变）。
+ * 资产状态写端点成功后失效资产相关缓存（M-RC-08 + M-13，28 处接入 = 7 模块 24 + asset.ts 4，签名不变）。
  *
  * 【根因（写死，防止误扩散）】拦截器只按写 URL 清缓存（request.ts:372-375，
  * `clearByPattern(url.split('?')[0])`，includes 子串匹配），真正的缓存逃逸条件是
@@ -84,49 +88,79 @@ export function invalidateSubResourceCache(
 }
 
 /**
- * 接入清单（M-RC-08 定稿，24 处 = 17 单条 + 7 批量；锚点 = request.post/delete 行）：
+ * 写端点统一时序（M-13，37 个写端点 / 43 次失效调用）：等写成功 → 失效 → 返回 data。
+ *
+ * 顺序不可交换：先失效再等写完成，会让写窗口内的并发详情 GET 以「写前状态」回填缓存；
+ * 而写响应拦截器只按写 URL 清缓存，够不到详情/列表 key，脏数据将残留至 TTL。
+ * 写失败（code!==0 / 网络错误）不失效——失败不该清缓存。
+ */
+export async function writeThenInvalidate<T>(
+  write: Promise<ApiResponse<T>>,
+  invalidate: (data: T) => void,
+): Promise<T> {
+  const data = await unwrapResponse(write)
+  invalidate(data)
+  return data
+}
+
+/**
+ * [M-13] 只清资产列表缓存：批量创建只新增记录，既有详情仍然有效。
+ * 与 invalidateByRoot(codes=[]) 同构（P0-3），禁止退化为宽失效。
+ */
+export function invalidateAssetListCache(): void {
+  invalidateByRoot('/assets/assets/', [])
+}
+
+/**
+ * 接入清单（M-RC-08 + M-CACHE-1 + M-13 定稿：37 个写端点 / 43 次失效调用；
+ * 锚点 = 方法名，行号随文件演进漂移不再固化）：
  *
  * ① action ×5（recordcode 取自 URL，精确失效）
- *   repairAsset.ts:126  repairAsset     /assets/assets/{rc}/repair/
- *   repairAsset.ts:144  repairDone      /assets/assets/{rc}/repair-done/
- *   repairAsset.ts:158  repairFailed    /assets/assets/{rc}/repair-failed/
- *   lostAsset.ts:138    markAssetAsLost /assets/assets/{rc}/mark-lost/
- *   lostAsset.ts:159    foundAsset      /assets/assets/{rc}/found/
+ *   repairAsset.repairAsset     /assets/assets/{rc}/repair/
+ *   repairAsset.repairDone      /assets/assets/{rc}/repair-done/
+ *   repairAsset.repairFailed    /assets/assets/{rc}/repair-failed/
+ *   lostAsset.markAssetAsLost   /assets/assets/{rc}/mark-lost/
+ *   lostAsset.foundAsset        /assets/assets/{rc}/found/
  * ② 集合 create ×7（recordcode 取自表单 asset_recordcode，空值降级宽）
- *   repairAsset.ts:60   /assets/repair-assets/     （表单仅 asset_code 非 recordcode → 宽）
- *   lostAsset.ts:57     /assets/lost-assets/
- *   damagedAsset.ts:60  /assets/damaged-assets/   （表单字段可空 → 常态宽失效）
- *   recycleAsset.ts:62  /assets/recycle-assets/   （表单仅 outasset_recordcode → 宽）
- *   outAsset.ts:97      /assets/out-assets/
- *   brokenAsset.ts:44   /assets/broken-assets/
- *   foundAsset.ts:42    /assets/found-assets/
+ *   repairAsset.createRepairAsset    /assets/repair-assets/  （表单仅 asset_code 非 recordcode → 宽）
+ *   lostAsset.createLostAsset        /assets/lost-assets/
+ *   damagedAsset.createDamagedAsset  /assets/damaged-assets/ （表单字段可空 → 常态宽失效）
+ *   recycleAsset.createRecycleAsset  /assets/recycle-assets/ （表单仅 outasset_recordcode → 宽）
+ *   outAsset.createOutAsset          /assets/out-assets/
+ *   brokenAsset.createBrokenAsset    /assets/broken-assets/
+ *   foundAsset.createFoundAsset      /assets/found-assets/
  * ③ 审批 ×2（URL 为 damaged rc，取不到资产 rc → 宽）
- *   damagedAsset.ts:121 approve
- *   damagedAsset.ts:134 reject
+ *   damagedAsset.approveDamagedAsset
+ *   damagedAsset.rejectDamagedAsset
  * ④ 单删 ×3（URL 为子资源 rc → 宽）
- *   damagedAsset.ts:81  deleteDamagedAsset
- *   recycleAsset.ts:86  deleteRecycleAsset
- *   outAsset.ts:133     deleteOutAsset
+ *   damagedAsset.deleteDamagedAsset
+ *   recycleAsset.deleteRecycleAsset
+ *   outAsset.deleteOutAsset
  * ⑤ 批量 ×7（多资产 → 宽）
- *   batch-create：brokenAsset.ts:73 / lostAsset.ts:104 / recycleAsset.ts:115 / outAsset.ts:157
- *   batch-delete：damagedAsset.ts:91 / recycleAsset.ts:96 / outAsset.ts:143
+ *   batch-create：brokenAsset.batchCreateBrokenAssets / lostAsset.batchCreateLostAssets /
+ *     recycleAsset.batchCreateRecycleAssets / outAsset.batchCreateOutAssets
+ *   batch-delete：damagedAsset.batchDeleteDamagedAssets / recycleAsset.batchDeleteRecycleAssets /
+ *     outAsset.batchDeleteOutAssets
  *
  * 排除依据（留痕）：
- * - asset.ts mark-broken/create/update/delete/batch 已有 5 处既有失效（AUD-55/BF-152）；
- * - waste create/update/partial_update 后端 405（waste_asset_view.py:110-126），无写路径；
+ * - asset.ts 5 处（update/delete/mark-broken/batch-delete/batch-create）原为
+ *   clearCacheByPattern 直调（AUD-55/BF-152），M-13 收敛入本 helper
+ *   （4 × invalidateAssetCache + 1 × invalidateAssetListCache）；
+ * - waste create/update/partial_update 后端 405（waste_asset_view.py），无写路径；
  * - broken/lost/found/repair 的 delete/batch-delete 仅软删自身（is_deleted），不动资产状态；
  * - 全部 update 类为字段白名单更新，不碰资产状态。
  *
- * 【子资源侧接入清单（M-CACHE-1 定稿，14 处 = 7 单删 + 7 批删；执行时以 grep 现场定位为准）】
- *   单删 ×7（精确 [rc]）：brokenAsset.ts deleteBrokenAsset / lostAsset.ts deleteLostAsset /
- *     foundAsset.ts deleteFoundAsset / repairAsset.ts deleteRepairAsset /
- *     recycleAsset.ts deleteRecycleAsset / outAsset.ts deleteOutAsset /
- *     damagedAsset.ts deleteDamagedAsset（损坏单 recordcode）
+ * 【子资源侧接入清单（M-CACHE-1 定稿，14 处 = 7 单删 + 7 批删）】
+ *   单删 ×7（精确 [rc]）：brokenAsset.deleteBrokenAsset / lostAsset.deleteLostAsset /
+ *     foundAsset.deleteFoundAsset / repairAsset.deleteRepairAsset /
+ *     recycleAsset.deleteRecycleAsset / outAsset.deleteOutAsset /
+ *     damagedAsset.deleteDamagedAsset（损坏单 recordcode）
  *   批删 ×7：brokenAsset/lostAsset/foundAsset/repairAsset/recycleAsset/outAsset
  *     （同源，success_ids 优先、运行时缺失回退 ids）；
  *     damagedAsset（**非同源**：ids/success_ids 均为资产 recordcode，够不到
  *     /assets/damaged-assets/{损坏单 rc}/?，**宽失效 root，禁止逐条**）
  *   豁免：各模块 update 系列不接入（子资源列表当前未缓存，启用时须同步接入，见契约表）。
- *   时序：14 处统一 await unwrapResponse 成功后再失效（damaged/recycle/out 既有
- *   invalidateAssetCache 6 处由 fire-and-forget 收紧为 await，属有意变更，见 BF-164）。
+ *   时序：37 处统一 writeThenInvalidate（等写成功才失效，失败不失效）；原 18 处
+ *   fire-and-forget 由本收敛修复（BF-179 / M-13），damaged/recycle/out 既有 6 处
+ *   收紧见 BF-164。
  */

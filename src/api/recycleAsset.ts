@@ -12,7 +12,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
-import { invalidateAssetCache, invalidateSubResourceCache } from './assetCache'
+import { invalidateAssetCache, invalidateSubResourceCache, writeThenInvalidate } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   RecycleAssetExtended,
@@ -59,14 +59,11 @@ export const recycleAssetAPI = {
    * @param data 回收记录创建表单数据
    * @returns 创建的回收记录
    */
-  createRecycleAsset: (data: RecycleAssetCreateForm): Promise<RecycleAssetExtended> => {
-    // [M-RC-08] 回收改变资产状态；表单仅 outasset_recordcode（无资产 rc）→ 宽失效
-    const result = unwrapResponse(
-      request.post<RecycleAssetExtended>('/assets/recycle-assets/', data),
-    )
-    invalidateAssetCache()
-    return result
-  },
+  createRecycleAsset: (data: RecycleAssetCreateForm): Promise<RecycleAssetExtended> =>
+    // [M-RC-08/M-13] 表单仅 outasset_recordcode（无资产 rc）→ 宽失效
+    writeThenInvalidate(request.post<RecycleAssetExtended>('/assets/recycle-assets/', data), () =>
+      invalidateAssetCache(),
+    ),
 
   /**
    * 更新回收记录
@@ -88,35 +85,36 @@ export const recycleAssetAPI = {
    * 删除回收记录
    * @param outasset_recordcode 出库记录编码
    */
-  deleteRecycleAsset: async (outasset_recordcode: string): Promise<void> => {
-    // [M-RC-08] 删除回收记录会恢复资产状态（cancel_recycle），URL 为 recycle rc → 宽失效
-    const result = await unwrapResponse(
+  deleteRecycleAsset: (outasset_recordcode: string): Promise<void> =>
+    // [M-RC-08/M-CACHE-1/M-13] 删除回收记录会恢复资产状态（cancel_recycle）：
+    // 资产侧宽失效 + 子资源精确失效（命中不了列表 key），职责不重叠
+    writeThenInvalidate(
       request.delete<void>(`/assets/recycle-assets/${outasset_recordcode}/`),
-    )
-    // [M-CACHE-1] 资产侧宽失效（既有）+ 子资源精确失效（新增，命中不了列表 key），职责不重叠
-    invalidateAssetCache()
-    invalidateSubResourceCache('/assets/recycle-assets/', [outasset_recordcode])
-    return result
-  },
+      () => {
+        invalidateAssetCache()
+        invalidateSubResourceCache('/assets/recycle-assets/', [outasset_recordcode])
+      },
+    ),
 
   /**
    * 批量删除回收资产
    * POST /api/assets/recycle-assets/batch-delete/
    * 对应后端 RecycleAssetViewSet.batch_delete action
    */
-  batchDeleteRecycleAssets: async (outasset_recordcodes: string[]): Promise<BatchDeleteResult> => {
-    // [M-RC-08] 批量删除涉及多资产状态，宽失效全部资产缓存
-    const result = await unwrapResponse(
+  batchDeleteRecycleAssets: (outasset_recordcodes: string[]): Promise<BatchDeleteResult> =>
+    // [M-RC-08/M-CACHE-1/M-13] 资产侧宽失效 + 子资源精确失效（同源：success_ids 优先，缺失回退入参）
+    writeThenInvalidate(
       request.post<BatchDeleteResult>('/assets/recycle-assets/batch-delete/', {
         ids: outasset_recordcodes,
       }),
-    )
-    // [M-RC-08] 资产侧宽失效（既有）+ [M-CACHE-1] 子资源精确失效（同源：success_ids 优先，缺失回退入参）
-    invalidateAssetCache()
-    const successIds = Array.isArray(result.success_ids) ? result.success_ids : outasset_recordcodes
-    invalidateSubResourceCache('/assets/recycle-assets/', successIds)
-    return result
-  },
+      (result) => {
+        invalidateAssetCache()
+        invalidateSubResourceCache(
+          '/assets/recycle-assets/',
+          Array.isArray(result.success_ids) ? result.success_ids : outasset_recordcodes,
+        )
+      },
+    ),
 
   /**
    * 批量创建回收记录
@@ -129,14 +127,12 @@ export const recycleAssetAPI = {
    */
   batchCreateRecycleAssets: (
     data: RecycleAssetBatchCreateForm,
-  ): Promise<RecycleAssetBatchCreateResult> => {
-    // [M-RC-08] 批量回收涉及多资产状态，宽失效全部资产缓存
-    const result = unwrapResponse(
+  ): Promise<RecycleAssetBatchCreateResult> =>
+    // [M-RC-08/M-13] 批量回收涉及多资产状态，宽失效全部资产缓存
+    writeThenInvalidate(
       request.post<RecycleAssetBatchCreateResult>('/assets/recycle-assets/batch-create/', data),
-    )
-    invalidateAssetCache()
-    return result
-  },
+      () => invalidateAssetCache(),
+    ),
 
   /**
    * 服务端 Excel 导出（P2-04）

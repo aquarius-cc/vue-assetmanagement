@@ -12,7 +12,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
-import { invalidateAssetCache, invalidateSubResourceCache } from './assetCache'
+import { invalidateAssetCache, invalidateSubResourceCache, writeThenInvalidate } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   FoundAssetExtended,
@@ -39,12 +39,11 @@ export const foundAssetAPI = {
     )
   },
 
-  createFoundAsset: (data: FoundAssetCreateForm): Promise<FoundAssetExtended> => {
-    // [M-RC-08] 找回改变资产状态，失效资产详情/列表缓存
-    const result = unwrapResponse(request.post<FoundAssetExtended>('/assets/found-assets/', data))
-    invalidateAssetCache(data.asset_recordcode)
-    return result
-  },
+  createFoundAsset: (data: FoundAssetCreateForm): Promise<FoundAssetExtended> =>
+    // [M-RC-08/M-13] 找回改变资产状态；写成功后才失效
+    writeThenInvalidate(request.post<FoundAssetExtended>('/assets/found-assets/', data), () =>
+      invalidateAssetCache(data.asset_recordcode),
+    ),
 
   updateFoundAsset: (data: Partial<FoundAssetUpdateForm>): Promise<FoundAssetExtended> => {
     const recordcode = (data as Record<string, unknown>).recordcode || data.id
@@ -56,23 +55,24 @@ export const foundAssetAPI = {
     )
   },
 
-  deleteFoundAsset: async (recordcode: string): Promise<void> => {
-    // [M-CACHE-1] 单删命中不了列表 key（/assets/found-assets/?page=… 不含写 URL），显式失效
-    await unwrapResponse(request.delete<void>(`/assets/found-assets/${recordcode}/`))
-    invalidateSubResourceCache('/assets/found-assets/', [recordcode])
-  },
+  deleteFoundAsset: (recordcode: string): Promise<void> =>
+    // [M-CACHE-1/M-13] 单删命中不了列表 key（/assets/found-assets/?page=… 不含写 URL），显式失效
+    writeThenInvalidate(request.delete<void>(`/assets/found-assets/${recordcode}/`), () =>
+      invalidateSubResourceCache('/assets/found-assets/', [recordcode]),
+    ),
 
-  batchDeleteFoundAssets: async (recordcodes: string[]): Promise<BatchDeleteResult> => {
-    const result = await unwrapResponse(
+  batchDeleteFoundAssets: (recordcodes: string[]): Promise<BatchDeleteResult> =>
+    // [M-CACHE-1/M-13] 批删 URL 两者皆不命中；同源：success_ids 优先，运行时缺失回退入参（保守过清）
+    writeThenInvalidate(
       request.post<BatchDeleteResult>('/assets/found-assets/batch-delete/', {
         ids: recordcodes,
       }),
-    )
-    // [M-CACHE-1] 批删 URL 两者皆不命中；同源：success_ids 优先，运行时缺失回退入参（保守过清）
-    const successIds = Array.isArray(result.success_ids) ? result.success_ids : recordcodes
-    invalidateSubResourceCache('/assets/found-assets/', successIds)
-    return result
-  },
+      (result) =>
+        invalidateSubResourceCache(
+          '/assets/found-assets/',
+          Array.isArray(result.success_ids) ? result.success_ids : recordcodes,
+        ),
+    ),
 
   getFoundAssetsByAsset: (asset_code: string): Promise<FoundAssetListResponse> => {
     return unwrapResponse(

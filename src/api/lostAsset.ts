@@ -12,7 +12,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
-import { invalidateAssetCache, invalidateSubResourceCache } from './assetCache'
+import { invalidateAssetCache, invalidateSubResourceCache, writeThenInvalidate } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   LostAssetExtended,
@@ -54,12 +54,11 @@ export const lostAssetAPI = {
    * @param data 遗失记录创建表单数据
    * @returns 创建的遗失记录
    */
-  createLostAsset: (data: LostAssetCreateForm): Promise<LostAssetExtended> => {
-    // [M-RC-08] 标记遗失改变资产状态，失效资产详情/列表缓存
-    const result = unwrapResponse(request.post<LostAssetExtended>('/assets/lost-assets/', data))
-    invalidateAssetCache(data.asset_recordcode)
-    return result
-  },
+  createLostAsset: (data: LostAssetCreateForm): Promise<LostAssetExtended> =>
+    // [M-RC-08/M-13] 标记遗失改变资产状态；写成功后才失效
+    writeThenInvalidate(request.post<LostAssetExtended>('/assets/lost-assets/', data), () =>
+      invalidateAssetCache(data.asset_recordcode),
+    ),
 
   /**
    * 更新遗失记录
@@ -81,42 +80,41 @@ export const lostAssetAPI = {
    * 删除遗失记录
    * @param recordcode 遗失记录编码
    */
-  deleteLostAsset: async (recordcode: string): Promise<void> => {
-    // [M-CACHE-1] 单删命中不了列表 key（/assets/lost-assets/?page=… 不含写 URL），显式失效
-    await unwrapResponse(request.delete<void>(`/assets/lost-assets/${recordcode}/`))
-    invalidateSubResourceCache('/assets/lost-assets/', [recordcode])
-  },
+  deleteLostAsset: (recordcode: string): Promise<void> =>
+    // [M-CACHE-1/M-13] 单删命中不了列表 key（/assets/lost-assets/?page=… 不含写 URL），显式失效
+    writeThenInvalidate(request.delete<void>(`/assets/lost-assets/${recordcode}/`), () =>
+      invalidateSubResourceCache('/assets/lost-assets/', [recordcode]),
+    ),
 
   /**
    * 批量删除遗失资产
    * POST /api/assets/lost-assets/batch-delete/
    * 对应后端 LostAssetViewSet.batch_delete action
    */
-  batchDeleteLostAssets: async (recordcodes: string[]): Promise<BatchDeleteResult> => {
-    const result = await unwrapResponse(
+  batchDeleteLostAssets: (recordcodes: string[]): Promise<BatchDeleteResult> =>
+    // [M-CACHE-1/M-13] 批删 URL 两者皆不命中；同源：success_ids 优先，运行时缺失回退入参（保守过清）
+    writeThenInvalidate(
       request.post<BatchDeleteResult>('/assets/lost-assets/batch-delete/', {
         ids: recordcodes,
       }),
-    )
-    // [M-CACHE-1] 批删 URL 两者皆不命中；同源：success_ids 优先，运行时缺失回退入参（保守过清）
-    const successIds = Array.isArray(result.success_ids) ? result.success_ids : recordcodes
-    invalidateSubResourceCache('/assets/lost-assets/', successIds)
-    return result
-  },
+      (result) =>
+        invalidateSubResourceCache(
+          '/assets/lost-assets/',
+          Array.isArray(result.success_ids) ? result.success_ids : recordcodes,
+        ),
+    ),
 
   /**
    * 批量创建遗失记录
    * POST /api/assets/lost-assets/batch-create/
    * 对应后端 LostAssetViewSet.batch_create action
    */
-  batchCreateLostAssets: (data: LostAssetBatchCreateForm): Promise<LostAssetBatchCreateResult> => {
-    // [M-RC-08] 批量创建涉及多资产状态，宽失效全部资产缓存
-    const result = unwrapResponse(
+  batchCreateLostAssets: (data: LostAssetBatchCreateForm): Promise<LostAssetBatchCreateResult> =>
+    // [M-RC-08/M-13] 批量创建涉及多资产状态，宽失效全部资产缓存
+    writeThenInvalidate(
       request.post<LostAssetBatchCreateResult>('/assets/lost-assets/batch-create/', data),
-    )
-    invalidateAssetCache()
-    return result
-  },
+      () => invalidateAssetCache(),
+    ),
 
   /**
    * 根据资产编码获取遗失记录
@@ -146,14 +144,12 @@ export const lostAssetAPI = {
       lost_description?: string | null
       lost_date?: string | null
     },
-  ): Promise<LostAssetExtended> => {
-    // [M-RC-08] action 写 URL 比详情缓存 key 更深，需显式失效
-    const result = unwrapResponse(
+  ): Promise<LostAssetExtended> =>
+    // [M-RC-08/M-13] action 写 URL 比详情缓存 key 更深，需显式失效；写成功后才失效
+    writeThenInvalidate(
       request.post<LostAssetExtended>(`/assets/assets/${recordcode}/mark-lost/`, data),
-    )
-    invalidateAssetCache(recordcode)
-    return result
-  },
+      () => invalidateAssetCache(recordcode),
+    ),
 
   /**
    * 找回遗失资产并转入待发放状态（Action 端点）
@@ -170,14 +166,12 @@ export const lostAssetAPI = {
       found_location?: string
       found_description?: string
     },
-  ): Promise<LostAssetExtended> => {
-    // [M-RC-08] action 写 URL 比详情缓存 key 更深，需显式失效
-    const result = unwrapResponse(
+  ): Promise<LostAssetExtended> =>
+    // [M-RC-08/M-13] action 写 URL 比详情缓存 key 更深，需显式失效；写成功后才失效
+    writeThenInvalidate(
       request.post<LostAssetExtended>(`/assets/assets/${recordcode}/found/`, data),
-    )
-    invalidateAssetCache(recordcode)
-    return result
-  },
+      () => invalidateAssetCache(recordcode),
+    ),
 
   /**
    * 服务端 Excel 导出（BF-092/I-1）

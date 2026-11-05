@@ -22,7 +22,8 @@
  *   - stores/createEntityStore: 批量删除结果类型
  *   - axios: 错误处理
  */
-import { request, unwrapResponse, getBlob, clearCacheByPattern } from '@/api/index'
+import { request, unwrapResponse, getBlob } from '@/api/index'
+import { invalidateAssetCache, invalidateAssetListCache, writeThenInvalidate } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import { BASE_URL } from '@/api/config'
 import { isAxiosError } from 'axios'
@@ -155,12 +156,12 @@ export const assetAPI = {
       throw new Error('recordcode is required for update')
     }
     const { recordcode, ...payload } = data
-    const result = unwrapResponse(
+    // [M-13] 详情 + 列表均在写成功后失效（原同步清列表，与写完成存在时序窗口）
+    // 详情 pattern 为显式化新增：生产中该 key 此前由拦截器按写 URL 清，行为等价
+    return writeThenInvalidate(
       request.put<AssetDetail>(`/assets/assets/${recordcode}/`, payload),
+      () => invalidateAssetCache(recordcode),
     )
-    // [AUD-55/BF-152] 写后列表精确失效：详情 key 由拦截器按写 URL 覆盖, 列表 key（?page=...）够不到
-    clearCacheByPattern('/assets/assets/?')
-    return result
   },
 
   /**
@@ -168,12 +169,11 @@ export const assetAPI = {
    * DELETE /api/assets/assets/{recordcode}/
    * 【ID-2/取键契约】路由定位键为 recordcode，入参实为 recordcode
    */
-  deleteAsset: (recordcode: string): Promise<void> => {
-    const result = unwrapResponse(request.delete<void>(`/assets/assets/${recordcode}/`))
-    // [AUD-55/BF-152] 写后列表精确失效：详情 key 由拦截器按写 URL 覆盖, 列表 key（?page=...）够不到
-    clearCacheByPattern('/assets/assets/?')
-    return result
-  },
+  deleteAsset: (recordcode: string): Promise<void> =>
+    // [M-13] 同 updateAsset：详情 pattern 显式化 + 失效移入写完成后
+    writeThenInvalidate(request.delete<void>(`/assets/assets/${recordcode}/`), () =>
+      invalidateAssetCache(recordcode),
+    ),
 
   /**
    * 按名称搜索资产
@@ -291,18 +291,13 @@ export const assetAPI = {
       broken_description?: string
       broken_date?: string
     },
-  ): Promise<Asset> => {
-    const result = await unwrapResponse(
+  ): Promise<Asset> =>
+    // 存量已 await，纯收敛（[M-19]/[AUD-47] 语义保留）：产出 pattern（详情 + 列表，含顺序）
+    // 与现状完全一致——mark-broken 是 action 端点，拦截器仅按写 URL 清缓存够不到详情/列表 key
+    writeThenInvalidate(
       request.post<Asset>(`/assets/assets/${recordcode}/mark-broken/`, data),
-    )
-    // [M-19] 写后失效 getAssetByCode 的 5min 缓存：mark-broken 是 action 端点，
-    // 拦截器仅按写 URL（…/mark-broken/）清缓存，不会命中详情 GET（…/recordcode/）缓存
-    clearCacheByPattern(`/assets/assets/${recordcode}/`)
-    // [AUD-47] 补列表精确失效：列表 key 形态为 /assets/assets/?page=...，
-    // 用 "/assets/assets/?" 子串精确命中列表 key，不误清他资产详情与 statistics 缓存
-    clearCacheByPattern('/assets/assets/?')
-    return result
-  },
+      () => invalidateAssetCache(recordcode),
+    ),
 
   /**
    * 获取资产组合详情
@@ -364,19 +359,13 @@ export const assetAPI = {
    * asset_code__in=ids 过滤并做 RBAC 范围校验（asset_view.py:357-367），
    * 与 detail 路由的 recordcode 约定不同，勿统一。
    */
-  batchDeleteAssets: async (assetCodes: string[]): Promise<BatchDeleteResult> => {
-    const result = await unwrapResponse(
-      request.post<BatchDeleteResult>('/assets/assets/batch-delete/', {
-        ids: assetCodes,
-      }),
-    )
-    // [M-19] 写后失效资产详情 GET 缓存：batch-delete 是 action 端点，拦截器仅按
-    // 写 URL（…/batch-delete/）清缓存，不会命中详情 GET（…/recordcode/）缓存。
-    // 按前缀清全部资产详情缓存（入参是 asset_code 非 recordcode，无法逐条精确失效；
-    // 前缀清除只导致缓存未命中的重取，不会返回错误数据）
-    clearCacheByPattern('/assets/assets/')
-    return result
-  },
+  batchDeleteAssets: (assetCodes: string[]): Promise<BatchDeleteResult> =>
+    // 入参是 asset_code 非 recordcode，无法逐条精确 → 宽失效（仅未命中重取）
+    // 存量已 await，纯收敛（[M-19] 语义保留）：产出 pattern 与现状一致
+    writeThenInvalidate(
+      request.post<BatchDeleteResult>('/assets/assets/batch-delete/', { ids: assetCodes }),
+      () => invalidateAssetCache(),
+    ),
 
   /**
    * 批量创建资产
@@ -384,16 +373,12 @@ export const assetAPI = {
    * 对应后端 AssetViewSet.batch_create action
    * 一次性提交多条资产数据，后端逐条处理并返回成功和失败明细
    */
-  batchCreateAssets: (items: AssetCreateForm[]): Promise<AssetBatchCreateResult> => {
-    const result = unwrapResponse(
-      request.post<AssetBatchCreateResult>('/assets/assets/batch-create/', {
-        items,
-      }),
-    )
-    // [AUD-55/BF-152] 写后列表精确失效：拦截器按写 URL（…/batch-create/）够不到列表 key
-    clearCacheByPattern('/assets/assets/?')
-    return result
-  },
+  batchCreateAssets: (items: AssetCreateForm[]): Promise<AssetBatchCreateResult> =>
+    // [M-13] 只新增记录，既有详情仍有效 → 只清列表，禁止宽失效
+    writeThenInvalidate(
+      request.post<AssetBatchCreateResult>('/assets/assets/batch-create/', { items }),
+      () => invalidateAssetListCache(),
+    ),
 
   /**
    * 获取资产二维码图片 URL

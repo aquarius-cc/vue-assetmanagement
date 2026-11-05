@@ -12,7 +12,7 @@
  *   - stores/createEntityStore: 批量删除结果类型
  */
 import { request, unwrapResponse, getBlob } from '@/api/index'
-import { invalidateAssetCache, invalidateSubResourceCache } from './assetCache'
+import { invalidateAssetCache, invalidateSubResourceCache, writeThenInvalidate } from './assetCache'
 import type { BlobDownload } from '@/api/request'
 import type {
   RepairAssetExtended,
@@ -57,12 +57,11 @@ export const repairAssetAPI = {
    * @param data 维修记录创建表单数据
    * @returns 创建的维修记录
    */
-  createRepairAsset: (data: RepairAssetCreateForm): Promise<RepairAssetExtended> => {
-    // [M-RC-08] 送修改变资产状态；表单仅 asset_code（非 recordcode，精确 key 对不上）→ 宽失效
-    const result = unwrapResponse(request.post<RepairAssetExtended>('/assets/repair-assets/', data))
-    invalidateAssetCache()
-    return result
-  },
+  createRepairAsset: (data: RepairAssetCreateForm): Promise<RepairAssetExtended> =>
+    // [M-RC-08/M-13] 表单仅 asset_code（非 recordcode，精确 key 对不上）→ 宽失效
+    writeThenInvalidate(request.post<RepairAssetExtended>('/assets/repair-assets/', data), () =>
+      invalidateAssetCache(),
+    ),
 
   /**
    * 更新维修记录
@@ -84,28 +83,29 @@ export const repairAssetAPI = {
    * 删除维修记录
    * @param recordcode 维修记录编码
    */
-  deleteRepairAsset: async (recordcode: string): Promise<void> => {
-    // [M-CACHE-1] 单删命中不了列表 key（/assets/repair-assets/?page=… 不含写 URL），显式失效
-    await unwrapResponse(request.delete<void>(`/assets/repair-assets/${recordcode}/`))
-    invalidateSubResourceCache('/assets/repair-assets/', [recordcode])
-  },
+  deleteRepairAsset: (recordcode: string): Promise<void> =>
+    // [M-CACHE-1/M-13] 单删命中不了列表 key（/assets/repair-assets/?page=… 不含写 URL），显式失效
+    writeThenInvalidate(request.delete<void>(`/assets/repair-assets/${recordcode}/`), () =>
+      invalidateSubResourceCache('/assets/repair-assets/', [recordcode]),
+    ),
 
   /**
    * 批量删除维修资产
    * POST /api/assets/repair-assets/batch-delete/
    * 对应后端 RepairAssetViewSet.batch_delete action
    */
-  batchDeleteRepairAssets: async (recordcodes: string[]): Promise<BatchDeleteResult> => {
-    const result = await unwrapResponse(
+  batchDeleteRepairAssets: (recordcodes: string[]): Promise<BatchDeleteResult> =>
+    // [M-CACHE-1/M-13] 批删 URL 两者皆不命中；同源：success_ids 优先，运行时缺失回退入参（保守过清）
+    writeThenInvalidate(
       request.post<BatchDeleteResult>('/assets/repair-assets/batch-delete/', {
         ids: recordcodes,
       }),
-    )
-    // [M-CACHE-1] 批删 URL 两者皆不命中；同源：success_ids 优先，运行时缺失回退入参（保守过清）
-    const successIds = Array.isArray(result.success_ids) ? result.success_ids : recordcodes
-    invalidateSubResourceCache('/assets/repair-assets/', successIds)
-    return result
-  },
+      (result) =>
+        invalidateSubResourceCache(
+          '/assets/repair-assets/',
+          Array.isArray(result.success_ids) ? result.success_ids : recordcodes,
+        ),
+    ),
 
   /**
    * 根据资产编码获取维修记录
@@ -131,14 +131,12 @@ export const repairAssetAPI = {
   repairAsset: (
     recordcode: string,
     data: Omit<RepairAssetCreateForm, 'asset_code' | 'operator_jobcode'>,
-  ): Promise<RepairAssetExtended> => {
-    // [M-RC-08] action 写 URL 比详情缓存 key 更深，需显式失效
-    const result = unwrapResponse(
+  ): Promise<RepairAssetExtended> =>
+    // [M-RC-08/M-13] action 写 URL 比详情缓存 key 更深，需显式失效；写成功后才失效
+    writeThenInvalidate(
       request.post<RepairAssetExtended>(`/assets/assets/${recordcode}/repair/`, data),
-    )
-    invalidateAssetCache(recordcode)
-    return result
-  },
+      () => invalidateAssetCache(recordcode),
+    ),
 
   /**
    * 维修完成（Action 端点）
@@ -152,14 +150,12 @@ export const repairAssetAPI = {
   repairDone: (
     recordcode: string,
     data: Pick<RepairAssetUpdateForm, 'actual_return_date' | 'physical_grade_after'>,
-  ): Promise<RepairAssetExtended> => {
-    // [M-RC-08] action 写 URL 比详情缓存 key 更深，需显式失效
-    const result = unwrapResponse(
+  ): Promise<RepairAssetExtended> =>
+    // [M-RC-08/M-13] action 写 URL 比详情缓存 key 更深，需显式失效；写成功后才失效
+    writeThenInvalidate(
       request.post<RepairAssetExtended>(`/assets/assets/${recordcode}/repair-done/`, data),
-    )
-    invalidateAssetCache(recordcode)
-    return result
-  },
+      () => invalidateAssetCache(recordcode),
+    ),
 
   /**
    * 维修失败（Action 端点）
@@ -169,14 +165,12 @@ export const repairAssetAPI = {
    * @param recordcode 资产记录编码（用作 URL 查找参数）
    * @returns 维修记录详情
    */
-  repairFailed: (recordcode: string): Promise<RepairAssetExtended> => {
-    // [M-RC-08] action 写 URL 比详情缓存 key 更深，需显式失效
-    const result = unwrapResponse(
+  repairFailed: (recordcode: string): Promise<RepairAssetExtended> =>
+    // [M-RC-08/M-13] action 写 URL 比详情缓存 key 更深，需显式失效；写成功后才失效
+    writeThenInvalidate(
       request.post<RepairAssetExtended>(`/assets/assets/${recordcode}/repair-failed/`),
-    )
-    invalidateAssetCache(recordcode)
-    return result
-  },
+      () => invalidateAssetCache(recordcode),
+    ),
 
   /**
    * 服务端 Excel 导出（BF-092/I-1）
