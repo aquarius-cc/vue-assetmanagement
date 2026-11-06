@@ -51,7 +51,7 @@
           <span class="label">操作时间：</span>
           <span class="value">{{ formatDateTimeFull(detailData.operation_time) }}</span>
         </div>
-        <div class="info-item">
+        <div class="info-item" v-if="isAdmin">
           <span class="label">IP地址：</span>
           <span class="value">{{ detailData.ip_address || '-' }}</span>
         </div>
@@ -88,12 +88,16 @@ import {
   auditOperationTypeTagMapping,
 } from '@/types/auditlog'
 import { formatDateTimeFull } from '@/utils/Format'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
 const auditLogStore = useAuditLogStore()
 const loading = ref(false)
 const detailData = ref<AuditLog | null>(null)
+
+// [BF-182 / M-22-F14-A] IP 字段仅系统管理员可见（角色源 DR-1）
+const { isAdmin } = usePermission()
 
 const handleBack = () => {
   router.push({ name: 'AuditLogDetails' })

@@ -126,7 +126,13 @@
             {{ row.operation_time ? exactFormatDate(row.operation_time) : '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="ip_address" label="IP地址" width="140" align="center" />
+        <el-table-column
+          v-if="isAdmin"
+          prop="ip_address"
+          label="IP地址"
+          width="140"
+          align="center"
+        />
       </el-table>
 
       <!-- 分页 -->
@@ -166,10 +172,11 @@ import {
   appLabelMapping,
   auditOperationTypeTagMapping,
 } from '@/types/auditlog'
-import type { ColumnConfig } from '@/utils/excelExporter'
 import { exactFormatDate } from '@/utils/Format'
 import { useServerExcelExport } from '@/composables/useServerExcelExport'
+import { usePermission } from '@/composables/usePermission'
 import { exportToExcel } from '@/utils/excelExporter'
+import { getAuditLogExportColumns } from './auditLogExportColumns'
 
 const route = useRoute()
 const router = useRouter()
@@ -177,6 +184,9 @@ const auditLogStore = useAuditLogStore()
 
 const { loading, tableData, currentPage, pageSize, total, filterForm, dateRange } =
   storeToRefs(auditLogStore)
+
+// [BF-182 / M-22-F14-A] IP 可见性角色源（DR-1：usePermission 单源，与后端 is_system_admin 对称）
+const { isAdmin } = usePermission()
 
 const isChildRouteActive = computed(() => {
   return route.name !== 'AuditLogDetails' && route.name === 'AuditLogDetail'
@@ -205,16 +215,6 @@ const handleRowClick = (row: AuditLog) => {
 
 // ===== Excel 导出 =====
 const { exportFromServer } = useServerExcelExport()
-const exportColumns: ColumnConfig<AuditLog>[] = [
-  { title: '应用模块', key: 'app_label', default: '' },
-  { title: '操作类型', key: 'operation_type', default: '' },
-  { title: '记录编码', key: 'record_code', default: '' },
-  { title: '操作描述', key: 'description', default: '' },
-  { title: '操作人工号', key: 'operator_jobcode', default: '' },
-  { title: '操作人', key: 'operator_name', default: '' },
-  { title: '操作时间', key: 'operation_time', default: '' },
-  { title: 'IP地址', key: 'ip_address', default: '' },
-]
 
 const handleExport = async () => {
   // P2-04: 「导出全部」迁服务端流式导出(修复 page_size=total 被 MAX_PAGE_SIZE=100 截断)。
@@ -238,7 +238,8 @@ const handleExport = async () => {
   if (range === 'current') {
     await exportToExcel({
       data: tableData.value,
-      columns: exportColumns,
+      // [BF-182 / M-22-F14-A] 客户端导出列随角色条件（与后端服务端导出剔列双保险）
+      columns: getAuditLogExportColumns(isAdmin.value),
       fileName: `审计日志_当前页面_${tableData.value.length}条.xlsx`,
       sheetName: '审计日志',
       confirmMessage: `确定要导出 ${tableData.value.length} 条审计日志数据吗？`,

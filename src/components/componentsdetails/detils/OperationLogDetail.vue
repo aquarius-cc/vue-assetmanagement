@@ -63,7 +63,7 @@
               <!-- 【A-3】操作日志审计需秒级精度，统一使用 formatDateTimeFull（YYYY-MM-DD HH:mm:ss） -->
               <span class="info-value">{{ formatDateTimeFull(detailData.operation_time) }}</span>
             </div>
-            <div class="info-item">
+            <div class="info-item" v-if="isAdmin">
               <span class="info-label">IP 地址：</span>
               <span class="info-value">{{ detailData.ip_address || 'N/A' }}</span>
             </div>
@@ -126,8 +126,9 @@ import { ElMessage } from 'element-plus'
 import { Back, Download, Document, List } from '@element-plus/icons-vue'
 import { useOperationLogStore } from '@/stores/operationLogStore'
 import { useExcelExport } from '@/composables/useExcelExport'
-import type { ColumnConfig } from '@/utils/excelExporter'
+import { usePermission } from '@/composables/usePermission'
 import type { OperationLog } from '@/types/operationlog'
+import { getOperationLogDetailExportColumns } from './operationLogDetailExport'
 import { operationTypeMapping, operationTypeTagMapping } from '@/types/operationlog'
 import { formatDateTimeFull } from '@/utils/Format'
 import type { ChangeRecord } from '@/types/form-helpers'
@@ -165,6 +166,9 @@ const operationLogStore = useOperationLogStore()
 const isLoading = ref(true)
 const detailData = ref<OperationLog | null>(null)
 
+// [BF-182 / M-22-F14-A] IP 字段/导出列仅系统管理员可见（角色源 DR-1）
+const { isAdmin } = usePermission()
+
 /** 解析后的变更详情列表（基于 before_data / after_data 逐字段对比） */
 const parsedChanges = computed<ChangeRecord[]>(() => {
   if (!detailData.value) return []
@@ -190,30 +194,6 @@ const parsedChanges = computed<ChangeRecord[]>(() => {
 
 // ===== Excel 导出配置 =====
 const { exportDetail } = useExcelExport()
-
-const exportColumns: ColumnConfig<OperationLog>[] = [
-  { title: 'ID', key: 'id', default: '' },
-  { title: '日志ID', key: 'logging_id', default: '' },
-  { title: '资产编码', key: 'asset_code', default: '' },
-  { title: '资产名称', key: 'asset_name', default: '' },
-  {
-    title: '操作类型',
-    key: 'operation_type',
-    default: '',
-    formatter: (v) => getOperationTypeText(v as string),
-  },
-  { title: '操作人', key: 'operator_name', default: '' },
-  { title: '操作人工号', key: 'operator_jobcode', default: '' },
-  {
-    title: '操作时间',
-    key: 'operation_time',
-    default: '',
-    // 【A-3】导出与页面展示保持同一秒级精度
-    formatter: (v) => formatDateTimeFull(v as string) || '',
-  },
-  { title: '描述', key: 'description', default: '' },
-  { title: 'IP地址', key: 'ip_address', default: '' },
-]
 
 // ===== 加载详情数据 =====
 const loadDetail = async (pk: string | number) => {
@@ -258,7 +238,7 @@ const handleExport = async () => {
   }
   await exportDetail(
     detailData.value,
-    exportColumns,
+    getOperationLogDetailExportColumns(isAdmin.value),
     `操作日志_${detailData.value.logging_id || detailData.value.id}`,
     '操作日志详情',
   )

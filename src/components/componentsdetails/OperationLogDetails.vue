@@ -167,8 +167,9 @@ import SmartListContainer from '@/components/commoncomponents/SmartListContainer
 import CommonList from '@/components/commoncomponents/CommonList.vue'
 import type { PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import type { PaginationQuery } from '@/stores/createEntityStore'
-import { operationLogColumns as columns } from './operationLog.columns'
+import { getOperationLogColumns } from './operationLog.columns'
 import { createOperationLogExcelExport } from '@/composables/useOperationLogExcelExport'
+import { usePermission } from '@/composables/usePermission'
 import type { OperationLog } from '@/types/operationlog'
 import { operationTypeMapping, operationTypeTagMapping } from '@/types/operationlog'
 import { useOperationLogStore } from '@/stores/operationLogStore'
@@ -179,6 +180,10 @@ import type { SmartListContainerExpose } from '@/types/common'
 const operationLogStore = useOperationLogStore()
 const route = useRoute()
 const router = useRouter()
+
+// ===== 角色条件列（[BF-182 / M-22-F14-A] IP 列仅系统管理员可见，与后端同口径） =====
+const { isAdmin } = usePermission()
+const columns = computed(() => getOperationLogColumns(isAdmin.value))
 
 /**
  * SmartListContainer 组件引用
