@@ -13,9 +13,21 @@
  *   - element-plus (ElMessage)
  */
 
-import { isAxiosError } from 'axios'
+import { isAxiosError, type AxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
 import { logError } from '@/utils/logger'
+
+/**
+ * [M-21/S6] 组件/视图层统一错误类型守卫（唯一入口）。
+ * 必须是类型谓词（err is AxiosError）：消费方的 err.response?.status / .data
+ * 依赖此收窄；改成 boolean 返回会让 npm run type-check 在 .vue 上报 unknown 错。
+ * data 显型为 { message?: string }：未带泛型的 AxiosError 会把 data 收窄为 {},
+ * 使既有 `.data?.message` 调用点报 TS2339；其余字段访问按 D6 口径走
+ * getAxiosResponseData（响应体形状不入守卫签名）。
+ */
+export function isApiError(err: unknown): err is AxiosError<{ message?: string }> {
+  return isAxiosError(err)
+}
 
 /**
  * 从错误对象中提取可读的错误消息

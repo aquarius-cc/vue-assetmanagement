@@ -12,6 +12,7 @@ import {
   getAxiosResponseData,
   showErrorMessage,
   notifyCallerError,
+  isApiError,
 } from '../errorHandler'
 
 describe('errorHandler', () => {
@@ -143,5 +144,28 @@ describe('errorHandler', () => {
       expect(ElMessage.error).toHaveBeenCalledTimes(1)
       expect(ElMessage.error).toHaveBeenCalledWith('操作失败，请重试')
     })
+  })
+})
+
+describe('isApiError [M-21 / S6]', () => {
+  it('真 AxiosError 返回 true，类型谓词收窄后可读 response.status', () => {
+    const err: unknown = new AxiosError('x', 'ERR_BAD_REQUEST', undefined as never, undefined, {
+      status: 404,
+      data: {},
+      statusText: 'Not Found',
+      headers: {},
+      config: {} as never,
+    })
+    expect(isApiError(err)).toBe(true)
+    if (isApiError(err)) {
+      expect(err.response?.status).toBe(404)
+    }
+  })
+
+  it('普通 Error / null / undefined / 字符串返回 false', () => {
+    expect(isApiError(new Error('boom'))).toBe(false)
+    expect(isApiError(null)).toBe(false)
+    expect(isApiError(undefined)).toBe(false)
+    expect(isApiError('oops')).toBe(false)
   })
 })

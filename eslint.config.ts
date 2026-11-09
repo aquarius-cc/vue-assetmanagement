@@ -116,6 +116,16 @@ export default defineConfigWithVueTs(
         {
           patterns: [
             {
+              // [M-21/S6] F11 执行面闭合：精确 paths 会漏 axios 子路径，
+              // 故与既有条目同用 regex 字段（BF-086 教训）。
+              regex: '^axios(/|$)',
+              message:
+                '禁止组件/视图直接 import axios（F11 执行面闭合）。' +
+                '类型守卫用 @/utils/errorHandler 的 isApiError；' +
+                '状态码/响应体用 getAxiosStatus / getAxiosResponseData。' +
+                'infra 例外仅 @/api/config、@/api/request、@/api/index。',
+            },
+            {
               // ESLint v10: group 仅支持 glob, 正则必须走显式 regex 字段
               regex: '@\\/api\\/(?!config$|request$|index$)[a-zA-Z0-9_-]+$',
               message:

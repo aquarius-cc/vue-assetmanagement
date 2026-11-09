@@ -232,7 +232,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import { isAxiosError } from 'axios'
+import { isApiError as isAxiosError } from '@/utils/errorHandler'
 import { useAssetStore } from '@/stores/assetStore'
 // [HR-01] 后端 v1.1.0 改为 read_only，移除UserStore（用户搜索联动已移除了
 import { useOutAssetStore } from '@/stores/outAssetStore'

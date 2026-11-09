@@ -15,7 +15,7 @@
  */
 import { reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { isAxiosError } from 'axios'
+import { isApiError as isAxiosError } from '@/utils/errorHandler'
 import { useNotificationStore } from '@/stores'
 import { safeNavigate } from '@/utils/navigation'
 import { formatDateTimeFull } from '@/utils/Format'

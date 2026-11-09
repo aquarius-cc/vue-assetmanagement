@@ -142,7 +142,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { isAxiosError } from 'axios'
+import { isApiError as isAxiosError } from '@/utils/errorHandler'
 import { Plus, Delete } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { batchCreateAssetTypes, useAssetTypeStore } from '@/stores/assetTypeStore'

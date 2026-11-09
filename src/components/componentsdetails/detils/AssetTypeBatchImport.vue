@@ -91,7 +91,7 @@ defineOptions({ name: 'AssetTypeBatchImport' })
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
-import { isAxiosError } from 'axios'
+import { isApiError as isAxiosError } from '@/utils/errorHandler'
 import { Upload } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useBatchImport } from '@/composables/useBatchImport'

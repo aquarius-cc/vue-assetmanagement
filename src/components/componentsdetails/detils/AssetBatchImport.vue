@@ -149,7 +149,7 @@ import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuide
 import { useAssetStore } from '@/stores/assetStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import { notifyCallerError } from '@/utils/errorHandler'
-import { isAxiosError } from 'axios'
+import { isApiError as isAxiosError } from '@/utils/errorHandler'
 import { downloadExcelTemplate } from '@/utils/batchImport/templateExport'
 import type { AssetExcelRow } from '@/types/batch-import'
 import type { AssetCreateForm } from '@/types/asset'

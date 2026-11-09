@@ -371,7 +371,6 @@ const handleKeyPress = (event: KeyboardEvent) => {
 }
 
 .network-test {
-  /* margin-top: 6px; */
   font-size: 14px;
   background: var(--background-color);
   border-color: var(--border-color-input);
