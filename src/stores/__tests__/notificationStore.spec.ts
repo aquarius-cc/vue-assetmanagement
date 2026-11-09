@@ -185,4 +185,46 @@ describe('NotificationStore', () => {
       expect(notificationStore.notifications.every((n) => n.is_read)).toBe(true)
     })
   })
+
+  describe('[M-32/S4] 请求序号守卫', () => {
+    it('慢响应不得覆盖新请求的结果（后写不覆盖新写）', async () => {
+      const { notificationAPI } = await import('@/api/notification')
+      let resolveFirst!: (v: unknown) => void
+      let resolveSecond!: (v: unknown) => void
+      vi.mocked(notificationAPI.getNotifications)
+        .mockImplementationOnce(() => new Promise((r) => { resolveFirst = r }))
+        .mockImplementationOnce(() => new Promise((r) => { resolveSecond = r }))
+
+      const older = notificationStore.fetchNotifications({ page: 1, page_size: 20 })
+      const newer = notificationStore.fetchNotifications({ page: 2, page_size: 20 })
+
+      resolveSecond({ count: 1, results: [makeItem(99)] })
+      await newer
+      resolveFirst({ count: 1, results: [makeItem(1), makeItem(2)] })
+      await older
+
+      expect(notificationStore.notifications.map((n) => n.id)).toEqual([99])
+      expect(notificationStore.pagination.total).toBe(1)
+      expect(notificationStore.loading).toBe(false)
+    })
+
+    it('过期请求抛错时不得复位最新请求的 loading', async () => {
+      const { notificationAPI } = await import('@/api/notification')
+      let rejectFirst!: (e: unknown) => void
+      let resolveSecond!: (v: unknown) => void
+      vi.mocked(notificationAPI.getNotifications)
+        .mockImplementationOnce(() => new Promise((_r, rej) => { rejectFirst = rej }))
+        .mockImplementationOnce(() => new Promise((r) => { resolveSecond = r }))
+
+      const older = notificationStore.fetchNotifications({ page: 1, page_size: 20 })
+      const newer = notificationStore.fetchNotifications({ page: 2, page_size: 20 })
+      rejectFirst(new Error('stale'))
+      await expect(older).rejects.toThrow('stale')
+      expect(notificationStore.loading).toBe(true)
+
+      resolveSecond({ count: 0, results: [] })
+      await newer
+      expect(notificationStore.loading).toBe(false)
+    })
+  })
 })

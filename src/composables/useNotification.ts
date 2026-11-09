@@ -138,23 +138,30 @@ export function useNotification() {
    * [P1-02/P2-09] 后端已统一分页信封; unwrapResponse 已剥外层信封, 此处直接消费载荷
    * (与 notificationStore 同构); limit 参数随 P1-02 移除, 改传 page_size
    */
+  // [M-32] 请求序号：REST 拉取与 WS 推送共用 notifications，过期响应（含过期错误
+  // 置 fetchError）不得覆盖最新请求的结果或状态
+  let listRequestSeq = 0
+
   async function fetchNotifications(pageSize = 20) {
+    const seq = ++listRequestSeq
     isLoading.value = true
     fetchError.value = false // [修复] 重置错误状态
     try {
       const data = await notificationAPI.getNotifications({ page_size: pageSize })
+      if (seq !== listRequestSeq) return
       if (Array.isArray(data)) {
         notifications.value = data
       } else {
         notifications.value = data.results
       }
     } catch (err) {
+      if (seq !== listRequestSeq) return
       logError('composables/useNotification', '加载通知列表失败:', err)
       // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
       notifyCallerError(err, '加载通知列表失败')
       fetchError.value = true // [修复] 设置错误状态
     } finally {
-      isLoading.value = false
+      if (seq === listRequestSeq) isLoading.value = false
     }
   }
 

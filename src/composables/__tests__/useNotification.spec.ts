@@ -612,4 +612,28 @@ describe('useNotification', () => {
       expect(wsInstances).toHaveLength(12)
     })
   })
+
+  describe('[M-32/S4] 请求序号守卫（REST 拉取与 WS 推送共用 notifications）', () => {
+    it('交错响应：旧请求不得改写列表与 fetchError', async () => {
+      const { notificationAPI } = await import('@/api/notification')
+      let rejectFirst!: (e: unknown) => void
+      let resolveSecond!: (v: unknown) => void
+      vi.mocked(notificationAPI.getNotifications)
+        .mockImplementationOnce(() => new Promise((_r, rej) => { rejectFirst = rej }))
+        .mockImplementationOnce(() => new Promise((r) => { resolveSecond = r }))
+
+      const { fetchNotifications, notifications, fetchError, isLoading } = useNotification()
+      const older = fetchNotifications(20)
+      const newer = fetchNotifications(20)
+
+      resolveSecond({ count: 1, results: [{ id: 99 }] })
+      await newer
+      rejectFirst(new Error('stale'))
+      await older
+
+      expect(notifications.value.map((n: { id: number }) => n.id)).toEqual([99])
+      expect(fetchError.value).toBe(false)
+      expect(isLoading.value).toBe(false)
+    })
+  })
 })

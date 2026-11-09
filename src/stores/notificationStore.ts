@@ -33,16 +33,21 @@ export const useNotificationStore = defineStore('notification', () => {
     total: 0,
   })
 
+  // [M-32] 请求序号：仅最新请求的响应写入状态（范式同 auditLogStore loadDataSeq）
+  let listRequestSeq = 0
+
   /**
    * 获取通知列表（支持分页与筛选参数）
    * @param params 查询参数（page/page_size 及筛选条件）
    */
   async function fetchNotifications(params?: NotificationFilterParams) {
+    const seq = ++listRequestSeq
     loading.value = true
     try {
       const data = (await notificationAPI.getNotifications(params)) as unknown as
         | NotificationItem[]
         | NotificationPaginatedData
+      if (seq !== listRequestSeq) return
       if (Array.isArray(data)) {
         notifications.value = data
         pagination.total = data.length
@@ -51,7 +56,7 @@ export const useNotificationStore = defineStore('notification', () => {
         pagination.total = data.count || 0
       }
     } finally {
-      loading.value = false
+      if (seq === listRequestSeq) loading.value = false
     }
   }
 
