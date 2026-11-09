@@ -16,7 +16,7 @@
  *   - validateUserStatus: 校验用户状态合法性
  *   - transformAndValidateExcelUser: Excel 用户数据转换与校验
  *   - transformAndValidateExcelDepartment: Excel 部门数据转换与校验
- *   - outassetStatusMapping / outassetTypeMapping: 出库资产状态与类型映射
+ *   - ASSET_STATUS_MAP / outassetTypeMapping: 资产状态与出库类型映射
  *   - parseExcelDate: 解析 Excel 中的日期字符串
  *   - getAssetStatusText: 获取资产状态中文文本
  *   - getOutAssetStatusText: 获取出库资产状态中文文本
