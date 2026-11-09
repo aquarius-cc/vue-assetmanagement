@@ -24,6 +24,9 @@ import {
   HARD_DISK_STATUS_MAP,
   EMPLOYEE_STATUS_MAP,
   STATUS_COLOR_MAP,
+  PAYMENT_STATUS_MAP,
+  getPaymentStatusTagType,
+  getPaymentStatusText,
 } from '../statusMapping'
 
 describe('statusMapping', () => {
@@ -264,5 +267,23 @@ describe('statusMapping', () => {
       expect(STATUS_COLOR_MAP).toHaveProperty('danger')
       expect(STATUS_COLOR_MAP).toHaveProperty('info')
     })
+  })
+})
+
+describe('[M-33/S3] PAYMENT_STATUS_MAP（键集与 APPROVAL_STATUS_MAP 不同，禁止合并）', () => {
+  it('PAYMENT_STATUS_MAP 三键与文案、标签类型锁定（不得与 APPROVAL 混用）', () => {
+    expect(Object.keys(PAYMENT_STATUS_MAP)).toEqual(['pending', 'approved', 'deleted'])
+    expect(getPaymentStatusText('pending')).toBe('待审核')
+    expect(getPaymentStatusText('approved')).toBe('已审核')
+    expect(getPaymentStatusText('deleted')).toBe('已删除')
+    expect(getPaymentStatusTagType('pending')).toBe('warning')
+    expect(getPaymentStatusTagType('approved')).toBe('success')
+    expect(getPaymentStatusTagType('deleted')).toBe('info')
+    expect(getPaymentStatusTagType('unknown')).toBe('info')
+  })
+
+  it('与 APPROVAL_STATUS_MAP 键集不同（拒绝键不存在，独立映射）', () => {
+    expect(PAYMENT_STATUS_MAP).not.toHaveProperty('rejected')
+    expect(APPROVAL_STATUS_MAP).toHaveProperty('rejected')
   })
 })

@@ -9,8 +9,25 @@
  * 环境约束（vitest.config.ts 为独立 plugins:[vue()]，不合并 vite.config.ts）：
  * unplugin-vue-components / ElementPlusResolver 不生效 → 所有 el-* 必须显式 stub。
  */
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+/** 从 cwd 向上找含 package.json 的仓根（vitest 运行手册形态：cd vue-assetmanagement） */
+function resolveRepoFile(rel: string): string {
+  let dir = process.cwd()
+  for (let i = 0; i < 4; i++) {
+    const candidate = resolve(dir, rel)
+    try {
+      readFileSync(candidate)
+      return candidate
+    } catch {
+      dir = resolve(dir, '..')
+    }
+  }
+  return resolve(process.cwd(), rel)
+}
 
 const { elMessageSuccess, elMessageError, addPaymentMock, deletePaymentMock, approvePaymentMock } =
   vi.hoisted(() => ({
@@ -187,5 +204,20 @@ describe('ContractPaymentRecord（M-7 / BF-095）', () => {
       payment_method: 'cash',
     })
     expect(elMessageSuccess).toHaveBeenCalledWith('支付记录添加成功')
+  })
+
+  it('[M-33] 支付状态映射收编 statusMapping（源码不再含内联映射与状态字面量）', () => {
+    // 静态断言（G-3 精神）：内联定义清零（用 const 前缀精确定义，避免误伤
+    // statusMapping 收编函数的合法 import——"statusMapping" 含子串 "statusMap"）
+    // 路径定位: import.meta.url 在本 vitest 环境非 file scheme(URL TypeError),
+    // 改从 cwd 向上找仓根(含 package.json 的 vue-assetmanagement 目录)
+    const source = readFileSync(resolveRepoFile('src/components/componentsdetails/detils/ContractPaymentRecord.vue'), 'utf-8')
+    expect(source).not.toContain('const statusMap')
+    expect(source).not.toContain('const getStatusType')
+    expect(source).not.toContain("'pending'")
+    expect(source).not.toContain("'approved'")
+    expect(source).not.toContain("'deleted'")
+    expect(source).toContain('getPaymentStatusText')
+    expect(source).toContain('PaymentStatus')
   })
 })

@@ -62,6 +62,14 @@ export const ContractSettlementStatus = {
 export type ContractSettlementStatus =
   (typeof ContractSettlementStatus)[keyof typeof ContractSettlementStatus]
 
+/** 支付记录审核状态（值集合与后端逐字一致，禁止改动字面量） */
+export const PaymentStatus = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  DELETED: 'deleted',
+} as const
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
+
 /**
  * 支付记录接口
  * 对应后端 ContractPaymentService.add_payment() 返回的单条支付记录
@@ -73,7 +81,7 @@ export interface PaymentRecord {
   description: string
   payment_method: string | null
   operator: string
-  status: 'pending' | 'approved' | 'deleted'
+  status: PaymentStatus
   created_at: string
   deleted_at?: string
   deleted_by?: string

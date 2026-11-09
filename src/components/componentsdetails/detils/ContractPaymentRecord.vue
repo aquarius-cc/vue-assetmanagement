@@ -53,15 +53,15 @@
         <el-table-column prop="operator" label="操作人" width="100" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)" size="small">
-              {{ statusMap[row.status] || row.status }}
+            <el-tag :type="getPaymentStatusTagType(row.status)" size="small">
+              {{ getPaymentStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button
-              v-if="row.status === 'pending'"
+              v-if="row.status === PaymentStatus.PENDING"
               size="small"
               type="primary"
               @click="handleApprove(row)"
@@ -69,7 +69,7 @@
               审核
             </el-button>
             <el-button
-              v-if="row.status !== 'deleted' && row.status !== 'approved'"
+              v-if="row.status !== PaymentStatus.DELETED && row.status !== PaymentStatus.APPROVED"
               size="small"
               type="danger"
               @click="handleDelete(row)"
@@ -143,8 +143,9 @@ import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { addPaymentRecord, deletePaymentRecord, approvePaymentRecord } from '@/stores/contractStore'
-import type { Contract, PaymentRecord } from '@/types/contract'
+import { PaymentStatus, type Contract, type PaymentRecord } from '@/types/contract'
 import { getErrorMessage } from '@/utils/errorHandler'
+import { getPaymentStatusText, getPaymentStatusTagType } from '@/utils/statusMapping'
 
 // Props
 const props = defineProps<{
@@ -176,13 +177,6 @@ const rules: FormRules = {
   description: [{ required: true, message: '请输入支付说明', trigger: 'blur' }],
 }
 
-// 映射表
-const statusMap: Record<string, string> = {
-  pending: '待审核',
-  approved: '已审核',
-  deleted: '已删除',
-}
-
 const paymentMethodMap: Record<string, string> = {
   bank_transfer: '银行转账',
   cash: '现金',
@@ -206,7 +200,7 @@ const amountUnpaid = computed(() => {
 const activePayments = computed(() => {
   const record = props.contract.paid_record
   if (!record || typeof record === 'string') return []
-  return (record.payments || []).filter((p) => p.status !== 'deleted')
+  return (record.payments || []).filter((p) => p.status !== PaymentStatus.DELETED)
 })
 
 const paymentPercentage = computed(() => {
@@ -223,15 +217,6 @@ const formatPrice = (value: number) => {
 
 const formatPercentage = (percentage: number) => {
   return `${percentage.toFixed(1)}%`
-}
-
-const getStatusType = (status: string) => {
-  const map: Record<string, string> = {
-    pending: 'warning',
-    approved: 'success',
-    deleted: 'info',
-  }
-  return map[status] || 'info'
 }
 
 const showAddDialog = () => {

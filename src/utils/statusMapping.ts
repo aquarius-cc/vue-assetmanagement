@@ -57,6 +57,16 @@ export const APPROVAL_STATUS_MAP: Record<
   rejected: { label: '已拒绝', type: 'danger' },
 }
 
+// ===== 支付记录审核状态映射（M-33 收编 ContractPaymentRecord 内联映射；键集与 APPROVAL_STATUS_MAP 不同，禁止合并） =====
+export const PAYMENT_STATUS_MAP: Record<
+  string,
+  { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }
+> = {
+  pending: { label: '待审核', type: 'warning' },
+  approved: { label: '已审核', type: 'success' },
+  deleted: { label: '已删除', type: 'info' },
+}
+
 // ===== 维修状态映射（对齐 RepairAsset.RepairStatus 枚举） =====
 export const REPAIR_STATUS_MAP: Record<
   string,
@@ -153,6 +163,16 @@ export function getApprovalStatusTagType(status: string) {
 /** 获取审批状态文本 */
 export function getApprovalStatusText(status: string) {
   return getStatusInfo(status, APPROVAL_STATUS_MAP).label
+}
+
+/** 获取支付记录审核状态标签类型（M-33 收编 ContractPaymentRecord 内联映射） */
+export function getPaymentStatusTagType(status: string) {
+  return getStatusInfo(status, PAYMENT_STATUS_MAP).type
+}
+
+/** 获取支付记录审核状态文本 */
+export function getPaymentStatusText(status: string) {
+  return getStatusInfo(status, PAYMENT_STATUS_MAP).label
 }
 
 /** 获取维修状态标签类型 */
