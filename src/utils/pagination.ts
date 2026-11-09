@@ -16,3 +16,13 @@ export const MAX_PAGE_SIZE = 100
 
 /** 默认页容量（唯一事实源，M-20）。store 分页兜底必须引用此处，禁止写 10/20 字面量（DR-1） */
 export const DEFAULT_PAGE_SIZE = 20
+
+/** [M-20] 页容量就近吸附归一化（M-23 逻辑唯一实现，DR-1）。 */
+export function normalizePageSize(
+  raw: number,
+  options: readonly number[] = PAGE_SIZE_OPTIONS,
+): number {
+  if (options.includes(raw)) return raw
+  const smaller = options.filter((o) => o <= raw).sort((a, b) => b - a)[0]
+  return smaller ?? DEFAULT_PAGE_SIZE
+}

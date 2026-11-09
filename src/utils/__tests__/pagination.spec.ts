@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { MAX_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '../pagination'
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, PAGE_SIZE_OPTIONS, normalizePageSize } from '../pagination'
 
 describe('PAGE_SIZE_OPTIONS', () => {
   it('exposes the shared pagination size options (single source of truth)', () => {
@@ -19,5 +19,20 @@ describe('PAGE_SIZE_OPTIONS', () => {
 
   it('contains only positive integers', () => {
     expect(PAGE_SIZE_OPTIONS.every((n) => Number.isInteger(n) && n > 0)).toBe(true)
+  })
+})
+
+describe('normalizePageSize [M-20]', () => {
+  it('非法档位向下吸附，合法档位原样返回', () => {
+    expect(normalizePageSize(500)).toBe(100)
+    expect(normalizePageSize(40)).toBe(20)
+    expect(normalizePageSize(20)).toBe(20)
+    expect(normalizePageSize(50)).toBe(50)
+    expect(normalizePageSize(0)).toBe(20)
+  })
+
+  it('自定义 options 生效，无合法项回落默认', () => {
+    expect(normalizePageSize(80, [10, 20, 50])).toBe(50)
+    expect(normalizePageSize(5, [10, 20, 50])).toBe(20)
   })
 })
