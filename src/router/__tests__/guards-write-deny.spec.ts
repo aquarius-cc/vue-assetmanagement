@@ -253,9 +253,19 @@ describe('M-19 仅写 deny 路由守卫', () => {
     it('[M-32 负向断言] 已删死条目 /main/system 不得再命中任何白名单前缀', () => {
       // CT-4 回归屏障：防止死条目被悄悄加回（幽灵门槛会破坏「前缀命中=已有门槛」判据）
       expect(roleWhitelist['/main/system']).toBeUndefined()
-      expect(Object.keys(roleWhitelist).some((p) => '/main/systemdetails'.startsWith(p))).toBe(
-        false,
-      )
+      // [M-44] 收敛为与新判据同源的 hasExplicitWriteGate 单一入口（原硬编码 startsWith）
+      expect(hasExplicitWriteGate('/main/systemdetails')).toBe(false)
+    })
+
+    it('[M-44 负向断言] 新增影子路由不得被现有白名单前缀误命中', () => {
+      // 以现有白名单为前缀的未来路由：startsWith 会误命中，边界匹配必须为 false
+      expect(hasExplicitWriteGate('/main/auditlogdetails-extra')).toBe(false)
+      expect(hasExplicitWriteGate('/main/departmentdetails-extra')).toBe(false)
+    })
+
+    it('[M-44 正向不变量] 精确前缀与子路径仍命中', () => {
+      expect(hasExplicitWriteGate('/main/auditlogdetails')).toBe(true)
+      expect(hasExplicitWriteGate('/main/auditlogdetails/auditlogdetail')).toBe(true)
     })
   })
 })

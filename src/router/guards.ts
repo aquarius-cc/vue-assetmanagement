@@ -52,6 +52,11 @@ export const roleWhitelist: Record<string, string[]> = {
   '/main/auditlogdetails': [ROLE_CODES.SYSTEM_ADMIN, ROLE_CODES.AUDITOR],
 }
 
+// [M-44] 前缀必须落在路径边界：精确相等或后接 '/'。
+function isPathWithinPrefix(path: string, prefix: string): boolean {
+  return path === prefix || path.startsWith(prefix + '/')
+}
+
 /**
  * 检查用户角色是否允许访问目标路由
  * 超级管理员短路放行（authStore.isSuperuser，cookie 通道来自 profile、bearer 来自 JWT）
@@ -83,7 +88,7 @@ function checkRoleAccess(
   // fallback: 静态路径前缀匹配（适用于系统配置等无动态段的路由）
   const sortedPrefixes = Object.keys(roleWhitelist).sort((a, b) => b.length - a.length)
   for (const prefix of sortedPrefixes) {
-    if (targetPath.startsWith(prefix)) {
+    if (isPathWithinPrefix(targetPath, prefix)) {
       return roleWhitelist[prefix].includes(userRole)
     }
   }
@@ -101,7 +106,7 @@ function checkRoleAccess(
  */
 export function hasExplicitWriteGate(targetPath: string, requiredMinRole?: string): boolean {
   if (requiredMinRole) return true
-  return Object.keys(roleWhitelist).some((prefix) => targetPath.startsWith(prefix))
+  return Object.keys(roleWhitelist).some((prefix) => isPathWithinPrefix(targetPath, prefix))
 }
 
 // 应用状态初始化标志（仅在首次路由守卫执行时初始化一次）
