@@ -21,6 +21,10 @@ import { safeNavigate } from '@/utils/navigation'
 import { formatDateTimeFull } from '@/utils/Format'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import { usePagedList } from '@/composables/usePagedList'
+import {
+  NOTIFICATION_PRIORITY_COLOR_MAP,
+  NOTIFICATION_TYPE_COLOR_MAP,
+} from '@/utils/statusMapping'
 import type { NotificationItem, NotificationFilterParams } from '@/types/notification'
 
 // 筛选参数
@@ -86,16 +90,9 @@ const readOptions = [
   { label: '已读', value: 'true' },
 ]
 
-const priorityColorMap: Record<string, string> = {
-  high: 'danger',
-  medium: 'warning',
-  low: 'info',
-}
-const typeColorMap: Record<string, string> = {
-  approval: 'primary',
-  status_change: 'success',
-  system: 'info',
-}
+// [批次4b C-16] 优先级/类型颜色收编 statusMapping 单源（裁决：本页口径为权威）
+const priorityColorMap = NOTIFICATION_PRIORITY_COLOR_MAP
+const typeColorMap = NOTIFICATION_TYPE_COLOR_MAP
 
 function handleSearch() {
   search(buildFilterParams())

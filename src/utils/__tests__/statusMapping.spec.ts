@@ -27,6 +27,12 @@ import {
   PAYMENT_STATUS_MAP,
   getPaymentStatusTagType,
   getPaymentStatusText,
+  NOTIFICATION_TYPE_COLOR_MAP,
+  NOTIFICATION_TYPE_LABEL_MAP,
+  NOTIFICATION_PRIORITY_COLOR_MAP,
+  getNotificationTagType,
+  getNotificationTypeLabel,
+  getNotificationPriorityTagType,
 } from '../statusMapping'
 
 describe('statusMapping', () => {
@@ -285,5 +291,62 @@ describe('[M-33/S3] PAYMENT_STATUS_MAP（键集与 APPROVAL_STATUS_MAP 不同，
   it('与 APPROVAL_STATUS_MAP 键集不同（拒绝键不存在，独立映射）', () => {
     expect(PAYMENT_STATUS_MAP).not.toHaveProperty('rejected')
     expect(APPROVAL_STATUS_MAP).toHaveProperty('rejected')
+  })
+})
+
+describe('通知域映射（批次4b C-16 收编，裁决：以 NotificationList 列表页为准）', () => {
+  it('NOTIFICATION_TYPE_COLOR_MAP 键集与映射值（裁决口径）', () => {
+    expect(Object.keys(NOTIFICATION_TYPE_COLOR_MAP).sort()).toEqual([
+      'approval',
+      'status_change',
+      'system',
+    ])
+    expect(NOTIFICATION_TYPE_COLOR_MAP).toEqual({
+      approval: 'primary',
+      status_change: 'success',
+      system: 'info',
+    })
+    expect(getNotificationTagType('approval')).toBe('primary')
+    expect(getNotificationTagType('status_change')).toBe('success')
+    expect(getNotificationTagType('system')).toBe('info')
+    expect(getNotificationTagType('unknown')).toBe('info')
+  })
+
+  it('NOTIFICATION_TYPE_LABEL_MAP 键集与映射值（status_change=状态变更，订正 Bell 旧「状态」）', () => {
+    expect(Object.keys(NOTIFICATION_TYPE_LABEL_MAP).sort()).toEqual([
+      'approval',
+      'status_change',
+      'system',
+    ])
+    expect(NOTIFICATION_TYPE_LABEL_MAP).toEqual({
+      approval: '审批',
+      status_change: '状态变更',
+      system: '系统',
+    })
+    expect(getNotificationTypeLabel('approval')).toBe('审批')
+    expect(getNotificationTypeLabel('status_change')).toBe('状态变更')
+    expect(getNotificationTypeLabel('system')).toBe('系统')
+    expect(getNotificationTypeLabel('unknown')).toBe('unknown')
+  })
+
+  it('NOTIFICATION_PRIORITY_COLOR_MAP 键集与映射值（独立域，与类型色不共用）', () => {
+    expect(Object.keys(NOTIFICATION_PRIORITY_COLOR_MAP).sort()).toEqual(['high', 'low', 'medium'])
+    expect(NOTIFICATION_PRIORITY_COLOR_MAP).toEqual({
+      high: 'danger',
+      medium: 'warning',
+      low: 'info',
+    })
+    expect(getNotificationPriorityTagType('high')).toBe('danger')
+    expect(getNotificationPriorityTagType('medium')).toBe('warning')
+    expect(getNotificationPriorityTagType('low')).toBe('info')
+    expect(getNotificationPriorityTagType('unknown')).toBe('info')
+  })
+
+  it('类型色与优先级色键集不相交（两域独立，禁止混用）', () => {
+    expect(
+      Object.keys(NOTIFICATION_TYPE_COLOR_MAP).filter((k) =>
+        Object.hasOwn(NOTIFICATION_PRIORITY_COLOR_MAP, k),
+      ),
+    ).toEqual([])
   })
 })

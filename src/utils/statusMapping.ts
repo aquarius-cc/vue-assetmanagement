@@ -67,6 +67,46 @@ export const PAYMENT_STATUS_MAP: Record<
   deleted: { label: '已删除', type: 'info' },
 }
 
+// ===== 通知域映射（批次4b C-16 收编 NotificationBell/NotificationList 内联映射；裁决 2026-11-10：类型色以 NotificationList 列表页为准） =====
+export const NOTIFICATION_TYPE_COLOR_MAP: Record<
+  string,
+  'success' | 'warning' | 'danger' | 'info' | 'primary'
+> = {
+  approval: 'primary',
+  status_change: 'success',
+  system: 'info',
+}
+
+export const NOTIFICATION_TYPE_LABEL_MAP: Record<string, string> = {
+  approval: '审批',
+  status_change: '状态变更',
+  system: '系统',
+}
+
+export const NOTIFICATION_PRIORITY_COLOR_MAP: Record<
+  string,
+  'success' | 'warning' | 'danger' | 'info' | 'primary'
+> = {
+  high: 'danger',
+  medium: 'warning',
+  low: 'info',
+}
+
+/** 获取通知类型 tag 颜色（未知键回退 info） */
+export function getNotificationTagType(type: string) {
+  return NOTIFICATION_TYPE_COLOR_MAP[type] || 'info'
+}
+
+/** 获取通知类型文本（未知键回退原值） */
+export function getNotificationTypeLabel(type: string) {
+  return NOTIFICATION_TYPE_LABEL_MAP[type] || type
+}
+
+/** 获取通知优先级 tag 颜色（未知键回退 info） */
+export function getNotificationPriorityTagType(priority: string) {
+  return NOTIFICATION_PRIORITY_COLOR_MAP[priority] || 'info'
+}
+
 // ===== 维修状态映射（对齐 RepairAsset.RepairStatus 枚举） =====
 export const REPAIR_STATUS_MAP: Record<
   string,

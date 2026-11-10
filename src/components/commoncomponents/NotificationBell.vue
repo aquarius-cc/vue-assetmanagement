@@ -61,7 +61,7 @@
               @click="handleClick(n)"
             >
               <div class="item-header">
-                <el-tag :type="getTagType(n.type)" size="small">{{ getTypeLabel(n.type) }}</el-tag>
+                <el-tag :type="getNotificationTagType(n.type)" size="small">{{ getNotificationTypeLabel(n.type) }}</el-tag>
                 <span class="item-time">{{ formatRelativeTime(n.created_at) }}</span>
               </div>
               <div class="item-title">{{ n.title }}</div>
@@ -80,6 +80,12 @@ import { safeNavigate } from '@/utils/navigation'
 import { Bell, Close } from '@element-plus/icons-vue'
 import { useNotification, type Notification } from '@/composables/useNotification'
 import { formatRelativeTime } from '@/utils/Format'
+// [批次4b C-16] 类型色/文案收编 statusMapping 单源（裁决：以 NotificationList 为准，
+// approval warning→primary / status_change「状态」→「状态变更」为经批准的可见变更）
+import {
+  getNotificationTagType,
+  getNotificationTypeLabel,
+} from '@/utils/statusMapping'
 
 const {
   notifications,
@@ -114,23 +120,8 @@ function handleClick(n: Notification) {
   }
 }
 
-function getTagType(type: string) {
-  const map: Record<string, string> = {
-    approval: 'warning',
-    status_change: 'primary',
-    system: 'info',
-  }
-  return (map[type] || 'info') as 'warning' | 'primary' | 'info'
-}
-
-function getTypeLabel(type: string) {
-  const map: Record<string, string> = {
-    approval: '审批',
-    status_change: '状态',
-    system: '系统',
-  }
-  return map[type] || type
-}
+// getTagType / getTypeLabel 内联映射已收编 statusMapping 单源（批次4b C-16），
+// 模板直接调用 getNotificationTagType / getNotificationTypeLabel。
 </script>
 
 <style scoped>
