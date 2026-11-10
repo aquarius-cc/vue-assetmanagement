@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, PAGE_SIZE_OPTIONS, normalizePageSize } from '../pagination'
+import { MAX_PAGE_SIZE, PAGE_SIZE_OPTIONS, normalizePageSize } from '../pagination'
 
 describe('PAGE_SIZE_OPTIONS', () => {
   it('exposes the shared pagination size options (single source of truth)', () => {

@@ -152,7 +152,7 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
    * 此处兜底捕获仅为阻断 unhandled rejection——EP 事件处理器与 void 调用不消费 rejection。
    */
   const swallowEntryRejection = (action: () => Promise<unknown>): Promise<void> =>
-    action().catch(() => undefined) // 入口吞错（M-37）：用户提示已由内层统一发出
+    action().then(() => undefined, () => undefined) // 入口吞错（M-37）：用户提示已由内层统一发出
 
   // ===== 表格数据 =====
   const tableData = computed(() => {
