@@ -81,7 +81,7 @@ $breakpoint-tablet: 1024px;
 
       .el-input.is-disabled .el-input__wrapper,
       .el-input-number.is-disabled .el-input__inner {
-        background-color: var(--background-color, #f5f7fa);
+        background-color: var(--background-color);
         border-color: var(--border-color);
         cursor: not-allowed;
       }
@@ -479,7 +479,7 @@ $breakpoint-tablet: 1024px;
     background: linear-gradient(
       135deg,
       var(--background-color-light, #f9fafb) 0%,
-      var(--background-color, #f5f7fa) 100%
+      var(--background-color) 100%
     );
 
     h2 {

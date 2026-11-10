@@ -6,16 +6,8 @@
  */
 
 :root {
+  /* [M-24] 灰阶值已迁移 variables.css（亮/暗各一次），此处仅保留尺寸与消费点 */
   --scrollbar-width: 15px;
-  --scrollbar-track-bg: #f1f1f1;
-  --scrollbar-thumb-bg: #c1c1c1;
-  --scrollbar-thumb-hover-bg: #a8a8a8;
-}
-
-html.dark {
-  --scrollbar-track-bg: #2a2a2a;
-  --scrollbar-thumb-bg: #555;
-  --scrollbar-thumb-hover-bg: #666;
 }
 
 /* WebKit 浏览器 (Chrome, Edge, Safari) */

@@ -30,7 +30,7 @@
       stripe
       size="small"
       @selection-change="handleSelectionChange"
-      :header-cell-style="{ background: 'var(--table-header-bg, #f5f7fa)' }"
+      :header-cell-style="{ background: 'var(--table-header-bg)' }"
     >
       <el-table-column type="selection" width="45" align="center" />
       <el-table-column prop="type_code" label="类型编码" width="150" align="center" />
