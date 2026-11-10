@@ -27,6 +27,8 @@ import {
   PAYMENT_STATUS_MAP,
   getPaymentStatusTagType,
   getPaymentStatusText,
+  PAYMENT_METHOD_MAP,
+  getPaymentMethodText,
   NOTIFICATION_TYPE_COLOR_MAP,
   NOTIFICATION_TYPE_LABEL_MAP,
   NOTIFICATION_PRIORITY_COLOR_MAP,
@@ -347,6 +349,29 @@ describe('通知域映射（批次4b C-16 收编，裁决：以 NotificationList
       Object.keys(NOTIFICATION_TYPE_COLOR_MAP).filter((k) =>
         Object.hasOwn(NOTIFICATION_PRIORITY_COLOR_MAP, k),
       ),
+    ).toEqual([])
+  })
+})
+
+describe('[批次4b C-16 域2] PAYMENT_METHOD_MAP（收编 ContractPaymentRecord paymentMethodMap）', () => {
+  it('四键与文案锁定（未知键回退原值，交组件 fallback 展示）', () => {
+    expect(Object.keys(PAYMENT_METHOD_MAP)).toEqual(['bank_transfer', 'cash', 'check', 'other'])
+    expect(PAYMENT_METHOD_MAP).toEqual({
+      bank_transfer: '银行转账',
+      cash: '现金',
+      check: '支票',
+      other: '其他',
+    })
+    expect(getPaymentMethodText('bank_transfer')).toBe('银行转账')
+    expect(getPaymentMethodText('cash')).toBe('现金')
+    expect(getPaymentMethodText('check')).toBe('支票')
+    expect(getPaymentMethodText('other')).toBe('其他')
+    expect(getPaymentMethodText('unknown_method')).toBe('unknown_method')
+  })
+
+  it('与 PAYMENT_STATUS_MAP 键集不相交（状态域与方式域独立，禁止混用）', () => {
+    expect(
+      Object.keys(PAYMENT_METHOD_MAP).filter((k) => Object.hasOwn(PAYMENT_STATUS_MAP, k)),
     ).toEqual([])
   })
 })

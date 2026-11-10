@@ -107,6 +107,19 @@ export function getNotificationPriorityTagType(priority: string) {
   return NOTIFICATION_PRIORITY_COLOR_MAP[priority] || 'info'
 }
 
+// ===== 支付方式映射（批次4b C-16 域2 收编 ContractPaymentRecord paymentMethodMap；键集与 PAYMENT_STATUS_MAP 不相交，禁止混用） =====
+export const PAYMENT_METHOD_MAP: Record<string, string> = {
+  bank_transfer: '银行转账',
+  cash: '现金',
+  check: '支票',
+  other: '其他',
+}
+
+/** 获取支付方式文本（未知键回退原值，交组件 fallback 展示） */
+export function getPaymentMethodText(method: string) {
+  return PAYMENT_METHOD_MAP[method] || method
+}
+
 // ===== 维修状态映射（对齐 RepairAsset.RepairStatus 枚举） =====
 export const REPAIR_STATUS_MAP: Record<
   string,

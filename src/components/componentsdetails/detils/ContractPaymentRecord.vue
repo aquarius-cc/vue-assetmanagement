@@ -47,7 +47,7 @@
         <el-table-column prop="description" label="支付说明" min-width="150" />
         <el-table-column prop="payment_method" label="支付方式" width="100">
           <template #default="{ row }">
-            {{ paymentMethodMap[row.payment_method] || row.payment_method || '-' }}
+            {{ getPaymentMethodText(row.payment_method) || '-' }}
           </template>
         </el-table-column>
         <el-table-column prop="operator" label="操作人" width="100" />
@@ -145,7 +145,11 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { addPaymentRecord, deletePaymentRecord, approvePaymentRecord } from '@/stores/contractStore'
 import { PaymentStatus, type Contract, type PaymentRecord } from '@/types/contract'
 import { getErrorMessage } from '@/utils/errorHandler'
-import { getPaymentStatusText, getPaymentStatusTagType } from '@/utils/statusMapping'
+import {
+  getPaymentStatusText,
+  getPaymentStatusTagType,
+  getPaymentMethodText, // [批次4b C-16 域2] 支付方式映射收编 statusMapping 单源
+} from '@/utils/statusMapping'
 
 // Props
 const props = defineProps<{
@@ -177,12 +181,8 @@ const rules: FormRules = {
   description: [{ required: true, message: '请输入支付说明', trigger: 'blur' }],
 }
 
-const paymentMethodMap: Record<string, string> = {
-  bank_transfer: '银行转账',
-  cash: '现金',
-  check: '支票',
-  other: '其他',
-}
+// paymentMethodMap 内联映射已收编 statusMapping 单源（批次4b C-16 域2），
+// 模板直接调用 getPaymentMethodText。
 
 // 计算属性
 const contractAmount = computed(() => {
