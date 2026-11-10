@@ -120,6 +120,27 @@ export function getPaymentMethodText(method: string) {
   return PAYMENT_METHOD_MAP[method] || method
 }
 
+// ===== 仓储导入仓库名映射（批次4b C-16 域3 收编 StorageBatchImport 函数内映射；裁决 2026-11-10：收编新域 map） =====
+export const STORAGE_NAME_TO_CODE_MAP: Record<string, string> = {
+  新货仓库: 'newasset',
+  回收仓库: 'recycle',
+  待报废仓库: 'damaged',
+}
+
+/**
+ * 仓库类型值转换（逐字等值原 StorageBatchImport.normalizeStorageType）：
+ * 支持中文（新货仓库/回收仓库/待报废仓库）或英文（newasset/recycle/damaged）输入，
+ * 统一转换为英文枚举值；空/未知回退 'newasset'（导入容错默认值）。
+ */
+export function normalizeStorageTypeCode(value: string | undefined): string {
+  const trimmed = value?.trim() ?? ''
+  if (trimmed === '') return 'newasset'
+  if (['newasset', 'recycle', 'damaged'].includes(trimmed)) {
+    return trimmed
+  }
+  return STORAGE_NAME_TO_CODE_MAP[trimmed] || 'newasset'
+}
+
 // ===== 维修状态映射（对齐 RepairAsset.RepairStatus 枚举） =====
 export const REPAIR_STATUS_MAP: Record<
   string,

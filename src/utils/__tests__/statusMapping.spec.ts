@@ -29,6 +29,8 @@ import {
   getPaymentStatusText,
   PAYMENT_METHOD_MAP,
   getPaymentMethodText,
+  STORAGE_NAME_TO_CODE_MAP,
+  normalizeStorageTypeCode,
   NOTIFICATION_TYPE_COLOR_MAP,
   NOTIFICATION_TYPE_LABEL_MAP,
   NOTIFICATION_PRIORITY_COLOR_MAP,
@@ -373,5 +375,29 @@ describe('[批次4b C-16 域2] PAYMENT_METHOD_MAP（收编 ContractPaymentRecord
     expect(
       Object.keys(PAYMENT_METHOD_MAP).filter((k) => Object.hasOwn(PAYMENT_STATUS_MAP, k)),
     ).toEqual([])
+  })
+})
+
+describe('[批次4b C-16 域3] STORAGE_NAME_TO_CODE_MAP（收编 StorageBatchImport 仓库名映射）', () => {
+  it('三键与编码锁定（裁决 2026-11-10：收编新域 map）', () => {
+    expect(Object.keys(STORAGE_NAME_TO_CODE_MAP)).toEqual(['新货仓库', '回收仓库', '待报废仓库'])
+    expect(STORAGE_NAME_TO_CODE_MAP).toEqual({
+      新货仓库: 'newasset',
+      回收仓库: 'recycle',
+      待报废仓库: 'damaged',
+    })
+  })
+
+  it('normalizeStorageTypeCode：英文直通 / 中文转换 / 空与未知回退 newasset（逐字等值原实现）', () => {
+    expect(normalizeStorageTypeCode('newasset')).toBe('newasset')
+    expect(normalizeStorageTypeCode('recycle')).toBe('recycle')
+    expect(normalizeStorageTypeCode('damaged')).toBe('damaged')
+    expect(normalizeStorageTypeCode('新货仓库')).toBe('newasset')
+    expect(normalizeStorageTypeCode('回收仓库')).toBe('recycle')
+    expect(normalizeStorageTypeCode('待报废仓库')).toBe('damaged')
+    expect(normalizeStorageTypeCode('  新货仓库  ')).toBe('newasset')
+    expect(normalizeStorageTypeCode('')).toBe('newasset')
+    expect(normalizeStorageTypeCode(undefined)).toBe('newasset')
+    expect(normalizeStorageTypeCode('未知仓库')).toBe('newasset')
   })
 })

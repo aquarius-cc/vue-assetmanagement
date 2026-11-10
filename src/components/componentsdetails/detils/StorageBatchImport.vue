@@ -112,31 +112,18 @@ import { downloadExcelTemplate } from '@/utils/batchImport/templateExport'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { useStorageStore, batchCreateStorages } from '@/stores/storageStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
+import {
+  normalizeStorageTypeCode, // [批次4b C-16 域3] 仓库名映射收编 statusMapping 单源
+} from '@/utils/statusMapping'
 import type { StorageCreateForm } from '@/types/storage'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { StorageExcelRow } from '@/types/batch-import'
 
 /**
- * 仓库类型值转换函数
- * 支持中文（新货仓库/回收仓库/待报废仓库）或英文（newasset/recycle/damaged）输入
- * 统一转换为英文枚举值
+ * 仓库类型值转换：单源实现见 utils/statusMapping.normalizeStorageTypeCode
+ * （批次4b C-16 域3 收编，本文件保留调用别名，逻辑零复制）
  */
-const normalizeStorageType = (value: string | undefined): string => {
-  const trimmed = value?.trim() ?? ''
-  if (trimmed === '') return 'newasset'
-
-  if (['newasset', 'recycle', 'damaged'].includes(trimmed)) {
-    return trimmed
-  }
-
-  const map: Record<string, string> = {
-    新货仓库: 'newasset',
-    回收仓库: 'recycle',
-    待报废仓库: 'damaged',
-  }
-
-  return map[trimmed] || 'newasset'
-}
+const normalizeStorageType = normalizeStorageTypeCode
 
 const router = useRouter()
 const storageStore = useStorageStore()
