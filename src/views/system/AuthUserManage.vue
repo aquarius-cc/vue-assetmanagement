@@ -167,6 +167,7 @@ import { useAuthUserStore } from '@/stores/authUserStore'
 import { notifyCallerError } from '@/utils/errorHandler'
 import { usePermission } from '@/composables/usePermission'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
+import { usePagedList } from '@/composables/usePagedList'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import type { AuthUser, AuthUserCreateForm } from '@/types/authuser'
 import type { PaginationQuery } from '@/stores/createEntityStore'
@@ -181,47 +182,42 @@ const { isAdmin } = usePermission()
 const authUserStore = useAuthUserStore()
 
 // ==================== 用户列表 ====================
-const loading = ref(false)
-const authUsers = ref<AuthUser[]>([])
-const total = ref(0)
-const currentPage = ref(1)
-const pageSize = ref(20)
+// [S10/M-14] usePagedList 统一数据层：M-RC-13 stale 语义由其请求序号守卫承接
+// （过期响应不写回）；M-RC-09 单出口语义由 errorMessage 契约承载。
 const searchKeyword = ref('')
+
+const {
+  list: authUsers,
+  loading,
+  total,
+  currentPage,
+  pageSize,
+  search,
+  refresh,
+} = usePagedList<AuthUser>({
+  tag: 'AuthUserManage',
+  errorMessage: '获取用户列表失败',
+  fixedParams: {},
+  fetcher: async (params) => {
+    const res = await authUserStore.getList(params as PaginationQuery)
+    // bound_employee 已由后端列表接口内联返回，无需额外请求
+    // [M-RC-13] stale：store 返回 undefined 时透传 skipWrite，保留现有表格数据
+    if (res === undefined) return { skipWrite: true, results: [], count: 0 }
+    return { results: res, count: authUserStore.pagination.total }
+  },
+})
 
 // 使用防抖搜索 composable
 useDebouncedSearch(searchKeyword, () => {
-  currentPage.value = 1
-  fetchAuthUsers()
+  search(searchKeyword.value.trim() ? { search: searchKeyword.value.trim() } : undefined)
 })
 
-const fetchAuthUsers = async () => {
-  loading.value = true
-  try {
-    const params: PaginationQuery = {
-      page: currentPage.value,
-      page_size: pageSize.value,
-    }
-    if (searchKeyword.value.trim()) {
-      params.search = searchKeyword.value.trim()
-    }
-    const res = await authUserStore.getList(params)
-    // [M-RC-13] stale：跳过写回，保留现有表格数据（不把 undefined 翻译成权威空集）
-    if (res === undefined) return
-    authUsers.value = res
-    total.value = authUserStore.pagination.total
-    // bound_employee 已由后端列表接口内联返回，无需额外请求
-  } catch (error) {
-    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
-    notifyCallerError(error, '获取用户列表失败')
-  } finally {
-    loading.value = false
-  }
-}
+// [S10] 写操作/弹窗保存后的重载别名（保持当前页语义，模板零改动）
+const fetchAuthUsers = refresh
 
 // [M-3] 改每页条数回第 1 页（消解 EP size-change/current-change 双触发下页码语义分叉）
 const handleSizeChange = () => {
-  currentPage.value = 1
-  fetchAuthUsers()
+  search(searchKeyword.value.trim() ? { search: searchKeyword.value.trim() } : undefined)
 }
 
 const formatDate = (dateStr: string) => {

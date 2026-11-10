@@ -22,7 +22,9 @@ export interface PagedListOptions<TItem> {
    * 实际请求函数
    * 入参为 { ...searchParams, ...fixedParams } 合并后的完整参数对象
    */
-  fetcher: (params: Record<string, unknown>) => Promise<{ results: TItem[]; count: number }>
+  fetcher: (
+    params: Record<string, unknown>,
+  ) => Promise<{ results: TItem[]; count: number; skipWrite?: boolean }>
   /** 请求失败时的提示文案 */
   errorMessage: string
   /** 日志标签 */
@@ -39,6 +41,8 @@ export interface PagedListReturn<TItem> {
   search: (extraParams?: Record<string, unknown>) => Promise<void>
   changePage: (page: number) => Promise<void>
   reset: () => void
+  /** 刷新当前页（保持页码与筛选；供写操作后重载） */
+  refresh: () => Promise<void>
 }
 
 /**
@@ -79,6 +83,9 @@ export function usePagedList<TItem>(options: PagedListOptions<TItem>): PagedList
     try {
       const response = await fetcher({ ...params, ...fixedParams })
       if (seq !== listRequestSeq) return // 过期响应：被更新请求取代，跳过状态写回
+      // [S10/M-RC-13] stale 透传：底层 store 判定本次响应过期（返回 skipWrite）时
+      // 跳过写回，保留现有表格数据（不把 undefined 翻译成权威空集）
+      if (response.skipWrite) return
       list.value = response.results
       total.value = response.count
       lastLoadedPage = params.page as number // [AUD-48] 成功锚定
@@ -121,5 +128,10 @@ export function usePagedList<TItem>(options: PagedListOptions<TItem>): PagedList
     lastExtraParams = undefined
   }
 
-  return { list, loading, total, currentPage, pageSize, search, changePage, reset }
+  /** [S10/M-14] 刷新当前页（保持页码与筛选；供写操作后重载，search 会重置页码故单列） */
+  const refresh = async () => {
+    await fetchList({ page: currentPage.value, page_size: pageSize.value, ...lastExtraParams })
+  }
+
+  return { list, loading, total, currentPage, pageSize, search, changePage, reset, refresh }
 }

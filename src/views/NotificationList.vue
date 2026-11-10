@@ -20,6 +20,7 @@ import { useNotificationStore } from '@/stores'
 import { safeNavigate } from '@/utils/navigation'
 import { formatDateTimeFull } from '@/utils/Format'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
+import { usePagedList } from '@/composables/usePagedList'
 import type { NotificationItem, NotificationFilterParams } from '@/types/notification'
 
 // 筛选参数
@@ -31,9 +32,40 @@ const filters = reactive({
 })
 
 const notificationStore = useNotificationStore()
-const pagination = notificationStore.pagination
-const notifications = notificationStore.notifications
-const loading = notificationStore.loading
+
+// [S10/M-14] usePagedList 薄适配层：store.fetchNotifications 返回 void（写 store 态），
+// 适配为 { results, count }；store 签名零改动。列表/分页/请求序号守卫由 usePagedList 统一承载。
+const {
+  list: notifications,
+  loading,
+  total,
+  currentPage,
+  pageSize,
+  search,
+  changePage,
+  refresh,
+} = usePagedList<NotificationItem>({
+  tag: 'NotificationList',
+  errorMessage: '加载通知列表失败',
+  fixedParams: {},
+  fetcher: async (params) => {
+    await notificationStore.fetchNotifications(params as NotificationFilterParams)
+    return {
+      results: notificationStore.notifications,
+      count: notificationStore.pagination.total,
+    }
+  },
+})
+
+/** 筛选参数合并（含 is_read 字符串→布尔归一） */
+function buildFilterParams(): Record<string, unknown> {
+  const p: Record<string, unknown> = {}
+  if (filters.is_read) p.is_read = filters.is_read === 'true'
+  if (filters.notification_type) p.notification_type = filters.notification_type
+  if (filters.priority) p.priority = filters.priority
+  if (filters.keyword) p.keyword = filters.keyword
+  return p
+}
 
 // 选项
 const typeOptions = [
@@ -65,22 +97,8 @@ const typeColorMap: Record<string, string> = {
   system: 'info',
 }
 
-async function fetchNotifications() {
-  const params: NotificationFilterParams = {
-    page: pagination.page,
-    page_size: pagination.page_size,
-  }
-  if (filters.is_read) params.is_read = filters.is_read === 'true'
-  if (filters.notification_type) params.notification_type = filters.notification_type
-  if (filters.priority) params.priority = filters.priority
-  if (filters.keyword) params.keyword = filters.keyword
-
-  await notificationStore.fetchNotifications(params)
-}
-
 function handleSearch() {
-  pagination.page = 1
-  fetchNotifications()
+  search(buildFilterParams())
 }
 
 function handleReset() {
@@ -88,19 +106,12 @@ function handleReset() {
   filters.priority = ''
   filters.is_read = ''
   filters.keyword = ''
-  pagination.page = 1
-  fetchNotifications()
-}
-
-function handlePageChange(page: number) {
-  pagination.page = page
-  fetchNotifications()
+  search(buildFilterParams())
 }
 
 function handleSizeChange(size: number) {
-  pagination.page_size = size
-  pagination.page = 1
-  fetchNotifications()
+  pageSize.value = size
+  search(buildFilterParams())
 }
 
 async function handleMarkRead(row: NotificationItem) {
@@ -121,7 +132,7 @@ async function handleMarkRead(row: NotificationItem) {
 async function handleMarkAllRead() {
   try {
     await notificationStore.markAllRead()
-    fetchNotifications()
+    refresh()
   } catch (err) {
     if (!isAxiosError(err)) {
       ElMessage.warning((err as Error).message || '操作失败')
@@ -129,7 +140,9 @@ async function handleMarkAllRead() {
   }
 }
 
-onMounted(fetchNotifications)
+onMounted(() => {
+  search()
+})
 </script>
 
 <template>
@@ -247,12 +260,12 @@ onMounted(fetchNotifications)
       <!-- 分页 -->
       <div class="pagination-wrapper">
         <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.page_size"
-          :total="pagination.total"
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :total="total"
           :page-sizes="PAGE_SIZE_OPTIONS"
           layout="total, sizes, prev, pager, next, jumper"
-          @current-change="handlePageChange"
+          @current-change="changePage"
           @size-change="handleSizeChange"
         />
       </div>

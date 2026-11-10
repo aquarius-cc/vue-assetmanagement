@@ -130,6 +130,7 @@ import { notifyCallerError } from '@/utils/errorHandler'
 import { useRoleStore } from '@/stores/roleStore'
 import { usePermission } from '@/composables/usePermission'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
+import { usePagedList } from '@/composables/usePagedList'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import type { Role, RoleCreateUpdateForm } from '@/types/roles'
 import type { PaginationQuery } from '@/stores/createEntityStore'
@@ -140,46 +141,41 @@ const { isAdmin } = usePermission()
 const roleStore = useRoleStore()
 
 // ==================== 角色列表 ====================
-const loading = ref(false)
-const roles = ref<Role[]>([])
-const total = ref(0)
-const currentPage = ref(1)
-const pageSize = ref(20)
+// [S10/M-14] usePagedList 统一数据层：M-RC-13 stale 语义由其请求序号守卫承接
+// （过期响应不写回）；M-RC-09 单出口语义由 errorMessage 契约承载。
 const searchKeyword = ref('')
+
+const {
+  list: roles,
+  loading,
+  total,
+  currentPage,
+  pageSize,
+  search,
+  refresh,
+} = usePagedList<Role>({
+  tag: 'RoleManage',
+  errorMessage: '获取角色列表失败',
+  fixedParams: {},
+  fetcher: async (params) => {
+    const res = await roleStore.getList(params as PaginationQuery)
+    // [M-RC-13] stale：store 返回 undefined 时透传 skipWrite，保留现有表格数据
+    if (res === undefined) return { skipWrite: true, results: [], count: 0 }
+    return { results: res, count: roleStore.pagination.total }
+  },
+})
 
 // 使用防抖搜索 composable
 useDebouncedSearch(searchKeyword, () => {
-  currentPage.value = 1
-  fetchRoles()
+  search(searchKeyword.value.trim() ? { search: searchKeyword.value.trim() } : undefined)
 })
 
-const fetchRoles = async () => {
-  loading.value = true
-  try {
-    const params: PaginationQuery = {
-      page: currentPage.value,
-      page_size: pageSize.value,
-    }
-    if (searchKeyword.value.trim()) {
-      params.search = searchKeyword.value.trim()
-    }
-    const res = await roleStore.getList(params)
-    // [M-RC-13] stale：跳过写回，保留现有表格数据（不把 undefined 翻译成权威空集）
-    if (res === undefined) return
-    roles.value = res
-    total.value = roleStore.pagination.total
-  } catch (error) {
-    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
-    notifyCallerError(error, '获取角色列表失败')
-  } finally {
-    loading.value = false
-  }
-}
+// [S10] 写操作/弹窗保存后的重载别名（保持当前页语义，模板零改动）
+const fetchRoles = refresh
 
 // [M-3] 改每页条数回第 1 页（消解 EP size-change/current-change 双触发下页码语义分叉）
 const handleSizeChange = () => {
-  currentPage.value = 1
-  fetchRoles()
+  search(searchKeyword.value.trim() ? { search: searchKeyword.value.trim() } : undefined)
 }
 
 // ==================== 新建/编辑弹窗 ====================

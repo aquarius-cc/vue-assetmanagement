@@ -110,27 +110,60 @@ import type { EmployeeExtended } from '@/types/user'
 import type { DepartmentTreeNode } from '@/types/department'
 import DepartmentTree from '@/components/componentsdetails/components/DepartmentTree.vue'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
+import { usePagedList } from '@/composables/usePagedList'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
 
 const userStore = useUserStore()
 
-const loading = ref(true)
-const contacts = ref<EmployeeExtended[]>([])
-const total = ref(0)
-const currentPage = ref(1)
-const pageSize = ref(20)
+// [S10/M-14] usePagedList 统一数据层：M-RC-13 stale 语义由其请求序号守卫承接；
+// 双通道（关键词模糊搜索 / 列表）在 fetcher 内分流，部门/状态筛选走页内 refs。
 const searchKeyword = ref('')
 const statusFilter = ref('')
 const selectedDepartmentCode = ref<string | null>(null)
 const selectedDepartmentName = ref('')
 const departmentData = ref<DepartmentTreeNode[]>([])
 
+const {
+  list: contacts,
+  loading,
+  total,
+  currentPage,
+  pageSize,
+  search,
+  refresh,
+} = usePagedList<EmployeeExtended>({
+  tag: 'ContactsView',
+  errorMessage: '获取通讯录失败，请稍后重试',
+  fixedParams: {},
+  fetcher: async (params) => {
+    const page = params.page as number
+    const pageSize = params.page_size as number
+    if (searchKeyword.value.trim()) {
+      const response = await userStore.getFuzzySearch({
+        keyword: searchKeyword.value.trim(),
+        department_code: selectedDepartmentCode.value || undefined,
+        page,
+        page_size: pageSize,
+      })
+      return { results: response.results || [], count: response.count || 0 }
+    }
+    const res = await userStore.getList({
+      department_code: selectedDepartmentCode.value || undefined,
+      employee_status: statusFilter.value || undefined,
+      page,
+      page_size: pageSize,
+    })
+    // [M-RC-13] stale：store 返回 undefined 时透传 skipWrite，保留现有表格数据
+    if (res === undefined) return { skipWrite: true, results: [], count: 0 }
+    return { results: res, count: userStore.pagination.total }
+  },
+})
+
 // 使用防抖搜索 composable
 useDebouncedSearch(searchKeyword, () => {
-  currentPage.value = 1
-  fetchContacts()
+  search()
 })
 
 const fetchDepartmentTree = async () => {
@@ -148,61 +181,27 @@ const refreshDepartmentTree = () => {
 }
 
 const handleStatusChange = () => {
-  currentPage.value = 1
-  fetchContacts()
+  search()
 }
 
 // [M-3] 改每页条数回第 1 页（消解 EP size-change/current-change 双触发下页码语义分叉）
 const handleSizeChange = () => {
-  currentPage.value = 1
-  fetchContacts()
+  search()
 }
 
-const fetchContacts = async () => {
-  loading.value = true
-  try {
-    if (searchKeyword.value.trim()) {
-      const response = await userStore.getFuzzySearch({
-        keyword: searchKeyword.value.trim(),
-        department_code: selectedDepartmentCode.value || undefined,
-        page: currentPage.value,
-        page_size: pageSize.value,
-      })
-      contacts.value = response.results || []
-      total.value = response.count || 0
-    } else {
-      const res = await userStore.getList({
-        department_code: selectedDepartmentCode.value || undefined,
-        employee_status: statusFilter.value || undefined,
-        page: currentPage.value,
-        page_size: pageSize.value,
-      })
-      // [M-RC-13] stale：跳过写回，保留现有表格数据（不把 undefined 翻译成权威空集）
-      if (res === undefined) return
-      contacts.value = res
-      total.value = userStore.pagination.total
-    }
-  } catch (err) {
-    logError('views/ContactsView', '获取通讯录失败:', err)
-    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
-    notifyCallerError(err, '获取通讯录失败，请稍后重试')
-  } finally {
-    loading.value = false
-  }
-}
+// [S10] 写操作/翻页后的重载别名（保持当前页语义，模板零改动）
+const fetchContacts = refresh
 
 const handleDepartmentSelect = (department: DepartmentTreeNode) => {
   selectedDepartmentCode.value = department.department_code
   selectedDepartmentName.value = department.department_name
-  currentPage.value = 1
-  fetchContacts()
+  search()
 }
 
 const clearDepartmentFilter = () => {
   selectedDepartmentCode.value = null
   selectedDepartmentName.value = ''
-  currentPage.value = 1
-  fetchContacts()
+  search()
 }
 
 onMounted(() => {
