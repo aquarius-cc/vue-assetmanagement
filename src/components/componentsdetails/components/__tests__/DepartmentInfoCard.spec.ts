@@ -6,21 +6,21 @@ import Component from '../DepartmentInfoCard.vue'
 describe('DepartmentInfoCard 挂载（S9 零覆盖补测）', () => {
   it('浅挂载渲染不抛错', () => {
     const wrapper = mount(Component, {
-    shallow: true,
-    props: {
-      department: {
-        department_code: 'D001',
-        department_name: '部门A',
-        department_information: '',
-        employee_count: 1,
-        level: 1,
-        parent_department_code: '',
-        path: 'D001',
-        sort_order: 1,
+      shallow: true,
+      props: {
+        department: {
+          department_code: 'D001',
+          department_name: '部门A',
+          department_information: '',
+          employee_count: 1,
+          level: 1,
+          parent_department_code: '',
+          path: 'D001',
+          sort_order: 1,
+        },
       },
-    },
-    global: { plugins: [createPinia()] },
-  })
+      global: { plugins: [createPinia()] },
+    })
     expect(wrapper.exists()).toBe(true)
   })
 })
@@ -49,9 +49,21 @@ vi.mock('@/api/index', () => {
     clearCacheByPattern: vi.fn(),
     degradedCacheKeys: new Set(),
     buildLoginRedirectUrl: vi.fn(() => '/login'),
-    authAPI: apiStub(), userAPI: apiStub(), departmentAPI: apiStub(), assetAPI: apiStub(),
-    dashboardAPI: apiStub(), contractAPI: apiStub(), storageAPI: apiStub(), assetTypeAPI: apiStub(),
-    outAssetAPI: apiStub(), recycleAssetAPI: apiStub(), damagedAssetAPI: apiStub(), wasteAssetAPI: apiStub(),
-    networkAPI: apiStub(), unregisteredAssetAPI: apiStub(), operationLogAPI: apiStub(), harddiskSnAPI: apiStub(),
+    authAPI: apiStub(),
+    userAPI: apiStub(),
+    departmentAPI: apiStub(),
+    assetAPI: apiStub(),
+    dashboardAPI: apiStub(),
+    contractAPI: apiStub(),
+    storageAPI: apiStub(),
+    assetTypeAPI: apiStub(),
+    outAssetAPI: apiStub(),
+    recycleAssetAPI: apiStub(),
+    damagedAssetAPI: apiStub(),
+    wasteAssetAPI: apiStub(),
+    networkAPI: apiStub(),
+    unregisteredAssetAPI: apiStub(),
+    operationLogAPI: apiStub(),
+    harddiskSnAPI: apiStub(),
   }
 })

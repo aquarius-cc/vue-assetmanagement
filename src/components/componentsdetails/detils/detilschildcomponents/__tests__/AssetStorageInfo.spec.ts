@@ -6,14 +6,14 @@ import Component from '../AssetStorageInfo.vue'
 describe('AssetStorageInfo 挂载（S9 零覆盖补测）', () => {
   it('浅挂载渲染不抛错', () => {
     const wrapper = mount(Component, {
-    shallow: true,
-    props: {
-      form: { asset_description: '', asset_storage: '', asset_storage_name: '' },
-      storages: [],
-      associationMethods: { handleStorageNameChange: vi.fn() },
-    },
-    global: { plugins: [createPinia()], stubs: { 'el-autocomplete': true } },
-  })
+      shallow: true,
+      props: {
+        form: { asset_description: '', asset_storage: '', asset_storage_name: '' },
+        storages: [],
+        associationMethods: { handleStorageNameChange: vi.fn() },
+      },
+      global: { plugins: [createPinia()], stubs: { 'el-autocomplete': true } },
+    })
     expect(wrapper.exists()).toBe(true)
   })
 })
@@ -42,9 +42,21 @@ vi.mock('@/api/index', () => {
     clearCacheByPattern: vi.fn(),
     degradedCacheKeys: new Set(),
     buildLoginRedirectUrl: vi.fn(() => '/login'),
-    authAPI: apiStub(), userAPI: apiStub(), departmentAPI: apiStub(), assetAPI: apiStub(),
-    dashboardAPI: apiStub(), contractAPI: apiStub(), storageAPI: apiStub(), assetTypeAPI: apiStub(),
-    outAssetAPI: apiStub(), recycleAssetAPI: apiStub(), damagedAssetAPI: apiStub(), wasteAssetAPI: apiStub(),
-    networkAPI: apiStub(), unregisteredAssetAPI: apiStub(), operationLogAPI: apiStub(), harddiskSnAPI: apiStub(),
+    authAPI: apiStub(),
+    userAPI: apiStub(),
+    departmentAPI: apiStub(),
+    assetAPI: apiStub(),
+    dashboardAPI: apiStub(),
+    contractAPI: apiStub(),
+    storageAPI: apiStub(),
+    assetTypeAPI: apiStub(),
+    outAssetAPI: apiStub(),
+    recycleAssetAPI: apiStub(),
+    damagedAssetAPI: apiStub(),
+    wasteAssetAPI: apiStub(),
+    networkAPI: apiStub(),
+    unregisteredAssetAPI: apiStub(),
+    operationLogAPI: apiStub(),
+    harddiskSnAPI: apiStub(),
   }
 })

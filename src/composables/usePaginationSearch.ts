@@ -83,7 +83,8 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
     // 已下线的非法档位（如 200/500），直接消费会产生「选了没生效」的请求与首帧
     // 显示异常。向下吸附至最近合法项（500→100、40→20），无合法项兜底 20。
     // [M-20] 归一化逻辑唯一实现下沉 utils/pagination.normalizePageSize（DR-1）
-    get: () => normalizePageSize(readReactive<number>(store.pagination.page_size) || 20, pageSizeOptions),
+    get: () =>
+      normalizePageSize(readReactive<number>(store.pagination.page_size) || 20, pageSizeOptions),
     set: (val: number) => writeReactive(store.pagination.page_size, val),
   })
   const total = computed(() => readReactive<number>(store.pagination.total) || 0)
@@ -152,7 +153,10 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
    * 此处兜底捕获仅为阻断 unhandled rejection——EP 事件处理器与 void 调用不消费 rejection。
    */
   const swallowEntryRejection = (action: () => Promise<unknown>): Promise<void> =>
-    action().then(() => undefined, () => undefined) // 入口吞错（M-37）：用户提示已由内层统一发出
+    action().then(
+      () => undefined,
+      () => undefined,
+    ) // 入口吞错（M-37）：用户提示已由内层统一发出
 
   // ===== 表格数据 =====
   const tableData = computed(() => {

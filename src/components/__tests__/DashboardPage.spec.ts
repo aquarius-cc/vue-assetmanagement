@@ -8,7 +8,9 @@ const mockDashboardPage = vi.hoisted(() => ({
 }))
 
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn() }) }))
-vi.mock('@/composables/useDashboardPage', () => ({ useDashboardPage: mockDashboardPage.useDashboardPage }))
+vi.mock('@/composables/useDashboardPage', () => ({
+  useDashboardPage: mockDashboardPage.useDashboardPage,
+}))
 
 import DashboardPage from '../DashboardPage.vue'
 

@@ -45,7 +45,10 @@ const stubs = {
     template:
       '<select class="el-select" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><slot /></select>',
   },
-  'el-option': { props: ['label', 'value'], template: '<option class="el-option" :value="value">{{ label }}</option>' },
+  'el-option': {
+    props: ['label', 'value'],
+    template: '<option class="el-option" :value="value">{{ label }}</option>',
+  },
   'el-input': {
     props: ['modelValue', 'placeholder'],
     emits: ['update:modelValue', 'clear'],
@@ -73,8 +76,7 @@ const makeItem = (id: number, is_read = false) => ({
   related_url: null,
 })
 
-const mountPage = () =>
-  mount(NotificationList, { shallow: true, global: { stubs } })
+const mountPage = () => mount(NotificationList, { shallow: true, global: { stubs } })
 
 describe('NotificationList 四场景（S10 薄适配层）', () => {
   beforeEach(() => {

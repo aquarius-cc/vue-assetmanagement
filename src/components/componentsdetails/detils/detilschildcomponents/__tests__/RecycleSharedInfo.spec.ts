@@ -6,19 +6,19 @@ import Component from '../RecycleSharedInfo.vue'
 describe('RecycleSharedInfo 挂载（S9 零覆盖补测）', () => {
   it('浅挂载渲染不抛错', () => {
     const wrapper = mount(Component, {
-    shallow: true,
-    props: {
-      formData: {
-        recycle_asset_storage_code: '',
-        recycle_asset_recycle_person_jobcode: '',
-        recycle_asset_date: '',
-        recycle_type: '',
-        recycle_asset_description: '',
+      shallow: true,
+      props: {
+        formData: {
+          recycle_asset_storage_code: '',
+          recycle_asset_recycle_person_jobcode: '',
+          recycle_asset_date: '',
+          recycle_type: '',
+          recycle_asset_description: '',
+        },
+        storages: [],
       },
-      storages: [],
-    },
-    global: { plugins: [createPinia()], stubs: { 'el-autocomplete': true } },
-  })
+      global: { plugins: [createPinia()], stubs: { 'el-autocomplete': true } },
+    })
     expect(wrapper.exists()).toBe(true)
   })
 })
@@ -47,9 +47,21 @@ vi.mock('@/api/index', () => {
     clearCacheByPattern: vi.fn(),
     degradedCacheKeys: new Set(),
     buildLoginRedirectUrl: vi.fn(() => '/login'),
-    authAPI: apiStub(), userAPI: apiStub(), departmentAPI: apiStub(), assetAPI: apiStub(),
-    dashboardAPI: apiStub(), contractAPI: apiStub(), storageAPI: apiStub(), assetTypeAPI: apiStub(),
-    outAssetAPI: apiStub(), recycleAssetAPI: apiStub(), damagedAssetAPI: apiStub(), wasteAssetAPI: apiStub(),
-    networkAPI: apiStub(), unregisteredAssetAPI: apiStub(), operationLogAPI: apiStub(), harddiskSnAPI: apiStub(),
+    authAPI: apiStub(),
+    userAPI: apiStub(),
+    departmentAPI: apiStub(),
+    assetAPI: apiStub(),
+    dashboardAPI: apiStub(),
+    contractAPI: apiStub(),
+    storageAPI: apiStub(),
+    assetTypeAPI: apiStub(),
+    outAssetAPI: apiStub(),
+    recycleAssetAPI: apiStub(),
+    damagedAssetAPI: apiStub(),
+    wasteAssetAPI: apiStub(),
+    networkAPI: apiStub(),
+    unregisteredAssetAPI: apiStub(),
+    operationLogAPI: apiStub(),
+    harddiskSnAPI: apiStub(),
   }
 })

@@ -2,11 +2,28 @@
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { describe, it, expect, vi } from 'vitest'
-vi.mock('element-plus', () => ({ ElMessage: { error: vi.fn(), success: vi.fn(), warning: vi.fn() }, ElMessageBox: { confirm: vi.fn(() => Promise.resolve('confirm')) } }))
+vi.mock('element-plus', () => ({
+  ElMessage: { error: vi.fn(), success: vi.fn(), warning: vi.fn() },
+  ElMessageBox: { confirm: vi.fn(() => Promise.resolve('confirm')) },
+}))
 import Component from '../DepartmentFormDialog.vue'
 describe('DepartmentFormDialog 挂载（S9 零覆盖补测）', () => {
   it('浅挂载渲染不抛错', () => {
-    const wrapper = mount(Component, { shallow: true, global: { plugins: [createPinia()], stubs: { 'el-button': { template: '<div />' }, 'el-dialog': { template: '<div />' }, 'el-form': { template: '<div />' }, 'el-form-item': { template: '<div />' }, 'el-input': { template: '<div />' }, 'el-input-number': { template: '<div />' }, 'el-tree-select': { template: '<div />' } } } })
+    const wrapper = mount(Component, {
+      shallow: true,
+      global: {
+        plugins: [createPinia()],
+        stubs: {
+          'el-button': { template: '<div />' },
+          'el-dialog': { template: '<div />' },
+          'el-form': { template: '<div />' },
+          'el-form-item': { template: '<div />' },
+          'el-input': { template: '<div />' },
+          'el-input-number': { template: '<div />' },
+          'el-tree-select': { template: '<div />' },
+        },
+      },
+    })
     expect(wrapper.exists()).toBe(true)
   })
 })
@@ -35,9 +52,21 @@ vi.mock('@/api/index', () => {
     clearCacheByPattern: vi.fn(),
     degradedCacheKeys: new Set(),
     buildLoginRedirectUrl: vi.fn(() => '/login'),
-    authAPI: apiStub(), userAPI: apiStub(), departmentAPI: apiStub(), assetAPI: apiStub(),
-    dashboardAPI: apiStub(), contractAPI: apiStub(), storageAPI: apiStub(), assetTypeAPI: apiStub(),
-    outAssetAPI: apiStub(), recycleAssetAPI: apiStub(), damagedAssetAPI: apiStub(), wasteAssetAPI: apiStub(),
-    networkAPI: apiStub(), unregisteredAssetAPI: apiStub(), operationLogAPI: apiStub(), harddiskSnAPI: apiStub(),
+    authAPI: apiStub(),
+    userAPI: apiStub(),
+    departmentAPI: apiStub(),
+    assetAPI: apiStub(),
+    dashboardAPI: apiStub(),
+    contractAPI: apiStub(),
+    storageAPI: apiStub(),
+    assetTypeAPI: apiStub(),
+    outAssetAPI: apiStub(),
+    recycleAssetAPI: apiStub(),
+    damagedAssetAPI: apiStub(),
+    wasteAssetAPI: apiStub(),
+    networkAPI: apiStub(),
+    unregisteredAssetAPI: apiStub(),
+    operationLogAPI: apiStub(),
+    harddiskSnAPI: apiStub(),
   }
 })

@@ -192,8 +192,18 @@ describe('NotificationStore', () => {
       let resolveFirst!: (v: unknown) => void
       let resolveSecond!: (v: unknown) => void
       vi.mocked(notificationAPI.getNotifications)
-        .mockImplementationOnce(() => new Promise((r) => { resolveFirst = r }))
-        .mockImplementationOnce(() => new Promise((r) => { resolveSecond = r }))
+        .mockImplementationOnce(
+          () =>
+            new Promise((r) => {
+              resolveFirst = r
+            }),
+        )
+        .mockImplementationOnce(
+          () =>
+            new Promise((r) => {
+              resolveSecond = r
+            }),
+        )
 
       const older = notificationStore.fetchNotifications({ page: 1, page_size: 20 })
       const newer = notificationStore.fetchNotifications({ page: 2, page_size: 20 })
@@ -213,8 +223,18 @@ describe('NotificationStore', () => {
       let rejectFirst!: (e: unknown) => void
       let resolveSecond!: (v: unknown) => void
       vi.mocked(notificationAPI.getNotifications)
-        .mockImplementationOnce(() => new Promise((_r, rej) => { rejectFirst = rej }))
-        .mockImplementationOnce(() => new Promise((r) => { resolveSecond = r }))
+        .mockImplementationOnce(
+          () =>
+            new Promise((_r, rej) => {
+              rejectFirst = rej
+            }),
+        )
+        .mockImplementationOnce(
+          () =>
+            new Promise((r) => {
+              resolveSecond = r
+            }),
+        )
 
       const older = notificationStore.fetchNotifications({ page: 1, page_size: 20 })
       const newer = notificationStore.fetchNotifications({ page: 2, page_size: 20 })

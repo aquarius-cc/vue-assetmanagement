@@ -2,12 +2,39 @@
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { describe, it, expect, vi } from 'vitest'
-vi.mock('element-plus', () => ({ ElMessage: { error: vi.fn(), success: vi.fn(), warning: vi.fn() }, ElMessageBox: { confirm: vi.fn(() => Promise.resolve('confirm')) } }))
-vi.mock('vue-router', async (importOriginal) => ({ ...(await importOriginal<typeof import('vue-router')>()), useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn(), go: vi.fn() }), useRoute: () => ({ path: '/', params: {}, query: {}, matched: [] }), onBeforeRouteUpdate: vi.fn(), onBeforeRouteLeave: vi.fn() }))
+vi.mock('element-plus', () => ({
+  ElMessage: { error: vi.fn(), success: vi.fn(), warning: vi.fn() },
+  ElMessageBox: { confirm: vi.fn(() => Promise.resolve('confirm')) },
+}))
+vi.mock('vue-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('vue-router')>()),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn(), go: vi.fn() }),
+  useRoute: () => ({ path: '/', params: {}, query: {}, matched: [] }),
+  onBeforeRouteUpdate: vi.fn(),
+  onBeforeRouteLeave: vi.fn(),
+}))
 import Component from '../UserForm.vue'
 describe('UserForm 挂载（S9 零覆盖补测）', () => {
   it('浅挂载渲染不抛错', () => {
-    const wrapper = mount(Component, { shallow: true, global: { plugins: [createPinia()], stubs: { 'el-button': { template: '<div />' }, 'el-card': { template: '<div />' }, 'el-col': { template: '<div />' }, 'el-form': { template: '<div />' }, 'el-form-item': { template: '<div />' }, 'el-icon': { template: '<div />' }, 'el-input': { template: '<div />' }, 'el-input-number': { template: '<div />' }, 'el-option': { template: '<div />' }, 'el-row': { template: '<div />' }, 'el-select': { template: '<div />' } } } })
+    const wrapper = mount(Component, {
+      shallow: true,
+      global: {
+        plugins: [createPinia()],
+        stubs: {
+          'el-button': { template: '<div />' },
+          'el-card': { template: '<div />' },
+          'el-col': { template: '<div />' },
+          'el-form': { template: '<div />' },
+          'el-form-item': { template: '<div />' },
+          'el-icon': { template: '<div />' },
+          'el-input': { template: '<div />' },
+          'el-input-number': { template: '<div />' },
+          'el-option': { template: '<div />' },
+          'el-row': { template: '<div />' },
+          'el-select': { template: '<div />' },
+        },
+      },
+    })
     expect(wrapper.exists()).toBe(true)
   })
 })
@@ -36,9 +63,21 @@ vi.mock('@/api/index', () => {
     clearCacheByPattern: vi.fn(),
     degradedCacheKeys: new Set(),
     buildLoginRedirectUrl: vi.fn(() => '/login'),
-    authAPI: apiStub(), userAPI: apiStub(), departmentAPI: apiStub(), assetAPI: apiStub(),
-    dashboardAPI: apiStub(), contractAPI: apiStub(), storageAPI: apiStub(), assetTypeAPI: apiStub(),
-    outAssetAPI: apiStub(), recycleAssetAPI: apiStub(), damagedAssetAPI: apiStub(), wasteAssetAPI: apiStub(),
-    networkAPI: apiStub(), unregisteredAssetAPI: apiStub(), operationLogAPI: apiStub(), harddiskSnAPI: apiStub(),
+    authAPI: apiStub(),
+    userAPI: apiStub(),
+    departmentAPI: apiStub(),
+    assetAPI: apiStub(),
+    dashboardAPI: apiStub(),
+    contractAPI: apiStub(),
+    storageAPI: apiStub(),
+    assetTypeAPI: apiStub(),
+    outAssetAPI: apiStub(),
+    recycleAssetAPI: apiStub(),
+    damagedAssetAPI: apiStub(),
+    wasteAssetAPI: apiStub(),
+    networkAPI: apiStub(),
+    unregisteredAssetAPI: apiStub(),
+    operationLogAPI: apiStub(),
+    harddiskSnAPI: apiStub(),
   }
 })

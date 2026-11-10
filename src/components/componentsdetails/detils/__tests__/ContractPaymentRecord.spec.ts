@@ -211,7 +211,10 @@ describe('ContractPaymentRecord（M-7 / BF-095）', () => {
     // statusMapping 收编函数的合法 import——"statusMapping" 含子串 "statusMap"）
     // 路径定位: import.meta.url 在本 vitest 环境非 file scheme(URL TypeError),
     // 改从 cwd 向上找仓根(含 package.json 的 vue-assetmanagement 目录)
-    const source = readFileSync(resolveRepoFile('src/components/componentsdetails/detils/ContractPaymentRecord.vue'), 'utf-8')
+    const source = readFileSync(
+      resolveRepoFile('src/components/componentsdetails/detils/ContractPaymentRecord.vue'),
+      'utf-8',
+    )
     expect(source).not.toContain('const statusMap')
     expect(source).not.toContain('const getStatusType')
     expect(source).not.toContain("'pending'")

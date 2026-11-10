@@ -619,8 +619,18 @@ describe('useNotification', () => {
       let rejectFirst!: (e: unknown) => void
       let resolveSecond!: (v: unknown) => void
       vi.mocked(notificationAPI.getNotifications)
-        .mockImplementationOnce(() => new Promise((_r, rej) => { rejectFirst = rej }))
-        .mockImplementationOnce(() => new Promise((r) => { resolveSecond = r }))
+        .mockImplementationOnce(
+          () =>
+            new Promise((_r, rej) => {
+              rejectFirst = rej
+            }),
+        )
+        .mockImplementationOnce(
+          () =>
+            new Promise((r) => {
+              resolveSecond = r
+            }),
+        )
 
       const { fetchNotifications, notifications, fetchError, isLoading } = useNotification()
       const older = fetchNotifications(20)
