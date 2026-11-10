@@ -158,7 +158,7 @@ import { GROUPED_FILTER_KEY_MAP } from '@/constants/assetGroupedFilters'
 import { useGroupedAssetSession, type GroupedPageSnapshot } from '@/stores/groupedAssetSession'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
-import { readStoreValue } from '@/utils/reactiveAccess'
+import { readReactive } from '@/utils/reactiveAccess'
 import { useServerExcelExport } from '@/composables/useServerExcelExport'
 import { exportToExcel } from '@/utils/excelExporter'
 import { assetExportExcel } from '@/stores/assetStore'
@@ -241,7 +241,7 @@ onBeforeRouteLeave(() => {
 if (props.enableGrouping) {
   let isRefreshing = false
   watch(
-    () => readStoreValue<boolean>(storeConfig.store.refreshFlag!),
+    () => readReactive<boolean>(storeConfig.store.refreshFlag!),
     async (flag) => {
       if (!flag || isRefreshing) return
       isRefreshing = true

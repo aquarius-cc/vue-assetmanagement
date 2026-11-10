@@ -16,7 +16,7 @@
 import { ref, computed, nextTick, watch } from 'vue'
 import type { Ref, ComputedRef } from 'vue'
 import { ElMessage } from 'element-plus'
-import { readReactive, writeReactive, readStoreValue } from '@/utils/reactiveAccess'
+import { readReactive, writeReactive } from '@/utils/reactiveAccess'
 import { PAGE_SIZE_OPTIONS, normalizePageSize } from '@/utils/pagination'
 import { usePaginationSearchState, type SearchConfig } from './usePaginationSearchState'
 import type { PaginationQuery } from '@/stores/createEntityStore'
@@ -94,7 +94,7 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
   // ===== 数据获取（必须在 usePaginationSearchState 之前声明） =====
   const updateTotal = (count: number) => writeReactive(store.pagination.total, count)
 
-  const getStoreList = (): T[] => readStoreValue<T[]>(store.list) || []
+  const getStoreList = (): T[] => readReactive<T[]>(store.list) || []
 
   const loadList = async (page: number, page_size: number) => {
     try {
@@ -215,13 +215,13 @@ export function usePaginationSearch<T>(config: PaginationSearchConfig<T>) {
   const refreshCurrentPage = () => swallowEntryRejection(() => runActiveSearch())
 
   // ===== store loading =====
-  const storeLoading = computed(() => readStoreValue<boolean>(store.loading) || false)
+  const storeLoading = computed(() => readReactive<boolean>(store.loading) || false)
 
   // ===== refreshFlag 监听 =====
   if (store.refreshFlag !== undefined) {
     let isRefreshing = false
     watch(
-      () => readStoreValue<boolean>(store.refreshFlag!),
+      () => readReactive<boolean>(store.refreshFlag!),
       async (flag) => {
         if (!flag || isRefreshing) return
         isRefreshing = true

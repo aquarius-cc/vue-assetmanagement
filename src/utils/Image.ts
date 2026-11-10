@@ -1,15 +1,11 @@
 /**
- * @file 图片优化工具集，提供懒加载指令、预加载、压缩、格式转换等功能
+ * @file 图片懒加载 Vue 自定义指令（批次5 M-45 批B 收敛：5/6 死导出删除，仅保留唯一存活的
+ * lazyLoadDirective——main.ts:10 注册为全局指令 v-lazy）。
+ * preloadImage / compressImage / convertImageToWebP / getImageDimensions / supportsWebP
+ * 删除依据：merge-audit-20261107 M-45③（全仓剔除自身后零外部调用）。
  * @module src/utils/Image
- * @exports
- *   - lazyLoadDirective: 图片懒加载 Vue 自定义指令
- *   - preloadImage: 图片预加载函数
- *   - compressImage: 图片压缩函数（Canvas 实现）
- *   - convertImageToWebP: 图片格式转换为 WebP
- *   - getImageDimensions: 获取图片尺寸
- *   - supportsWebP: 检测浏览器是否支持 WebP 格式
  * @callers
- *   - components/commoncomponents/* (通过 main.ts 注册全局指令)
+ *   - main.ts（注册全局指令）
  * @dependsOn
  *   - vue (DirectiveBinding)
  */
@@ -48,106 +44,4 @@ export const lazyLoadDirective = {
       img.src = binding.value
     }
   },
-}
-
-// 图片预加载函数
-export const preloadImage = (src: string): Promise<HTMLImageElement> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = reject
-    img.src = src
-  })
-}
-
-// 图片压缩函数（简单实现）
-export const compressImage = (file: File, quality = 0.8): Promise<Blob> => {
-  return new Promise((resolve) => {
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    const img = new Image()
-
-    img.onload = () => {
-      // 设置画布尺寸为原图的一半以减少文件大小
-      canvas.width = img.width / 2
-      canvas.height = img.height / 2
-
-      // 绘制压缩后的图片
-      ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
-
-      // 输出压缩后的图片
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            resolve(blob)
-          } else {
-            // 如果压缩失败，返回原始文件
-            resolve(file)
-          }
-        },
-        'image/jpeg',
-        quality,
-      )
-    }
-
-    img.src = URL.createObjectURL(file)
-  })
-}
-
-// 图片格式转换函数
-export const convertImageToWebP = (file: File): Promise<Blob> => {
-  return new Promise((resolve) => {
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    const img = new Image()
-
-    img.onload = () => {
-      canvas.width = img.width
-      canvas.height = img.height
-
-      ctx?.drawImage(img, 0, 0)
-
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            resolve(blob)
-          } else {
-            // 如果转换失败，返回原始文件
-            resolve(file)
-          }
-        },
-        'image/webp',
-        0.8,
-      )
-    }
-
-    img.src = URL.createObjectURL(file)
-  })
-}
-
-// 获取图片尺寸
-export const getImageDimensions = (src: string): Promise<{ width: number; height: number }> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => {
-      resolve({
-        width: img.width,
-        height: img.height,
-      })
-    }
-    img.onerror = reject
-    img.src = src
-  })
-}
-
-// 检查是否支持 WebP
-export const supportsWebP = async (): Promise<boolean> => {
-  return new Promise((resolve) => {
-    const webP = new Image()
-    webP.onload = webP.onerror = () => {
-      resolve(webP.height === 2)
-    }
-    webP.src =
-      'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA'
-  })
 }
