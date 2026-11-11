@@ -181,7 +181,7 @@ const rules: FormRules = {
   description: [{ required: true, message: '请输入支付说明', trigger: 'blur' }],
 }
 
-// paymentMethodMap 内联映射已收编 statusMapping 单源（批次4b C-16 域2），
+// 支付方式映射已收编 statusMapping 单源（批次4b C-16 域2），
 // 模板直接调用 getPaymentMethodText。
 
 // 计算属性

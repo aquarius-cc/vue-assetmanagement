@@ -21,10 +21,7 @@ import { safeNavigate } from '@/utils/navigation'
 import { formatDateTimeFull } from '@/utils/Format'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import { usePagedList } from '@/composables/usePagedList'
-import {
-  NOTIFICATION_PRIORITY_COLOR_MAP,
-  NOTIFICATION_TYPE_COLOR_MAP,
-} from '@/utils/statusMapping'
+import { NOTIFICATION_PRIORITY_COLOR_MAP, NOTIFICATION_TYPE_COLOR_MAP } from '@/utils/statusMapping'
 import type { NotificationItem, NotificationFilterParams } from '@/types/notification'
 
 // 筛选参数
@@ -90,9 +87,8 @@ const readOptions = [
   { label: '已读', value: 'true' },
 ]
 
-// [批次4b C-16] 优先级/类型颜色收编 statusMapping 单源（裁决：本页口径为权威）
-const priorityColorMap = NOTIFICATION_PRIORITY_COLOR_MAP
-const typeColorMap = NOTIFICATION_TYPE_COLOR_MAP
+// [批次4b C-16] 优先级/类型颜色收编 statusMapping 单源（裁决：本页口径为权威），
+// 模板直用 NOTIFICATION_*_MAP 常量，无本地别名。
 
 function handleSearch() {
   search(buildFilterParams())
@@ -220,7 +216,7 @@ onMounted(() => {
         </el-table-column>
         <el-table-column label="类型" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="typeColorMap[row.type] || 'info'" size="small">
+            <el-tag :type="NOTIFICATION_TYPE_COLOR_MAP[row.type] || 'info'" size="small">
               {{
                 row.type === 'approval'
                   ? '审批'
@@ -233,7 +229,11 @@ onMounted(() => {
         </el-table-column>
         <el-table-column label="优先级" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="priorityColorMap[row.priority] || 'info'" size="small" effect="dark">
+            <el-tag
+              :type="NOTIFICATION_PRIORITY_COLOR_MAP[row.priority] || 'info'"
+              size="small"
+              effect="dark"
+            >
               {{ row.priority === 'high' ? '高' : row.priority === 'medium' ? '中' : '低' }}
             </el-tag>
           </template>

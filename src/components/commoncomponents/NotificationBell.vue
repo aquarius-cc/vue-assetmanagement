@@ -61,7 +61,9 @@
               @click="handleClick(n)"
             >
               <div class="item-header">
-                <el-tag :type="getNotificationTagType(n.type)" size="small">{{ getNotificationTypeLabel(n.type) }}</el-tag>
+                <el-tag :type="getNotificationTagType(n.type)" size="small">{{
+                  getNotificationTypeLabel(n.type)
+                }}</el-tag>
                 <span class="item-time">{{ formatRelativeTime(n.created_at) }}</span>
               </div>
               <div class="item-title">{{ n.title }}</div>
@@ -82,10 +84,7 @@ import { useNotification, type Notification } from '@/composables/useNotificatio
 import { formatRelativeTime } from '@/utils/Format'
 // [批次4b C-16] 类型色/文案收编 statusMapping 单源（裁决：以 NotificationList 为准，
 // approval warning→primary / status_change「状态」→「状态变更」为经批准的可见变更）
-import {
-  getNotificationTagType,
-  getNotificationTypeLabel,
-} from '@/utils/statusMapping'
+import { getNotificationTagType, getNotificationTypeLabel } from '@/utils/statusMapping'
 
 const {
   notifications,
@@ -120,7 +119,7 @@ function handleClick(n: Notification) {
   }
 }
 
-// getTagType / getTypeLabel 内联映射已收编 statusMapping 单源（批次4b C-16），
+// 通知类型 tag 的颜色与文案映射已收编 statusMapping 单源（批次4b C-16），
 // 模板直接调用 getNotificationTagType / getNotificationTypeLabel。
 </script>
 
