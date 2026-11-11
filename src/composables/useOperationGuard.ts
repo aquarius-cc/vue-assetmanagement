@@ -4,7 +4,7 @@
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { usePermission } from '@/composables/usePermission'
-import { isAxiosError } from 'axios'
+import { isApiError } from '@/utils/errorHandler'
 
 export function useOperationGuard() {
   const router = useRouter()
@@ -32,7 +32,7 @@ export function useOperationGuard() {
   // handleForbiddenError：移除 ElMessage.error，仅保留跳转
   function handleForbiddenError(err: unknown): boolean {
     // [修复] 拦截器已对 403 弹出"没有权限访问该资源"，此处不重复弹窗，仅做跳转
-    if (isAxiosError(err) && err.response?.status === 403) {
+    if (isApiError(err) && err.response?.status === 403) {
       router.push('/main')
       return true
     }
@@ -48,7 +48,7 @@ export function useOperationGuard() {
   // handleConflictError：移除 ElMessage.error，仅返回 true 表示已处理
   function handleConflictError(err: unknown): boolean {
     // [修复] 拦截器已对 409 弹出后端返回的 detail 消息，此处不重复弹窗
-    if (isAxiosError(err) && err.response?.status === 409) {
+    if (isApiError(err) && err.response?.status === 409) {
       return true
     }
     return false

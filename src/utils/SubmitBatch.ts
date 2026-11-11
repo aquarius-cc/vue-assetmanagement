@@ -10,10 +10,12 @@
  * @callers
  *   - composables/useBatchImport
  * @dependsOn
- *   - axios (isAxiosError)
+ *   - utils/errorHandler (isApiError)
+ *   - axios (type AxiosError)
  */
 
-import { isAxiosError, type AxiosError } from 'axios'
+import { isApiError } from '@/utils/errorHandler'
+import type { AxiosError } from 'axios'
 import { logError } from '@/utils/logger'
 
 /** 失败项：包含原始数据和具体错误信息 */
@@ -91,7 +93,7 @@ const extractAxiosErrorMessage = (error: AxiosError): string => {
 }
 
 export function extractErrorMessage(error: unknown): string {
-  if (isAxiosError(error)) return extractAxiosErrorMessage(error)
+  if (isApiError(error)) return extractAxiosErrorMessage(error)
   if (error instanceof Error) return error.message
   if (typeof error === 'string') return error
   return '未知错误'

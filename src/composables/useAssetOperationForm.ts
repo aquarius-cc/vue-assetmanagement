@@ -15,7 +15,7 @@ import { ref, computed, onMounted, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import { isAxiosError } from 'axios'
+import { isApiError } from '@/utils/errorHandler'
 import { assetAPI } from '@/api/asset'
 import type { AssetDetail } from '@/types/asset'
 import { useOperationGuard } from '@/composables/useOperationGuard'
@@ -92,7 +92,7 @@ export function useAssetOperationForm<T = Record<string, unknown>>(
     } catch (err) {
       logError('composables/useAssetOperationForm', '获取资产信息失败:', err)
       // [修复] 分类处理：业务错误（非 AxiosError）拦截器未处理，需手动提示
-      if (!isAxiosError(err)) {
+      if (!isApiError(err)) {
         ElMessage.error((err as Error).message || '获取资产信息失败')
       }
       // AxiosError 由拦截器已弹窗，不重复

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 import { submitBatch, extractErrorMessage } from '../SubmitBatch'
-import { isAxiosError } from 'axios'
+import { isApiError } from '@/utils/errorHandler'
 
-// Mock axios
-vi.mock('axios', () => ({
-  isAxiosError: vi.fn((error: unknown): error is any => {
+// Mock 守卫唯一入口（errorHandler 为 isApiError 单一实现）
+vi.mock('@/utils/errorHandler', () => ({
+  isApiError: vi.fn((error: unknown): error is any => {
     return error !== null && typeof error === 'object' && 'isAxiosError' in error
   }),
 }))
@@ -20,7 +20,7 @@ describe('SubmitBatch', () => {
           },
         },
       }
-      ;(isAxiosError as any).mockReturnValue(true)
+      ;(isApiError as any).mockReturnValue(true)
       expect(extractErrorMessage(axiosError)).toBe('Validation error')
     })
 
@@ -33,7 +33,7 @@ describe('SubmitBatch', () => {
           },
         },
       }
-      ;(isAxiosError as any).mockReturnValue(true)
+      ;(isApiError as any).mockReturnValue(true)
       expect(extractErrorMessage(axiosError)).toBe('Error 1；Error 2')
     })
 
@@ -46,7 +46,7 @@ describe('SubmitBatch', () => {
           },
         },
       }
-      ;(isAxiosError as any).mockReturnValue(true)
+      ;(isApiError as any).mockReturnValue(true)
       expect(extractErrorMessage(axiosError)).toBe('Field error')
     })
 
@@ -60,7 +60,7 @@ describe('SubmitBatch', () => {
           },
         },
       }
-      ;(isAxiosError as any).mockReturnValue(true)
+      ;(isApiError as any).mockReturnValue(true)
       const result = extractErrorMessage(axiosError)
       expect(result).toContain('name: Required')
       expect(result).toContain('email: Invalid format')
@@ -74,23 +74,23 @@ describe('SubmitBatch', () => {
           data: {},
         },
       }
-      ;(isAxiosError as any).mockReturnValue(true)
+      ;(isApiError as any).mockReturnValue(true)
       expect(extractErrorMessage(axiosError)).toBe('请求失败 (404)')
     })
 
     it('should extract message from Error object', () => {
       const error = new Error('Standard error')
-      ;(isAxiosError as any).mockReturnValue(false)
+      ;(isApiError as any).mockReturnValue(false)
       expect(extractErrorMessage(error)).toBe('Standard error')
     })
 
     it('should handle string errors', () => {
-      ;(isAxiosError as any).mockReturnValue(false)
+      ;(isApiError as any).mockReturnValue(false)
       expect(extractErrorMessage('String error')).toBe('String error')
     })
 
     it('should return fallback for unknown errors', () => {
-      ;(isAxiosError as any).mockReturnValue(false)
+      ;(isApiError as any).mockReturnValue(false)
       expect(extractErrorMessage(null)).toBe('未知错误')
       expect(extractErrorMessage(undefined)).toBe('未知错误')
       expect(extractErrorMessage(123)).toBe('未知错误')

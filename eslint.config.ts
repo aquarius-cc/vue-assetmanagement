@@ -139,6 +139,46 @@ export default defineConfigWithVueTs(
     },
   },
 
+  // [M-21 补口] F11 执行面闭合至 utils/composables/stores 的 .ts 层。
+  // 独立成块：上方 app/store-layer-no-direct-api 同含 @/api/* 正则，直接扩面会
+  // 误伤 stores/composables 的合法 API 导入，并违背 A-45「composable 为 API 适配层」决策。
+  // regex 逐字复用自 :121（非新增正则，AR-2 复查随评审通过）。
+  // allowTypeImports 仅放行 import type { AxiosError }（ESLint patterns 下生效，
+  // 见 node_modules/eslint/lib/rules/no-restricted-imports.js:582-591）。
+  // 排除项必须走具名 ignores 而非 files 否定模式：后者会使本块退化为全局匹配，
+  // 实测连 src/api/*（不在 files 覆盖范围内）都拿到本规则（--print-config 直证）。
+  // src/api/* 不在本块 files 覆盖范围内，天然豁免。
+  {
+    name: 'app/no-direct-axios',
+    files: ['src/{utils,composables,stores}/**/*.{ts,vue}'],
+    ignores: [
+      '**/__tests__/**',
+      '**/*.spec.ts',
+      '**/*.test.ts',
+      // infra 例外：底层请求链与守卫唯一入口，改引 helper 会把 element-plus 拉进请求链
+      'src/utils/requestErrors.ts',
+      'src/utils/errorHandler.ts',
+      'src/utils/tokenRefresh.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '^axios(/|$)',
+              allowTypeImports: true,
+              message:
+                '禁止 utils/composables/stores 直接 import axios（F11 执行面闭合）。' +
+                '类型守卫统一用 @/utils/errorHandler 的 isApiError；仅允许 import type。' +
+                'infra 例外见本块 ignores。',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // 存量直连文件待迁移清单(迁移一个移除一个, 直到本块清空)
   // FE-01 批1 已迁移 11 个视图（LostAsset/MarkBroken/LogIn/AssetLogs/FoundAsset/NotificationList/
   // RecycleAsset/RepairAsset/RepairDone/RepairFailed/ScrapAsset）→ 已移除，仍可运行时直连的 in_use 状态资产操作视图见后续批次
