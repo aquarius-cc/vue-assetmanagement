@@ -40,10 +40,10 @@ export default defineConfig({
           lines: 80,
         },
         'src/stores/**/*.ts': {
-          statements: 90,
-          branches: 90,
-          functions: 90,
-          lines: 90,
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
         },
         // 【P2-2 分层棘轮】.vue 单独成层，阈值 N 取实测基线（含 .vue 后的实测值）。
         // 棘轮语义 = 只升不降：覆盖率上移后需手工同步调高本块，回吐则 CI 红。
