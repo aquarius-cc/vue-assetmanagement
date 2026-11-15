@@ -414,7 +414,7 @@ defineExpose({
   --el-tag-bg-color: var(--color-primary);
 }
 
-:global(html.dark) .asset-count-tag {
+:global(html.dark .asset-count-tag) {
   --el-tag-bg-color: var(--color-primary-dark);
 }
 
