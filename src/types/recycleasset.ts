@@ -181,3 +181,14 @@ export type RecycleAssetBatchCreateResult = BatchCreateResult<
   RecycleAssetExtended,
   RecycleAssetBatchItem
 >
+
+/** [C5/M-13] 回收选表记录（迁自 SelectedRecordsTable.vue，唯一源） */
+export interface SelectedRecord {
+  recordcode: string
+  recycle_asset: string
+  outasset_name: string
+  outasset_manager_name: string
+  manager_jobcode: string
+  department_name: string
+  outasset_number: number
+}

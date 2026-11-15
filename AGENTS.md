@@ -1,10 +1,10 @@
 
 ---
 
-### 📄 文档 3：前端子引擎 `/vue-assetmanagement/AGENTS.md` (v9.9.1)
+### 📄 文档 3：前端子引擎 `/vue-assetmanagement/AGENTS.md` (v9.9.2)
 
 # 前端 AI 执行子引擎配置 (Frontend Engine)
-> 版本：v9.9.1 | 最后更新：2026-10-31
+> 版本：v9.9.2 | 最后更新：2026-11-15
 > 职责：Vue 3 组件开发、设计令牌执行、UI 交互逻辑、前端测试门禁、组件规模与复杂度管控
 
 ## §1 核心执行协议
@@ -17,7 +17,7 @@
 ### 1.2 技术栈硬约束
 - **语法**：强制 `<script setup lang="ts">`，**禁止** Options API。
 - **状态**：使用 Pinia Setup Store，**禁止**组件内直接使用 axios。
-- **样式**：组件样式必须 `scoped`，覆盖 Element Plus 变量需集中在 `element-variables.scss`。
+- **样式**：组件样式必须 `scoped`；**主色令牌族（`--color-primary-*` 色阶 + `--el-color-primary-*` 桥）以 `src/styles/variables.css` 为唯一真源**（亮 `:root` / 暗 `html.dark` 成对，构建期静态 hex，口径见 `../Rules_Fiels/frontend-business-rules.md` §3.3），组件内禁止写主色 hex 字面量；其余 Element Plus 变量覆盖集中在 `element-variables.scss`。
 
 ### 1.3 硬性代码标准与质量门禁
 - **设计令牌零容忍**：颜色、间距、圆角、字体**必须**来源于 F1-F5 的定义。**禁止**在任何组件中硬编码 `#fff`、`#000` 或非 4 倍数的间距值。
@@ -111,6 +111,7 @@
 - 涉及全局 CSS 变量命名空间变更，可能影响其他端 → 上报根级。
 
 ## §5 变更日志
+- **v9.9.2 (2026-11-15)**：§1.2 样式条同步 M-07 主色单一真源（frontend-business-rules.md v1.8 §3.3）——明确主色令牌族（含 EP 桥）以 `src/styles/variables.css` 为唯一真源；原「覆盖 Element Plus 变量需集中在 `element-variables.scss`」口径限定为**非主色**变量（element-variables.scss 不含主色定义，属口径范围订正，非行为变更）。**本地命令语义一字未改**，不触发根级 §5.4 沙盒期。依据根级 §5.2，经人工审批（[HALT-1]）后应用。
 - **v9.9.1 (2026-10-31)**：§1.3 同步批次1 CI 门禁口径（M-09+M-10，零生产代码）——新增「CI 强制口径」注记：`frontend-lint`/`frontend-complexity` 作业改跑 `npm run lint:ci`（`= eslint .` 检查模式，不带 `--fix`，防自动修复后静默通过），新增 `frontend-format` 作业跑 `npm run format:check`；复杂度门禁注记中过时的 `ci.yml:385-393` 行号引用移除（行号随批次漂移，改以作业名定位）。**本地命令语义一字未改**（三项检查仍为 type-check / lint / format:check，`lint` 仍带 `--fix` 供本地修复），故不触发根级 §5.4 沙盒期。配套：子模块 `package.json` 新增 `lint:ci` script。依据根级 §5.2，经人工审批（用户指令「同步相关文档」）后应用。
 - **v9.9.0 (2026-10-12)**：§1.3 复杂度门禁命令勘误 + 升级为阻断级——原命令 `eslint . --ext .vue,.ts --rule "complexity: ['error', 10]"` 改为 `npm run lint`。**根因**：CLI `--rule` 不读 flat config 的 `app/complexity-exempt` override 块，会绕过豁免并对 `scripts/*.mjs`、`**/__tests__/*.spec.ts` 的非业务复杂度误报（BF-086 批5 同日双向实证：走 config = 0 误报，走 `--rule` = 5 误报）。**规则本身由 `warn` 升 `error`**（P1-4 存量清零后解除沙盒期，`eslint.config.ts:37`）；CI 的 `frontend-complexity` 作业同步撤除 step 级 `continue-on-error` 与 CLI `--rule` 覆盖，改跑 `npm run lint` 读 config（`.github/workflows/ci.yml:385-393`）。依据根级 §5.2，经人工审批后应用。
 - **v9.8.0 (2026-10-05)**：§1.3 测试门禁命令勘误——`vitest --coverage --threshold 80` → `npm run test:coverage`。**根因**：vitest 4 已移除 `--threshold` CLI 参数，原命令实测报 `CACError: Unknown option '--threshold'`（exit 1），照抄即门禁假红。**阈值效力不变**：`vitest.config.ts` 的 `coverage.thresholds`（整体 80 / `src/stores/**` 90）自动强制，不达标仍判失败——**本次只修命令串，未动任何阈值**，故不触发根级 §5.4 沙盒期。历史关联：`docs/compose/specs/2026-07-06-rules-files-fix-plan.md:314` 曾挂待办想改成 vitest 3 的 `--coverage.threshold=80`（vitest 4 同样失效）且从未销项，本条为其正确取代。依据根级 §5.2，经人工审批后应用。

@@ -9,17 +9,25 @@
  *
  * 环境约束同 AssetLogsView.spec：vitest 独立 plugins:[vue()]，el-* 需显式 stub。
  */
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { getListMock, totalRef } = vi.hoisted(() => ({
+const { getListMock, removeMock, totalRef } = vi.hoisted(() => ({
   getListMock: vi.fn(),
+  removeMock: vi.fn(),
   totalRef: { total: 0 },
 }))
 
 vi.mock('@/stores/roleStore', () => ({
-  useRoleStore: () => ({ getList: getListMock, pagination: totalRef }),
+  useRoleStore: () => ({ getList: getListMock, remove: removeMock, pagination: totalRef }),
 }))
+// 部分 mock：仅替换 logError，保留其余日志能力（usePagedList 等依赖 logWarn/logger 实例）
+vi.mock('@/utils/logger', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/logger')>()
+  return { ...actual, logError: vi.fn() }
+})
 vi.mock('@/composables/usePermission', () => ({
   usePermission: () => ({ isAdmin: true }),
 }))
@@ -30,6 +38,9 @@ vi.mock('element-plus', () => ({
 }))
 
 import RoleManage from '../RoleManage.vue'
+import { notifyCallerError } from '@/utils/errorHandler'
+import { logError } from '@/utils/logger'
+import { ElMessage } from 'element-plus'
 
 const stubs = {
   'el-card': { template: '<div class="el-card"><slot name="header" /><slot /></div>' },
@@ -58,12 +69,41 @@ const stubs = {
   RolePermDialog: { template: '<div />' },
 }
 
-function mountPage() {
-  return mount(RoleManage, { global: { stubs, directives: { loading: {} } } })
+const ROW = {
+  id: 9,
+  role_code: 'test_role',
+  role_name: '测试角色',
+  role_level: 1,
+  description: '',
+  sort_order: 0,
+  is_system: false,
+}
+
+// B-30 用例专用：列 stub 渲染带 row 的默认插槽（其余用例保持原「空数据不渲染行插槽」行为）
+const rowStubs = {
+  ...stubs,
+  'el-table-column': {
+    name: 'ElTableColumn',
+    props: ['fixed', 'label', 'prop', 'width'],
+    data: () => ({ ROW }),
+    template: '<div class="tcol"><slot :row="ROW" /></div>',
+  },
+  'el-popconfirm': {
+    name: 'ElPopconfirm',
+    emits: ['confirm'],
+    template: '<div class="el-popconfirm"><slot name="reference" /></div>',
+  },
+}
+
+function mountPage(extraStubs: Record<string, unknown> = {}) {
+  return mount(RoleManage, {
+    global: { stubs: { ...stubs, ...extraStubs }, directives: { loading: {} } },
+  })
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  removeMock.mockReset()
   totalRef.total = 0
 })
 
@@ -103,5 +143,38 @@ describe('RoleManage [M-27/M-25]', () => {
     await flushPromises()
 
     expect(wrapper.findComponent({ name: 'ElPagination' }).exists()).toBe(true)
+  })
+
+  it('[B-30] 删除失败：不直弹后端原文，收编 notifyCallerError + logError', async () => {
+    getListMock.mockResolvedValue([])
+    const axiosError = {
+      isAxiosError: true,
+      message: '服务器内部错误',
+      response: { status: 500, data: { message: '数据库连接失败' } },
+    }
+    removeMock.mockRejectedValue(axiosError)
+
+    const wrapper = mountPage(rowStubs)
+    await flushPromises()
+
+    const popconfirm = wrapper.findComponent({ name: 'ElPopconfirm' })
+    expect(popconfirm.exists()).toBe(true)
+    await popconfirm.vm.$emit('confirm')
+    await flushPromises()
+
+    // AxiosError 已由拦截器提示 → 组件侧不得再弹（原三级提取直弹即双弹）
+    expect(vi.mocked(ElMessage.error)).not.toHaveBeenCalled()
+    expect(vi.mocked(notifyCallerError)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(notifyCallerError)).toHaveBeenCalledWith(axiosError, '删除失败')
+    // B-29 同构：显式 logError 保留，补非 AxiosError 观测面
+    expect(vi.mocked(logError)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(logError)).toHaveBeenCalledWith(
+      'views/system/RoleManage',
+      '删除角色失败',
+      axiosError,
+    )
+    // 静态防回潮：组件源码不得再出现 ElMessage.error
+    const source = readFileSync(resolve(process.cwd(), 'src/views/system/RoleManage.vue'), 'utf-8')
+    expect(source).not.toContain('ElMessage.error')
   })
 })

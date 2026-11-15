@@ -220,3 +220,6 @@ export interface ValidatedEmployeeData {
 // export type DataScope =
 //   | { scope_type: 'all' }                // 全部数据(superuser 或任一角色含 all)
 //   | { scope_type: 'departments'; department_codes: string[]; include_children: boolean }  // 限定部门
+
+/** [C5/M-13] 部门名称→代码映射 getter（迁自 userBatchImport.config.ts，唯一源） */
+export type DepartmentMappingGetter = () => Record<string, string>

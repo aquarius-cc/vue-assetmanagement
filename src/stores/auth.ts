@@ -25,6 +25,7 @@ import { setInMemoryAccessToken, clearInMemoryAccessToken } from '@/utils/tokenM
 import { detectAuthChannel } from '@/utils/device'
 import type { AuthChannel } from '@/utils/device'
 import { refreshAccessToken } from '@/utils/tokenRefresh'
+import { getErrorMessage } from '@/utils/errorHandler'
 import { permissionsAPI } from '@/api/permissions'
 import type { DataScope } from '@/types/permission'
 import { DEFAULT_ROLE } from '@/constants/roles'
@@ -167,21 +168,6 @@ export const useAuthStore = defineStore('AuthUser', () => {
   }
 
   /**
-   * 提取登录失败的错误提示（Error / Axios 响应 message / 兜底文案）
-   */
-  function extractLoginErrorMessage(error: unknown): string {
-    const fallback = '登录失败，请检查用户名和密码或后端服务器状态'
-    if (error instanceof Error) {
-      return error.message || fallback
-    }
-    if (error && typeof error === 'object' && 'response' in error) {
-      const axiosError = error as { response?: { data?: { message?: string } } }
-      return axiosError.response?.data?.message || fallback
-    }
-    return fallback
-  }
-
-  /**
    * 用户登录（双通道：登录响应均含 access/refresh，按通道决定持久化策略）
    * @param loginData 登录表单数据
    */
@@ -221,7 +207,12 @@ export const useAuthStore = defineStore('AuthUser', () => {
       return { success: true, message: '登录成功' }
     } catch (error) {
       logError('stores/auth', '登录失败', error)
-      return { success: false, message: extractLoginErrorMessage(error) }
+      // [B-36] 收编 utils/errorHandler 唯一实现：AxiosError 优先取后端 message，
+      // 原本地实现把 instanceof Error 判在 axios 分支之前，导致恒返回 axios 英文 message
+      return {
+        success: false,
+        message: getErrorMessage(error, '登录失败，请检查用户名和密码或后端服务器状态'),
+      }
     }
   }
 

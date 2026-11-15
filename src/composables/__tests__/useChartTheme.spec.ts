@@ -61,8 +61,9 @@ describe('useChartTheme', () => {
     const { theme } = useChartTheme()
     expect(theme.value.tooltipBg).toBe('rgba(255,255,255,0.95)')
     expect(theme.value.dividerColor).toBe('#ffffff')
-    expect(theme.value.lineAreaTop).toBe('rgba(59,130,246,0.25)')
-    expect(theme.value.lineAreaBottom).toBe('rgba(59,130,246,0.02)')
+    // [M-07] 亮色端 = 品牌主色 RGB（43,95,215），原 EP 默认蓝 59,130,246 已清除
+    expect(theme.value.lineAreaTop).toBe('rgba(43,95,215,0.25)')
+    expect(theme.value.lineAreaBottom).toBe('rgba(43,95,215,0.02)')
   })
 
   it('切换暗色后 computed 重算，tooltip/分割线/面积图切换暗色系', () => {
@@ -71,8 +72,9 @@ describe('useChartTheme', () => {
     expect(isDark.value).toBe(true)
     expect(theme.value.tooltipBg).toBe('rgba(29,30,31,0.95)')
     expect(theme.value.dividerColor).toBe('#1d1e1f')
-    expect(theme.value.lineAreaTop).toBe('rgba(74,144,226,0.25)')
-    expect(theme.value.lineAreaBottom).toBe('rgba(74,144,226,0.02)')
+    // [M-07] 暗色端 = 同色相提亮主色 RGB（85,127,223），原 74,144,226 已清除
+    expect(theme.value.lineAreaTop).toBe('rgba(85,127,223,0.25)')
+    expect(theme.value.lineAreaBottom).toBe('rgba(85,127,223,0.02)')
   })
 
   it('CSS 变量缺失时回退到 FALLBACK 常量', () => {

@@ -40,12 +40,8 @@
 
 <script lang="ts" setup>
 import { Refresh } from '@element-plus/icons-vue'
-
-export interface StatItem {
-  value: string | number
-  label: string
-  class?: string
-}
+// [C5/M-13] StatItem 已迁 @/types/dashboard（唯一源）
+import type { StatItem } from '@/types/dashboard'
 
 defineProps<{
   title: string

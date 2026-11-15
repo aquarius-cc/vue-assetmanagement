@@ -19,8 +19,8 @@ import { isApiError as isAxiosError } from '@/utils/errorHandler'
 import { useNotificationStore } from '@/stores'
 import { safeNavigate } from '@/utils/navigation'
 import { formatDateTimeFull } from '@/utils/Format'
-import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import { usePagedList } from '@/composables/usePagedList'
+import CommonPagination from '@/components/commoncomponents/CommonPagination.vue'
 import { NOTIFICATION_PRIORITY_COLOR_MAP, NOTIFICATION_TYPE_COLOR_MAP } from '@/utils/statusMapping'
 import type { NotificationItem, NotificationFilterParams } from '@/types/notification'
 
@@ -255,17 +255,16 @@ onMounted(() => {
       </el-table>
 
       <!-- 分页 -->
-      <div class="pagination-wrapper">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="PAGE_SIZE_OPTIONS"
-          layout="total, sizes, prev, pager, next, jumper"
-          @current-change="changePage"
-          @size-change="handleSizeChange"
-        />
-      </div>
+      <CommonPagination
+        v-model:page="currentPage"
+        v-model:page-size="pageSize"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        align="end"
+        :hide-when-empty="false"
+        @current-change="changePage"
+        @size-change="handleSizeChange"
+      />
     </el-card>
   </div>
 </template>
@@ -290,11 +289,5 @@ onMounted(() => {
 
 .filter-card {
   margin-bottom: 16px;
-}
-
-.pagination-wrapper {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 16px;
 }
 </style>

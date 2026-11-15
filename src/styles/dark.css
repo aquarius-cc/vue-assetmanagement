@@ -4,10 +4,13 @@
  *
  * 仅定义 variables.css 中未覆盖的 --el-color-* 变量。
  * 自定义变量（--background-color、--text-primary 等）已在 variables.css html.dark 中统一定义。
+ * [M-07/A] --el-color-primary-rgb 已收敛至 variables.css html.dark；
+ * 本文件不再写任何 rgb 字面量，避免同特异性下覆盖亮/暗色阶。
  */
 html.dark {
   /* Element Plus 颜色变量（variables.css 未定义） */
-  --el-color-primary: #4a90e2;
+  /* [M-06] 映射到暗色品牌令牌，避免与 html.dark 的 --color-primary 形成双源字面量 */
+  --el-color-primary: var(--color-primary);
   --el-color-success: #73d13d;
   --el-color-warning: #ffc53d;
   --el-color-danger: #ff7875;

@@ -516,14 +516,35 @@ describe('AuthStore', () => {
       expect(result.message).toBe('登录失败，请检查用户名和密码或后端服务器状态')
     })
 
-    it('响应体错误应取后端message或回退默认文案', async () => {
+    it('[B-36] AxiosError 应取后端 message（而非 axios 英文 message）', async () => {
       const { authAPI } = await import('@/api/auth')
-      vi.mocked(authAPI.login).mockRejectedValue({ response: { data: { message: '后端拒绝' } } })
+
+      // 真实形态：AxiosError 继承 Error，且带 isAxiosError 标记与 response.data
+      vi.mocked(authAPI.login).mockRejectedValue(
+        Object.assign(new Error('Request failed with status code 401'), {
+          isAxiosError: true,
+          response: { status: 401, data: { message: '用户名或密码错误' } },
+        }),
+      )
       expect((await authStore.login({ auth_username: 'admin', password: '123456' })).message).toBe(
-        '后端拒绝',
+        '用户名或密码错误',
       )
 
-      vi.mocked(authAPI.login).mockRejectedValue({ response: { data: {} } })
+      // 后端未给 message → 回落默认文案（不暴露 axios 英文 message）
+      vi.mocked(authAPI.login).mockRejectedValue(
+        Object.assign(new Error('Request failed with status code 500'), {
+          isAxiosError: true,
+          response: { status: 500, data: {} },
+        }),
+      )
+      expect((await authStore.login({ auth_username: 'admin', password: '123456' })).message).toBe(
+        '登录失败，请检查用户名和密码或后端服务器状态',
+      )
+    })
+
+    it('[B-36] 非 AxiosError 的普通对象回落默认文案', async () => {
+      const { authAPI } = await import('@/api/auth')
+      vi.mocked(authAPI.login).mockRejectedValue({ response: { data: { message: '后端拒绝' } } })
       expect((await authStore.login({ auth_username: 'admin', password: '123456' })).message).toBe(
         '登录失败，请检查用户名和密码或后端服务器状态',
       )

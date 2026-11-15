@@ -26,6 +26,7 @@ describe('AppStore', () => {
     Object.defineProperty(document, 'title', { writable: true, value: '' })
     document.documentElement.classList.toggle = vi.fn(() => false)
     document.documentElement.style.setProperty = vi.fn()
+    document.documentElement.style.removeProperty = vi.fn()
 
     const pinia = createPinia()
     setActivePinia(pinia)
@@ -139,17 +140,18 @@ describe('AppStore', () => {
       expect(store.theme).toBe('dark')
     })
 
-    it('应该从 localStorage 恢复主色调', () => {
+    it('initAppState 无条件收敛品牌色，清理旧键与内联变量（M-07/D4=B）', () => {
       localStorageMock.getItem.mockImplementation((key: string) => {
         if (key === 'primaryColor') return '#FF0000'
         return null
       })
       store.initAppState()
-      expect(store.primaryColor).toBe('#FF0000')
-      expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
+      expect(store.primaryColor).toBe('#2B5FD7')
+      expect(document.documentElement.style.removeProperty).toHaveBeenCalledWith(
         '--el-color-primary',
-        '#FF0000',
       )
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('primaryColor')
+      expect(localStorageMock.setItem).not.toHaveBeenCalledWith('primaryColor', expect.anything())
     })
 
     it('应该从 localStorage 恢复应用设置', () => {
@@ -183,14 +185,14 @@ describe('AppStore', () => {
       expect(localStorageMock.setItem).toHaveBeenCalledWith('sidebarCollapsed', 'true')
     })
 
-    it('setPrimaryColor 设置颜色并保存 CSS 变量', () => {
-      store.setPrimaryColor('#123456')
-      expect(store.primaryColor).toBe('#123456')
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('primaryColor', '#123456')
-      expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
+    it('setPrimaryColor 无参单源：品牌常量 + 清内联 + 不写 setItem（M-07/D4=B）', () => {
+      store.setPrimaryColor()
+      expect(store.primaryColor).toBe('#2B5FD7')
+      expect(document.documentElement.style.removeProperty).toHaveBeenCalledWith(
         '--el-color-primary',
-        '#123456',
       )
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('primaryColor')
+      expect(localStorageMock.setItem).not.toHaveBeenCalledWith('primaryColor', expect.anything())
     })
 
     it('resetAppState 重置全部状态并清理存储', () => {
@@ -211,6 +213,19 @@ describe('AppStore', () => {
       for (const key of ['sidebarCollapsed', 'theme', 'primaryColor', 'appSettings']) {
         expect(localStorageMock.removeItem).toHaveBeenCalledWith(key)
       }
+    })
+
+    it('resetAppState 经 setter 修复 DOM：撤除 dark class 并清理主色内联变量（M-08 + M-07/D4=B）', () => {
+      store.setTheme('dark')
+      vi.mocked(document.documentElement.classList.toggle).mockClear()
+      vi.mocked(document.documentElement.style.removeProperty).mockClear()
+
+      store.resetAppState()
+
+      expect(document.documentElement.classList.toggle).toHaveBeenCalledWith('dark', false)
+      expect(document.documentElement.style.removeProperty).toHaveBeenCalledWith(
+        '--el-color-primary',
+      )
     })
 
     it('updateSettings 合并并保存设置', () => {

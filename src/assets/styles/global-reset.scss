@@ -16,7 +16,7 @@
 
 /* 为键盘导航提供清晰的焦点轮廓样式，同时避免鼠标点击时的轮廓干扰 */
 :focus-visible {
-  outline: 2px solid var(--el-color-primary, #409eff);
+  outline: 2px solid var(--el-color-primary);
   outline-offset: 2px;
 }
 

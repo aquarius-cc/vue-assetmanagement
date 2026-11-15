@@ -2,8 +2,8 @@
  * @file 通用数据格式化工具集，提供日期、金额、状态映射、Excel数据校验等函数
  * @module src/utils/Format
  * @exports
- *   - formatDate: 将日期转为 YYYY-MM-DD 格式
- *   - formatDateTime: 将日期转为 MM-DD HH:mm 格式
+ *   - formatDate: 将日期转为 YYYY-MM-DD 格式（[M-15] 纯日历日期直通；绝对时刻按 Asia/Shanghai 业务时区渲染）
+ *   - formatDateTime: 将日期转为 MM-DD HH:mm 格式（[M-15] 业务时区）
  *   - formatDateTimeFull: 将日期转为完整日期时间格式
  *   - formatPrice: 金额格式化为两位小数
  *   - formatNumber: 数字千分位格式化
@@ -43,9 +43,47 @@ import {
 } from './statusMapping'
 
 // 日期格式化函数（修复类型错误）
+
+/** [M-15] 产品口径：业务时刻统一按 Asia/Shanghai 渲染，与后端 TIME_ZONE 对齐，不随浏览器时区漂移 */
+export const BUSINESS_TIME_ZONE = 'Asia/Shanghai'
+
+const businessParts = new Intl.DateTimeFormat('en-CA', {
+  timeZone: BUSINESS_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+})
+
+/**
+ * [M-15] 绝对时刻 → 东八区年月日时分秒。
+ * formatDate / formatDateTime / formatDateTimeFull / formatRelativeTime / todayLocalISO 的唯一来源。
+ * 与 toLocalDateString 职责边界：本函数处理「有时刻语义的绝对瞬间」，后者处理「无时刻语义的本地日历日期」。
+ */
+export function toBusinessDateTimeParts(d: Date) {
+  const parts = businessParts.formatToParts(d)
+  const pick = (t: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === t)?.value ?? ''
+  return {
+    date: `${pick('year')}-${pick('month')}-${pick('day')}`,
+    hour: pick('hour'),
+    minute: pick('minute'),
+    second: pick('second'),
+    month: pick('month'),
+    day: pick('day'),
+  }
+}
+
 const formatDate = (date: Date | number | string | null | undefined): string | null => {
   // 处理空值情况
   if (!date) return null
+
+  // [M-15] 纯 YYYY-MM-DD 日历日期直通：无时刻语义，不经任何时区换算（防 UTC-12/+14 跨日）
+  if (typeof date === 'string' && /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(date)) {
+    return date
+  }
 
   // 统一转换为Date对象
   let dateObj: Date
@@ -69,19 +107,22 @@ const formatDate = (date: Date | number | string | null | undefined): string | n
     return null
   }
 
-  // 格式化日期为 YYYY-MM-DD
-  // [M-33] 拼接收敛至 toLocalDateString 单一事实源
-  return toLocalDateString(dateObj)
+  // [M-15] 绝对时刻按业务时区（Asia/Shanghai）渲染年月日
+  return toBusinessDateTimeParts(dateObj).date
 }
 
-/** [M-33] 本地时区日期拼接的唯一底层（YYYY-MM-DD），全仓禁止再手写 getFullYear 拼接 */
+/**
+ * [M-33] 本地日历日期拼接的唯一底层（YYYY-MM-DD），全仓禁止再手写 getFullYear 拼接。
+ * [M-15] 仅用于「无时刻语义」的本地日历日期：DashboardAssetTrend.vue / readExcelFile.ts / parseExcelDate；
+ * 有时刻语义的绝对瞬间一律走 toBusinessDateTimeParts。
+ */
 export function toLocalDateString(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-/** 返回本地时区的今天 YYYY-MM-DD（避免 toISOString 的 UTC 偏移） */
+/** [M-15] 返回业务时区（Asia/Shanghai）的今天 YYYY-MM-DD；必须走 toBusinessDateTimeParts，不得回落 toLocalDateString(new Date()) 的本地日历语义 */
 const todayLocalISO = (): string => {
-  return toLocalDateString(new Date())
+  return toBusinessDateTimeParts(new Date()).date
 }
 
 const pad = (n: number): string => String(n).padStart(2, '0')
@@ -90,14 +131,18 @@ const formatDateTime = (dateStr: string | null | undefined): string => {
   if (!dateStr) return ''
   const d = new Date(dateStr)
   if (isNaN(d.getTime())) return ''
-  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  // [M-15] 按业务时区渲染月日时分
+  const p = toBusinessDateTimeParts(d)
+  return `${p.month}-${p.day} ${p.hour}:${p.minute}`
 }
 
 const formatDateTimeFull = (dateStr: string | null | undefined): string => {
   if (!dateStr) return ''
   const d = new Date(dateStr)
   if (isNaN(d.getTime())) return ''
-  return `${toLocalDateString(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  // [M-15] 按业务时区渲染完整日期时间
+  const p = toBusinessDateTimeParts(d)
+  return `${p.date} ${p.hour}:${p.minute}:${p.second}`
 }
 
 const exactFormatDate = (date: string | null | undefined): string => {
@@ -116,7 +161,9 @@ export function formatRelativeTime(iso: string): string {
   if (diff < 60000) return '刚刚'
   if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
-  return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  // [M-15] 落到业务时区渲染；月/日沿用原不补零形态（M-33 逐字节对齐 NotificationBell）
+  const p = toBusinessDateTimeParts(d)
+  return `${Number(p.month)}/${Number(p.day)} ${p.hour}:${p.minute}`
 }
 
 // 金额格式化函数：转为 ￥xxxxx.xx 格式
@@ -436,6 +483,7 @@ const parseExcelDate = (dateStr: string): string | null => {
   // 验证日期是否有效
   if (date && !isNaN(date.getTime())) {
     // [M-33] 转换为YYYY-MM-DD 格式（收敢单源）
+    // [M-15] Excel 日期序列号按本地日历解析（new Date(1900, 0, n) 无时刻语义），不走业务时区
     return toLocalDateString(date)
   }
 

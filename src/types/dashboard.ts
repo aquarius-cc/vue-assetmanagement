@@ -105,3 +105,10 @@ export interface DashboardAlertItem {
   asset_name: string
   [key: string]: unknown
 }
+
+/** [C5/M-13] 统计卡条目（迁自 DashboardStatCard.vue，唯一源） */
+export interface StatItem {
+  value: string | number
+  label: string
+  class?: string
+}

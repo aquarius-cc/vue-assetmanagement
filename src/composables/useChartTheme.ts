@@ -82,8 +82,9 @@ export function useChartTheme() {
       tooltipBorder: readCssVar(get, '--border-color', FALLBACK.borderColor),
       dividerColor: deriveDarkLight(dark, '#1d1e1f', '#ffffff'),
       lineColor: primary,
-      lineAreaTop: deriveDarkLight(dark, 'rgba(74,144,226,0.25)', 'rgba(59,130,246,0.25)'),
-      lineAreaBottom: deriveDarkLight(dark, 'rgba(74,144,226,0.02)', 'rgba(59,130,246,0.02)'),
+      // [M-07] RGB 随色阶表同步：亮 = 品牌主色 43,95,215 / 暗 = 同色相提亮 85,127,223（alpha 不变）
+      lineAreaTop: deriveDarkLight(dark, 'rgba(85,127,223,0.25)', 'rgba(43,95,215,0.25)'),
+      lineAreaBottom: deriveDarkLight(dark, 'rgba(85,127,223,0.02)', 'rgba(43,95,215,0.02)'),
       pieColors: [primary, success, warning, danger, ...PIE_EXTRA],
       centerText: readCssVar(get, '--text-primary', FALLBACK.textPrimary),
       subText: readCssVar(get, '--text-secondary', FALLBACK.textSecondary),

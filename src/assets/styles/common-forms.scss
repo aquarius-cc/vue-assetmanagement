@@ -654,3 +654,33 @@ $breakpoint-tablet: 1024px;
     color: var(--text-primary);
   }
 }
+
+// ========== N. 表单输入深度覆盖单源（C6/M-16） ==========
+/**
+ * 表单输入深度覆盖 (form-input-overrides)
+ * M-16 收敛：AssetTypeForm / DepartmentForm / StorageForm 三份内联
+ * :deep(.el-input__wrapper)/:deep(.el-textarea__inner) 块同款，收敛为单一 mixin。
+ * SHADOW_ORDER（等值口径）：--border-color-input → --border-color-input-dark → --color-primary-light。
+ * 使用：组件 <style scoped lang="scss"> 顶层 @include（不进全局导入链）。
+ */
+@mixin form-input-overrides {
+  :deep(.el-input__wrapper) {
+    box-shadow: 0 0 0 1px var(--border-color-input) inset;
+    &:hover {
+      box-shadow: 0 0 0 1px var(--border-color-input-dark) inset;
+    }
+    &.is-focus {
+      box-shadow: 0 0 0 1px var(--color-primary-light) inset;
+    }
+  }
+
+  :deep(.el-textarea__inner) {
+    box-shadow: 0 0 0 1px var(--border-color-input) inset;
+    &:hover {
+      box-shadow: 0 0 0 1px var(--border-color-input-dark) inset;
+    }
+    &:focus {
+      box-shadow: 0 0 0 1px var(--color-primary-light) inset;
+    }
+  }
+}

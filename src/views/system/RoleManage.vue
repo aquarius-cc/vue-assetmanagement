@@ -74,14 +74,10 @@
         </el-table>
       </div>
 
-      <el-pagination
-        v-if="total > 0"
-        class="pagination"
-        v-model:current-page="currentPage"
+      <CommonPagination
+        v-model:page="currentPage"
         v-model:page-size="pageSize"
-        :page-sizes="PAGE_SIZE_OPTIONS"
         :total="total"
-        layout="total, sizes, prev, pager, next"
         @size-change="handleSizeChange"
         @current-change="fetchRoles"
       />
@@ -127,14 +123,15 @@ import { ref, reactive, onMounted } from 'vue'
 import { User, Search, Plus } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { notifyCallerError } from '@/utils/errorHandler'
+import { logError } from '@/utils/logger'
 import { useRoleStore } from '@/stores/roleStore'
 import { usePermission } from '@/composables/usePermission'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
 import { usePagedList } from '@/composables/usePagedList'
-import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import type { Role, RoleCreateUpdateForm } from '@/types/roles'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import RolePermDialog from '@/components/system/RolePermDialog.vue'
+import CommonPagination from '@/components/commoncomponents/CommonPagination.vue'
 
 // C2 修复：添加权限检查
 const { isAdmin } = usePermission()
@@ -260,12 +257,10 @@ const handleDelete = async (row: Role) => {
     ElMessage.success('删除成功')
     fetchRoles()
   } catch (error: unknown) {
-    const msg =
-      (error as { response?: { data?: { message?: string } }; message?: string })?.response?.data
-        ?.message ||
-      (error as { message?: string })?.message ||
-      '删除失败'
-    ElMessage.error(msg)
+    // [B-30] 收编单出口（B-29 同构）：AxiosError 由拦截器已提示，不再手写三级提取直弹；
+    // 显式 logError 补 helper 非 AxiosError 分支的观测缺口
+    logError('views/system/RoleManage', '删除角色失败', error)
+    notifyCallerError(error, '删除失败')
   }
 }
 
@@ -342,13 +337,5 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  margin-top: 16px;
-  /* [M-27] 常驻可见：不被表格滚动区压缩 */
-  flex-shrink: 0;
 }
 </style>

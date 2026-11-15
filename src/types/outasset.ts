@@ -18,6 +18,7 @@
  */
 
 import type { Employee } from '@/types/user'
+import type { Ref } from 'vue'
 import type { ContractBrief } from '@/types/contract'
 import type { PaginatedResponse } from '@/types/common'
 import type { AssetCurrentStatus } from '@/types/asset'
@@ -268,4 +269,18 @@ export interface AssetAutocompleteItem {
   asset_code: string
   /** 资产当前状态*/
   asset_current_status: string
+}
+
+/** [C5/M-13] 编辑加载器依赖注入结构（迁自 outAssetFormEditLoader.ts，唯一源） */
+export interface OutAssetEditLoaderDeps {
+  form: OutAssetCreateExtended
+  selectedApplicant: Ref<EmployeeAutocompleteItem | null>
+  selectedManager: Ref<EmployeeAutocompleteItem | null>
+  /** 原始数据快照（用于编辑模式变更检测） */
+  originalFormData: Ref<OutAssetCreateExtended | null>
+  isLoading: Ref<boolean>
+  // 详情记录字段动态回填（原组件实现即按动态属性访问；any 为兼容后端动态结构，非笔误）
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  store: { getById(code: string): Promise<any> }
+  router: { back: () => void }
 }

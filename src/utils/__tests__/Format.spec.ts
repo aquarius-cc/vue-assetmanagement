@@ -555,4 +555,46 @@ describe('Format', () => {
       expect(formatDateTimeFull('2024-01-01T00:00:00')).toBe('2024-01-01 00:00:00')
     })
   })
+
+  // [M-15] 业务日期固定渲染：4 时区矩阵（防假绿前置断言 + resetModules 动态 import 重估模块级 Intl）
+  describe.each(['Asia/Shanghai', 'UTC', 'America/New_York', 'Pacific/Kiritimati'])(
+    'M-15 业务日期在 %s 浏览器时区下固定为东八区',
+    (tz) => {
+      it('ISO 业务日期不跨日', async () => {
+        const original = process.env.TZ
+        process.env.TZ = tz
+        vi.resetModules()
+        try {
+          expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBe(tz)
+          const { formatDate, formatDateTimeFull } = await import('../Format')
+          expect(formatDate('2026-01-01T00:30:00+08:00')).toBe('2026-01-01')
+          expect(formatDate('2026-03-25')).toBe('2026-03-25')
+          expect(formatDateTimeFull('2026-01-01T00:30:45+08:00')).toBe('2026-01-01 00:30:45')
+        } finally {
+          process.env.TZ = original
+          vi.resetModules()
+        }
+      })
+    },
+  )
+
+  // [M-15] todayLocalISO 走业务时区（防静默漏改）：漏改必然红（旧路径返回本地日历当天）
+  describe('M-15 todayLocalISO 走业务时区', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+      process.env.TZ = 'Asia/Shanghai'
+      vi.resetModules()
+    })
+
+    it('UTC 16:30（= 东八区次日 00:30）返回业务次日，而非本地日历当天', async () => {
+      process.env.TZ = 'UTC'
+      vi.resetModules()
+      expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBe('UTC')
+      const { todayLocalISO, toLocalDateString } = await import('../Format')
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-01-01T16:30:00Z'))
+      expect(toLocalDateString(new Date())).toBe('2026-01-01')
+      expect(todayLocalISO()).toBe('2026-01-02')
+    })
+  })
 })

@@ -1,10 +1,29 @@
 /* CSS 变量定义 - 亮色模式（默认） */
 :root {
-  /* 主色 - 符合 F1 规范 */
+  /* 主色 - 符合 F1 规范（[M-07] 色阶表：构建期静态 hex，亮/暗成对，登记见 frontend-business-rules.md §3.3） */
   --color-primary: #2b5fd7;
-  --color-primary-light: #409eff;
-  --color-primary-lighter: #ecf5ff;
-  --color-primary-dark: #1e429f;
+  --color-primary-interactive: #3c6cda;
+  --color-primary-light-3: #6b8fe3;
+  --color-primary-light-5: #95afeb;
+  --color-primary-light-7: #bfcff3;
+  --color-primary-light-8: #d5dff7;
+  --color-primary-light-9: #eaeffb;
+  --color-primary-dark-2: #224cac;
+  --color-primary-light: var(--color-primary-interactive);
+  --color-primary-lighter: #eaeffb;
+  --color-primary-dark: #224cac;
+
+  /* [M-06/F-01] F1 品牌主色 → Element Plus 主色映射：
+     新用户/清缓存首屏不再回落 EP 默认蓝（暗色由 dark.css 覆盖同一变量） */
+  --el-color-primary: var(--color-primary);
+  --el-color-primary-rgb: 43, 95, 215;
+  /* [M-07] EP 交互态 6 档由 B0 色阶驱动（注记只写 token 名，不写完整声明） */
+  --el-color-primary-light-3: var(--color-primary-light-3);
+  --el-color-primary-light-5: var(--color-primary-light-5);
+  --el-color-primary-light-7: var(--color-primary-light-7);
+  --el-color-primary-light-8: var(--color-primary-light-8);
+  --el-color-primary-light-9: var(--color-primary-light-9);
+  --el-color-primary-dark-2: var(--color-primary-dark-2);
 
   /* 功能色 - 符合 F2 规范 */
   --color-success: #52c41a;
@@ -65,9 +84,9 @@
   --card-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
 
   /* 渐变 */
-  --gradient-primary: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
+  --gradient-primary: linear-gradient(135deg, #eaeffb 0%, #d5dff7 100%);
   --gradient-background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
-  --gradient-card-highlight: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%);
+  --gradient-card-highlight: linear-gradient(135deg, #eaeffb 0%, #d5dff7 100%);
   --gradient-purple: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --gradient-pink: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   --gradient-cyan: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -90,10 +109,10 @@
     radial-gradient(1080px 520px at 82% -8%, rgba(43, 95, 215, 0.07) 0%, transparent 62%),
     radial-gradient(840px 480px at -8% 108%, rgba(82, 196, 26, 0.05) 0%, transparent 58%);
 
-  /* 主色衍生 */
-  --color-primary-light-mid: #66b1ff;
-  --color-primary-light-lighter: #79bbff;
-  --color-primary-light-border: #d9ecff;
+  /* 主色衍生（[M-07] 取值同 B0 色阶） */
+  --color-primary-light-mid: #95afeb;
+  --color-primary-light-lighter: #6b8fe3;
+  --color-primary-light-border: #d5dff7;
 
   /* 透明度 */
   --opacity-primary-light: rgba(43, 95, 215, 0.08);
@@ -130,10 +149,17 @@
 
 /* 暗色模式变量 */
 html.dark {
-  /* 主色 - 保持品牌一致性，但调整亮度 */
-  --color-primary: #4a90e2;
-  --color-primary-light: #69b1ff;
-  --color-primary-lighter: rgba(74, 144, 226, 0.1);
+  /* 主色 - 同色相提亮（D1=B）（[M-07] 色阶表：暗色 = 提亮主色与 #141414 混合） */
+  --color-primary: #557fdf;
+  --color-primary-interactive: #6389e2;
+  --color-primary-light-3: #425fa2;
+  --color-primary-light-5: #344a7a;
+  --color-primary-light-7: #283451;
+  --color-primary-light-8: #21293d;
+  --color-primary-light-9: #1a1f28;
+  --color-primary-dark-2: #7799e5;
+  --color-primary-light: var(--color-primary-interactive);
+  --color-primary-lighter: rgba(85, 127, 223, 0.1);
   --color-primary-dark: #2b5fd7;
 
   /* 功能色 - 调整亮度以适应深色背景 */
@@ -199,8 +225,8 @@ html.dark {
   --gradient-background: linear-gradient(180deg, #141414 0%, #1d1e1f 100%);
   --gradient-card-highlight: linear-gradient(
     135deg,
-    rgba(74, 144, 226, 0.1) 0%,
-    rgba(74, 144, 226, 0.05) 100%
+    rgba(85, 127, 223, 0.1) 0%,
+    rgba(85, 127, 223, 0.05) 100%
   );
   --gradient-purple: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --gradient-pink: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -214,22 +240,29 @@ html.dark {
 
   /* 页面背景氛围光（暗色版，叠加在背景色之上） */
   --background-atmosphere:
-    radial-gradient(1080px 520px at 82% -8%, rgba(74, 144, 226, 0.12) 0%, transparent 62%),
-    radial-gradient(840px 480px at -8% 108%, rgba(51, 153, 255, 0.08) 0%, transparent 58%);
+    radial-gradient(1080px 520px at 82% -8%, rgba(85, 127, 223, 0.12) 0%, transparent 62%),
+    radial-gradient(840px 480px at -8% 108%, rgba(85, 127, 223, 0.08) 0%, transparent 58%);
 
-  /* 主色衍生 - 深色 */
-  --color-primary-light-mid: #85c1ff;
-  --color-primary-light-lighter: #a0cfff;
-  --color-primary-light-border: rgba(74, 144, 226, 0.2);
+  /* 主色衍生 - 深色（[M-07] 取值同 B0 色阶；lighter/border 槽位保持 rgba 形态） */
+  --color-primary-light-mid: #344a7a;
+  --color-primary-light-lighter: #425fa2;
+  --color-primary-light-border: rgba(85, 127, 223, 0.2);
 
   /* 透明度 */
-  --opacity-primary-light: rgba(74, 144, 226, 0.15);
-  --opacity-primary-lighter: rgba(74, 144, 226, 0.2);
+  --opacity-primary-light: rgba(85, 127, 223, 0.15);
+  --opacity-primary-lighter: rgba(85, 127, 223, 0.2);
 
   /* 状态条轨道底色 */
-  --status-bar-track: rgba(74, 144, 226, 0.16);
+  --status-bar-track: rgba(85, 127, 223, 0.16);
 
-  /* Element Plus 暗色变量覆盖 */
+  /* Element Plus 暗色变量覆盖（[M-07/A] rgb 单一真源；EP 交互态 6 档由 B0 色阶驱动，注记只写 token 名） */
+  --el-color-primary-rgb: 85, 127, 223;
+  --el-color-primary-light-3: var(--color-primary-light-3);
+  --el-color-primary-light-5: var(--color-primary-light-5);
+  --el-color-primary-light-7: var(--color-primary-light-7);
+  --el-color-primary-light-8: var(--color-primary-light-8);
+  --el-color-primary-light-9: var(--color-primary-light-9);
+  --el-color-primary-dark-2: var(--color-primary-dark-2);
   --el-bg-color: #141414;
   --el-bg-color-overlay: #1d1e1f;
   --el-bg-color-page: #0a0a0a;

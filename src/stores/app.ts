@@ -23,8 +23,10 @@ export const useAppStore = defineStore('app', () => {
   const pageTitle = ref('资产管理系统')
 
   // 主题设置
+  // [M-07/D4=B] 品牌主色为唯一主色常量（取消任意换肤，CSS 是主色唯一真源，TS 侧仅保留状态镜像）
+  const BRAND_PRIMARY = '#2B5FD7'
   const theme = ref<'light' | 'dark'>('light')
-  const primaryColor = ref('#2B5FD7')
+  const primaryColor = ref(BRAND_PRIMARY)
 
   // 系统设置
   const settings = ref({
@@ -69,12 +71,12 @@ export const useAppStore = defineStore('app', () => {
     document.documentElement.classList.toggle('dark', isDark)
   }
 
-  const setPrimaryColor = (color: string) => {
-    primaryColor.value = color
-    localStorage.setItem('primaryColor', color)
-
-    // 动态设置CSS变量
-    document.documentElement.style.setProperty('--el-color-primary', color)
+  // [M-07/D4=B] 无参、单源：CSS 是主色唯一真源，TS 侧仅保留状态镜像；
+  // 清理旧版用户遗留（内联样式优先级高于 CSS，不清会盖住 M-07 新色阶）
+  const setPrimaryColor = () => {
+    primaryColor.value = BRAND_PRIMARY
+    document.documentElement.style.removeProperty('--el-color-primary')
+    localStorage.removeItem('primaryColor')
   }
 
   const updateSettings = (newSettings: Partial<typeof settings.value>) => {
@@ -96,11 +98,8 @@ export const useAppStore = defineStore('app', () => {
       setTheme(savedTheme)
     }
 
-    // 恢复主色调
-    const savedColor = localStorage.getItem('primaryColor')
-    if (savedColor) {
-      setPrimaryColor(savedColor)
-    }
+    // 恢复主色调（[M-07/D4=B] 取消任意换肤：无条件收敛品牌色，setPrimaryColor 顺带清旧键与内联变量）
+    setPrimaryColor()
 
     // 恢复应用设置
     const savedSettings = localStorage.getItem('appSettings')
@@ -114,14 +113,16 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  // 重置应用状态
+  // 重置应用状态（C7/M-08：状态复位收敛走 setter 单源——setTheme 撤除 html.dark class、
+  // setPrimaryColor（M-07/D4=B 无参形态）清理旧内联 --el-color-primary 与旧键；title 直接
+  // 赋值，不走 setPageTitle 防回环拼接）
   const resetAppState = () => {
-    loading.value = false
-    sidebarCollapsed.value = false
+    setLoading(false)
+    setSidebarCollapsed(false)
     breadcrumbs.value = []
     pageTitle.value = '资产管理系统'
-    theme.value = 'light'
-    primaryColor.value = '#2B5FD7'
+    setTheme('light')
+    setPrimaryColor()
     settings.value = {
       showBreadcrumbs: true,
       autoSave: true,

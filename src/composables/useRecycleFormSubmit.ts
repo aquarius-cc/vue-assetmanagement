@@ -20,7 +20,8 @@ import type {
   RecycleAssetExtended,
   RecycleAssetUpdateForm,
 } from '@/types/recycleasset'
-import type { SelectedRecord } from '@/components/componentsdetails/detils/detilschildcomponents/SelectedRecordsTable.vue'
+// [C5/M-13] SelectedRecord 已迁 @/types/recycleasset（唯一源）
+import type { SelectedRecord } from '@/types/recycleasset'
 
 /** formData() 返回的表单结构（原内联类型提取，避免助手签名漂移） */
 interface RecycleAssetFormData {

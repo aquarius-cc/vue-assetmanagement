@@ -94,14 +94,10 @@
         </el-table>
       </div>
 
-      <el-pagination
-        v-if="total > 0"
-        class="pagination"
-        v-model:current-page="currentPage"
+      <CommonPagination
+        v-model:page="currentPage"
         v-model:page-size="pageSize"
-        :page-sizes="PAGE_SIZE_OPTIONS"
         :total="total"
-        layout="total, sizes, prev, pager, next"
         @size-change="handleSizeChange"
         @current-change="fetchAuthUsers"
       />
@@ -168,11 +164,11 @@ import { notifyCallerError } from '@/utils/errorHandler'
 import { usePermission } from '@/composables/usePermission'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
 import { usePagedList } from '@/composables/usePagedList'
-import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import type { AuthUser, AuthUserCreateForm } from '@/types/authuser'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import BindAuthUserDialog from '@/components/system/BindAuthUserDialog.vue'
 import UserRoleAssignDialog from '@/components/system/UserRoleAssignDialog.vue'
+import CommonPagination from '@/components/commoncomponents/CommonPagination.vue'
 import { formatDateTimeFull } from '@/utils/Format'
 
 // 权限检查
@@ -415,14 +411,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  margin-top: 16px;
-  /* [M-27] 常驻可见：不被表格滚动区压缩 */
-  flex-shrink: 0;
 }
 
 .unbound-hint {

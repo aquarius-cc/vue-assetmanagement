@@ -62,6 +62,12 @@ const stubs = {
     template: '<button class="el-button" @click="$emit(\'click\')"><slot /></button>',
   },
   'el-pagination': { name: 'ElPagination', template: '<div class="el-pagination" />' },
+  // [C2/M-15] 分页单源接入：shallow 自动 stub 会被通用 stub 吞掉 .el-pagination 类，显式接管
+  CommonPagination: {
+    name: 'CommonPagination',
+    props: ['page', 'pageSize', 'total', 'layout', 'align', 'hideWhenEmpty'],
+    template: '<div class="el-pagination" />',
+  },
   'el-tag': { props: ['type', 'size', 'effect'], template: '<span class="el-tag"><slot /></span>' },
 }
 

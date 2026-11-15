@@ -85,14 +85,10 @@
           <el-table-column prop="employee_email" label="邮箱" min-width="180" />
         </el-table>
 
-        <el-pagination
-          v-if="total > 0"
-          class="pagination"
-          v-model:current-page="currentPage"
+        <CommonPagination
+          v-model:page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="PAGE_SIZE_OPTIONS"
           :total="total"
-          layout="total, sizes, prev, pager, next"
           @size-change="handleSizeChange"
           @current-change="fetchContacts"
         />
@@ -109,9 +105,9 @@ import { getDepartmentTree } from '@/stores/departmentStore'
 import type { EmployeeExtended } from '@/types/user'
 import type { DepartmentTreeNode } from '@/types/department'
 import DepartmentTree from '@/components/componentsdetails/components/DepartmentTree.vue'
+import CommonPagination from '@/components/commoncomponents/CommonPagination.vue'
 import { useDebouncedSearch } from '@/composables/useDebouncedSearch'
 import { usePagedList } from '@/composables/usePagedList'
-import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
 
@@ -274,11 +270,5 @@ onMounted(() => {
 
 .loading-container {
   min-height: 200px;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  margin-top: 16px;
 }
 </style>
