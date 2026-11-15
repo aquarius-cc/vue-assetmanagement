@@ -104,10 +104,11 @@
 <script lang="ts" setup>
 defineOptions({ name: 'ExportableAssetsSearch' })
 
-import { ref, reactive } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import type { AssetDetail } from '@/types/asset'
 import { useExportableAssets } from '@/composables/useExportableAssets'
+import { useAssetSearchForm } from '@/composables/useAssetSearchForm'
+import type { ExportableSearchForm } from '@/types/assetSearch'
 import { getAssetStatusText } from '@/utils/Format'
 
 const emit = defineEmits<{ (e: 'select', asset: AssetDetail): void }>()
@@ -121,29 +122,20 @@ const {
   changePage,
 } = useExportableAssets()
 
-const searchForm = reactive({
-  asset_code: '',
-  asset_name: '',
-  asset_specification: '',
-  asset_brand: '',
-  asset_contract_code: '',
-  asset_contract_name: '',
+// [C4/M-14] SearchForm 类型与搜索逻辑收敛至 src/types/assetSearch.ts + useAssetSearchForm（键名逐字保留；
+// 本链 useExportableAssets 内部自重置页码，故不传 resetPage，等值保留原「不重置」语义）
+const { searchForm, searched, handleSearch } = useAssetSearchForm<ExportableSearchForm>({
+  initial: {
+    asset_code: '',
+    asset_name: '',
+    asset_specification: '',
+    asset_brand: '',
+    asset_contract_code: '',
+    asset_contract_name: '',
+  },
+  search: searchAssets,
 })
 
-const searched = ref(false)
-
-const buildExtraParams = () => {
-  const params: Record<string, string> = {}
-  Object.entries(searchForm).forEach(([k, v]) => {
-    if (v?.trim()) params[k] = v.trim()
-  })
-  return params
-}
-
-const handleSearch = async () => {
-  searched.value = true
-  await searchAssets(buildExtraParams())
-}
 const handlePageChange = async (page: number) => {
   await changePage(page)
 }

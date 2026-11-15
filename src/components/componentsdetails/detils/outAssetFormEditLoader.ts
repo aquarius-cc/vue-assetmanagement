@@ -4,26 +4,12 @@
  * 依赖以参数注入：表单对象、申请人/保管人选中状态、原始数据快照、
  * loading 状态、outAssetStore 与路由。填充与回填逻辑逐行保持一致。
  */
-import type { Ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { formatDate } from '@/utils/Format'
-import type { OutAssetCreateExtended, EmployeeAutocompleteItem } from '@/types/outasset'
+import type { EmployeeAutocompleteItem, OutAssetEditLoaderDeps } from '@/types/outasset'
 import { logError } from '@/utils/logger'
 
-/** 编辑加载器依赖 */
-export interface OutAssetEditLoaderDeps {
-  form: OutAssetCreateExtended
-  selectedApplicant: Ref<EmployeeAutocompleteItem | null>
-  selectedManager: Ref<EmployeeAutocompleteItem | null>
-  /** 原始数据快照（用于编辑模式变更检测） */
-  originalFormData: Ref<OutAssetCreateExtended | null>
-  isLoading: Ref<boolean>
-  // 详情记录字段动态回填（原组件实现即按动态属性访问；any 为兼容后端动态结构，非笔误）
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  store: { getById(code: string): Promise<any> }
-  router: { back: () => void }
-}
-
+/** [C5/M-13] 依赖注入结构已迁 @/types/outasset（OutAssetEditLoaderDeps 唯一源） */
 /** 创建编辑数据加载函数 loadEditData(recordcode) */
 export function createOutAssetEditLoader(deps: OutAssetEditLoaderDeps) {
   const { form, selectedApplicant, selectedManager, originalFormData, isLoading, store, router } =

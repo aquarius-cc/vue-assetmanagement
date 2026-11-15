@@ -229,6 +229,7 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/common-forms.scss' as *;
 .storage-form {
   padding: 24px;
   box-sizing: border-box;
@@ -275,28 +276,6 @@ onMounted(async () => {
   }
 }
 
-// Element Plus 表单样式优化（与原有样式保持一致）
-:deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px var(--border-color-input) inset;
-
-  &:hover {
-    box-shadow: 0 0 0 1px var(--border-color-input-dark) inset;
-  }
-
-  &.is-focus {
-    box-shadow: 0 0 0 1px var(--color-primary-light) inset;
-  }
-}
-
-:deep(.el-textarea__inner) {
-  box-shadow: 0 0 0 1px var(--border-color-input) inset;
-
-  &:hover {
-    box-shadow: 0 0 0 1px var(--border-color-input-dark) inset;
-  }
-
-  &:focus {
-    box-shadow: 0 0 0 1px var(--color-primary-light) inset;
-  }
-}
+// [C6/M-16] Element Plus 表单样式优化：内联块收敛至 form-input-overrides mixin（单源）
+@include form-input-overrides;
 </style>

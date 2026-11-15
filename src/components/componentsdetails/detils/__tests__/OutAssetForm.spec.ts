@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import OutAssetForm from '../OutAssetForm.vue'
+import { notifyCallerError } from '@/utils/errorHandler'
+import { logError } from '@/utils/logger'
+import { ElMessage } from 'element-plus'
 
 const currentQuery: { value: Record<string, string> } = { value: {} }
 
@@ -66,6 +71,16 @@ vi.mock('@/utils/Format', () => ({
   formatDate: (v: string) => v,
   todayLocalISO: () => '2024-01-01',
 }))
+
+// [B-34] 部分 mock：保留 isApiError 等真实实现，仅替换单出口与日志
+vi.mock('@/utils/errorHandler', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/errorHandler')>()
+  return { ...actual, notifyCallerError: vi.fn() }
+})
+vi.mock('@/utils/logger', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/logger')>()
+  return { ...actual, logError: vi.fn() }
+})
 
 const stubs = {
   'el-card': { template: '<div class="el-card"><slot /><slot name="header" /></div>' },
@@ -168,6 +183,54 @@ describe('OutAssetForm 编辑提交', () => {
     expect(mockUpdate).toHaveBeenCalledWith(
       expect.not.objectContaining({ asset_recordcode: 'OUT001' }),
     )
+  })
+
+  it('[B-34] 提交失败：AxiosError 不直弹后端原文，收编 notifyCallerError + logError', async () => {
+    currentQuery.value = { code: 'OUT001' }
+    mockGetById.mockResolvedValue({
+      outasset_code: 'OUT001',
+      outasset_number: 1,
+      outasset_applicant_jobcode: 'J001',
+      outasset_manager_jobcode: 'J002',
+      outasset_applicant: { employee_name: '张三' },
+      outasset_manager: { employee_name: '李四' },
+      outasset_date: '2024-05-01',
+      return_date: '2024-06-01',
+      outasset_type: 'borrow',
+      outasset_using_location: 'A座',
+      outasset_description: '描述',
+      asset_name: '旧资产',
+    })
+    const axiosError = {
+      isAxiosError: true,
+      message: 'Request failed with status code 500',
+      response: { status: 500, data: { message: '数据库连接失败' } },
+    }
+    mockUpdate.mockRejectedValue(axiosError)
+
+    const wrapper = mountForm()
+    await vi.waitFor(() => expect(mockGetById).toHaveBeenCalled())
+    await flushPromises()
+
+    await wrapper.find('textarea').setValue('改过了')
+    const saveBtn = wrapper.findAll('button').find((b) => b.text().includes('保存修改'))
+    await saveBtn!.trigger('click')
+    await flushPromises()
+
+    // 拦截器已提示 → 组件侧不得再弹后端原文
+    expect(vi.mocked(ElMessage.error)).not.toHaveBeenCalled()
+    expect(vi.mocked(notifyCallerError)).toHaveBeenCalledWith(axiosError, expect.any(String))
+    expect(vi.mocked(logError)).toHaveBeenCalledWith(
+      'components/componentsdetails/detils/OutAssetForm',
+      expect.any(String),
+      axiosError,
+    )
+    // 静态防回潮：不再手写 response.data.message 提取
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/components/componentsdetails/detils/OutAssetForm.vue'),
+      'utf-8',
+    )
+    expect(source).not.toContain('response?.data?.message')
   })
 })
 

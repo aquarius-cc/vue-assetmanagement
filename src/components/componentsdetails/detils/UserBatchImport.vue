@@ -148,6 +148,7 @@ import type { Department } from '@/types/department'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import { USER_STATUS_INPUT_MAPPING } from '@/utils/Format'
 import { useBatchImport } from '@/composables/useBatchImport'
+import { useDelayedRoute } from '@/composables/useDelayedRoute'
 import { validationTagType, validationTagText } from '@/utils/batchImportHelpers'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { downloadExcelTemplate, type TemplateCellValue } from '@/utils/batchImport/templateExport'
@@ -162,6 +163,8 @@ import {
 } from './userBatchImport.config'
 
 const router = useRouter()
+// [M-10/F-02] 延时跳转统一由 composable 托管，离场即取消，避免覆盖用户主动导航
+const { schedule } = useDelayedRoute()
 const userStore = useUserStore()
 const departmentStore = useDepartmentStore()
 // [M-25] 部门数据存本地 ref：silent 模式拉取，不污染 departmentStore.list
@@ -272,7 +275,7 @@ const submitBatchData = async () => {
         ElMessage.success(`成功导入 ${result.success_count} 条记录`)
         // 通知父页面刷新数据
         userStore.setRefreshFlag(true)
-        setTimeout(() => router.push('/main/departmentmanagement'), 2000)
+        schedule(() => router.push('/main/departmentmanagement'), 2000)
       } else {
         ElMessage.warning(`导入完成：成功 ${result.success_count} 条，失败 ${result.fail_count} 条`)
       }

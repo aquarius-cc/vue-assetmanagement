@@ -50,11 +50,12 @@ const ElTableColumnStub = {
   template: '<div class="el-table-column"><slot /></div>',
 }
 
-const ElPaginationStub = {
-  name: 'ElPagination',
-  props: ['currentPage', 'pageSize', 'pageSizes', 'total', 'layout'],
-  emits: ['update:currentPage', 'update:pageSize', 'sizeChange', 'currentChange'],
-  template: '<div class="el-pagination" />',
+// [C2/M-15] 分页桥等值改写：el-pagination → CommonPagination 单源组件
+const CommonPaginationStub = {
+  name: 'CommonPagination',
+  props: ['page', 'pageSize', 'pageSizes', 'total', 'layout', 'align', 'hideWhenEmpty'],
+  emits: ['update:page', 'update:pageSize', 'sizeChange', 'currentChange'],
+  template: '<div class="common-pagination" />',
 }
 
 const global = {
@@ -64,7 +65,7 @@ const global = {
     CommonListActions: CommonListActionsStub,
     'el-table': ElTableStub,
     'el-table-column': ElTableColumnStub,
-    'el-pagination': ElPaginationStub,
+    CommonPagination: CommonPaginationStub,
   },
 }
 
@@ -86,9 +87,9 @@ describe('CommonList', () => {
   describe('prop defaults', () => {
     it('applies documented default values to pagination and toggles', () => {
       const wrapper = mountList()
-      const pagination = wrapper.findComponent({ name: 'ElPagination' })
+      const pagination = wrapper.findComponent({ name: 'CommonPagination' })
 
-      expect(pagination.props('currentPage')).toBe(1)
+      expect(pagination.props('page')).toBe(1)
       expect(pagination.props('pageSize')).toBe(20)
       expect(pagination.props('total')).toBe(0)
       expect(pagination.props('pageSizes')).toEqual([20, 50, 100])
@@ -103,7 +104,7 @@ describe('CommonList', () => {
 
     it('hides pagination when showPagination is false', () => {
       const wrapper = mountList({ props: { showPagination: false } })
-      expect(wrapper.findComponent({ name: 'ElPagination' }).exists()).toBe(false)
+      expect(wrapper.findComponent({ name: 'CommonPagination' }).exists()).toBe(false)
     })
 
     // 回归屏障（CT-4）：表格必须设 height="100%"，否则 EP 根为 fit-content，
@@ -123,9 +124,9 @@ describe('CommonList', () => {
   })
 
   describe('pagination bridge', () => {
-    it('re-emits sizeChange and currentChange from el-pagination', async () => {
+    it('re-emits sizeChange and currentChange from CommonPagination', async () => {
       const wrapper = mountList()
-      const pagination = wrapper.findComponent({ name: 'ElPagination' })
+      const pagination = wrapper.findComponent({ name: 'CommonPagination' })
 
       pagination.vm.$emit('sizeChange', 50)
       pagination.vm.$emit('currentChange', 3)
@@ -137,9 +138,9 @@ describe('CommonList', () => {
 
     it('emits update:currentPage and update:pageSize from v-model bindings', async () => {
       const wrapper = mountList()
-      const pagination = wrapper.findComponent({ name: 'ElPagination' })
+      const pagination = wrapper.findComponent({ name: 'CommonPagination' })
 
-      pagination.vm.$emit('update:currentPage', 4)
+      pagination.vm.$emit('update:page', 4)
       pagination.vm.$emit('update:pageSize', 100)
       await wrapper.vm.$nextTick()
 

@@ -78,12 +78,13 @@
 
     <!-- 分页容器 -->
     <div v-if="showPagination" class="pagination-container">
-      <el-pagination
-        v-model:current-page="localCurrentPage"
+      <CommonPagination
+        v-model:page="localCurrentPage"
         v-model:page-size="localPageSize"
         :page-sizes="pageSizeOptions"
         :total="total"
         layout="total, sizes, prev, pager, next, jumper"
+        align="end"
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
       />
@@ -96,6 +97,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import type { ElTable } from 'element-plus'
 import CommonListColumn from './CommonListColumn.vue'
 import CommonListActions from './CommonListActions.vue'
+import CommonPagination from './CommonPagination.vue'
 import { useContainerWidth } from '@/composables/useContainerWidth'
 import type { TableColumn } from '@/types/list'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
@@ -413,42 +415,13 @@ defineExpose({
   padding: 16px 20px 0;
 }
 
-.pagination-container :deep(.el-pagination__total) {
-  color: var(--text-regular);
-  font-size: 14px;
-}
-
-.pagination-container :deep(.el-pagination__sizes) {
-  color: var(--text-regular);
-}
-
-.pagination-container :deep(.el-pagination__jump) {
-  color: var(--text-regular);
-  font-size: 14px;
-}
-
-.pagination-container :deep(.el-pagination.is-background .btn-next),
-.pagination-container :deep(.el-pagination.is-background .btn-prev),
-.pagination-container :deep(.el-pagination.is-background .el-pager li) {
-  background-color: var(--card-background);
-  border: 1px solid var(--border-color-input);
-  border-radius: 8px;
-}
-
-.pagination-container :deep(.el-pagination.is-background .btn-next.is-active),
-.pagination-container :deep(.el-pagination.is-background .btn-prev.is-active),
-.pagination-container :deep(.el-pagination.is-background .el-pager li.is-active) {
-  background-color: var(--color-primary-light);
-  border-color: var(--color-primary-light);
-  color: var(--card-background);
-}
-
-.pagination-container :deep(.el-pagination.is-background .btn-next:hover),
-.pagination-container :deep(.el-pagination.is-background .btn-prev:hover),
-.pagination-container :deep(.el-pagination.is-background .el-pager li:hover) {
-  color: var(--color-primary-light);
-  border-color: var(--color-primary-light);
-  background-color: var(--color-primary-lighter);
+.pagination-container {
+  /* [C2/M-15] 分页单源接入：间距由 CommonPagination 的 margin-top:16px 承担 */
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  justify-content: flex-end;
+  padding: 0 20px;
 }
 
 @media (max-width: 768px) {

@@ -171,9 +171,9 @@ import { useDepartmentCache } from '@/composables/useDepartmentCache'
 import { useRecycleFormSubmit } from '@/composables/useRecycleFormSubmit'
 
 import RecyclableOutAssetsSearch from './detilschildcomponents/RecyclableOutAssetsSearch.vue'
-import SelectedRecordsTable, {
-  type SelectedRecord,
-} from './detilschildcomponents/SelectedRecordsTable.vue'
+import SelectedRecordsTable from './detilschildcomponents/SelectedRecordsTable.vue'
+// [C5/M-13] SelectedRecord 已迁 @/types/recycleasset（唯一源）
+import type { SelectedRecord } from '@/types/recycleasset'
 import RecycleSharedInfo from './detilschildcomponents/RecycleSharedInfo.vue'
 import { logError } from '@/utils/logger'
 

@@ -1,6 +1,8 @@
 /** [批次4 S9] DepartmentBatchImport 挂载覆盖（生成式浅挂载；行为断言随迭代加深） */
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, it, expect, vi } from 'vitest'
 vi.mock('element-plus', () => ({
   ElMessage: { error: vi.fn(), success: vi.fn(), warning: vi.fn() },
@@ -32,6 +34,19 @@ describe('DepartmentBatchImport 挂载（S9 零覆盖补测）', () => {
       },
     })
     expect(wrapper.exists()).toBe(true)
+  })
+
+  // [M-10/F-02] 接线锚点：延时跳转必须走托管 composable，禁止裸 setTimeout 覆盖用户主动导航
+  it('延时跳转经 useDelayedRoute 托管，无裸 setTimeout', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/components/componentsdetails/detils/DepartmentBatchImport.vue'),
+      'utf-8',
+    )
+    expect(source).not.toContain('setTimeout(')
+    expect(source).toContain('useDelayedRoute()')
+    expect(source.match(/\bschedule\(/g)).toHaveLength(1)
+    expect(source).toContain("router.push('/main/departmentdetails')")
+    expect(source).toContain('1500')
   })
 })
 

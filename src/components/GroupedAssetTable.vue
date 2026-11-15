@@ -408,7 +408,7 @@ defineExpose({
 
 /* 数量胶囊：EP 默认 --el-color-primary（#409eff）白字仅 3.05:1 不达 AA；
    改走项目令牌 --color-primary（#2b5fd7，白字 5.65:1）。
-   暗色下 --color-primary 为 #4a90e2（白字 3.29:1 同样不达标），改取
+   暗色下 --color-primary 为 #557fdf（白字 3.83:1 同样不达标），改取
    --color-primary-dark（暗色 #2b5fd7，5.65:1），两主题均达 4.5:1 */
 .asset-count-tag {
   --el-tag-bg-color: var(--color-primary);

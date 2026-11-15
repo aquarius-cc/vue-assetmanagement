@@ -25,15 +25,8 @@
 </template>
 
 <script lang="ts" setup>
-export interface SelectedRecord {
-  recordcode: string
-  recycle_asset: string
-  outasset_name: string
-  outasset_manager_name: string
-  manager_jobcode: string
-  department_name: string
-  outasset_number: number
-}
+// [C5/M-13] SelectedRecord 已迁 @/types/recycleasset（唯一源）
+import type { SelectedRecord } from '@/types/recycleasset'
 
 defineProps<{
   records: SelectedRecord[]

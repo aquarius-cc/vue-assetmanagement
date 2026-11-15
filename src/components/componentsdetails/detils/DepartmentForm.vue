@@ -92,7 +92,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
-import { isApiError as isAxiosError } from '@/utils/errorHandler'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { useDepartmentStore } from '@/stores/departmentStore'
 import type { DepartmentCreateForm } from '@/types/department'
 import { logError } from '@/utils/logger'
@@ -207,16 +207,12 @@ const submitForm = () => {
       departmentStore.setRefreshFlag(true)
       router.push('/main/departmentdetails')
     } catch (error: unknown) {
-      // 类型安全错误处理
-      if (isAxiosError(error)) {
-        const msg = error.response?.data?.message || error.message
-        ElMessage.error(`操作失败：${msg}`)
-      } else if (error instanceof Error) {
-        ElMessage.error(`操作失败：${error.message}`)
-      } else {
-        ElMessage.error('操作失败：发生未知错误')
-      }
+      // [B-35] 收编单出口：AxiosError 已由拦截器提示，不再手写三级提取直弹
       logError('components/componentsdetails/detils/DepartmentForm', '部门操作失败:', error)
+      notifyCallerError(
+        error,
+        error instanceof Error ? `操作失败：${error.message}` : '操作失败：发生未知错误',
+      )
     }
   })
 }
@@ -234,6 +230,7 @@ const goBack = () => {
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/common-forms.scss' as *;
 .department-form {
   padding: 24px;
   box-sizing: border-box;
@@ -287,28 +284,6 @@ const goBack = () => {
   }
 }
 
-// Element Plus 输入框样式优化
-:deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px var(--border-color-input) inset;
-
-  &:hover {
-    box-shadow: 0 0 0 1px var(--border-color-input-dark) inset;
-  }
-
-  &.is-focus {
-    box-shadow: 0 0 0 1px var(--color-primary-light) inset;
-  }
-}
-
-:deep(.el-textarea__inner) {
-  box-shadow: 0 0 0 1px var(--border-color-input) inset;
-
-  &:hover {
-    box-shadow: 0 0 0 1px var(--border-color-input-dark) inset;
-  }
-
-  &:focus {
-    box-shadow: 0 0 0 1px var(--color-primary-light) inset;
-  }
-}
+// [C6/M-16] Element Plus 输入框样式优化：内联块收敛至 form-input-overrides mixin（单源）
+@include form-input-overrides;
 </style>

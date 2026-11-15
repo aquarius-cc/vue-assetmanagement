@@ -132,10 +132,11 @@
 <script lang="ts" setup>
 defineOptions({ name: 'WastedAssetsSearch' })
 
-import { reactive, ref } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import type { AssetDetail } from '@/types/asset'
 import { useWastedAssets } from '@/composables/useWastedAssets'
+import { useAssetSearchForm } from '@/composables/useAssetSearchForm'
+import type { WastedSearchForm } from '@/types/assetSearch'
 import { getAssetStatusText } from '@/utils/Format'
 
 // ---------- Emits 定义 ----------
@@ -155,49 +156,21 @@ const {
 } = useWastedAssets()
 
 // ---------- 本地搜索表单数据 ----------
-interface SearchForm {
-  asset_code: string
-  asset_name: string
-  asset_specification: string
-  asset_brand: string
-  contract_name: string
-  contract_code: string
-}
-
-const searchForm = reactive<SearchForm>({
-  asset_code: '',
-  asset_name: '',
-  asset_specification: '',
-  asset_brand: '',
-  contract_name: '',
-  contract_code: '',
+// [C4/M-14] SearchForm 类型与搜索逻辑收敛至 src/types/assetSearch.ts + useAssetSearchForm（键名逐字保留）
+const { searchForm, searched, handleSearch } = useAssetSearchForm<WastedSearchForm>({
+  initial: {
+    asset_code: '',
+    asset_name: '',
+    asset_specification: '',
+    asset_brand: '',
+    contract_name: '',
+    contract_code: '',
+  },
+  search: searchAssets,
+  resetPage: () => {
+    currentPage.value = 1
+  },
 })
-
-// 标记是否已执行过搜索（用于显示无数据提示）
-const searched = ref(false)
-
-/**
- * 构建传给 Composable 的额外查询参? * 过滤掉空字符串字段，避免后端收到无意义的参数
- */
-const buildExtraParams = (): Record<string, string> => {
-  const params: Record<string, string> = {}
-  Object.entries(searchForm).forEach(([key, value]) => {
-    if (value && value.trim() !== '') {
-      params[key] = value.trim()
-    }
-  })
-  return params
-}
-
-/**
- * 搜索处理
- * 重置到第一页，并根据表单条件请求数? */
-const handleSearch = async () => {
-  currentPage.value = 1 // 重置页码
-  searched.value = true
-  const extraParams = buildExtraParams()
-  await searchAssets(extraParams)
-}
 
 /**
  * 分页页码变更

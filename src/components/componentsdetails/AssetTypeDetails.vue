@@ -110,7 +110,7 @@
         </el-form-item>
         <el-form-item label="子分类列表">
           <div class="batch-add-list">
-            <div v-for="(item, index) in batchAddList" :key="index" class="batch-add-item">
+            <div v-for="(item, index) in batchAddList" :key="item._rowId" class="batch-add-item">
               <el-input v-model="item.type_code" placeholder="类型编码" style="width: 150px" />
               <el-input v-model="item.type_name" placeholder="类型名称" style="width: 150px" />
               <el-input
@@ -207,13 +207,23 @@ const formRules: FormRules = {
 }
 
 // ==================== 批量新增弹窗 ====================
+/** 批量新增行：_rowId 为稳定行标识，作 v-for key 防增删后重排（M-11，不进提交 payload） */
+interface BatchAddRow {
+  _rowId: number
+  type_code: string
+  type_name: string
+  type_description: string
+}
+let batchRowSeq = 0
+const makeBatchRow = (): BatchAddRow => {
+  batchRowSeq += 1
+  return { _rowId: batchRowSeq, type_code: '', type_name: '', type_description: '' }
+}
 const batchAddVisible = ref(false)
-const batchAddList = ref<Array<{ type_code: string; type_name: string; type_description: string }>>(
-  [],
-)
+const batchAddList = ref<BatchAddRow[]>([])
 
 const addBatchItem = () => {
-  batchAddList.value.push({ type_code: '', type_name: '', type_description: '' })
+  batchAddList.value.push(makeBatchRow())
 }
 
 // ==================== 方法 ====================
@@ -301,7 +311,7 @@ const handleAddChildType = () => {
 /** 批量新增子分类 */
 const handleBatchAddChildType = () => {
   if (!selectedType.value) return
-  batchAddList.value = [{ type_code: '', type_name: '', type_description: '' }]
+  batchAddList.value = [makeBatchRow()]
   batchAddVisible.value = true
 }
 
@@ -476,6 +486,14 @@ onMounted(() => {
 // BF-138 #3 返回即最新（A+D）：路由进入本页父路由（跨板块返回/分类表单子页返回）时重取分类树数据
 // （其数据源为本地 allData + silent 预载，刷新入口即 fetchAllData）
 useKeepAliveReload(() => fetchAllData())
+
+// 测试接缝（C1/M-11）：batchRowKey.spec 经此驱动增删行与重置路径
+defineExpose({
+  batchAddList,
+  addBatchItem,
+  selectedType,
+  handleBatchAddChildType,
+})
 </script>
 
 <style lang="scss" scoped src="./AssetTypeDetails.scss"></style>

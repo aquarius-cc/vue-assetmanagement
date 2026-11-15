@@ -151,10 +151,11 @@
 <script lang="ts" setup>
 defineOptions({ name: 'RecyclableOutAssetsSearch' })
 
-import { ref, reactive } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import type { OutAssetDetail } from '@/types/outasset'
 import { useRecyclableOutAssets } from '@/composables/useRecyclableOutAssets'
+import { useAssetSearchForm } from '@/composables/useAssetSearchForm'
+import type { RecyclableOutSearchForm } from '@/types/assetSearch'
 
 // ---------- Emits 定义 ----------
 const emit = defineEmits<{
@@ -173,53 +174,22 @@ const {
 } = useRecyclableOutAssets()
 
 // ---------- 本地搜索表单数据 ----------
-interface SearchForm {
-  asset_code: string
-  asset_name: string
-  asset_specification: string
-  asset_brand: string
-  outasset_applicant_name: string
-  outasset_manager_name: string
-  department: string
-}
-
-const searchForm = reactive<SearchForm>({
-  asset_code: '',
-  asset_name: '',
-  asset_specification: '',
-  asset_brand: '',
-  outasset_applicant_name: '',
-  outasset_manager_name: '',
-  department: '',
+// [C4/M-14] SearchForm 类型与搜索逻辑收敛至 src/types/assetSearch.ts + useAssetSearchForm（键名逐字保留）
+const { searchForm, searched, handleSearch } = useAssetSearchForm<RecyclableOutSearchForm>({
+  initial: {
+    asset_code: '',
+    asset_name: '',
+    asset_specification: '',
+    asset_brand: '',
+    outasset_applicant_name: '',
+    outasset_manager_name: '',
+    department: '',
+  },
+  search: searchAssets,
+  resetPage: () => {
+    currentPage.value = 1
+  },
 })
-
-// 标记是否已执行过搜索（用于显示无数据提示）
-const searched = ref(false)
-
-/**
- * 构建传给 Composable 的额外查询参数
- * 过滤掉空字符串字段，避免后端收到无意义的参数
- */
-const buildExtraParams = (): Record<string, string> => {
-  const params: Record<string, string> = {}
-  Object.entries(searchForm).forEach(([key, value]) => {
-    if (value && value.trim() !== '') {
-      params[key] = value.trim()
-    }
-  })
-  return params
-}
-
-/**
- * 搜索处理
- * 重置到第一页，并根据表单条件请求数据
- */
-const handleSearch = async () => {
-  currentPage.value = 1 // 重置页码
-  searched.value = true
-  const extraParams = buildExtraParams()
-  await searchAssets(extraParams)
-}
 
 /**
  * 分页页码变更

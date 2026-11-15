@@ -232,7 +232,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import { isApiError as isAxiosError } from '@/utils/errorHandler'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { useAssetStore } from '@/stores/assetStore'
 // [HR-01] 后端 v1.1.0 改为 read_only，移除UserStore（用户搜索联动已移除了
 import { useOutAssetStore } from '@/stores/outAssetStore'
@@ -407,16 +407,13 @@ const finalizeSubmitSuccess = () => {
   router.push({ name: 'OutAssetDetails' })
 }
 
-/** 提交失败的统一错误处理（区分 Axios 错误 / Error / 其它） */
+/** 提交失败的统一错误处理（[B-34] 收编单出口：AxiosError 已由拦截器提示） */
 const handleFormSubmitError = (error: unknown) => {
-  if (isAxiosError(error)) {
-    ElMessage.error(`操作失败：${error.response?.data?.message || error.message}`)
-  } else if (error instanceof Error) {
-    ElMessage.error(`操作失败：${error.message}`)
-  } else {
-    ElMessage.error('操作失败，请检查网络连接后重试')
-  }
   logError('components/componentsdetails/detils/OutAssetForm', '出库资产提交失败:', error)
+  notifyCallerError(
+    error,
+    error instanceof Error ? `操作失败：${error.message}` : '操作失败，请检查网络连接后重试',
+  )
 }
 
 /** 按新增/编辑分支执行提交 */

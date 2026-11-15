@@ -100,6 +100,7 @@ import { ElMessage } from 'element-plus'
 import { Upload } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useBatchImport } from '@/composables/useBatchImport'
+import { useDelayedRoute } from '@/composables/useDelayedRoute'
 import type { ValidatedRow } from '@/composables/useBatchImport'
 import { useDepartmentStore, batchCreateDepartments } from '@/stores/departmentStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
@@ -110,6 +111,8 @@ import { downloadExcelTemplate } from '@/utils/batchImport/templateExport'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 
 const router = useRouter()
+// [M-10/F-02] 延时跳转统一由 composable 托管，离场即取消，避免覆盖用户主动导航
+const { schedule } = useDelayedRoute()
 const departmentStore = useDepartmentStore()
 const fileList = ref<File[]>([])
 const localIsSubmitting = ref(false)
@@ -289,7 +292,7 @@ const handleSubmit = async () => {
       ElMessage.success(`全部导入成功！共 ${result.success_count} 条`)
       // 通知父页面刷新数据
       departmentStore.setRefreshFlag(true)
-      setTimeout(() => {
+      schedule(() => {
         router.push('/main/departmentdetails')
       }, 1500)
     } else {

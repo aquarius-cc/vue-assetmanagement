@@ -205,6 +205,7 @@ const goBack = () => {
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/common-forms.scss' as *;
 .asset-entry {
   padding: 24px;
   box-sizing: border-box;
@@ -249,23 +250,6 @@ const goBack = () => {
   }
 }
 
-:deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px var(--border-color-input) inset;
-  &:hover {
-    box-shadow: 0 0 0 1px var(--border-color-input-dark) inset;
-  }
-  &.is-focus {
-    box-shadow: 0 0 0 1px var(--color-primary-light) inset;
-  }
-}
-
-:deep(.el-textarea__inner) {
-  box-shadow: 0 0 0 1px var(--border-color-input) inset;
-  &:hover {
-    box-shadow: 0 0 0 1px var(--border-color-input-dark) inset;
-  }
-  &:focus {
-    box-shadow: 0 0 0 1px var(--color-primary-light) inset;
-  }
-}
+// [C6/M-16] 输入深度覆盖单源：内联块收敛至 common-forms.scss 的 form-input-overrides mixin
+@include form-input-overrides;
 </style>

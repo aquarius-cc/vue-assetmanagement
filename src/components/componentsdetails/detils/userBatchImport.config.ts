@@ -8,16 +8,13 @@
  */
 import { USER_STATUS_INPUT_MAPPING } from '@/utils/Format'
 import type { HeaderExample, ExampleColumn } from '@/utils/batchImportHelpers'
-import type { ExcelEmployeeData, EmployeeCreateForm } from '@/types/user'
+import type { ExcelEmployeeData, EmployeeCreateForm, DepartmentMappingGetter } from '@/types/user'
 import {
   requireNonEmpty,
   requirePattern,
   optionalEnum,
   cleanExcelString,
 } from '@/utils/batchImport/validation'
-
-/** 部门名称 -> 部门代码 映射的 getter 类型 */
-export type DepartmentMappingGetter = () => Record<string, string>
 
 /** 工号格式：1 位大写字母 + 5 位数字（validateItem 与 spec 共同锁定） */
 const JOBCODE_PATTERN = /^[A-Z][0-9]{5}$/
