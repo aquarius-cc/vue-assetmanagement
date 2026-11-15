@@ -296,7 +296,47 @@ function normalizeGetOptions(
   return optionsOrUseCache
 }
 
-function showStatusMessage(status: number, msg: string): void {
+/**
+ * [M-12/F-05] 从错误响应头提取后端 trace_id（三种承载形态兜底）。
+ * 优先 AxiosHeaders.get（小写规范化），其次大小写两种字面键，最后遍历兜底。
+ */
+function getRequestTraceId(error: unknown): string | undefined {
+  if (!isAxiosError(error)) return undefined
+  const headers = error.response?.headers
+  if (!headers) return undefined
+  const maybeGetter = headers as { get?: (name: string) => unknown }
+  const viaGet =
+    typeof maybeGetter.get === 'function'
+      ? maybeGetter.get.call(headers, 'x-request-id')
+      : undefined
+  if (typeof viaGet === 'string' && viaGet !== '') return viaGet
+  const record = headers as Record<string, unknown>
+  const direct = record['x-request-id'] ?? record['X-Request-ID']
+  if (typeof direct === 'string' && direct !== '') return direct
+  for (const [key, value] of Object.entries(record)) {
+    if (key.toLowerCase() === 'x-request-id' && typeof value === 'string' && value !== '')
+      return value
+  }
+  return undefined
+}
+
+/**
+ * [B-33] 5xx 全族收口：500 与 502/503/504 等网关/上游错误同构。
+ * 后端/网关原文可能含内部细节，不直出；改固定文案 + trace 短号（前 8 位），
+ * 完整 trace_id 进结构化日志供双端互查（OC-2）。
+ */
+function notifyServerError(status: number, traceId?: string): void {
+  const shortId = traceId ? traceId.slice(0, 8) : ''
+  ElMessage.error(
+    shortId ? `服务器内部错误，请稍后重试（追踪号：${shortId}）` : '服务器内部错误，请稍后重试',
+  )
+  logError('api/request', '服务器内部错误', undefined, {
+    status,
+    request_trace_id: traceId ?? null,
+  })
+}
+
+function showStatusMessage(status: number, msg: string, traceId?: string): void {
   // 401 不会进入此函数：错误拦截器(L300)已提前拦截 401 走刷新/登出流程
   switch (status) {
     case 403: {
@@ -309,28 +349,26 @@ function showStatusMessage(status: number, msg: string): void {
     case 404:
       ElMessage.error('请求的资源不存在或您无权访问')
       break
-    case 500:
-      ElMessage.error(`服务器内部错误: ${msg}`)
-      break
     default:
-      ElMessage.error(msg)
+      // [B-33] 5xx 全族（含 500）统一固定文案；4xx 保留后端结构化 msg（字段级校验提示是业务必需）
+      if (status >= 500 && status < 600) {
+        notifyServerError(status, traceId)
+      } else {
+        ElMessage.error(msg)
+      }
   }
 }
 
-function notifyApiError(
-  status: number | undefined,
-  data: unknown,
-  error: { request?: unknown; message: string },
-): void {
+function notifyApiError(status: number | undefined, data: unknown, error: unknown): void {
   if (status) {
-    showStatusMessage(status, pickErrorMessage(data))
+    showStatusMessage(status, pickErrorMessage(data), getRequestTraceId(error))
     return
   }
-  if (error.request) {
+  if (isAxiosError(error) && error.request) {
     ElMessage.error('请求无响应，请检查网络连接')
     return
   }
-  ElMessage.error(`请求配置错误: ${error.message}`)
+  ElMessage.error(`请求配置错误: ${isAxiosError(error) ? error.message : '未知错误'}`)
 }
 
 /**
@@ -351,9 +389,11 @@ async function readBlobErrorData(error: unknown): Promise<unknown> {
   try {
     return JSON.parse(text) as unknown
   } catch {
-    // 非 JSON（如网关 HTML 错误页）：pickErrorMessage 取不到结构化字段，
-    // 但原始文本要留痕以便排查（OC-2）。
-    logWarn('api/request', `导出错误响应非 JSON，原文: ${text.slice(0, 200)}`)
+    // 非 JSON（如网关 HTML 错误页）：结构化留痕，不把页面原文写进日志（OC-2/SC 口径）
+    logWarn('api/request', '导出错误响应非 JSON', {
+      content_type: data.type || null,
+      body_length: text.length,
+    })
     return undefined
   }
 }

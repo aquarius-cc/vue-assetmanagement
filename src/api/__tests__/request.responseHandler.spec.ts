@@ -97,20 +97,26 @@ type MockConfig = {
   _retry?: boolean
   _retryCount?: number
   headers?: Record<string, string>
+  responseType?: string
 }
 
 type MockError = Error & {
   isAxiosError: boolean
   config: MockConfig
-  response?: { status: number; data: unknown }
+  response?: { status: number; data: unknown; headers?: Record<string, string> }
   request?: unknown
 }
 
-function makeHttpError(status: number, data: unknown = {}, url = '/api/guarded'): MockError {
+function makeHttpError(
+  status: number,
+  data: unknown = {},
+  url = '/api/guarded',
+  headers: Record<string, string> = {},
+): MockError {
   const error = new Error(`Request failed with status code ${status}`) as MockError
   error.isAxiosError = true
   error.config = { url, method: 'get', headers: {} }
-  error.response = { status, data }
+  error.response = { status, data, headers }
   return error
 }
 
@@ -254,21 +260,89 @@ describe('request responseHandler', () => {
       expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith('请求的资源不存在或您无权访问')
     })
 
-    it('500 prefixes server error with picked message', async () => {
+    it('[M-12] 500 不直出后端原文，改固定文案', async () => {
       const error = makeHttpError(500, { detail: '数据库连接失败' })
       await expect(handlers.resErr?.(error)).rejects.toBe(error)
-      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith('服务器内部错误: 数据库连接失败')
+      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith('服务器内部错误，请稍后重试')
+    })
+
+    it('[M-12] 500 带响应头 trace_id 时展示前 8 位追踪号', async () => {
+      const fullTraceId = '9f8e7d6c-1111-2222-3333-444455556666'
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const error = makeHttpError(500, { detail: '数据库连接失败' }, '/api/guarded', {
+        'X-Request-ID': fullTraceId,
+      })
+      await expect(handlers.resErr?.(error)).rejects.toBe(error)
+      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith(
+        '服务器内部错误，请稍后重试（追踪号：9f8e7d6c）',
+      )
+      // 8 位仅用于 toast；结构化日志保留完整 trace_id 供双端互查
+      const entry = JSON.parse(errSpy.mock.calls.at(-1)?.[0] as string)
+      expect(entry).toMatchObject({
+        level: 'error',
+        module: 'api/request',
+        message: '服务器内部错误',
+        context: { status: 500, request_trace_id: fullTraceId },
+      })
+      errSpy.mockRestore()
+    })
+
+    it('[B-33] 502 网关错误同构固定文案 + 追踪号，日志记录真实状态码', async () => {
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const error = makeHttpError(502, { detail: 'upstream connect error' }, '/api/guarded', {
+        'x-request-id': 'abcd1234-rest-of-trace',
+      })
+      await expect(handlers.resErr?.(error)).rejects.toBe(error)
+      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith(
+        '服务器内部错误，请稍后重试（追踪号：abcd1234）',
+      )
+      expect(JSON.parse(errSpy.mock.calls.at(-1)?.[0] as string)).toMatchObject({
+        context: { status: 502, request_trace_id: 'abcd1234-rest-of-trace' },
+      })
+      errSpy.mockRestore()
+    })
+
+    it('[B-33] 503 无 trace_id → 仅固定文案', async () => {
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const error = makeHttpError(503, { detail: 'Service Unavailable' })
+      await expect(handlers.resErr?.(error)).rejects.toBe(error)
+      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith('服务器内部错误，请稍后重试')
+      expect(JSON.parse(errSpy.mock.calls.at(-1)?.[0] as string)).toMatchObject({
+        context: { status: 503, request_trace_id: null },
+      })
+      errSpy.mockRestore()
+    })
+
+    it('[B-33] 4xx 保留后端结构化 msg（表单校验提示不吞）', async () => {
+      const error = makeHttpError(400, { detail: '用户名已存在' })
+      await expect(handlers.resErr?.(error)).rejects.toBe(error)
+      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith('用户名已存在')
+    })
+
+    it('[M-12] 导出失败响应为网关 HTML 时日志不落入原文', async () => {
+      const gatewayHtml = '<html><body><h1>502 Bad Gateway</h1></body></html>'
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const error = makeHttpError(500, new Blob([gatewayHtml], { type: 'text/html' }))
+      error.config.responseType = 'blob'
+      await expect(handlers.resErr?.(error)).rejects.toBe(error)
+      const rawLine = warnSpy.mock.calls.at(-1)?.[0] as string
+      expect(JSON.parse(rawLine)).toMatchObject({
+        level: 'warn',
+        module: 'api/request',
+        message: '导出错误响应非 JSON',
+        context: { content_type: 'text/html', body_length: gatewayHtml.length },
+      })
+      expect(rawLine).not.toContain('Bad Gateway')
+      warnSpy.mockRestore()
     })
 
     it('500 with field-errors message joins first element of arrays', async () => {
-      const error = makeHttpError(500, {
+      const error = makeHttpError(400, {
         message: '参数验证失败',
         data: { username: ['用户名已存在', 'taken'], code: 'bad' },
       })
       await expect(handlers.resErr?.(error)).rejects.toBe(error)
-      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith(
-        '服务器内部错误: username: 用户名已存在 | code: bad',
-      )
+      expect(vi.mocked(ElMessage.error)).toHaveBeenCalledWith('username: 用户名已存在 | code: bad')
     })
 
     it('DRF 3.18 index-keyed dict errors flatten to readable paths (BF-159)', async () => {

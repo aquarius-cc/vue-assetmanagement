@@ -114,7 +114,12 @@ function getResponseHandler(): ErrorHandler | null {
   return handlerRef.fn
 }
 
-function makeAxiosError(status: number, url = '/test/api', data: Record<string, unknown> = {}) {
+function makeAxiosError(
+  status: number,
+  url = '/test/api',
+  data: Record<string, unknown> = {},
+  headers: Record<string, string> = {},
+) {
   const error = new Error(`Request failed with status code ${status}`) as Error & {
     isAxiosError: boolean
     config: {
@@ -124,11 +129,11 @@ function makeAxiosError(status: number, url = '/test/api', data: Record<string, 
       _retryCount?: number
       headers: Record<string, string>
     }
-    response: { status: number; data: Record<string, unknown> }
+    response: { status: number; data: Record<string, unknown>; headers: Record<string, string> }
   }
   error.isAxiosError = true
   error.config = { url, method: 'get', headers: {} }
-  error.response = { status, data }
+  error.response = { status, data, headers }
   return error
 }
 
@@ -778,6 +783,28 @@ describe('request', () => {
 
       await expect(get('/assets/mrc12-miss/', undefined, true)).rejects.toThrow()
       expect(degradedCacheKeys.has('/assets/mrc12-miss/?')).toBe(false)
+    })
+  })
+
+  describe('[M-12/F-05] 500 固定文案 + trace 短号（真实拦截器链）', () => {
+    it('500 不直出后端原文，toast 展示 trace 前 8 位', async () => {
+      const error = makeAxiosError(
+        500,
+        '/api/m12-500/',
+        { detail: 'Internal Server Error at gunicorn: db password leaked' },
+        { 'x-request-id': 'test-trace-id' },
+      )
+
+      await expect(getResponseHandler()?.(error)).rejects.toBe(error)
+      expect(ElMessage.error).toHaveBeenCalledWith('服务器内部错误，请稍后重试（追踪号：test-tra）')
+      expect(JSON.stringify(vi.mocked(ElMessage.error).mock.calls.at(-1))).not.toContain('gunicorn')
+    })
+
+    it('500 无响应头 trace_id → 仅固定文案', async () => {
+      const error = makeAxiosError(500, '/api/m12-500b/', { detail: 'boom' })
+
+      await expect(getResponseHandler()?.(error)).rejects.toBe(error)
+      expect(ElMessage.error).toHaveBeenCalledWith('服务器内部错误，请稍后重试')
     })
   })
 })
