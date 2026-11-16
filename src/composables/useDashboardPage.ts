@@ -30,6 +30,7 @@ import { useChartTheme } from '@/composables/useChartTheme'
 import { useDashboardUser, LOGIN_START_TIME_KEY } from '@/composables/useDashboardUser'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
+import { toBusinessDateTimeParts, toBusinessWeekday } from '@/utils/Format'
 
 export function useDashboardPage() {
   const dashboardStore = useDashboardStore()
@@ -148,18 +149,10 @@ export function useDashboardPage() {
 
   const updateTime = () => {
     const now = new Date()
-    currentTime.value = now.toLocaleTimeString('zh-CN', {
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    })
-    currentDate.value = now.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long',
-    })
+    // [A4/MA-04] 业务时刻按 Asia/Shanghai 单源渲染（M-15 口径），不随浏览器时区漂移
+    const parts = toBusinessDateTimeParts(now)
+    currentTime.value = `${parts.hour}:${parts.minute}:${parts.second}`
+    currentDate.value = `${parts.year}年${parts.month}月${parts.day}日${toBusinessWeekday(now)}`
     const diff = Math.floor((now.getTime() - loginStartTime) / 1000)
     const hours = String(Math.floor(diff / 3600)).padStart(2, '0')
     const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0')

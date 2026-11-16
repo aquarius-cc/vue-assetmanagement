@@ -59,6 +59,20 @@ const businessParts = new Intl.DateTimeFormat('en-CA', {
 })
 
 /**
+ * [A4/MA-04] 业务时区星期中文 formatter（zh-CN 单独建，不并入 en-CA parts——
+ * en-CA 的 weekday:'long' 输出 "Monday" 而非「星期一」）。
+ */
+const businessWeekday = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: BUSINESS_TIME_ZONE,
+  weekday: 'long',
+})
+
+/** [A4/MA-04] 绝对时刻 → 业务时区星期中文（如「星期一」） */
+export function toBusinessWeekday(d: Date): string {
+  return businessWeekday.format(d)
+}
+
+/**
  * [M-15] 绝对时刻 → 东八区年月日时分秒。
  * formatDate / formatDateTime / formatDateTimeFull / formatRelativeTime / todayLocalISO 的唯一来源。
  * 与 toLocalDateString 职责边界：本函数处理「有时刻语义的绝对瞬间」，后者处理「无时刻语义的本地日历日期」。
@@ -68,6 +82,7 @@ export function toBusinessDateTimeParts(d: Date) {
   const pick = (t: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === t)?.value ?? ''
   return {
     date: `${pick('year')}-${pick('month')}-${pick('day')}`,
+    year: pick('year'),
     hour: pick('hour'),
     minute: pick('minute'),
     second: pick('second'),

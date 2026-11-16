@@ -597,4 +597,37 @@ describe('Format', () => {
       expect(todayLocalISO()).toBe('2026-01-02')
     })
   })
+
+  // [A4/MA-04] useDashboardPage 等价重建回归锚：year/weekday/午夜边界（UTC 下旧实现必红）
+  describe('A4 业务时区仪表盘时间', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+      process.env.TZ = 'UTC'
+      vi.resetModules()
+    })
+
+    it('UTC 浏览器时区下 00:30Z 渲染为东八区 08:30 / 2026年11月16日星期一', async () => {
+      process.env.TZ = 'UTC'
+      vi.resetModules()
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-11-16T00:30:00Z'))
+      const { toBusinessDateTimeParts, toBusinessWeekday } = await import('../Format')
+      const parts = toBusinessDateTimeParts(new Date())
+      expect(`${parts.hour}:${parts.minute}:${parts.second}`).toBe('08:30:00')
+      expect(`${parts.year}年${parts.month}月${parts.day}日${toBusinessWeekday(new Date())}`).toBe(
+        '2026年11月16日星期一',
+      )
+    })
+
+    it('午夜边界（CST 00:00）hour 为 00 而非 24（h23），星期中文渲染', async () => {
+      process.env.TZ = 'UTC'
+      vi.resetModules()
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-11-15T16:00:00Z'))
+      const { toBusinessDateTimeParts, toBusinessWeekday } = await import('../Format')
+      const parts = toBusinessDateTimeParts(new Date())
+      expect(`${parts.hour}:${parts.minute}:${parts.second}`).toBe('00:00:00')
+      expect(toBusinessWeekday(new Date())).toBe('星期一')
+    })
+  })
 })
