@@ -28,4 +28,6 @@ export interface BatchImportConfig<TExcel extends object, TApi extends object> {
   idField?: keyof TApi // ID 字段（用于错误日志）
   /** 并发数量，默认 5 */
   concurrency?: number // 并发数
+  /** [A3/MA-03] 单请求批量提交行数上限（与后端 MAX_BATCH_SIZE 对齐；逐行提交路径不注入） */
+  maxRows?: number
 }

@@ -51,6 +51,7 @@ export function useBatchImport<TExcel extends object, TApi extends object>(
       const data = await readExcelFile<TExcel>(
         file,
         config.excelHeaderMap as Record<string, string>,
+        config.maxRows !== undefined ? { maxRows: config.maxRows } : undefined,
       )
       previewData.value = data.map((item) => {
         const { valid, errors } = config.validateItem(item)

@@ -287,4 +287,72 @@ describe('readExcelFile', () => {
     })
     await expect(readExcelFile(file, excelHeaderMap)).rejects.toThrow('Invalid Excel file')
   })
+
+  // ===== A3/MA-03 三道闸用例 =====
+
+  /** 构造带 actualRowCount 的 worksheet（闸 2 依赖 actualRowCount 维度） */
+  function makeWorksheetWithData(dataRows: unknown[][]): any {
+    return {
+      actualRowCount: dataRows.length + 1,
+      getRow: vi.fn().mockReturnValue({
+        eachCell: vi.fn((callback: (cell: any, colNumber: number) => void) => {
+          callback({ value: '资产编码' }, 1)
+          callback({ value: '资产名称' }, 2)
+        }),
+      }),
+      eachRow: vi.fn((callback: (row: any, rowNumber: number) => void) => {
+        dataRows.forEach((values, i) => {
+          callback(
+            {
+              values: [undefined, ...values],
+              eachCell: vi.fn((cb: (cell: any, col: number) => void) => {
+                cb({ value: values[0] }, 1)
+                cb({ value: values[1] }, 2)
+              }),
+            },
+            i + 2,
+          )
+        })
+      }),
+    }
+  }
+
+  it('A3 闸 2：数据行数超过 maxRows 时 fail-fast 拒绝', async () => {
+    const rows = Array.from({ length: 5 }, (_, i) => [`A00${i}`, `设备${i}`])
+    mockWorkbook.worksheets = [makeWorksheetWithData(rows)]
+    mockWorkbook.xlsx.load.mockResolvedValue(undefined)
+
+    const file = new File(['test'], 'test.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    await expect(readExcelFile(file, { 资产编码: 'code', 资产名称: 'name' }, { maxRows: 3 })).rejects.toThrow(
+      '单次最多导入 3 条,请拆分文件',
+    )
+  })
+
+  it('A3 闸 1：文件体积超过 maxBytes 时 fail-fast 拒绝（FileReader 之前）', async () => {
+    const bigFile = new File(['x'.repeat(2048)], 'big.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    Object.defineProperty(bigFile, 'size', { value: 2048 })
+    await expect(readExcelFile(bigFile, excelHeaderMap, { maxBytes: 1024 })).rejects.toThrow(
+      '文件大小超过 1MB 上限，请拆分后重试',
+    )
+  })
+
+  it('A3：行数在 maxRows 内正常解析（不误拒）', async () => {
+    const rows = [
+      ['A001', '设备一'],
+      ['A002', '设备二'],
+      ['A003', '设备三'],
+    ]
+    mockWorkbook.worksheets = [makeWorksheetWithData(rows)]
+    mockWorkbook.xlsx.load.mockResolvedValue(undefined)
+
+    const file = new File(['test'], 'test.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    const result = await readExcelFile(file, { 资产编码: 'code', 资产名称: 'name' }, { maxRows: 5 })
+    expect(result).toHaveLength(3)
+  })
 })

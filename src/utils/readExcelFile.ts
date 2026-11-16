@@ -11,18 +11,37 @@
 
 /** [M-33] 本地时区日期拼接收敛至 Format.ts 单一事实源（原 toLocalISODate 已删除） */
 import { toLocalDateString } from '@/utils/Format'
+import { IMPORT_MAX_FILE_BYTES } from '@/constants/import'
+
+/** A3/MA-03 闸门选项：maxRows 缺省不传 = 现状（不启行数闸）；maxBytes 缺省 10MB */
+export interface ReadExcelFileOptions {
+  /** 数据行数上限（不含表头行）：与后端 MAX_BATCH_SIZE 对齐，超限 fail-fast */
+  maxRows?: number
+  /** 文件体积上限（字节）：内存保护闸，缺省 10MB */
+  maxBytes?: number
+}
 
 /**
  * 读取 Excel 文件并解析为对象数组
  * @param file Excel 文件
  * @param excelHeaderMap 表头到字段名的映射
+ * @param options A3/MA-03 闸门选项（maxRows 行数上限 / maxBytes 体积上限）
  * @returns 解析后的对象数组
  */
 export async function readExcelFile<T extends object>(
   file: File,
   excelHeaderMap: Record<string, string>,
+  options?: ReadExcelFileOptions,
 ): Promise<T[]> {
+  const maxRows = options?.maxRows
+  const maxBytes = options?.maxBytes ?? IMPORT_MAX_FILE_BYTES
   return new Promise((resolve, reject) => {
+    // 【A3/MA-03 闸 1】体积保护（FileReader 之前 fail-fast，与 nginx 10m 独立）
+    if (file.size > maxBytes) {
+      const limitMb = Math.max(1, Math.ceil(maxBytes / (1024 * 1024)))
+      reject(new Error(`文件大小超过 ${limitMb}MB 上限，请拆分后重试`))
+      return
+    }
     const reader = new FileReader()
     reader.onload = async (e) => {
       try {
@@ -46,6 +65,12 @@ export async function readExcelFile<T extends object>(
 
         if (headers.length === 0) {
           reject(new Error('文件为空或缺少数据'))
+          return
+        }
+
+        // 【A3/MA-03 闸 2】数据行数上限（actualRowCount - 1 表头行；用 actualRowCount 防空格式行虚高）
+        if (maxRows !== undefined && worksheet.actualRowCount - 1 > maxRows) {
+          reject(new Error(`单次最多导入 ${maxRows} 条,请拆分文件`))
           return
         }
 
@@ -90,6 +115,11 @@ export async function readExcelFile<T extends object>(
             Array.isArray(rowValues) &&
             rowValues.slice(1).some((cell) => cell !== '' && cell != null)
           if (!hasValue) return
+
+          // 【A3/MA-03 闸 3】循环内计数兜底：actualRowCount 维度缺失时仍 fail-fast，中止继续解析
+          if (maxRows !== undefined && mappedData.length >= maxRows) {
+            throw new Error(`单次最多导入 ${maxRows} 条,请拆分文件`)
+          }
 
           const obj = {} as Record<string, unknown>
           row.eachCell((cell, colNumber) => {

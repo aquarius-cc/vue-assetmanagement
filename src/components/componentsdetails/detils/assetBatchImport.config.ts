@@ -10,6 +10,7 @@ import type { AssetCreateForm } from '@/types/asset'
 import type { BatchImportConfig } from '@/utils/batchImport/types'
 import type { AssetExcelRow } from '@/types/batch-import'
 import type { HeaderExample, ExampleColumn } from '@/utils/batchImportHelpers'
+import { IMPORT_MAX_BATCH_ROWS } from '@/constants/import'
 import {
   requireNonEmpty,
   requireNonEmptyLength,
@@ -134,6 +135,8 @@ export const assetImportConfig: BatchImportConfig<AssetExcelRow, AssetCreateForm
   // 注意：后端规则变更：asset_code 由后端自动生成，不再作为前端唯一标识
   // 使用 asset_name 作为追踪字段（批量导入时用于标识提交状态）
   idField: 'asset_name',
+  // [A3/MA-03] 单请求批量提交上限（与后端 MAX_BATCH_SIZE=100 对齐，超限前端 fail-fast）
+  maxRows: IMPORT_MAX_BATCH_ROWS,
 } as const
 
 // ===== 导入格式参考卡片数据（基于正确字段）=====
