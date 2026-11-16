@@ -496,10 +496,11 @@ function buildQueryParams(
   >
 }
 
-/** 构建缓存键：`url?querystring` */
+/** 构建缓存键：`[scope::]url?querystring`（scope 空串时与历史形态逐字节一致） */
 function buildCacheKey(url: string, paramsObj?: Record<string, string>): string {
   const paramsStr = paramsObj ? new URLSearchParams(paramsObj).toString() : ''
-  return `${url}?${paramsStr}`
+  const scope = cacheIdentityScope ? `${cacheIdentityScope}::` : ''
+  return `${scope}${url}?${paramsStr}`
 }
 
 /** 从缓存读取：命中返回数据，未命中返回 undefined */
@@ -528,6 +529,31 @@ function writeCache<T>(
  */
 export function clearCacheByPattern(pattern: string): void {
   cache.clearByPattern(pattern)
+}
+
+// ---------- 缓存身份隔离（A1/MA-01） ----------
+
+/**
+ * [MA-01] 缓存身份 scope：工号单维（天然覆盖 role/dept/superuser/dataScope 全部行级维度）。
+ * 空串 = 未认证，缓存键与历史形态逐字节一致（零行为变化）。
+ */
+let cacheIdentityScope = ''
+
+/**
+ * [MA-01] 设置缓存身份 scope（工号）。登录/身份刷新时调用；空串视为未认证。
+ * 失败模式：漏调 = 退回现状（无劣化）；错调 = 仅多缓存 miss，绝不返回错误数据。
+ */
+export function setCacheIdentityScope(scope: string | null | undefined): void {
+  cacheIdentityScope = (scope ?? '').trim()
+}
+
+/**
+ * [MA-01] 登出/换号全量失效：epoch 自增防在途回填（cache.ts clear 语义），并清降级信号。
+ * resetAuthState 与显式换号路径共用；顺带清 degradedCacheKeys，防前用户会话的降级 Banner 残留。
+ */
+export function clearAllCache(): void {
+  cache.clear()
+  degradedCacheKeys.clear()
 }
 
 // ---------- 重载签名（支持新/旧两种调用方式） ----------

@@ -31,6 +31,7 @@ import type { DataScope } from '@/types/permission'
 import { DEFAULT_ROLE } from '@/constants/roles'
 import { decodeJWTPayload } from '@/utils/decodeJwt'
 import { logError, logWarn, resetTraceId } from '@/utils/logger'
+import { clearAllCache, setCacheIdentityScope } from '@/api/request'
 
 export const useAuthStore = defineStore('AuthUser', () => {
   const authInfo = ref<AuthInfo | null>(null) // 认证用户信息
@@ -73,6 +74,9 @@ export const useAuthStore = defineStore('AuthUser', () => {
     clearInMemoryAccessToken()
     localStorage.removeItem('authInfo')
     localStorage.removeItem('myPermissions')
+    // [MA-01] 会话失效：全量清请求缓存（epoch 防在途回填）+ 清降级信号 + 身份 scope 归零
+    clearAllCache()
+    setCacheIdentityScope('')
     // [M-RC-11] 会话级 trace_id 随认证态一并重置（logout/silentLogout 共用，DR-1）
     resetTraceId()
   }
@@ -137,10 +141,13 @@ export const useAuthStore = defineStore('AuthUser', () => {
       return false
     }
     try {
-      authInfo.value = JSON.parse(savedAuthInfoStr)
+      const restoredAuthInfo: AuthInfo = JSON.parse(savedAuthInfoStr)
+      authInfo.value = restoredAuthInfo
       access_token.value = savedAccessToken
       refresh_token.value = savedRefreshToken
       isLoggedIn.value = true
+      // [MA-01] 缓存身份 scope：会话恢复与登录同口径（工号单维）
+      setCacheIdentityScope(restoredAuthInfo.auth_username)
       restoreCachedPermissions()
       applyRbacFromJwt(savedAccessToken)
       return true
@@ -192,6 +199,8 @@ export const useAuthStore = defineStore('AuthUser', () => {
       authInfo.value = authUserData
       isLoggedIn.value = true
       access_token.value = response.data.access
+      // [MA-01] 缓存身份 scope：工号单维（登录即接线，防止前会话缓存按旧身份命中）
+      setCacheIdentityScope(authUserData.auth_username)
 
       // RBAC: 从 JWT 解析（login 响应始终含 access token，双通道可用）
       applyRbacFromJwt(response.data.access)
@@ -289,6 +298,8 @@ export const useAuthStore = defineStore('AuthUser', () => {
         }
         authInfo.value = userData
         encodeToken('authInfo', JSON.stringify(userData))
+        // [MA-01] 缓存身份 scope：profile 刷新与登录同口径（工号单维）
+        setCacheIdentityScope(userData.auth_username)
         // RBAC 权威字段来自 profile（后端 DR-1 resolve_role_info 唯一实现）
         userRole.value = (res.role as string) || DEFAULT_ROLE
         userDepartmentCode.value = (res.department_code as string) || null
