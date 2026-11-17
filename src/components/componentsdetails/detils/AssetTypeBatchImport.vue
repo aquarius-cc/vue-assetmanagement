@@ -91,7 +91,7 @@ defineOptions({ name: 'AssetTypeBatchImport' })
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
-import { isApiError as isAxiosError } from '@/utils/errorHandler'
+import { applyFailedMapToRows, buildFailedMapByIndex, extract400Items } from '@/utils/batchImport/failedMap'
 import { Upload } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useBatchImport } from '@/composables/useBatchImport'
@@ -269,54 +269,8 @@ const exampleRows = [
   },
 ]
 
-// [P1-4] 下列 3 个内部助手为 handleSubmit 原逻辑原样下沉，未改任何判断/返回。
-
-/** 400 响应体提取逐条 items（{ data: { items: [...] } }） */
-const extract400Items = (error: unknown): Array<Record<string, string[]>> | null => {
-  const axiosErr = isAxiosError(error) ? error : null
-  const responseData = axiosErr?.response?.data as Record<string, unknown> | undefined
-  const errData = responseData?.data as Record<string, unknown> | undefined
-  const items = errData?.items as Array<Record<string, string[]>> | undefined
-  return items && Array.isArray(items) ? items : null
-}
-
-/** fail_items 条目判别（结构守卫，避免 Record 索引签名吞掉 in 窄化） */
-const isFailItem = (
-  item: Record<string, string[]> | { index: number; error_message: string },
-): item is { index: number; error_message: string } =>
-  'error_message' in item && typeof (item as { index?: unknown }).index === 'number'
-
-/** 将 fail_items 或 400 items 的逐条错误合并为 index → message 映射 */
-const buildFailedMap = (
-  items: Array<Record<string, string[]> | { index: number; error_message: string }>,
-): Map<number, string> => {
-  const failedMap = new Map<number, string>()
-  items.forEach((item, idx) => {
-    if (isFailItem(item)) {
-      failedMap.set(item.index, item.error_message)
-    } else {
-      const messages = Object.values(item).flat()
-      if (messages.length > 0) failedMap.set(idx, messages.join(''))
-    }
-  })
-  return failedMap
-}
-
-/** 将 failedMap 应用到 validRows 的 submitStatus/submitError */
-const applyFailedMapToRows = (
-  validRows: Array<{ submitStatus?: string; submitError?: string }>,
-  failedMap: Map<number, string>,
-  fallback: string,
-) => {
-  validRows.forEach((row, idx) => {
-    if (failedMap.has(idx)) {
-      row.submitStatus = 'error'
-      row.submitError = failedMap.get(idx) || fallback
-    } else {
-      row.submitStatus = 'success'
-    }
-  })
-}
+// [P1-4] 原 3 个内部助手已下沉至 @/utils/batchImport/failedMap（【MA-10】C3-1 单源），调用口径不变。
+// 注：extract400Items 统一取带 status===400 闸的版本——非 400 AxiosError 返回 null 走 extractErrorMessage 分支，行为等价。
 
 const handleSubmit = async () => {
   if (validDataCount.value === 0) {
@@ -379,7 +333,7 @@ const handleSubmit = async () => {
 
     // 场景1: 200 响应，后端逐条处理返回 fail_items
     if (result.fail_count > 0) {
-      applyFailedMapToRows(validRows, buildFailedMap(result.fail_items), '提交失败')
+      applyFailedMapToRows(validRows, buildFailedMapByIndex(result.fail_items), '提交失败')
     } else {
       validRows.forEach((row) => {
         row.submitStatus = 'success'
@@ -399,7 +353,7 @@ const handleSubmit = async () => {
 
     if (items) {
       const validRows = previewData.value.filter((r) => r.validationStatus === 'success')
-      applyFailedMapToRows(validRows, buildFailedMap(items), '验证失败')
+      applyFailedMapToRows(validRows, buildFailedMapByIndex(items), '验证失败')
       ElMessage.warning(`导入完成：部分数据校验失败，请查看错误信息`)
     } else {
       const msg = extractErrorMessage(error)

@@ -15,6 +15,7 @@ import type { BatchImportConfig } from '@/utils/batchImport/types'
 import { submitBatch } from '@/utils/SubmitBatch'
 import type { SubmitBatchResult } from '@/utils/SubmitBatch'
 import { readExcelFile } from '@/utils/readExcelFile'
+import { buildFailedMapFromIds } from '@/utils/batchImport/failedMap'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
 
@@ -103,13 +104,7 @@ export function useBatchImport<TExcel extends object, TApi extends object>(
       submitResult.value = result
 
       if (result.failedItems.length > 0) {
-        const failedMap = new Map<string, string>()
-        result.failedItems.forEach((failed) => {
-          const idValue = failed.item[idField]
-          if (idValue !== undefined && idValue !== null) {
-            failedMap.set(String(idValue), failed.error)
-          }
-        })
+        const failedMap = buildFailedMapFromIds(result.failedItems, idField)
         previewData.value.forEach((row) => {
           if (row.validationStatus === 'success') {
             const apiData = config.transformToApiData(row.data as TExcel)

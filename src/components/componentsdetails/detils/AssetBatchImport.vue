@@ -145,11 +145,11 @@ import { useBatchImport } from '@/composables/useBatchImport'
 import { useOperationGuard } from '@/composables/useOperationGuard'
 import { usePreviewPagination } from '@/composables/usePreviewPagination'
 import { validationTagType, validationTagText } from '@/utils/batchImportHelpers'
+import { applyFailedMapToRows, buildFailedMapByIndex, extract400Items } from '@/utils/batchImport/failedMap'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { useAssetStore } from '@/stores/assetStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'
 import { notifyCallerError } from '@/utils/errorHandler'
-import { isApiError as isAxiosError } from '@/utils/errorHandler'
 import { downloadExcelTemplate } from '@/utils/batchImport/templateExport'
 import type { AssetExcelRow } from '@/types/batch-import'
 import type { AssetCreateForm } from '@/types/asset'
@@ -268,55 +268,7 @@ const handleExportTemplate = async () => {
 /**
  * 提交处理：调用后端批量创建接口，一次性提交所有有效数据 * 解决原有逐条创建因并发请求去重导致的数据丢失问题
  */
-// [P1-4] 下列 3 个内部助手为 handleSubmit 原逻辑原样下沉，未改任何判断/返回。
-
-/** 400 响应体提取逐条 items（{ data: { items: [...] } }） */
-const extract400Items = (axiosError: unknown): Array<Record<string, string[]>> | null => {
-  if (!isAxiosError(axiosError) || axiosError.response?.status !== 400) return null
-  const respData = axiosError.response.data as Record<string, unknown>
-  const detailItems = (respData?.data as Record<string, unknown>)?.items as
-    | Array<Record<string, string[]>>
-    | undefined
-  return detailItems && Array.isArray(detailItems) ? detailItems : null
-}
-
-/** fail_items 条目判别（结构守卫，避免 Record 索引签名吞掉 in 窄化） */
-const isFailItem = (
-  item: Record<string, string[]> | { index: number; error_message: string },
-): item is { index: number; error_message: string } =>
-  'error_message' in item && typeof (item as { index?: unknown }).index === 'number'
-
-/** 将 fail_items 或 400 items 的逐条错误合并为 index → message 映射 */
-const buildFailedMap = (
-  items: Array<Record<string, string[]> | { index: number; error_message: string }>,
-): Map<number, string> => {
-  const failedMap = new Map<number, string>()
-  items.forEach((item, idx) => {
-    if (isFailItem(item)) {
-      failedMap.set(item.index, item.error_message)
-    } else {
-      const messages = Object.values(item).flat()
-      if (messages.length > 0) failedMap.set(idx, messages.join(''))
-    }
-  })
-  return failedMap
-}
-
-/** 将 failedMap 应用到 validRows 的 submitStatus/submitError */
-const applyFailedMapToRows = (
-  validRows: Array<{ submitStatus?: string; submitError?: string }>,
-  failedMap: Map<number, string>,
-  fallback: string,
-) => {
-  validRows.forEach((row, idx) => {
-    if (failedMap.has(idx)) {
-      row.submitStatus = 'error'
-      row.submitError = failedMap.get(idx) || fallback
-    } else {
-      row.submitStatus = 'success'
-    }
-  })
-}
+// [P1-4] 原 3 个内部助手已下沉至 @/utils/batchImport/failedMap（【MA-10】C3-1 单源），调用口径不变。
 
 const handleSubmit = async () => {
   const validRows = previewData.value.filter((r) => r.validationStatus === 'success')
@@ -344,7 +296,7 @@ const handleSubmit = async () => {
       // 处理 400 错误：后端返回 { code: 400, data: { items: [{ field: ["错误"] }] } }
       const detailItems = extract400Items(axiosError)
       if (detailItems) {
-        applyFailedMapToRows(validRows, buildFailedMap(detailItems), '验证失败')
+        applyFailedMapToRows(validRows, buildFailedMapByIndex(detailItems), '验证失败')
         // 序列化层校验失败 → 整请求 400,后端零创建,此处必须明确「未创建任何资产」
         ElMessage.warning(`导入完成：部分数据验证失败，未创建任何资产，请查看错误详情`)
         return
@@ -355,7 +307,7 @@ const handleSubmit = async () => {
 
     // 处理 200 响应中的 fail_count（逐条处理时的失败项）
     if (result.fail_count > 0) {
-      applyFailedMapToRows(validRows, buildFailedMap(result.fail_items), '提交失败')
+      applyFailedMapToRows(validRows, buildFailedMapByIndex(result.fail_items), '提交失败')
     } else {
       validRows.forEach((row) => {
         row.submitStatus = 'success'

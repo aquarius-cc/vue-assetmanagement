@@ -133,6 +133,7 @@ import { useRouter } from 'vue-router'
 import { useBatchImport } from '@/composables/useBatchImport'
 import { usePreviewPagination } from '@/composables/usePreviewPagination'
 import { validationTagType, validationTagText } from '@/utils/batchImportHelpers'
+import { applyFailedMapToRows, buildFailedMapByIndex } from '@/utils/batchImport/failedMap'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { downloadExcelTemplate } from '@/utils/batchImport/templateExport'
 import {
@@ -228,21 +229,9 @@ const handleSubmit = async () => {
 
     const result = await batchCreateContracts(apiDataList)
 
-    // 使用 index 匹配：后端 fail_items 的 index 对应 validRows 的数组索引
+    // 使用 index 匹配：后端 fail_items 的 index 对应 validRows 的数组索引（【MA-10】C3-1 单源）
     if (result.fail_count > 0) {
-      const failedMap = new Map<number, string>()
-      result.fail_items.forEach((failed) => {
-        failedMap.set(failed.index, failed.error_message)
-      })
-
-      validRows.forEach((row, idx) => {
-        if (failedMap.has(idx)) {
-          row.submitStatus = 'error'
-          row.submitError = failedMap.get(idx) || '提交失败'
-        } else {
-          row.submitStatus = 'success'
-        }
-      })
+      applyFailedMapToRows(validRows, buildFailedMapByIndex(result.fail_items), '提交失败')
     } else {
       validRows.forEach((row) => {
         row.submitStatus = 'success'
