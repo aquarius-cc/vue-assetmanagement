@@ -200,10 +200,16 @@ export default defineConfig(({ mode }) => {
           manualChunks(id: string) {
             if (!id.includes('node_modules')) return undefined
             // 【BF-004 修复】按域拆分重库, 消除单一 vendor chunk(2532KB)
-            // 注意: zrender 必须与 echarts 同 chunk, 否则初始化顺序/循环依赖问题
-            if (id.includes('echarts') || id.includes('zrender') || id.includes('vue-echarts')) {
-              return 'echarts'
+            // 【MA-14】vue 运行时固定 vendor, 且判定必须在 echarts 分支之前,
+            // 否则 vue-echarts 把 vue 运行时卷进 echarts chunk → 首屏 preload 606KB
+            if (id.includes('node_modules/vue/') || id.includes('node_modules/@vue/')) {
+              return 'vendor'
             }
+            // 【MA-14 备选已启用】去掉 echarts manualChunk: vue 前置 + 异步组件后仍被 entry
+            // 静态预载（rolldown 对 manualChunk 的 preload 策略），让其自然并入懒路由 chunk
+            // if (id.includes('echarts') || id.includes('zrender') || id.includes('vue-echarts')) {
+            //   return 'echarts'
+            // }
             if (id.includes('exceljs')) return 'exceljs'
             if (id.includes('element-plus') || id.includes('@element-plus')) return 'element-plus'
             return 'vendor'

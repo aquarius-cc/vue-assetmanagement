@@ -130,13 +130,17 @@
 </template>
 
 <script lang="ts" setup>
+import { defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import DashboardStatCard from '@/components/commoncomponents/DashboardStatCard.vue'
 import DashboardWelcomeBar from '@/components/commoncomponents/DashboardWelcomeBar.vue'
 import DashboardRecentList from '@/components/commoncomponents/DashboardRecentList.vue'
-import DashboardStatusOverview from '@/components/commoncomponents/DashboardStatusOverview.vue'
-import DashboardTrendSection from '@/components/DashboardTrendSection.vue'
-import DashboardDistributionSection from '@/components/DashboardDistributionSection.vue'
+// 【MA-14】echarts 链组件异步化: 扫码页/首屏不再为图表买单（plugins/echarts 仅此三链可达）
+const DashboardStatusOverview = defineAsyncComponent(
+  () => import('@/components/commoncomponents/DashboardStatusOverview.vue'),
+)
+const DashboardTrendSection = defineAsyncComponent(() => import('@/components/DashboardTrendSection.vue'))
+const DashboardDistributionSection = defineAsyncComponent(() => import('@/components/DashboardDistributionSection.vue'))
 import DashboardAlertsSection from '@/components/DashboardAlertsSection.vue'
 import { useDashboardPage } from '@/composables/useDashboardPage'
 
