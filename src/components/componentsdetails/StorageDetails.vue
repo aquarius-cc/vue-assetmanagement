@@ -102,6 +102,7 @@ import { useKeepAliveReload } from '@/composables/useKeepAliveReload'
 import type { Storage } from '@/types/storage'
 import { storageMapping } from '@/utils/Format'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 
 // ===== 状态与实例 =====
 const router = useRouter()
@@ -219,7 +220,8 @@ const handleDelete = (row: Storage) => {
     })
     .catch((error) => {
       if (error !== 'cancel') {
-        ElMessage.error(`删除失败: ${error.message || '未知错误'}`)
+        logError('components/componentsdetails/StorageDetails', '删除失败:', error)
+        notifyCallerError(error, '删除失败，请重试')
       }
     })
 }
@@ -260,7 +262,7 @@ const handleBatchDelete = async (rows: Storage[] | undefined) => {
   } catch (err) {
     if (err === 'cancel') return
     logError('components/componentsdetails/StorageDetails', '批量删除失败:', err)
-    ElMessage.error('批量删除失败，请重试')
+    notifyCallerError(err, '批量删除失败，请重试')
   }
 }
 

@@ -126,6 +126,7 @@ import { formatDate } from '@/utils/Format'
 import { getApprovalStatusText, getApprovalStatusTagType } from '@/utils/statusMapping'
 import type { SmartListContainerExpose } from '@/types/common'
 import { logError } from '@/utils/logger'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { useServerExcelExport } from '@/composables/useServerExcelExport'
 
 // ===== 状态与实例 =====
@@ -251,7 +252,7 @@ const handleDelete = (row: UnregisteredAsset) => {
     .catch((error) => {
       if (error !== 'cancel') {
         logError('components/componentsdetails/UnregisteredAssetDetails', '删除失败:', error)
-        ElMessage.error('删除失败，请刷新页面重试')
+        notifyCallerError(error, '删除失败，请刷新页面重试')
       }
     })
 }
@@ -396,7 +397,7 @@ const handleBatchDelete = async (rows: UnregisteredAsset[] | undefined) => {
   } catch (err) {
     if (err === 'cancel') return
     logError('components/componentsdetails/UnregisteredAssetDetails', '批量删除失败:', err)
-    ElMessage.error('批量删除失败，请重试')
+    notifyCallerError(err, '批量删除失败，请重试')
   }
 }
 

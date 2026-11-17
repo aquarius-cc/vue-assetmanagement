@@ -326,7 +326,7 @@ const handleDelete = (row: DamagedAsset) => {
     .catch((error) => {
       if (error !== 'cancel') {
         logError('components/componentsdetails/DamagedAssetDetails', '删除失败:', error)
-        ElMessage.error('删除失败，请刷新页面重试')
+        notifyCallerError(error, '删除失败，请刷新页面重试')
       }
     })
 }

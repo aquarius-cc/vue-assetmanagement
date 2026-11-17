@@ -231,7 +231,7 @@ const handleDelete = async (row: Department) => {
   } catch (err) {
     if (err === 'cancel') return // 用户取消删除
     logError('components/componentsdetails/DepartmentDetails', '删除部门异常:', err)
-    ElMessage.error('删除失败，请重试')
+    notifyCallerError(err, '删除失败，请重试')
   }
 }
 

@@ -251,7 +251,7 @@ const handleDelete = async (row: Contract) => {
   } catch (err) {
     if (err !== 'cancel') {
       logError('components/componentsdetails/ContractDetails', '删除合同失败:', err)
-      ElMessage.error('删除失败，请重试')
+      notifyCallerError(err, '删除失败，请重试')
     }
   }
 }

@@ -399,7 +399,8 @@ const handleDeleteType = async () => {
     if (isAxiosError(err) && err.response?.status === 400) {
       ElMessage.error('无法删除：该资产分类已被使用，不能删除')
     } else {
-      ElMessage.error('删除失败，请重试')
+      logError('components/componentsdetails/AssetTypeDetails', '删除失败，请重试', err)
+      notifyCallerError(err, '删除失败，请重试')
     }
   }
 }
@@ -435,7 +436,8 @@ const handleDeleteChild = async (row: AssetType) => {
     if (isAxiosError(err) && err.response?.status === 400) {
       ElMessage.error('无法删除：该资产分类已被使用，不能删除')
     } else {
-      ElMessage.error('删除失败，请重试')
+      logError('components/componentsdetails/AssetTypeDetails', '删除失败，请重试', err)
+      notifyCallerError(err, '删除失败，请重试')
     }
   }
 }
