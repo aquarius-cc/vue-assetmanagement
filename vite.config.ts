@@ -87,6 +87,10 @@ export default defineConfig(({ mode }) => {
   return {
     // [BF-087] dev 代理错误降噪（详见文件头 createProxyQuietLogger 注释）
     customLogger: createProxyQuietLogger(),
+    // B1 前端错误日志 release 字段
+    define: {
+      __APP_VERSION__: JSON.stringify(process.env.npm_package_version || 'dev'),
+    },
     // 子路径部署支持（如 /admin/），默认根路径 '/'
     // router/index.ts 的 createWebHistory 已自动读取 import.meta.env.BASE_URL
     base: env.VITE_BASE_URL || '/',

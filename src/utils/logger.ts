@@ -11,6 +11,7 @@
  */
 
 import { generateTraceId } from '@/utils/traceId'
+import { sendFrontendLog } from '@/utils/frontendLogSink'
 
 /** 日志级别 */
 export type LogLevel = 'info' | 'warn' | 'error'
@@ -73,6 +74,17 @@ function emit(
   } else {
     // eslint-disable-next-line no-console -- logger 是全仓唯一 console 出口（DR-4/OC-2）
     console.info(line)
+  }
+
+  if (level === 'warn' || level === 'error') {
+    sendFrontendLog({
+      level,
+      message,
+      client_trace_id: getTraceId(),
+      frontend_module: module,
+      error: err,
+      frontend_context: context,
+    })
   }
 }
 

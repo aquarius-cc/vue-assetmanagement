@@ -10,9 +10,10 @@
  *   - EXPORT_TIMEOUT: 导出请求专用超时
  */
 
+import { BASE_URL } from './baseUrl'
 import { logWarn } from '@/utils/logger'
 
-export const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+export { BASE_URL }
 
 export const TIMEOUT = 15_000
 

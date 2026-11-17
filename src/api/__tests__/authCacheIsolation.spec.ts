@@ -10,9 +10,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
 type ErrorHandler = (error: unknown) => unknown
-type RequestHandler = (config: { method?: string; headers: Record<string, string> }) => {
-  headers: Record<string, string>
-}
 
 const handlerRef = vi.hoisted(() => ({
   fn: null as ErrorHandler | null,
@@ -73,7 +70,13 @@ vi.mock('element-plus', () => ({
   ElMessage: { error: vi.fn(), success: vi.fn() },
 }))
 
-import { degradedCacheKeys, clearAllCache, clearCacheByPattern, get, setCacheIdentityScope } from '@/api/request'
+import {
+  degradedCacheKeys,
+  clearAllCache,
+  clearCacheByPattern,
+  get,
+  setCacheIdentityScope,
+} from '@/api/request'
 import { useAuthStore } from '@/stores/auth'
 
 const RESP = (data: Record<string, unknown>) => ({

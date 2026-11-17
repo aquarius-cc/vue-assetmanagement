@@ -325,9 +325,9 @@ describe('readExcelFile', () => {
     const file = new File(['test'], 'test.xlsx', {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     })
-    await expect(readExcelFile(file, { 资产编码: 'code', 资产名称: 'name' }, { maxRows: 3 })).rejects.toThrow(
-      '单次最多导入 3 条,请拆分文件',
-    )
+    await expect(
+      readExcelFile(file, { 资产编码: 'code', 资产名称: 'name' }, { maxRows: 3 }),
+    ).rejects.toThrow('单次最多导入 3 条,请拆分文件')
   })
 
   it('A3 闸 1：文件体积超过 maxBytes 时 fail-fast 拒绝（FileReader 之前）', async () => {

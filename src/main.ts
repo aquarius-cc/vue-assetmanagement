@@ -8,6 +8,8 @@ import { createPinia } from 'pinia'
 import App from '@/App.vue'
 import router from '@/router'
 import { lazyLoadDirective } from '@/utils/Image'
+import { installFrontendLogFlushListeners } from '@/utils/frontendLogSink'
+import { registerGlobalErrorHandlers } from '@/utils/globalErrorHandlers'
 
 // ========== 1. 全局样式（按顺序导入） ==========
 // 1.1 重置样式（normalize.css + 自定义 reset）
@@ -36,6 +38,10 @@ app.use(router)
 
 // 自定义指令：图片懒加载
 app.directive('lazy', lazyLoadDirective)
+
+// 前端错误日志（B1）：flush 触发器 + Vue/全局未处理 Promise 错误统一接线
+installFrontendLogFlushListeners()
+registerGlobalErrorHandlers(app)
 
 // 挂载应用
 app.mount('#app')

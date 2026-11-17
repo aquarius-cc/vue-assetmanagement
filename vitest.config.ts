@@ -12,6 +12,7 @@ export default defineConfig({
   },
   test: {
     environment: 'happy-dom',
+    setupFiles: ['./src/test/setup.ts'],
     // 【Q-05】限制 worker 数量以消除随机失败（"worker process failed to exit" /
     // happy-dom 环境 teardown 竞态）。原默认值按 CPU 核数派生，在多核开发机上
     // 会同时拉起过多 happy-dom 实例，导致用例随机红灯。
@@ -29,7 +30,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       include: ['src/**/*.ts', 'src/**/*.vue'],
-      exclude: ['src/**/*.d.ts', 'src/**/__tests__/**', 'src/types/**', 'src/router/index.ts'],
+      exclude: ['src/**/*.d.ts', 'src/**/__tests__/**', 'src/test/**', 'src/types/**', 'src/router/index.ts'],
       thresholds: {
         // 【P2-2 分层棘轮】无前缀 key = 全局并集（含 .vue），会把 80 拖到 42% 直接假红。
         // 故 ts 与 vue 两层各自设前缀阈值，不再设无前缀全局阈值。
