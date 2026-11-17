@@ -5,7 +5,7 @@
 import { defineStore } from 'pinia'
 import { STATUS_GROUPS, CHART_ORDER } from './dashboardStatusGroups'
 import { ref, computed } from 'vue'
-import { isApiError } from '@/utils/errorHandler'
+import { notifyCallerError } from '@/utils/errorHandler'
 import { dashboardAPI } from '@/api/dashboard'
 import type {
   DashboardOverview,
@@ -17,7 +17,6 @@ import type {
   DepartmentDistributionItem,
   AssetTypeDistributionItem,
 } from '@/types/dashboard'
-import { ElMessage } from 'element-plus'
 import { logError } from '@/utils/logger'
 import {
   getStatusColor as getStatusColorFromMapping,
@@ -193,10 +192,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     } catch (error) {
       // fetchDashboardOverview catch 块重构
       logError('stores/dashboard', '获取仪表盘概览数据失败', error)
-      // [修复] 分类处理：业务错误拦截器未处理，需手动提示实际原因
-      if (!isApiError(error)) {
-        ElMessage.error((error as Error).message || '获取仪表盘概览数据失败')
-      }
+      notifyCallerError(error, '获取仪表盘概览数据失败')
       // AxiosError 由拦截器已弹窗，不重复
       throw error // [修复] 保持 re-throw，让上层感知
     } finally {
@@ -218,9 +214,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     } catch (error) {
       // fetchRecentOutAssets catch 块重构（同上模式）
       logError('stores/dashboard', '获取最近发放记录失败', error)
-      if (!isApiError(error)) {
-        ElMessage.error((error as Error).message || '获取最近发放记录失败')
-      }
+      notifyCallerError(error, '获取最近发放记录失败')
       throw error
     } finally {
       outAssetsLoading.value = false
@@ -241,9 +235,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     } catch (error) {
       // fetchRecentRecycleAssets catch 块重构（同上模式）
       logError('stores/dashboard', '获取最近回收记录失败', error)
-      if (!isApiError(error)) {
-        ElMessage.error((error as Error).message || '获取最近回收记录失败')
-      }
+      notifyCallerError(error, '获取最近回收记录失败')
       throw error
     } finally {
       recycleAssetsLoading.value = false
@@ -268,9 +260,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       // 仅最新请求的错误才展示，过期请求的错误静默丢弃
       if (requestId === trendRequestId) {
         logError('stores/dashboard', '获取资产趋势数据失败', error)
-        if (!isApiError(error)) {
-          ElMessage.error((error as Error).message || '获取资产趋势数据失败')
-        }
+        notifyCallerError(error, '获取资产趋势数据失败')
       }
       throw error
     } finally {
@@ -292,9 +282,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       return data
     } catch (error) {
       logError('stores/dashboard', '获取部门分布数据失败', error)
-      if (!isApiError(error)) {
-        ElMessage.error((error as Error).message || '获取部门分布数据失败')
-      }
+      notifyCallerError(error, '获取部门分布数据失败')
       throw error
     } finally {
       deptDistLoading.value = false
@@ -312,9 +300,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       return data
     } catch (error) {
       logError('stores/dashboard', '获取类型分布数据失败', error)
-      if (!isApiError(error)) {
-        ElMessage.error((error as Error).message || '获取类型分布数据失败')
-      }
+      notifyCallerError(error, '获取类型分布数据失败')
       throw error
     } finally {
       typeDistLoading.value = false
@@ -333,9 +319,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       return data
     } catch (error) {
       logError('stores/dashboard', '获取即将到期资产失败', error)
-      if (!isApiError(error)) {
-        ElMessage.error((error as Error).message || '获取即将到期资产失败')
-      }
+      notifyCallerError(error, '获取即将到期资产失败')
       throw error
     } finally {
       expiringLoading.value = false
@@ -353,9 +337,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       return data
     } catch (error) {
       logError('stores/dashboard', '获取维护提醒失败', error)
-      if (!isApiError(error)) {
-        ElMessage.error((error as Error).message || '获取维护提醒失败')
-      }
+      notifyCallerError(error, '获取维护提醒失败')
       throw error
     } finally {
       maintenanceLoading.value = false
