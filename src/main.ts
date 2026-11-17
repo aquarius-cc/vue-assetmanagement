@@ -10,6 +10,7 @@ import router from '@/router'
 import { lazyLoadDirective } from '@/utils/Image'
 import { installFrontendLogFlushListeners } from '@/utils/frontendLogSink'
 import { registerGlobalErrorHandlers } from '@/utils/globalErrorHandlers'
+import { installCspViolationProbe } from '@/utils/cspProbe'
 
 // ========== 1. 全局样式（按顺序导入） ==========
 // 1.1 重置样式（normalize.css + 自定义 reset）
@@ -42,6 +43,11 @@ app.directive('lazy', lazyLoadDirective)
 // 前端错误日志（B1）：flush 触发器 + Vue/全局未处理 Promise 错误统一接线
 installFrontendLogFlushListeners()
 registerGlobalErrorHandlers(app)
+
+// CSP 违规探针（MA-15）：默认关闭,构建期 VITE_CSP_PROBE=true 才挂载（观察期 OC 违约监控）
+if (import.meta.env.VITE_CSP_PROBE === 'true') {
+  installCspViolationProbe()
+}
 
 // 挂载应用
 app.mount('#app')
