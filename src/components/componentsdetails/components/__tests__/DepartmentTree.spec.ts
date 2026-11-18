@@ -6,7 +6,8 @@
  *   - 模板：树节点渲染、递归人数标签（`calculateTotalEmployeeCount`）、
  *     有/无子节点两支图标分支（`FolderOpened` / `Folder` / `Document`）
  *   - 交互：展开 / 折叠（走 `treeRef.store.nodesMap`）、节点点击 emit `select`
- *   - 拖拽：`allowDrop` 的三层判定（超 6 层拒绝 + 告警、拖入自身子孙拒绝、允许）、
+ *   - 拖拽：`allowDrop` 的环判定（落点后的新父节点 ∈ 被拖子树 → 拒绝并告警，含 self-drop）、
+ *     层级判定（新层级 + 被拖子树高度 > 5 → 拒绝并告警）、告警去重（同一落点只提示一次）；
  *     `handleNodeDrop` 的 inner / before-outer 两种父节点取值
  *   - 监听：`watch(immediate)` 在有数据且无展开记录时写入 `default-expanded-keys`
  *   - `refresh()` 暴露方法 emit `refresh`
@@ -219,7 +220,7 @@ describe('DepartmentTree · 交互', () => {
   })
 })
 
-describe('DepartmentTree · 拖拽层级校验（allowDrop）', () => {
+describe('DepartmentTree · 拖拽防环与层级校验（allowDrop）', () => {
   it('拖入第 6 层（newLevel > 5）拒绝并弹层级告警', () => {
     const wrapper = mountTree()
     const drop = { data: { ...TREE[0].children![0].children![0], level: 5 } } as { data: TreeRow }
@@ -229,23 +230,64 @@ describe('DepartmentTree · 拖拽层级校验（allowDrop）', () => {
     expect(mockWarning).toHaveBeenCalledWith(expect.stringContaining('最多'))
   })
 
-  it('拖到自身节点上拒绝（self-drop 不弹告警）', () => {
+  it('层级判定计入被拖子树高度：高度 2 的子树拖入 level=4 拒绝', () => {
+    const wrapper = mountTree()
+    // D1 → D11 → D111 高度为 2，落入 level 4 后最深节点将达第 8 层
+    const dragging = { data: { ...TREE[0] } } as { data: TreeRow }
+    const drop = { data: { ...TREE[1], level: 4 } } as { data: TreeRow }
+
+    expect(allowDropOf(wrapper)(dragging, drop, 'inner')).toBe(false)
+    expect(mockWarning).toHaveBeenCalledWith(expect.stringContaining('最多'))
+  })
+
+  it('拖到自身节点上拒绝并弹环告警（before / inner 一致）', () => {
     const wrapper = mountTree()
     const dragging = { data: { ...TREE[0] } } as { data: TreeRow }
     const same = { data: { ...TREE[0] } } as { data: TreeRow }
 
     expect(allowDropOf(wrapper)(dragging, same, 'before')).toBe(false)
     expect(allowDropOf(wrapper)(dragging, same, 'inner')).toBe(false)
-    expect(mockWarning).not.toHaveBeenCalled()
+    expect(mockWarning).toHaveBeenCalledWith(expect.stringContaining('子部门'))
   })
 
-  it('拖到自身祖先节点上拒绝（当前实现语义，见 allowDrop 注释「不能放入自己…」）', () => {
+  it('拖父节点到其子节点 inner 拒绝（新父节点落在被拖子树内）', () => {
+    const wrapper = mountTree()
+    const dragging = { data: { ...TREE[0] } } as { data: TreeRow }
+    const child = { data: { ...TREE[0].children![0] } } as { data: TreeRow }
+
+    expect(allowDropOf(wrapper)(dragging, child, 'inner')).toBe(false)
+    expect(mockWarning).toHaveBeenCalledWith(expect.stringContaining('子部门'))
+  })
+
+  it('拖父节点到其子节点 before 拒绝（新父节点仍是自身）', () => {
+    const wrapper = mountTree()
+    const dragging = { data: { ...TREE[0] } } as { data: TreeRow }
+    const child = { data: { ...TREE[0].children![0] } } as { data: TreeRow }
+
+    expect(allowDropOf(wrapper)(dragging, child, 'before')).toBe(false)
+    expect(mockWarning).toHaveBeenCalledWith(expect.stringContaining('子部门'))
+  })
+
+  it('拖子节点到祖先 before 允许（提级，不再误拒）', () => {
     const wrapper = mountTree()
     const dragging = { data: { ...TREE[0].children![0].children![0] } } as { data: TreeRow }
     const ancestor = { data: { ...TREE[0] } } as { data: TreeRow }
 
-    expect(allowDropOf(wrapper)(dragging, ancestor, 'before')).toBe(false)
+    expect(allowDropOf(wrapper)(dragging, ancestor, 'before')).toBe(true)
     expect(mockWarning).not.toHaveBeenCalled()
+  })
+
+  it('同一落点重复校验只提示一次（dragover 高频调用去重）', () => {
+    const wrapper = mountTree()
+    const dragging = { data: { ...TREE[0] } } as { data: TreeRow }
+    const drop = { data: { ...TREE[1], level: 4 } } as { data: TreeRow }
+    const allow = allowDropOf(wrapper)
+
+    allow(dragging, drop, 'inner')
+    allow(dragging, drop, 'inner')
+    allow(dragging, drop, 'inner')
+
+    expect(mockWarning).toHaveBeenCalledTimes(1)
   })
 
   it('同层 before 放置在层级 0 的节点上允许', () => {

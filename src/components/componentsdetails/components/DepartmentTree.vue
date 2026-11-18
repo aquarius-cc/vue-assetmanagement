@@ -82,6 +82,10 @@ import { ElMessage } from 'element-plus'
 import { ArrowDown, ArrowUp, Folder, FolderOpened, Document } from '@element-plus/icons-vue'
 import type { DepartmentTreeNode } from '@/types/department'
 import type { DropType, ElTreeNode, ElTreeStore } from '@/types/form-helpers'
+import { getSubtreeHeight, isDepartmentInSubtree } from '@/utils/departmentTree'
+
+/** 部门最大层级（level 0 起，共 6 层；与后端 models.MAX_DEPARTMENT_LEVEL 对齐） */
+const MAX_DEPARTMENT_LEVEL = 5
 
 // ==================== Props & Emits ====================
 
@@ -181,8 +185,37 @@ const handleNodeClick = (data: DepartmentTreeNode) => {
   emit('select', data)
 }
 
+/** 上一次已提示的拒绝原因键（dragover 期间 allowDrop 高频调用，避免重复弹窗） */
+let lastWarnKey = ''
+
+/**
+ * 拒绝放置并提示（同一拖拽组合只提示一次）
+ * @param draggingCode 被拖拽节点编码
+ * @param dropCode 目标节点编码
+ * @param type 放置类型
+ * @param reason 拒绝原因（cycle/level）
+ * @param message 提示文案
+ */
+const warnBlocked = (
+  draggingCode: string,
+  dropCode: string,
+  type: DropType,
+  reason: 'cycle' | 'level',
+  message: string,
+) => {
+  const key = `${draggingCode}|${dropCode}|${type}|${reason}`
+  if (lastWarnKey === key) return
+  lastWarnKey = key
+  ElMessage.warning(message)
+}
+
 /**
  * 判断是否允许拖拽放置
+ *
+ * 判定顺序（与后端 DepartmentService._validate_move_hierarchy 对齐）：
+ *   1. 环判定：落点后的新父节点不能是被拖节点自身或其子树内节点
+ *   2. 层级判定：新层级 + 被拖子树高度不得超过 MAX_DEPARTMENT_LEVEL
+ *
  * @param draggingNode 被拖拽的节点
  * @param dropNode 目标节点
  * @param type 放置类型（before/after/inner）
@@ -192,48 +225,40 @@ const allowDrop = (draggingNode: ElTreeNode, dropNode: ElTreeNode, type: DropTyp
   const draggingData: DepartmentTreeNode = draggingNode.data
   const dropData: DepartmentTreeNode = dropNode.data
 
-  // 计算放置后的层级
-  let newLevel: number
-  if (type === 'inner') {
-    // 放入目标节点内部，层级为目标层级 + 1
-    newLevel = dropData.level + 1
-  } else {
-    // 放在目标节点前后，层级与目标节点相同
-    newLevel = dropData.level
-  }
+  // 落点后的新父节点：inner 为目标节点自身，before/after 为目标节点的父节点
+  const newParentCode =
+    type === 'inner' ? dropData.department_code : dropData.parent_department_code
 
-  // 检查层级限制（最大6层，level 从0开始）
-  if (newLevel > 5) {
-    ElMessage.warning('部门层级最多6层，无法放置到此位置')
+  // 环判定：放到自身，或新父节点落在被拖子树内（含被拖节点自身）
+  if (
+    dropData.department_code === draggingData.department_code ||
+    (newParentCode !== null && isDepartmentInSubtree(draggingData, newParentCode))
+  ) {
+    warnBlocked(
+      draggingData.department_code,
+      dropData.department_code,
+      type,
+      'cycle',
+      '不能将部门移动到自己的子部门下',
+    )
     return false
   }
 
-  // 不能放入自己或自己的子节点中
-  if (isDescendant(dropData, draggingData.department_code)) {
+  // 层级判定：inner 的新层级 = 目标层级 + 1；before/after 与目标节点同层
+  const newLevel = type === 'inner' ? dropData.level + 1 : dropData.level
+  if (newLevel + getSubtreeHeight(draggingData) > MAX_DEPARTMENT_LEVEL) {
+    warnBlocked(
+      draggingData.department_code,
+      dropData.department_code,
+      type,
+      'level',
+      '部门层级最多6层，无法放置到此位置',
+    )
     return false
   }
 
+  lastWarnKey = ''
   return true
-}
-
-/**
- * 判断 target 是否是 source 的后代节点
- * @param target 目标节点
- * @param sourceCode 源节点编码
- * @returns 是否是后代
- */
-const isDescendant = (target: DepartmentTreeNode, sourceCode: string): boolean => {
-  if (target.department_code === sourceCode) {
-    return true
-  }
-  if (target.children?.length) {
-    for (const child of target.children) {
-      if (isDescendant(child, sourceCode)) {
-        return true
-      }
-    }
-  }
-  return false
 }
 
 /**
@@ -263,7 +288,6 @@ const handleNodeDrop = (draggingNode: ElTreeNode, dropNode: ElTreeNode, dropType
     target_code: dropData.department_code,
   })
 }
-
 /**
  * 展开所有节点
  * 通过 el-tree 的 store 遍历所有节点并设置 expanded = true
