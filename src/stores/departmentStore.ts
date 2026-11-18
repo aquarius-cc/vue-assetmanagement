@@ -36,6 +36,7 @@ import type { EmployeeExtended } from '@/types/user'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import type { MoveDepartmentParams } from '@/types/department'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 export type { DepartmentBatchCreateResult } from '@/api/department'
 
@@ -114,7 +115,7 @@ export const useDepartmentStore = createEntityStore<Department, PaginationQuery>
   },
   message: ElMessage,
   enablePagination: true,
-  defaultPageSize: 20,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   enableCache: false,
 })
 

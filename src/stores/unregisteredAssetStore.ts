@@ -24,6 +24,7 @@ import type {
 } from '@/types/unregisteredasset'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import type { BlobDownload } from '@/api/request'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 /**
  * 审批未登记资产
@@ -71,7 +72,7 @@ export const useUnregisteredAssetStore = createEntityStore<UnregisteredAsset, Pa
     message: ElMessage,
     idToString: (code: unknown) => String(code),
     enablePagination: true,
-    defaultPageSize: 20,
+    defaultPageSize: DEFAULT_PAGE_SIZE,
     enableCache: false,
   },
 )

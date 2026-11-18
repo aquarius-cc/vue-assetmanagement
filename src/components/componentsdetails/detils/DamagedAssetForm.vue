@@ -211,6 +211,7 @@ import type { Storage } from '@/types/storage'
 import { useFormLinkage } from '@/composables/useFormLinkage'
 import ScrapableAssetsSearch from '@/components/componentsdetails/detils/detilschildcomponents/ScrapableAssetsSearch.vue'
 import { logError } from '@/utils/logger'
+import { DEFAULT_SUGGESTION_LIMIT } from '@/utils/pagination'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -303,7 +304,10 @@ const storageLinkage = useFormLinkage<Storage>({
   fetcher: async (q) => {
     // silent：autocomplete 不回写共享 store 列表态（M-05）
     return (
-      (await storageStore.getList({ search: q, page: 1, page_size: 20 }, { silent: true })) ?? []
+      (await storageStore.getList(
+        { search: q, page: 1, page_size: DEFAULT_SUGGESTION_LIMIT },
+        { silent: true },
+      )) ?? []
     )
   },
   getDisplayValue: (item) => String(item.storage_name ?? ''),

@@ -20,6 +20,7 @@ import type { AssetTypeBatchCreateResult } from '@/api/assetType'
 import type { AssetType, AssetTypeCreateForm, AssetTypeUpdateForm } from '@/types/assettype'
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 export type { AssetTypeBatchCreateResult } from '@/api/assetType'
 
@@ -47,7 +48,7 @@ export const useAssetTypeStore = createEntityStore<AssetType, PaginationQuery>('
   },
   message: ElMessage,
   enablePagination: true,
-  defaultPageSize: 20,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   enableCache: false,
 })
 

@@ -10,7 +10,10 @@
  * 安装 CSP 违规探针（幂等：重复调用不重复挂载）
  */
 export function installCspViolationProbe(): void {
-  if (typeof window === 'undefined' || (window as unknown as Record<string, unknown>).__cspProbeInstalled) {
+  if (
+    typeof window === 'undefined' ||
+    (window as unknown as Record<string, unknown>).__cspProbeInstalled
+  ) {
     return
   }
   ;(window as unknown as Record<string, unknown>).__cspProbeInstalled = true

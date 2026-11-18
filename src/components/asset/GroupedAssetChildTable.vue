@@ -121,6 +121,7 @@ import type { TableInstance } from 'element-plus'
 import { useContainerWidth } from '@/composables/useContainerWidth'
 import type { TableColumn } from '@/types/list'
 import type { AssetDetail } from '@/types/asset'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 interface Props {
   /** 当前页子明细（覆盖式写入后的当前页，非累积） */
@@ -142,7 +143,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  pageSize: 20,
+  pageSize: DEFAULT_PAGE_SIZE,
   loading: false,
   selectedKeys: () => [],
 })

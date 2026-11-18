@@ -145,6 +145,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { addPaymentRecord, deletePaymentRecord, approvePaymentRecord } from '@/stores/contractStore'
 import { PaymentStatus, type Contract, type PaymentRecord } from '@/types/contract'
 import { getErrorMessage } from '@/utils/errorHandler'
+import { formatPriceWithThousands as formatPrice } from '@/utils/Format'
 import {
   getPaymentStatusText,
   getPaymentStatusTagType,
@@ -209,12 +210,7 @@ const paymentPercentage = computed(() => {
 })
 
 // 方法
-const formatPrice = (value: number) => {
-  return (
-    value?.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'
-  )
-}
-
+// 【MA-21】本地 formatPrice 副本已下沉至 Format.ts(formatPriceWithThousands),组件内复用
 const formatPercentage = (percentage: number) => {
   return `${percentage.toFixed(1)}%`
 }

@@ -17,6 +17,7 @@ import type {
   NotificationFilterParams,
   NotificationPaginatedData,
 } from '@/types/notification'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 /**
  * 通知 Store
@@ -29,7 +30,7 @@ export const useNotificationStore = defineStore('notification', () => {
   /** 分页状态 */
   const pagination = reactive({
     page: 1,
-    page_size: 20,
+    page_size: DEFAULT_PAGE_SIZE,
     total: 0,
   })
 

@@ -13,6 +13,7 @@
 import { computed } from 'vue'
 import type { PaginationSearchConfig } from './usePaginationSearch'
 import type { PaginationQuery } from '@/stores/createEntityStore'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 /**
  * createEntityStore 的最小接口（仅声明 useSmartListConfig 所需的字段）
@@ -58,7 +59,7 @@ export function useSmartListConfig<T>(options: SmartListConfigOptions<T>) {
     store,
     entityName,
     customGetList,
-    defaultPageSize = 20,
+    defaultPageSize = DEFAULT_PAGE_SIZE,
     messages: msgOverrides,
     searchExtraParams,
   } = options

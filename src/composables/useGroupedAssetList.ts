@@ -78,7 +78,7 @@ export interface GroupedAssetListReturn {
  *   search,
  *   toggleExpand,
  *   toggleGroupSelection,
- * } = useGroupedAssetList({ pageSize: 20 })
+ * } = useGroupedAssetList({ pageSize: DEFAULT_PAGE_SIZE })
  * ```
  */
 export function useGroupedAssetList(options: GroupedAssetListOptions = {}): GroupedAssetListReturn {

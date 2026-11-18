@@ -24,6 +24,7 @@ import type { AssetDetail } from '@/types/asset'
 import { assetCurrentStatusMapping } from '@/utils/Format'
 import { useAssetSearchOptions } from '@/composables/useAssetSearchOptions'
 import { isGroupedFieldDropped } from '@/constants/assetGroupedFilters'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 /** 资产列表配置入参 */
 export interface AssetListConfigOptions {
@@ -169,7 +170,7 @@ export function useAssetListConfig(options: AssetListConfigOptions = {}) {
         }
       },
     },
-    defaultPageSize: 20,
+    defaultPageSize: DEFAULT_PAGE_SIZE,
     messages: {
       loadFailed: '加载资产列表失败',
       searchFailed: '搜索资产失败',

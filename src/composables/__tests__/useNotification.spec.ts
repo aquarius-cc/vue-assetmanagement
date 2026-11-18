@@ -24,6 +24,11 @@ vi.mock('@/utils/tokenObfuscator', () => ({
   decodeToken: mockToken.decodeToken,
 }))
 
+vi.mock('@/utils/logger', () => ({
+  logError: vi.fn(),
+  logWarn: vi.fn(),
+}))
+
 vi.mock('@/stores/auth', () => ({
   useAuthStore: () => mockStore,
 }))
@@ -203,6 +208,20 @@ describe('useNotification', () => {
 
     markAsRead(1)
     expect(unreadCount.value).toBe(0)
+  })
+
+  it('【MA-21】getUnreadCount 失败 → logError 留痕(不静默)', async () => {
+    const { logError } = await import('@/utils/logger')
+    ;(notificationAPI.getUnreadCount as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('network'),
+    )
+    const { fetchUnreadCount } = useNotification()
+    await fetchUnreadCount()
+    expect(logError).toHaveBeenCalledWith(
+      'composables/useNotification',
+      '获取未读数量失败',
+      expect.anything(),
+    )
   })
 
   it('should mark all as read', async () => {

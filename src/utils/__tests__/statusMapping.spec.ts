@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { logWarn } from '@/utils/logger'
 import {
   getStatusInfo,
   getAssetStatusTagType,
@@ -39,8 +40,15 @@ import {
   getNotificationPriorityTagType,
 } from '../statusMapping'
 
+// 【MA-20】mock logger,供 getStatusInfo 单点告警断言
+vi.mock('@/utils/logger', () => ({ logWarn: vi.fn() }))
+
 describe('statusMapping', () => {
   describe('getStatusInfo', () => {
+    beforeEach(() => {
+      vi.mocked(logWarn).mockClear()
+    })
+
     it('returns correct info for valid status', () => {
       const result = getStatusInfo('in_store', ASSET_STATUS_MAP)
       expect(result).toEqual({ label: '在库', type: 'success' })
@@ -49,6 +57,20 @@ describe('statusMapping', () => {
     it('returns default info for unknown status', () => {
       const result = getStatusInfo('unknown_status', ASSET_STATUS_MAP)
       expect(result).toEqual({ label: 'unknown_status', type: 'info' })
+    })
+
+    it('【MA-20】未知状态键单点告警(logWarn 调用一次,含键名)', () => {
+      getStatusInfo('unknown_status', ASSET_STATUS_MAP)
+      expect(logWarn).toHaveBeenCalledTimes(1)
+      expect(logWarn).toHaveBeenCalledWith(
+        'utils/statusMapping',
+        expect.stringContaining('unknown_status'),
+      )
+    })
+
+    it('【MA-20】合法状态键不告警', () => {
+      getStatusInfo('in_store', ASSET_STATUS_MAP)
+      expect(logWarn).not.toHaveBeenCalled()
     })
 
     it('returns default info for empty string', () => {

@@ -30,6 +30,7 @@ import type { Contract, ContractCreateForm, ContractUpdateForm } from '@/types/c
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import { ElMessage } from 'element-plus'
 import type { BlobDownload } from '@/api/request'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 export type { ContractBatchCreateResult, PaymentRecordResponse } from '@/api/contract'
 
@@ -64,7 +65,7 @@ export const useContractStore = createEntityStore<Contract, PaginationQuery>('co
   idToString: (id) => String(id),
   autoSync: true,
   enablePagination: true,
-  defaultPageSize: 20,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   enableCache: false,
   cacheTTL: 5 * 60 * 1000,
 })

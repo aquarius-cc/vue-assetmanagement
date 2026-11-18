@@ -17,6 +17,9 @@ export const MAX_PAGE_SIZE = 100
 /** 默认页容量（唯一事实源，M-20）。store 分页兜底必须引用此处，禁止写 10/20 字面量（DR-1） */
 export const DEFAULT_PAGE_SIZE = 20
 
+/** 下拉联想/模糊搜索条数上限（与分页页容量语义隔离，禁与 DEFAULT_PAGE_SIZE 混用）【MA-21】 */
+export const DEFAULT_SUGGESTION_LIMIT = 20
+
 /** [M-20] 页容量就近吸附归一化（M-23 逻辑唯一实现，DR-1）。 */
 export function normalizePageSize(
   raw: number,

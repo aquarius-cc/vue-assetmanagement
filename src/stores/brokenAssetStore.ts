@@ -19,6 +19,7 @@ import type {
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import type { BlobDownload } from '@/api/request'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 export const useBrokenAssetStore = createEntityStore<BrokenAssetExtended, PaginationQuery>(
   'brokenAsset',
@@ -46,7 +47,7 @@ export const useBrokenAssetStore = createEntityStore<BrokenAssetExtended, Pagina
     // 禁用工厂自动弹窗，避免「损坏资产删除成功」与调用方消息重复（与 recycle/damaged 对齐）
     disableAutoMessage: true,
     enablePagination: true,
-    defaultPageSize: 20,
+    defaultPageSize: DEFAULT_PAGE_SIZE,
     enableCache: false,
   },
 )

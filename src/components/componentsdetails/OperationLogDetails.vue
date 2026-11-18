@@ -175,6 +175,7 @@ import { operationTypeMapping, operationTypeTagMapping } from '@/types/operation
 import { useOperationLogStore } from '@/stores/operationLogStore'
 import { formatDateTimeFull } from '@/utils/Format'
 import type { SmartListContainerExpose } from '@/types/common'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 // ===== 状态与实例 =====
 const operationLogStore = useOperationLogStore()
@@ -358,7 +359,7 @@ const storeConfig = computed<PaginationSearchConfig<OperationLog>>(() => ({
       }
     },
   },
-  defaultPageSize: 20,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   messages: {
     loadFailed: '加载操作日志列表失败',
     searchFailed: '搜索操作日志失败',

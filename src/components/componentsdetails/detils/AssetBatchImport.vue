@@ -145,7 +145,11 @@ import { useBatchImport } from '@/composables/useBatchImport'
 import { useOperationGuard } from '@/composables/useOperationGuard'
 import { usePreviewPagination } from '@/composables/usePreviewPagination'
 import { validationTagType, validationTagText } from '@/utils/batchImportHelpers'
-import { applyFailedMapToRows, buildFailedMapByIndex, extract400Items } from '@/utils/batchImport/failedMap'
+import {
+  applyFailedMapToRows,
+  buildFailedMapByIndex,
+  extract400Items,
+} from '@/utils/batchImport/failedMap'
 import BatchImportGuideCard from '@/components/commoncomponents/BatchImportGuideCard.vue'
 import { useAssetStore } from '@/stores/assetStore'
 import { extractErrorMessage } from '@/utils/SubmitBatch'

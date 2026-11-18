@@ -113,6 +113,7 @@ import type { SmartListContainerExpose } from '@/types/common'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
 import { useServerExcelExport } from '@/composables/useServerExcelExport'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 const { exportFromServer } = useServerExcelExport()
 
 // ===== 状态与实例 =====
@@ -259,7 +260,7 @@ const storeConfig = computed<PaginationSearchConfig<DamagedAsset>>(() => ({
       }
     },
   },
-  defaultPageSize: 20,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   messages: {
     loadFailed: '加载待报废资产列表失败',
     searchFailed: '搜索待报废资产失败',

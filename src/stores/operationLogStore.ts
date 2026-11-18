@@ -14,6 +14,7 @@ import { createEntityStore, withPaginationDefaults } from '@/stores/createEntity
 import { operationLogAPI } from '@/api/operationLog'
 import type { OperationLog } from '@/types/operationlog'
 import type { PaginationQuery } from '@/stores/createEntityStore'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 /**
  * 操作日志 Store
@@ -52,7 +53,7 @@ export const useOperationLogStore = createEntityStore<OperationLog, PaginationQu
     disableAutoMessage: true,
     idToString: (pk: unknown) => String(pk),
     enablePagination: true,
-    defaultPageSize: 20,
+    defaultPageSize: DEFAULT_PAGE_SIZE,
     enableCache: false,
   },
 )

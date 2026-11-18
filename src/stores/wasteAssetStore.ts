@@ -17,6 +17,7 @@ import type { WasteAsset, WasteAssetCreateForm, WasteAssetUpdateForm } from '@/t
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import type { BlobDownload } from '@/api/request'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 /**
  * 报废资产 Store
@@ -44,7 +45,7 @@ export const useWasteAssetStore = createEntityStore<WasteAsset, PaginationQuery>
   message: ElMessage,
   idToString: (code) => String(code),
   enablePagination: true,
-  defaultPageSize: 20,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   enableCache: false,
 })
 

@@ -27,6 +27,8 @@
  *   - 无外部依赖
  */
 
+import { logWarn } from '@/utils/logger'
+
 // ===== 资产状态映射 =====
 export const ASSET_STATUS_MAP: Record<
   string,
@@ -208,6 +210,7 @@ export const ASSET_TYPE_MAP: Record<
 export function getStatusInfo(
   status: string,
   map: Record<string, { label: string; type: string }>,
+  warnOnUnknown = true,
 ): { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' } {
   const info = map[status]
   if (info) {
@@ -215,6 +218,10 @@ export function getStatusInfo(
       label: info.label,
       type: info.type as 'success' | 'warning' | 'danger' | 'info' | 'primary',
     }
+  }
+  // 【MA-20】单点告警: 直调函数绕过 StatusTag 告警点时仍留痕(默认开,StatusTag 传 false 防重复)
+  if (warnOnUnknown) {
+    logWarn('utils/statusMapping', `[statusMapping] 未知状态键 "${status}"`)
   }
   return { label: status || '未知', type: 'info' }
 }

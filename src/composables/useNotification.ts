@@ -23,6 +23,7 @@ import { useNotificationConnection } from '@/composables/useNotificationConnecti
 import type { NotificationItem } from '@/types/notification'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 // 重新导出类型，保持向后兼容
 export type { NotificationItem as Notification } from '@/types/notification'
@@ -142,7 +143,7 @@ export function useNotification() {
   // 置 fetchError）不得覆盖最新请求的结果或状态
   let listRequestSeq = 0
 
-  async function fetchNotifications(pageSize = 20) {
+  async function fetchNotifications(pageSize = DEFAULT_PAGE_SIZE) {
     const seq = ++listRequestSeq
     isLoading.value = true
     fetchError.value = false // [修复] 重置错误状态
@@ -172,8 +173,9 @@ export function useNotification() {
     try {
       const res = await notificationAPI.getUnreadCount()
       unreadCount.value = res.count
-    } catch {
-      // ignore
+    } catch (error) {
+      // 【MA-21】API 失败应留痕(非静默恢复路径);AxiosError 由拦截器提示,不二次弹窗
+      logError('composables/useNotification', '获取未读数量失败', error)
     }
   }
 

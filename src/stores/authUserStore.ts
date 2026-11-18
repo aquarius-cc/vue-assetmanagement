@@ -18,6 +18,7 @@ import { authUserAPI } from '@/api/authusers'
 import type { AuthUser, AuthUserCreateForm, BoundEmployee, UserRole } from '@/types/authuser'
 import type { Employee } from '@/types/user'
 import type { PaginationQuery, EntityStore } from '@/stores/createEntityStore'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 /**
  * 认证用户 Store 接口（含绑定/角色分配扩展方法）
@@ -104,7 +105,7 @@ const baseAuthUserStoreDef = createEntityStore<AuthUser, PaginationQuery>('authU
     delete: (id) => authUserAPI.deleteAuthUser(Number(id)) as Promise<void>,
   },
   enablePagination: true,
-  defaultPageSize: 20,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   enableCache: false,
 })
 

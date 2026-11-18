@@ -23,6 +23,7 @@ import type {
   UserRole,
 } from '@/types/authuser'
 import type { Employee } from '@/types/user'
+import { DEFAULT_SUGGESTION_LIMIT } from '@/utils/pagination'
 
 // 类型 re-export：保持 B 契约下组件可统一从 types/ 导入关联类型
 export type { BoundEmployee, UserRole }
@@ -116,7 +117,7 @@ export const authUserAPI = {
    * @returns 员工列表（search 端点 results 元素为 EmployeeSerializer 输出）
    */
   searchEmployees: async (keyword: string): Promise<Employee[]> => {
-    const response = await userAPI.getFuzzySearch({ keyword, page_size: 20 })
+    const response = await userAPI.getFuzzySearch({ keyword, page_size: DEFAULT_SUGGESTION_LIMIT })
     return response.results
   },
 }

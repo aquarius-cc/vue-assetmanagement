@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { withPaginationDefaults } from '../createEntityStore'
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/utils/pagination'
+import { DEFAULT_PAGE_SIZE, DEFAULT_SUGGESTION_LIMIT, PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 
 vi.mock('@/api/lostAsset', () => ({
   lostAssetAPI: {
@@ -46,6 +46,10 @@ describe('M-20 分页默认值单源', () => {
   it('DEFAULT_PAGE_SIZE === PAGE_SIZE_OPTIONS[0]（两常量不各自漂移）', () => {
     expect(DEFAULT_PAGE_SIZE).toBe(PAGE_SIZE_OPTIONS[0])
     expect(DEFAULT_PAGE_SIZE).toBe(20)
+  })
+
+  it('【MA-21】DEFAULT_SUGGESTION_LIMIT=20（联想条数上限,与分页页容量语义隔离:独立导出,任一调整不连带另一）', () => {
+    expect(DEFAULT_SUGGESTION_LIMIT).toBe(20)
   })
 
   it('工厂零参兜底锚：store.getList() → API 收 page_size: 20（工厂本已兜，防回退）', async () => {

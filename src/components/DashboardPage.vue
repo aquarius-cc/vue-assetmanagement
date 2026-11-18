@@ -139,8 +139,12 @@ import DashboardRecentList from '@/components/commoncomponents/DashboardRecentLi
 const DashboardStatusOverview = defineAsyncComponent(
   () => import('@/components/commoncomponents/DashboardStatusOverview.vue'),
 )
-const DashboardTrendSection = defineAsyncComponent(() => import('@/components/DashboardTrendSection.vue'))
-const DashboardDistributionSection = defineAsyncComponent(() => import('@/components/DashboardDistributionSection.vue'))
+const DashboardTrendSection = defineAsyncComponent(
+  () => import('@/components/DashboardTrendSection.vue'),
+)
+const DashboardDistributionSection = defineAsyncComponent(
+  () => import('@/components/DashboardDistributionSection.vue'),
+)
 import DashboardAlertsSection from '@/components/DashboardAlertsSection.vue'
 import { useDashboardPage } from '@/composables/useDashboardPage'
 

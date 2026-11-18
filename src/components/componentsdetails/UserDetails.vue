@@ -125,6 +125,7 @@ import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import { userDetailsColumns as columns } from './userDetails.columns'
 import { createUserExcelExport } from '@/composables/useUserExcelExport'
 import { useKeepAliveReload } from '@/composables/useKeepAliveReload'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -250,7 +251,7 @@ const storeConfig: PaginationSearchConfig<EmployeeExtended> = {
      */
     onSearchStateChange: (keyword: string) => setUserCurrentKeyword(keyword),
   },
-  defaultPageSize: 20,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   messages: {
     loadFailed: '加载用户列表失败',
     searchFailed: '搜索用户失败',

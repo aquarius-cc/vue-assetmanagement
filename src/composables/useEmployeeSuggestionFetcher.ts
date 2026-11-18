@@ -15,6 +15,7 @@ import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
 import { userAPI } from '@/api/user'
 import type { EmployeeExtended } from '@/types/user'
 import type { EmployeeAutocompleteItem } from '@/types/outasset'
+import { DEFAULT_SUGGESTION_LIMIT } from '@/utils/pagination'
 
 /**
  * 创建员工建议获取函数
@@ -23,7 +24,10 @@ import type { EmployeeAutocompleteItem } from '@/types/outasset'
 export function useEmployeeSuggestionFetcher() {
   return createSuggestionFetcher<EmployeeExtended, EmployeeAutocompleteItem>({
     fetchData: async (query: string) => {
-      const response = await userAPI.getFuzzySearch({ keyword: query, page_size: 20 })
+      const response = await userAPI.getFuzzySearch({
+        keyword: query,
+        page_size: DEFAULT_SUGGESTION_LIMIT,
+      })
       return response.results
     },
     filter: (employee: EmployeeExtended) => employee.employee_status === 'active',

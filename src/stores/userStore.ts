@@ -31,6 +31,7 @@ import type { PaginationQuery, EntityStore } from '@/stores/createEntityStore'
 import { EmployeeStatus } from '@/types/user'
 import { ElMessage } from 'element-plus'
 import type { EmployeeBatchCreateResult } from '@/api/user'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 export type { EmployeeBatchCreateResult } from '@/api/user'
 
@@ -227,7 +228,7 @@ const baseUserStoreDef = createEntityStore<EmployeeExtended, PaginationQuery>('u
   idToString: (id) => String(id),
   autoSync: true,
   enablePagination: true,
-  defaultPageSize: 20,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   enableCache: false,
   cacheTTL: 5 * 60 * 1000,
 })

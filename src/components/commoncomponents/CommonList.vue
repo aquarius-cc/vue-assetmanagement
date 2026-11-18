@@ -101,6 +101,7 @@ import CommonPagination from './CommonPagination.vue'
 import { useContainerWidth } from '@/composables/useContainerWidth'
 import type { TableColumn } from '@/types/list'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 interface Props {
   data: T[]
@@ -141,7 +142,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   currentPage: 1,
-  pageSize: 20,
+  pageSize: DEFAULT_PAGE_SIZE,
   total: 0,
   pageSizeOptions: () => [...PAGE_SIZE_OPTIONS],
   loading: false,

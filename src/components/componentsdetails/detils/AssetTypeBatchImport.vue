@@ -91,7 +91,11 @@ defineOptions({ name: 'AssetTypeBatchImport' })
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
-import { applyFailedMapToRows, buildFailedMapByIndex, extract400Items } from '@/utils/batchImport/failedMap'
+import {
+  applyFailedMapToRows,
+  buildFailedMapByIndex,
+  extract400Items,
+} from '@/utils/batchImport/failedMap'
 import { Upload } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useBatchImport } from '@/composables/useBatchImport'

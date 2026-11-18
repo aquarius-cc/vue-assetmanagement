@@ -20,6 +20,7 @@ import { permissionsAPI } from '@/api/permissions'
 import type { Role, RoleCreateUpdateForm, RoleListResponse } from '@/types/roles'
 import type { Permission } from '@/types/permission'
 import type { PaginationQuery, EntityStore } from '@/stores/createEntityStore'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 /**
  * 角色 Store 接口（含权限查询/配置扩展方法）
@@ -80,7 +81,7 @@ const baseRoleStoreDef = createEntityStore<Role, PaginationQuery>('role', {
     delete: (id) => roleAPI.deleteRole(Number(id)) as Promise<void>,
   },
   enablePagination: true,
-  defaultPageSize: 20,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   enableCache: false,
 })
 

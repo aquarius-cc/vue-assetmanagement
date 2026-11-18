@@ -25,6 +25,7 @@ import type {
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import type { BlobDownload } from '@/api/request'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 /**
  * 按资产编码查询硬盘序列号列表
@@ -85,7 +86,7 @@ export const useHardDiskSnStore = createEntityStore<HardDiskSN, PaginationQuery>
   message: ElMessage,
   idToString: (id: unknown) => String(id),
   enablePagination: true,
-  defaultPageSize: 20,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   enableCache: false,
 })
 

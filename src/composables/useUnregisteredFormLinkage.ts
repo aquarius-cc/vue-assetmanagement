@@ -10,6 +10,7 @@ import type { AssetType } from '@/types/assettype'
 import type { Storage } from '@/types/storage'
 import type { AssetTypeSuggestion } from '@/types/form-helpers'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
+import { DEFAULT_SUGGESTION_LIMIT } from '@/utils/pagination'
 
 /** 表单所需的最小字段类型（与组件内 FormDataType 一致） */
 export interface UnregisteredFormFields {
@@ -53,7 +54,7 @@ export function useUnregisteredFormLinkage(
     fetchData: async (query: string) => {
       // silent：autocomplete 不回写共享 store 列表态（M-05）
       const response = await assetTypeStore.getList(
-        { search: query, page: 1, page_size: 20 },
+        { search: query, page: 1, page_size: DEFAULT_SUGGESTION_LIMIT },
         { silent: true },
       )
       return response ?? []
@@ -117,7 +118,7 @@ export function useUnregisteredFormLinkage(
     fetchData: async (query: string) => {
       // silent：autocomplete 不回写共享 store 列表态（M-05）
       const response = await storageStore.getList(
-        { search: query, page: 1, page_size: 20 },
+        { search: query, page: 1, page_size: DEFAULT_SUGGESTION_LIMIT },
         { silent: true },
       )
       return response ?? []

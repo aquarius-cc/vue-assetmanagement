@@ -23,6 +23,7 @@ import type { Storage, StorageCreateForm, StorageUpdateForm } from '@/types/stor
 import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import type { StorageBatchCreateResult } from '@/api/storage'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 export type { StorageBatchCreateResult } from '@/api/storage'
 
@@ -64,6 +65,6 @@ export const useStorageStore = createEntityStore<Storage, PaginationQuery>('stor
   },
   message: ElMessage,
   enablePagination: true,
-  defaultPageSize: 20,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   enableCache: false,
 })

@@ -15,13 +15,14 @@ import { ref } from 'vue'
 import { auditLogAPI } from '@/api/auditLog'
 import type { AuditLog, AuditLogQueryParams, AuditLogListResponse } from '@/types/auditlog'
 import type { BlobDownload } from '@/api/request'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 export const useAuditLogStore = defineStore('auditLog', () => {
   // ===== 状态 =====
   const loading = ref(false)
   const tableData = ref<AuditLog[]>([])
   const currentPage = ref(1)
-  const pageSize = ref(20)
+  const pageSize = ref(DEFAULT_PAGE_SIZE)
   const total = ref(0)
 
   // ===== 筛选条件 =====

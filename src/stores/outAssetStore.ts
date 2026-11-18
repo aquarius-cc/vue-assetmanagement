@@ -21,6 +21,7 @@ import { ElMessage } from 'element-plus'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import type { OutAssetBatchCreateResult } from '@/api/outAsset'
 import type { BlobDownload } from '@/api/request'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 export type { OutAssetBatchCreateResult } from '@/api/outAsset'
 
@@ -62,7 +63,7 @@ export const useOutAssetStore = createEntityStore<OutAssetDetail, PaginationQuer
   },
   message: ElMessage,
   enablePagination: true,
-  defaultPageSize: 20,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   enableCache: false,
 })
 

@@ -14,6 +14,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { logError } from '@/utils/logger'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 export const useAppStore = defineStore('app', () => {
   // 应用状态
@@ -32,7 +33,7 @@ export const useAppStore = defineStore('app', () => {
   const settings = ref({
     showBreadcrumbs: true,
     autoSave: true,
-    pageSize: 20,
+    pageSize: DEFAULT_PAGE_SIZE,
     language: 'zh-CN',
   })
 
@@ -126,7 +127,7 @@ export const useAppStore = defineStore('app', () => {
     settings.value = {
       showBreadcrumbs: true,
       autoSave: true,
-      pageSize: 20,
+      pageSize: DEFAULT_PAGE_SIZE,
       language: 'zh-CN',
     }
 

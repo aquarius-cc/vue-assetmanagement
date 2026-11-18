@@ -38,6 +38,7 @@ import type { PaginationQuery, EntityStore } from '@/stores/createEntityStore'
 import type { AssetBatchCreateResult } from '@/api/asset'
 import type { Contract } from '@/types/contract'
 import type { BlobDownload } from '@/api/request'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 type StrictQueryParams = {
   page: number
@@ -167,7 +168,7 @@ const baseAssetStoreDef = createEntityStore<AssetDetail, PaginationQuery>('asset
   },
   message: ElMessage,
   enablePagination: true,
-  defaultPageSize: 20,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   enableCache: false,
   autoSync: true,
 })

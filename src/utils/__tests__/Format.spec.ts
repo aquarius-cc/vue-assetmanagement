@@ -630,4 +630,24 @@ describe('Format', () => {
       expect(toBusinessWeekday(new Date())).toBe('星期一')
     })
   })
+
+  describe('formatPriceWithThousands（【MA-21】千分位下沉）', () => {
+    it('千分位 + 两位小数', async () => {
+      const { formatPriceWithThousands } = await import('../Format')
+      expect(formatPriceWithThousands(1000)).toBe('1,000.00')
+      expect(formatPriceWithThousands(1234567.891)).toBe('1,234,567.89')
+    })
+
+    it('null/undefined/NaN → "0.00"', async () => {
+      const { formatPriceWithThousands } = await import('../Format')
+      expect(formatPriceWithThousands(null)).toBe('0.00')
+      expect(formatPriceWithThousands(undefined)).toBe('0.00')
+      expect(formatPriceWithThousands(Number.NaN)).toBe('0.00')
+    })
+
+    it('字符串数字输入等价数值输入', async () => {
+      const { formatPriceWithThousands } = await import('../Format')
+      expect(formatPriceWithThousands('1000')).toBe('1,000.00')
+    })
+  })
 })

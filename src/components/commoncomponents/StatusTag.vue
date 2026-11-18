@@ -70,7 +70,7 @@ const statusInfo = computed(() => {
     }
   }
 
-  return getStatusInfo(props.status, map)
+  return getStatusInfo(props.status, map, false) // 【MA-20】StatusTag 自带告警,传 false 防重复
 })
 
 const tagType = computed(() => statusInfo.value.type)

@@ -194,6 +194,13 @@ const formatPrice = (price: number | string | null | undefined): string => {
   return num.toFixed(2)
 }
 
+// 【MA-21】金额格式化: 千分位 + 两位小数(下沉自 ContractPaymentRecord.vue 本地副本,零行为变更)
+export const formatPriceWithThousands = (price: number | string | null | undefined): string => {
+  const num = typeof price === 'number' ? price : Number(price)
+  if (isNaN(num) || price === null || price === undefined) return '0.00'
+  return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 // 格式化数字为千分位（修复类型错误）
 const formatNumber = (num: number | string | null | undefined) => {
   // 处理空值情况
