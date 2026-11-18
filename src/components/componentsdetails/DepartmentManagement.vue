@@ -133,8 +133,18 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Sort } from '@element-plus/icons-vue'
-import { getDepartmentTree, moveDepartment, useDepartmentStore } from '@/stores/departmentStore'
-import type { Department, DepartmentTreeNode, MoveDepartmentParams } from '@/types/department'
+import {
+  getDepartmentTree,
+  moveDepartment,
+  sortDepartments,
+  useDepartmentStore,
+} from '@/stores/departmentStore'
+import type {
+  Department,
+  DepartmentSortItem,
+  DepartmentTreeNode,
+  MoveDepartmentParams,
+} from '@/types/department'
 
 // ==================== 组件导入 ====================
 import DepartmentTree from '@/components/componentsdetails/components/DepartmentTree.vue'
@@ -262,27 +272,42 @@ const handleDepartmentSelect = (department: Department) => {
   selectedDepartment.value = department
 }
 
+/** 排序批量上限（与后端 core.constants.MAX_BATCH_SIZE 对齐） */
+const SORT_BATCH_SIZE = 100
+
 /**
  * 处理部门移动（拖拽排序）
+ *
+ * 顺序：父级变更时先移动 → 再写入新父节点下的 sort_order → 统一刷新树。
+ * 仅同一父级内的前后调整不调用 moveDepartment（后端 move 对同父为无操作）。
+ *
  * @param data 移动参数
  */
 const handleDepartmentMove = async (data: {
   department_code: string
   parent_department_code: string | null
-  target_code?: string
+  parent_changed: boolean
+  sort_items: DepartmentSortItem[]
 }) => {
   try {
-    const params: MoveDepartmentParams = {
-      target_parent_department_code: data.parent_department_code,
+    if (data.parent_changed) {
+      const params: MoveDepartmentParams = {
+        target_parent_department_code: data.parent_department_code,
+      }
+      await moveDepartment(data.department_code, params)
     }
-    await moveDepartment(data.department_code, params)
+
+    const items = data.sort_items ?? []
+    for (let i = 0; i < items.length; i += SORT_BATCH_SIZE) {
+      await sortDepartments(items.slice(i, i + SORT_BATCH_SIZE))
+    }
+
     ElMessage.success('部门移动成功')
-    // 刷新树
-    await loadDepartmentTree()
   } catch (error) {
     logError('components/componentsdetails/DepartmentManagement', '部门移动失败:', error)
     ElMessage.error('部门移动失败')
-    // 恢复树状态
+  } finally {
+    // 无论成功失败都按服务端状态重建树
     await loadDepartmentTree()
   }
 }

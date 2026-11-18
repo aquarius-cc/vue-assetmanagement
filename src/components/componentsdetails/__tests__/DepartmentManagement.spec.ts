@@ -1,7 +1,7 @@
 /** [批次4 S9] DepartmentManagement 挂载覆盖（生成式浅挂载；行为断言随迭代加深） */
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('element-plus', () => ({
   ElMessage: { error: vi.fn(), success: vi.fn(), warning: vi.fn() },
   ElMessageBox: { confirm: vi.fn(() => Promise.resolve('confirm')) },
@@ -72,4 +72,111 @@ vi.mock('@/api/index', () => {
     operationLogAPI: apiStub(),
     harddiskSnAPI: apiStub(),
   }
+})
+
+/**
+ * BF-203：拖拽落点后需要持久化 sort_order。
+ * 仅同父前后调整时不得再调 moveDepartment（后端 move 对同父为无操作）。
+ */
+const { moveDepartmentMock, sortDepartmentsMock, getDepartmentTreeMock } = vi.hoisted(() => ({
+  moveDepartmentMock: vi.fn(() => Promise.resolve({})),
+  sortDepartmentsMock: vi.fn(() => Promise.resolve([])),
+  getDepartmentTreeMock: vi.fn(() => Promise.resolve([])),
+}))
+
+vi.mock('@/stores/departmentStore', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/stores/departmentStore')>()
+  return {
+    ...actual,
+    moveDepartment: moveDepartmentMock,
+    sortDepartments: sortDepartmentsMock,
+    getDepartmentTree: getDepartmentTreeMock,
+  }
+})
+
+const mountPage = () =>
+  mount(Component, {
+    global: {
+      plugins: [createPinia()],
+      stubs: {
+        DepartmentTree: { name: 'DepartmentTree', template: '<div />' },
+        DepartmentInfoCard: true,
+        DepartmentEmployeeList: true,
+        DepartmentFormDialog: true,
+        DepartmentBatchAddDialog: true,
+        'el-button': { template: '<button class="el-btn"><slot /></button>' },
+        'el-icon': { template: '<i><slot /></i>' },
+        'el-empty': true,
+      },
+    },
+  })
+
+const emitMove = async (payload: Record<string, unknown>) => {
+  const wrapper = mountPage()
+  const tree = wrapper.findComponent({ name: 'DepartmentTree' })
+  tree.vm.$emit('move', payload)
+  await flushPromises()
+  return { wrapper, tree }
+}
+
+const SORT_ITEMS = [
+  { department_code: 'D1', sort_order: 0 },
+  { department_code: 'D2', sort_order: 1 },
+]
+
+describe('DepartmentManagement · 拖拽落点持久化（BF-203）', () => {
+  beforeEach(() => {
+    moveDepartmentMock.mockClear()
+    sortDepartmentsMock.mockClear()
+    getDepartmentTreeMock.mockClear()
+  })
+
+  it('跨父移动：先 moveDepartment 再 sortDepartments，最后刷新树', async () => {
+    await emitMove({
+      department_code: 'D2',
+      parent_department_code: 'D1',
+      parent_changed: true,
+      sort_items: SORT_ITEMS,
+    })
+
+    expect(moveDepartmentMock).toHaveBeenCalledWith('D2', {
+      target_parent_department_code: 'D1',
+    })
+    expect(sortDepartmentsMock).toHaveBeenCalledWith(SORT_ITEMS)
+    expect(getDepartmentTreeMock).toHaveBeenCalled()
+    expect(moveDepartmentMock.mock.invocationCallOrder[0]).toBeLessThan(
+      sortDepartmentsMock.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('同一父级内前后调整：不调 moveDepartment，只写 sort_order', async () => {
+    await emitMove({
+      department_code: 'D2',
+      parent_department_code: null,
+      parent_changed: false,
+      sort_items: SORT_ITEMS,
+    })
+
+    expect(moveDepartmentMock).not.toHaveBeenCalled()
+    expect(sortDepartmentsMock).toHaveBeenCalledWith(SORT_ITEMS)
+    expect(getDepartmentTreeMock).toHaveBeenCalled()
+  })
+
+  it('排序项超过 100 条时分批提交', async () => {
+    const items = Array.from({ length: 150 }, (_, i) => ({
+      department_code: `D${i}`,
+      sort_order: i,
+    }))
+
+    await emitMove({
+      department_code: 'D0',
+      parent_department_code: null,
+      parent_changed: false,
+      sort_items: items,
+    })
+
+    expect(sortDepartmentsMock).toHaveBeenCalledTimes(2)
+    expect(sortDepartmentsMock.mock.calls[0][0]).toHaveLength(100)
+    expect(sortDepartmentsMock.mock.calls[1][0]).toHaveLength(50)
+  })
 })

@@ -80,9 +80,9 @@
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ArrowDown, ArrowUp, Folder, FolderOpened, Document } from '@element-plus/icons-vue'
-import type { DepartmentTreeNode } from '@/types/department'
+import type { DepartmentSortItem, DepartmentTreeNode } from '@/types/department'
 import type { DropType, ElTreeNode, ElTreeStore } from '@/types/form-helpers'
-import { getSubtreeHeight, isDepartmentInSubtree } from '@/utils/departmentTree'
+import { findDepartmentNode, getSubtreeHeight, isDepartmentInSubtree } from '@/utils/departmentTree'
 
 /** 部门最大层级（level 0 起，共 6 层；与后端 models.MAX_DEPARTMENT_LEVEL 对齐） */
 const MAX_DEPARTMENT_LEVEL = 5
@@ -112,7 +112,8 @@ const emit = defineEmits<{
     data: {
       department_code: string
       parent_department_code: string | null
-      target_code?: string
+      parent_changed: boolean
+      sort_items: DepartmentSortItem[]
     },
   ): void
   /** 需要刷新时触发 */
@@ -261,6 +262,54 @@ const allowDrop = (draggingNode: ElTreeNode, dropNode: ElTreeNode, type: DropTyp
   return true
 }
 
+/** 取指定上级（null 表示根层）下的兄弟节点列表 */
+const getSiblingsOf = (parentCode: string | null): DepartmentTreeNode[] => {
+  if (!parentCode) return props.data
+  return findDepartmentNode(props.data, parentCode)?.children ?? []
+}
+
+/**
+ * 计算落点后新父节点下的兄弟顺序
+ *
+ * 统一以 props.data 为准（el-tree 内部树在 drop 时可能已就地调整，避免时序依赖）：
+ * 先剔除被拖节点，再在剩余列表上定位落点下标，因而无需再做「原下标后移则 -1」修正。
+ *
+ * @param draggingData 被拖拽节点数据
+ * @param dropData 目标节点数据
+ * @param type 放置类型
+ * @param parentCode 落点后的新父节点编码
+ * @returns 新父节点下所有兄弟的排序项（sort_order 从 0 递增）
+ */
+const buildSortItems = (
+  draggingData: DepartmentTreeNode,
+  dropData: DepartmentTreeNode,
+  type: DropType,
+  parentCode: string | null,
+): DepartmentSortItem[] => {
+  const siblings = getSiblingsOf(parentCode).filter(
+    (node) => node.department_code !== draggingData.department_code,
+  )
+
+  let ordered: DepartmentTreeNode[]
+  if (type === 'inner') {
+    ordered = [...siblings, draggingData]
+  } else {
+    const targetIndex = siblings.findIndex(
+      (node) => node.department_code === dropData.department_code,
+    )
+    let insertAt = siblings.length
+    if (targetIndex >= 0) {
+      insertAt = type === 'before' ? targetIndex : targetIndex + 1
+    }
+    ordered = [...siblings.slice(0, insertAt), draggingData, ...siblings.slice(insertAt)]
+  }
+
+  return ordered.map((node, index) => ({
+    department_code: node.department_code,
+    sort_order: index,
+  }))
+}
+
 /**
  * 处理节点拖拽完成
  * @param draggingNode 被拖拽的节点
@@ -268,24 +317,21 @@ const allowDrop = (draggingNode: ElTreeNode, dropNode: ElTreeNode, type: DropTyp
  * @param dropType 放置类型
  */
 const handleNodeDrop = (draggingNode: ElTreeNode, dropNode: ElTreeNode, dropType: DropType) => {
+  lastWarnKey = ''
+
   const draggingData: DepartmentTreeNode = draggingNode.data
   const dropData: DepartmentTreeNode = dropNode.data
 
   // 计算新的父节点业务编码
-  let parentCode: string | null = null
-  if (dropType === 'inner') {
-    // 放入目标节点内部
-    parentCode = dropData.department_code
-  } else {
-    // 放在目标节点前后，父节点与目标节点相同
-    parentCode = dropData.parent_department_code
-  }
+  const parentCode =
+    dropType === 'inner' ? dropData.department_code : dropData.parent_department_code
 
-  // 触发移动事件
+  // 触发移动事件（含新父节点下的排序项，供调用方持久化 sort_order）
   emit('move', {
     department_code: draggingData.department_code,
     parent_department_code: parentCode,
-    target_code: dropData.department_code,
+    parent_changed: (draggingData.parent_department_code ?? null) !== parentCode,
+    sort_items: buildSortItems(draggingData, dropData, dropType, parentCode),
   })
 }
 /**

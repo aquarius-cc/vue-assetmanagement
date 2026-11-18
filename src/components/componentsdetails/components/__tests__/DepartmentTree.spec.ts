@@ -301,7 +301,7 @@ describe('DepartmentTree · 拖拽防环与层级校验（allowDrop）', () => {
 })
 
 describe('DepartmentTree · 拖拽落点（handleNodeDrop）', () => {
-  it('inner：新父节点 = 目标节点自身', () => {
+  it('inner：新父节点 = 目标节点自身，排序项追加到新父末尾', () => {
     const wrapper = mountTree()
     const dragging = { data: { ...TREE[1] } } as { data: TreeRow }
     const drop = { data: { ...TREE[0] } } as { data: TreeRow }
@@ -310,11 +310,19 @@ describe('DepartmentTree · 拖拽落点（handleNodeDrop）', () => {
 
     expect(wrapper.emitted('move')).toHaveLength(1)
     expect(wrapper.emitted('move')![0]).toEqual([
-      { department_code: 'D2', parent_department_code: 'D1', target_code: 'D1' },
+      {
+        department_code: 'D2',
+        parent_department_code: 'D1',
+        parent_changed: true,
+        sort_items: [
+          { department_code: 'D11', sort_order: 0 },
+          { department_code: 'D2', sort_order: 1 },
+        ],
+      },
     ])
   })
 
-  it('before/after：新父节点 = 目标节点的父节点', () => {
+  it('before：新父节点 = 目标节点的父节点，插入到目标之前', () => {
     const wrapper = mountTree()
     const dragging = { data: { ...TREE[1] } } as { data: TreeRow }
     const drop = { data: { ...TREE[0].children![0] } } as { data: TreeRow }
@@ -322,7 +330,56 @@ describe('DepartmentTree · 拖拽落点（handleNodeDrop）', () => {
     treeStub(wrapper).vm.$emit('node-drop', dragging, drop, 'before')
 
     expect(wrapper.emitted('move')![0]).toEqual([
-      { department_code: 'D2', parent_department_code: 'D1', target_code: 'D11' },
+      {
+        department_code: 'D2',
+        parent_department_code: 'D1',
+        parent_changed: true,
+        sort_items: [
+          { department_code: 'D2', sort_order: 0 },
+          { department_code: 'D11', sort_order: 1 },
+        ],
+      },
+    ])
+  })
+
+  it('after：拖到根层目标之后，插入到目标之后并重排整组根节点', () => {
+    const wrapper = mountTree()
+    const dragging = { data: { ...TREE[0].children![0] } } as { data: TreeRow }
+    const drop = { data: { ...TREE[1] } } as { data: TreeRow }
+
+    treeStub(wrapper).vm.$emit('node-drop', dragging, drop, 'after')
+
+    expect(wrapper.emitted('move')![0]).toEqual([
+      {
+        department_code: 'D11',
+        parent_department_code: null,
+        parent_changed: true,
+        sort_items: [
+          { department_code: 'D1', sort_order: 0 },
+          { department_code: 'D2', sort_order: 1 },
+          { department_code: 'D11', sort_order: 2 },
+        ],
+      },
+    ])
+  })
+
+  it('同一父级内前后调整：parent_changed=false 且只重排该父下兄弟', () => {
+    const wrapper = mountTree()
+    const dragging = { data: { ...TREE[1] } } as { data: TreeRow }
+    const drop = { data: { ...TREE[0] } } as { data: TreeRow }
+
+    treeStub(wrapper).vm.$emit('node-drop', dragging, drop, 'before')
+
+    expect(wrapper.emitted('move')![0]).toEqual([
+      {
+        department_code: 'D2',
+        parent_department_code: null,
+        parent_changed: false,
+        sort_items: [
+          { department_code: 'D2', sort_order: 0 },
+          { department_code: 'D1', sort_order: 1 },
+        ],
+      },
     ])
   })
 })
