@@ -1,5 +1,9 @@
 /**
- * 部门树通用工具函数（自 DepartmentFormDialog.vue 物理提取，零逻辑变更）
+ * 部门树通用工具函数
+ *
+ * 只保留「按编码查找」「子树编码集合 / 成员判定 / 子树高度」这几项无歧义语义；
+ * 早期按 parent 链判定的 isDescendant / isDescendantByCode 已删除（同名不同义、
+ * 且对深层子孙判定失效，改由 collectSubtreeCodes 一次性求子集，见 BF-202）。
  */
 import type { DepartmentTreeNode } from '@/types/department'
 
@@ -16,35 +20,6 @@ export const findDepartmentNode = (
     }
   }
   return null
-}
-
-/**
- * 判断节点是否是指定编码的子部门
- * @param node 节点
- * @param parentCode 父部门编码
- */
-export const isDescendant = (node: DepartmentTreeNode, parentCode: string): boolean => {
-  if (node.parent_department_code === parentCode) return true
-  if (node.children?.length) {
-    return node.children.some((child) => isDescendant(child, parentCode))
-  }
-  return false
-}
-
-/**
- * 判断指定编码的节点是否是另一个节点的子部门
- * @param code 要检查的编码
- * @param ancestorCode 祖先编码
- * @param tree 部门树
- */
-export const isDescendantByCode = (
-  code: string,
-  ancestorCode: string,
-  tree: DepartmentTreeNode[],
-): boolean => {
-  const node = findDepartmentNode(tree, code)
-  if (!node) return false
-  return isDescendant(node, ancestorCode)
 }
 
 /**

@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import type { DepartmentTreeNode } from '@/types/department'
-import { findDepartmentNode, isDescendant, isDescendantByCode } from '../departmentTree'
+import {
+  collectSubtreeCodes,
+  findDepartmentNode,
+  getSubtreeHeight,
+  isDepartmentInSubtree,
+} from '../departmentTree'
 
 function node(
   code: string,
@@ -76,44 +81,52 @@ describe('findDepartmentNode', () => {
   })
 })
 
-describe('isDescendant', () => {
-  it('节点自身父编码匹配返回 true', () => {
-    expect(isDescendant(d1_1, 'D1')).toBe(true)
+/** 四层链：L0 → L1 → L2 → L3 */
+const deep = node('L0', null, [node('L1', 'L0', [node('L2', 'L1', [node('L3', 'L2')])])])
+
+describe('collectSubtreeCodes', () => {
+  it('返回自身 + 全部后代编码（前序深度优先）', () => {
+    expect(collectSubtreeCodes(rootNode)).toEqual(['ROOT', 'D1-1', 'D1-1-1', 'D1-2'])
   })
 
-  it('子节点中的某个父编码匹配返回 true', () => {
-    const parentX = node('PX', 'ROOT', [node('CX', 'PX')])
-    expect(isDescendant(parentX, 'PX')).toBe(true)
+  it('四层链全部收集', () => {
+    expect(collectSubtreeCodes(deep)).toEqual(['L0', 'L1', 'L2', 'L3'])
   })
 
-  it('子节点中的深层节点递归返回 true', () => {
-    expect(isDescendant(rootNode, 'D1-1')).toBe(true)
-  })
-
-  it('深层节点非目标后代时返回 false', () => {
-    expect(isDescendant(rootNode, 'D1-1-1')).toBe(false)
-  })
-
-  it('子节点均不匹配返回 false', () => {
-    expect(isDescendant(rootNode, 'Z')).toBe(false)
-  })
-
-  it('无子节点且父编码不匹配返回 false', () => {
-    expect(isDescendant(d1_2, 'Z')).toBe(false)
-    expect(isDescendant(d1_2, 'D1')).toBe(true)
+  it('叶子返回自身编码', () => {
+    expect(collectSubtreeCodes(d1_2)).toEqual(['D1-2'])
   })
 })
 
-describe('isDescendantByCode', () => {
-  it('编码不存在时返回 false', () => {
-    expect(isDescendantByCode('NOPE', 'ROOT', tree)).toBe(false)
+describe('isDepartmentInSubtree', () => {
+  it('自身命中', () => {
+    expect(isDepartmentInSubtree(rootNode, 'ROOT')).toBe(true)
   })
 
-  it('编码节点为指定祖先的后代时返回 true', () => {
-    expect(isDescendantByCode('D1-1', 'D1', tree)).toBe(true)
+  it('三级后代命中', () => {
+    expect(isDepartmentInSubtree(rootNode, 'D1-1-1')).toBe(true)
   })
 
-  it('编码节点不是指定祖先的后代时返回 false', () => {
-    expect(isDescendantByCode('D1-1', 'ROOT', tree)).toBe(false)
+  it('兄弟节点与无关编码不命中', () => {
+    expect(isDepartmentInSubtree(d1_1, 'D1-2')).toBe(false)
+    expect(isDepartmentInSubtree(rootNode, 'NOPE')).toBe(false)
+  })
+})
+
+describe('getSubtreeHeight', () => {
+  it('叶子高度为 0', () => {
+    expect(getSubtreeHeight(d1_2)).toBe(0)
+  })
+
+  it('两层子树高度为 1', () => {
+    expect(getSubtreeHeight(d1_1)).toBe(1)
+  })
+
+  it('三层子树高度为 2', () => {
+    expect(getSubtreeHeight(rootNode)).toBe(2)
+  })
+
+  it('四层链高度为 3', () => {
+    expect(getSubtreeHeight(deep)).toBe(3)
   })
 })

@@ -121,7 +121,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { moveDepartment, useDepartmentStore } from '@/stores/departmentStore'
 import type { Department, DepartmentCreateForm, DepartmentTreeNode } from '@/types/department'
 import { departmentFormStaticRules } from './departmentFormDialogRules'
-import { isDescendant, isDescendantByCode } from '@/utils/departmentTree'
+import { collectSubtreeCodes, findDepartmentNode } from '@/utils/departmentTree'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
 
@@ -205,6 +205,18 @@ const dialogTitle = computed(() => {
 })
 
 /**
+ * 编辑模式下禁止选择为上级部门的编码集合（自己 + 全部子孙）
+ *
+ * 一次性求子树编码集合，避免逐节点按 parent 链判定时只命中直系子（BF-202）。
+ */
+const disabledDepartmentCodes = computed<Set<string>>(() => {
+  const editCode = props.editDepartment?.department_code
+  if (!isEdit.value || !editCode) return new Set<string>()
+  const editNode = findDepartmentNode(props.departmentTree ?? [], editCode)
+  return new Set(editNode ? collectSubtreeCodes(editNode) : [editCode])
+})
+
+/**
  * 部门树选项（用于上级部门选择）
  * 编辑模式下，需要禁用自己及其子部门（不能选择自己或子部门作为上级）
  */
@@ -215,13 +227,9 @@ const departmentTreeOptions = computed(() => {
   const processNode = (node: DepartmentTreeNode): DepartmentTreeNode & { disabled?: boolean } => {
     const newNode: DepartmentTreeNode & { disabled?: boolean } = { ...node }
 
-    // 编辑模式下，禁用自己和子部门
-    if (isEdit.value && props.editDepartment) {
-      const editCode = props.editDepartment.department_code
-      // 如果是自己或自己的子部门，禁用
-      if (node.department_code === editCode || isDescendant(node, editCode)) {
-        newNode.disabled = true
-      }
+    // 编辑模式下，禁用自己和全部子孙部门
+    if (disabledDepartmentCodes.value.has(node.department_code)) {
+      newNode.disabled = true
     }
 
     // 递归处理子节点
@@ -278,8 +286,8 @@ const validateParentCode = (
       callback(new Error('不能选择自己作为上级部门'))
       return
     }
-    // 检查是否选择了子部门
-    if (isDescendantByCode(value, editCode, props.departmentTree)) {
+    // 检查是否选择了子部门（含孙及更深）
+    if (disabledDepartmentCodes.value.has(value)) {
       callback(new Error('不能选择子部门作为上级部门'))
       return
     }
