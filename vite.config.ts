@@ -14,7 +14,6 @@ import { visualizer } from 'rollup-plugin-visualizer'
 import compression from 'vite-plugin-compression'
 
 // [BF-087] dev 代理错误降噪（[PATCH-FE] customLogger 日志层过滤）
-// AI_REVIEW_NEEDED: vite proxy error 过滤判据（AR-2①）
 // 根因：Vite 代理错误日志点硬编码 config.logger.error(...err.stack)（vite 8.2.2
 // dist/node/chunks/node.js:19212 http proxy error / :19218 ws proxy error /
 // :19228 ws proxy socket error / :19254 ws proxy bypass error），无静默开关；
