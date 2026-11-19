@@ -1,7 +1,7 @@
 /** [批次4 S9] DepartmentFormDialog 挂载覆盖（生成式浅挂载；行为断言随迭代加深） */
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Department, DepartmentTreeNode } from '@/types/department'
 vi.mock('element-plus', () => ({
   ElMessage: { error: vi.fn(), success: vi.fn(), warning: vi.fn() },
@@ -166,5 +166,103 @@ describe('DepartmentFormDialog · 编辑模式上级部门禁用（BF-202）', (
     const accept = vi.fn()
     validator(null, 'S1', accept)
     expect(accept).toHaveBeenCalledWith()
+  })
+})
+
+// ==================== BF-204：改父/新增省略 sort_order + 输入框禁用 ====================
+const { mockCreate, mockUpdate, mockMove } = vi.hoisted(() => ({
+  mockCreate: vi.fn(() => Promise.resolve({ code: 200 })),
+  mockUpdate: vi.fn(() => Promise.resolve({ code: 200 })),
+  mockMove: vi.fn(() => Promise.resolve({})),
+}))
+
+vi.mock('@/stores/departmentStore', () => ({
+  moveDepartment: mockMove,
+  useDepartmentStore: () => ({ create: mockCreate, update: mockUpdate }),
+}))
+
+const ValidatableFormStub = {
+  name: 'ElForm',
+  props: ['model', 'rules'],
+  methods: { validate: () => Promise.resolve(true) },
+  template: '<form><slot /></form>',
+}
+
+const InputNumberStub = {
+  name: 'ElInputNumber',
+  props: ['modelValue', 'disabled'],
+  template: '<div />',
+}
+
+const mountForSubmit = (type: 'edit' | 'create') =>
+  mount(Component, {
+    props: {
+      visible: true,
+      type,
+      editDepartment: type === 'edit' ? (L0 as unknown as Department) : undefined,
+      departmentTree: TREE,
+    },
+    global: {
+      plugins: [createPinia()],
+      stubs: {
+        'el-dialog': { template: '<div><slot /><slot name="footer" /></div>' },
+        'el-form': ValidatableFormStub,
+        'el-form-item': { template: '<div><slot /></div>' },
+        'el-input': { template: '<div />' },
+        'el-input-number': InputNumberStub,
+        'el-tree-select': TreeSelectStub,
+        'el-button': { template: '<button><slot /></button>' },
+      },
+    },
+  })
+
+const submit = async (wrapper: ReturnType<typeof mountForSubmit>) => {
+  await wrapper.findAll('button')[1].trigger('click')
+  await Promise.resolve()
+}
+
+describe('DepartmentFormDialog · sort_order 载荷与禁用（BF-204）', () => {
+  beforeEach(() => {
+    mockCreate.mockClear()
+    mockUpdate.mockClear()
+    mockMove.mockClear()
+  })
+
+  it('编辑改父：move 后 update 载荷省略 sort_order', async () => {
+    const wrapper = mountForSubmit('edit')
+    wrapper.findComponent({ name: 'ElTreeSelect' }).vm.$emit('update:modelValue', 'S1')
+    await submit(wrapper)
+
+    expect(mockMove).toHaveBeenCalledWith('L0', { target_parent_department_code: 'S1' })
+    expect(mockUpdate).toHaveBeenCalledTimes(1)
+    const payload = mockUpdate.mock.calls[0][0] as Record<string, unknown>
+    expect(payload.sort_order).toBeUndefined()
+  })
+
+  it('编辑未改父：update 载荷保留手填 sort_order，且不调 move', async () => {
+    const wrapper = mountForSubmit('edit')
+    await submit(wrapper)
+
+    expect(mockMove).not.toHaveBeenCalled()
+    expect(mockUpdate).toHaveBeenCalledTimes(1)
+    const payload = mockUpdate.mock.calls[0][0] as Record<string, unknown>
+    expect(payload.sort_order).toBe(0)
+  })
+
+  it('新增：create 载荷 sort_order 为 undefined（由后端自动排组尾）', async () => {
+    const wrapper = mountForSubmit('create')
+    await submit(wrapper)
+
+    expect(mockCreate).toHaveBeenCalledTimes(1)
+    const payload = mockCreate.mock.calls[0][0] as Record<string, unknown>
+    expect(payload.sort_order).toBeUndefined()
+  })
+
+  it('sort_order 输入框：新增模式禁用，编辑未改父可用', () => {
+    const createWrapper = mountForSubmit('create')
+    expect(createWrapper.findComponent({ name: 'ElInputNumber' }).props('disabled')).toBe(true)
+
+    const editWrapper = mountForSubmit('edit')
+    expect(editWrapper.findComponent({ name: 'ElInputNumber' }).props('disabled')).toBe(false)
   })
 })

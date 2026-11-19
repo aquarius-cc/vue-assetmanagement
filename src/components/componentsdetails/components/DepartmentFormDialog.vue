@@ -80,10 +80,17 @@
           :min="0"
           :max="9999"
           :step="1"
+          :disabled="sortOrderDisabled"
           controls-position="right"
           style="width: 100%"
         />
-        <div class="form-tip">数值越小排序越靠前</div>
+        <div class="form-tip">
+          {{
+            sortOrderDisabled
+              ? '改父/新增后自动排到末尾，位置调整请用排序模式拖拽'
+              : '数值越小排序越靠前'
+          }}
+        </div>
       </el-form-item>
     </el-form>
 
@@ -203,6 +210,16 @@ const dialogTitle = computed(() => {
   if (props.parentDepartment) return `新增子部门（${props.parentDepartment.department_name}）`
   return '新增根部门'
 })
+
+/**
+ * sort_order 是否禁用（BF-204）
+ * 新增模式或编辑改父时，序号由后端自动排到目标组末尾，禁止手填
+ */
+const sortOrderDisabled = computed(
+  () =>
+    !isEdit.value ||
+    props.editDepartment?.parent_department_code !== formData.value.parent_department_code,
+)
 
 /**
  * 编辑模式下禁止选择为上级部门的编码集合（自己 + 全部子孙）
@@ -427,17 +444,17 @@ const handleSubmit = async () => {
         })
       }
 
-      // 更新其他信息
+      // 更新其他信息（BF-204：改父后序号由后端自动排到新组末尾，省略 sort_order）
       await departmentStore.update({
         department_code: formData.value.department_code,
         department_name: formData.value.department_name,
         department_information: formData.value.department_information,
-        sort_order: formData.value.sort_order,
+        ...(parentChanged ? {} : { sort_order: formData.value.sort_order }),
       })
       ElMessage.success('部门更新成功')
     } else {
-      // 新增部门
-      await departmentStore.create(formData.value)
+      // 新增部门（BF-204：序号由后端自动排到组尾，省略 sort_order）
+      await departmentStore.create({ ...formData.value, sort_order: undefined })
       ElMessage.success('部门创建成功')
     }
 

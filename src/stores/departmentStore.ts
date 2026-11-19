@@ -62,8 +62,8 @@ const ensureDepartmentCreateForm = (data: Partial<Department>): DepartmentCreate
     department_code: data.department_code!.trim(),
     department_name: data.department_name!.trim(),
     department_information: data.department_information!.trim(),
-    // 排序顺序：可选字段，未填时默认传 0（与后端默认值一致）
-    sort_order: data.sort_order ?? 0,
+    // 排序顺序：可选字段，有值则透传，无值则不传（BF-204：后端自动排到组尾）
+    ...(data.sort_order !== undefined && { sort_order: data.sort_order }),
     // 父部门编码：可选字段，有值则透传（维持新增子部门行为）
     ...(data.parent_department_code !== undefined && {
       parent_department_code: data.parent_department_code,

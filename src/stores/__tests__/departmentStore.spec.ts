@@ -207,7 +207,7 @@ describe('DepartmentStore', () => {
   })
 
   describe('创建记录扩展', () => {
-    it('sort_order未传时默认为0', async () => {
+    it('sort_order未传时省略该字段（BF-204：后端自动排到组尾）', async () => {
       const { departmentAPI } = await import('@/api/department')
       vi.mocked(departmentAPI.createDepartment).mockResolvedValue({
         department_code: 'DEP001',
@@ -221,11 +221,11 @@ describe('DepartmentStore', () => {
         department_information: '负责技术开发',
       })
 
-      expect(departmentAPI.createDepartment).toHaveBeenCalledWith(
-        expect.objectContaining({
-          sort_order: 0,
-        }),
-      )
+      expect(departmentAPI.createDepartment).toHaveBeenCalledWith({
+        department_code: 'DEP001',
+        department_name: '技术部',
+        department_information: '负责技术开发',
+      })
     })
 
     it('sort_order有值时应透传', async () => {
