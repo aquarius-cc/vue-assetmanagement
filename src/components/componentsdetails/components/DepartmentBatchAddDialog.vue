@@ -66,6 +66,7 @@
             size="small"
             :disabled="submitting"
             controls-position="right"
+            placeholder="留空自动排末尾"
           />
         </template>
       </el-table-column>
@@ -116,6 +117,7 @@ import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { notifyCallerError } from '@/utils/errorHandler'
 import { batchCreateDepartments } from '@/stores/departmentStore'
+import { buildBatchCreateItems } from '@/utils/departmentBatch'
 import type { Department, DepartmentCreateForm } from '@/types/department'
 import type { DepartmentBatchCreateResult } from '@/stores/departmentStore'
 
@@ -141,14 +143,14 @@ interface FormItem {
   department_code: string
   department_name: string
   department_information: string
-  sort_order: number
+  sort_order: number | null
 }
 
 const createEmptyRow = (): FormItem => ({
   department_code: '',
   department_name: '',
   department_information: '',
-  sort_order: 0,
+  sort_order: null,
 })
 
 const formItems = ref<FormItem[]>([createEmptyRow()])
@@ -191,13 +193,10 @@ const handleSubmit = async () => {
   submitResult.value = null
 
   try {
-    const items: DepartmentCreateForm[] = validItems.map((item) => ({
-      department_code: item.department_code.trim(),
-      department_name: item.department_name.trim(),
-      department_information: item.department_information.trim() || '-',
-      parent_department_code: props.parentDepartment!.department_code,
-      sort_order: item.sort_order ?? 0,
-    }))
+    const items: DepartmentCreateForm[] = buildBatchCreateItems(
+      validItems,
+      props.parentDepartment!.department_code,
+    )
 
     const result = await batchCreateDepartments(items)
     submitResult.value = result

@@ -33,7 +33,7 @@ export interface DepartmentCreateForm {
   department_name: string
   /** 部门信息员 */
   department_information: string
-  /** 排序顺序 (可选，不填时后端默认为 0，值越小越靠前) */
+  /** 排序顺序 (可选，留空自动排到组末尾，值越小越靠前) */
   sort_order?: number
   /** 上级部门业务编码 (可选，null 表示根部门) */
   parent_department_code?: string | null
