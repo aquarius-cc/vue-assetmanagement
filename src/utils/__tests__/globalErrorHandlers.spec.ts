@@ -4,7 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, h, type App } from 'vue'
 
-import { registerGlobalErrorHandlers } from '../globalErrorHandlers'
+import { cleanupGlobalErrorHandlers, registerGlobalErrorHandlers } from '../globalErrorHandlers'
 import { logError } from '../logger'
 
 vi.mock('../logger', () => ({ logError: vi.fn() }))
@@ -27,6 +27,7 @@ describe('globalErrorHandlers', () => {
   })
 
   afterEach(() => {
+    cleanupGlobalErrorHandlers()
     vi.restoreAllMocks()
   })
 
@@ -61,5 +62,28 @@ describe('globalErrorHandlers', () => {
     expect(logError).toHaveBeenCalledTimes(1)
     app1.unmount()
     app2.unmount()
+  })
+
+  it('[M-HYG-01] cleanup 后 unhandledrejection 不再记录；再次 register 恢复记录', () => {
+    createRegisteredApp()
+    cleanupGlobalErrorHandlers()
+
+    window.dispatchEvent(createUnhandledRejection(new Error('after-cleanup')))
+    expect(logError).not.toHaveBeenCalled()
+
+    createRegisteredApp()
+    window.dispatchEvent(createUnhandledRejection(new Error('after-restore')))
+    expect(logError).toHaveBeenCalledTimes(1)
+    expect(logError).toHaveBeenCalledWith(
+      'window',
+      'unhandled promise rejection',
+      expect.any(Error),
+    )
+  })
+
+  it('[M-HYG-01] cleanup 幂等：未注册时调用不报错', () => {
+    cleanupGlobalErrorHandlers()
+    cleanupGlobalErrorHandlers()
+    expect(logError).not.toHaveBeenCalled()
   })
 })

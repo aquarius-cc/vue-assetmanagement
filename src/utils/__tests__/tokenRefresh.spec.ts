@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { refreshAccessToken, RefreshSessionError, MissingRefreshTokenError } from '../tokenRefresh'
+import {
+  refreshAccessToken,
+  cleanupTokenRefreshBroadcastChannel,
+  RefreshSessionError,
+  MissingRefreshTokenError,
+} from '../tokenRefresh'
 
 const axiosPost = vi.hoisted(() => vi.fn())
 const tokenObfuscator = vi.hoisted(() => ({
@@ -44,6 +49,7 @@ class MockBroadcastChannel {
   static instances: MockBroadcastChannel[] = []
   listeners: Array<(event: MessageEvent) => void> = []
   postMessage = vi.fn()
+  close = vi.fn()
   name: string
 
   constructor(name: string) {
@@ -55,7 +61,9 @@ class MockBroadcastChannel {
     this.listeners.push(fn)
   }
 
-  close() {}
+  removeEventListener(_type: string, fn: (event: MessageEvent) => void) {
+    this.listeners = this.listeners.filter((l) => l !== fn)
+  }
 }
 
 describe('refreshAccessToken - no BroadcastChannel support', () => {
@@ -82,12 +90,14 @@ describe('refreshAccessToken - BroadcastChannel sync', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     MockBroadcastChannel.instances.length = 0
+    cleanupTokenRefreshBroadcastChannel() // 复位模块级单例，保证每个用例从新通道开始
     vi.stubGlobal('BroadcastChannel', MockBroadcastChannel)
     tokenObfuscator.decodeToken.mockReturnValue('refresh-token')
     csrf.getCsrfToken.mockReturnValue('csrf-token')
   })
 
   afterEach(() => {
+    cleanupTokenRefreshBroadcastChannel()
     vi.unstubAllGlobals()
   })
 
@@ -131,6 +141,36 @@ describe('refreshAccessToken - BroadcastChannel sync', () => {
     expect(tokenObfuscator.encodeToken).toHaveBeenCalledWith('access_token', 'mem-bearer2')
     expect(tokenObfuscator.encodeToken).toHaveBeenCalledWith('refresh_token', 'r2')
     expect(tokenObfuscator.encodeToken).not.toHaveBeenCalledWith('refresh_token', 'mem-bearer')
+  })
+
+  it('[M-HYG-01] cleanup 关闭广播通道；后续 refresh 按需重建', async () => {
+    axiosPost.mockResolvedValueOnce(okResponse('pre-cleanup'))
+    await refreshAccessToken('bearer')
+    expect(MockBroadcastChannel.instances).toHaveLength(1)
+    const channel = MockBroadcastChannel.instances[0]
+    const listenerCountBefore = channel.listeners.length
+    expect(listenerCountBefore).toBeGreaterThan(0)
+
+    cleanupTokenRefreshBroadcastChannel()
+    expect(channel.close).toHaveBeenCalled()
+    expect(channel.listeners).toHaveLength(0)
+
+    // 重建：cleanup 后下一次刷新按需 new BroadcastChannel
+    axiosPost.mockResolvedValueOnce(okResponse('post-cleanup'))
+    await refreshAccessToken('bearer')
+    expect(MockBroadcastChannel.instances).toHaveLength(2)
+    expect(MockBroadcastChannel.instances[1].listeners.length).toBeGreaterThan(0)
+  })
+
+  it('[M-HYG-01] cleanup 不影响在途单飞刷新（refreshPromise 不被清理）', async () => {
+    axiosPost.mockResolvedValue(okResponse('in-flight'))
+    const p1 = refreshAccessToken('bearer')
+    const p2 = refreshAccessToken('bearer')
+    cleanupTokenRefreshBroadcastChannel()
+    const [a, b] = await Promise.all([p1, p2])
+    expect(a).toBe('in-flight')
+    expect(b).toBe('in-flight')
+    expect(axiosPost).toHaveBeenCalledTimes(1)
   })
 })
 

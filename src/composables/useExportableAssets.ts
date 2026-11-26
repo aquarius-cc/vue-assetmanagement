@@ -14,13 +14,14 @@ import { assetAPI } from '@/api/asset'
 import type { AssetSimpleReturn, AssetListSimpleResponse } from '@/types/asset'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 export function useExportableAssets() {
   const list = ref<AssetSimpleReturn[]>([])
   const loading = ref(false)
   const total = ref(0)
   const currentPage = ref(1)
-  const pageSize = ref(10)
+  const pageSize = ref(DEFAULT_PAGE_SIZE)
 
   let lastParams: Record<string, string | number> = {}
 

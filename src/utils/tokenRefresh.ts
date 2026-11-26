@@ -43,12 +43,13 @@ const AUTH_BROADCAST_CHANNEL = 'asset_auth_tokens'
 
 let refreshPromise: Promise<string> | null = null
 let broadcastChannel: BroadcastChannel | null = null
+let broadcastMessageListener: ((event: MessageEvent) => void) | null = null
 
 function getBroadcastChannel(): BroadcastChannel | null {
   if (typeof BroadcastChannel === 'undefined') return null
   if (broadcastChannel) return broadcastChannel
   broadcastChannel = new BroadcastChannel(AUTH_BROADCAST_CHANNEL)
-  broadcastChannel.addEventListener('message', (event: MessageEvent) => {
+  broadcastMessageListener = (event: MessageEvent) => {
     const msg = event.data
     if (!msg || msg.type !== 'access') return
     if (typeof msg.access !== 'string' || !msg.access) return
@@ -59,8 +60,19 @@ function getBroadcastChannel(): BroadcastChannel | null {
         encodeToken('refresh_token', msg.refresh)
       }
     }
-  })
+  }
+  broadcastChannel.addEventListener('message', broadcastMessageListener)
   return broadcastChannel
+}
+
+/** 关闭跨标签页广播通道；下次 getBroadcastChannel 会按需重建（不动 refreshPromise 单飞语义） */
+export function cleanupTokenRefreshBroadcastChannel(): void {
+  if (broadcastChannel && broadcastMessageListener) {
+    broadcastChannel.removeEventListener('message', broadcastMessageListener)
+    broadcastChannel.close()
+  }
+  broadcastChannel = null
+  broadcastMessageListener = null
 }
 
 function broadcastNewToken(channel: AuthChannel, access: string): void {

@@ -253,25 +253,6 @@ const contractiInfoFormate = (
   return formattedData
 }
 
-// const typeCasting = (data: string) => {
-//   const result = ref('')
-//   if (data === 'purchase') result.value = '采购合同'
-//   else if (data === 'service') result.value = '服务合同'
-//   else if (data === 'information_construction') result.value = '信息化建设合同
-//   else if (data === 'direct_procurement') result.value = '直接采购合同'
-//   else if (data === 'pending') result.value = '待结算
-//   else if (data === 'settled') result.value = '已结算
-//   else result.value = '未知类型'
-//   return result
-// }
-
-// const assetAppearanceMapping: Record<string, string> = {
-//   newly: '新增资产',
-//   used: '已用资产',
-//   damaged: '待报废资人,
-//   waste: '已报废资人,
-// }
-
 // 资产当前状态映射（单一来源：statusMapping.ASSET_STATUS_MAP，DR-1/DR-2 消除重复字面量定义）
 const assetCurrentStatusMapping: Record<string, string> = Object.fromEntries(
   Object.entries(ASSET_STATUS_MAP).map(([status, info]) => [status, info.label]),
@@ -287,15 +268,6 @@ export function getAssetStatusText(status?: string | null): string {
   if (!status) return '未知'
   return getAssetStatusTextFromStatusMapping(status)
 }
-
-// // 资产使用状态映射// const assetUsingStatusMapping: Record<string, string> = {
-//   idle: '闲置',
-//   in_use: '在用',
-//   under_maintenance: '维修中',
-//   out_of_service: '停用',
-//   allocated: '已分配',
-//   pending_allocation: '待分配',
-// }
 
 const contractTypeMapping: Record<string, string> = {
   tender_procurement: '招标采购合同',
@@ -444,21 +416,6 @@ const outassetTypeMapping: Record<string, string> = {
   borrow: '借用',
   reissue: '重新发放',
 }
-// 创建反向映射，将中文状态值转换为英文状态候// const reverseStatusMapping: Record<string, string> = {
-//   在职员工: 'active',
-//   离职员工: 'left',
-//   退休员工: 'retirement',
-// }
-// 反转映射 效果同上
-// const reverseUserStatusMapping: Record<string, string> = Object.fromEntries(
-//   Object.entries(userStatusMapping).map(([key, value]) => [value, key]),
-// )
-// const userStatusSearchingMapping: Record<string, string> = {
-//   active: '在职',
-//   left: '离职',
-//   retirement: '退休',
-// }
-
 // 解析Excel中的日期数据，转换为后端需要的格式 (YYYY-MM-DD)
 // 确保始终返回字符串，不会返回null
 const parseExcelDate = (dateStr: string): string | null => {
@@ -523,10 +480,7 @@ export {
   formatPrice,
   formatNumber,
   contractiInfoFormate,
-  // typeCasting,
-  // assetAppearanceMapping,
   assetCurrentStatusMapping,
-  // assetUsingStatusMapping,
   contractTypeMapping,
   storageMapping,
   userStatusMapping,
@@ -540,6 +494,5 @@ export {
   transformAndValidateExcelUser,
   transformAndValidateExcelDepartment,
   outassetTypeMapping,
-  // reverseUserStatusMapping,
   parseExcelDate,
 }

@@ -164,6 +164,7 @@ import type { AssetSuggestion } from '@/types/form-helpers'
 import { createSuggestionFetcher } from '@/composables/useSuggestionFetcher'
 import { notifyCallerError } from '@/utils/errorHandler'
 import { logError } from '@/utils/logger'
+import { deepClone } from '@/utils/deepClone'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -347,7 +348,7 @@ const loadEditData = async (_assetCode: string, harddiskSnCode: string) => {
     formData.harddisk_number = formData.disks.length
 
     // 4. 保存原始数据用于变更对比
-    originalFormData.value = JSON.parse(JSON.stringify(formData))
+    originalFormData.value = deepClone(formData)
   } catch (error) {
     logError('components/componentsdetails/detils/HardDiskSNForm', '加载硬盘记录失败:', error)
     // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次

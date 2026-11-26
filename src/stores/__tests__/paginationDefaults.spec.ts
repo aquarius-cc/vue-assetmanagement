@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { withPaginationDefaults } from '../createEntityStore'
+import { withPaginationDefaults, createEntityStore } from '../createEntityStore'
 import { DEFAULT_PAGE_SIZE, DEFAULT_SUGGESTION_LIMIT, PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 
 vi.mock('@/api/lostAsset', () => ({
@@ -17,6 +17,12 @@ vi.mock('@/api/lostAsset', () => ({
     updateLostAsset: vi.fn(),
     deleteLostAsset: vi.fn(),
     batchDeleteLostAssets: vi.fn(),
+  },
+}))
+
+vi.mock('@/api/asset', () => ({
+  assetAPI: {
+    searchAvailableAssets: vi.fn().mockResolvedValue({ results: [], count: 0 }),
   },
 }))
 
@@ -59,6 +65,37 @@ describe('M-20 分页默认值单源', () => {
     const store = useLostAssetStore()
     await store.getList()
     expect(lostAssetAPI.getLostAssets).toHaveBeenCalledWith({ page: 1, page_size: 20 })
+  })
+
+  it('【M-HYG-03a】useExportableAssets 无参回落 → pageSize === DEFAULT_PAGE_SIZE', async () => {
+    setActivePinia(createPinia())
+    const { useExportableAssets } = await import('../../composables/useExportableAssets')
+    const { pageSize } = useExportableAssets()
+    expect(pageSize.value).toBe(DEFAULT_PAGE_SIZE)
+  })
+
+  it('【M-HYG-03b】usePagedList 无覆盖回落 → pageSize === DEFAULT_PAGE_SIZE', async () => {
+    const { usePagedList } = await import('../../composables/usePagedList')
+    const { pageSize } = usePagedList<string>({
+      fixedParams: {},
+      fetcher: vi.fn().mockResolvedValue({ results: [], count: 0 }),
+      errorMessage: '加载失败',
+      tag: 'm-hyg-03b',
+    })
+    expect(pageSize.value).toBe(DEFAULT_PAGE_SIZE)
+  })
+
+  it('【M-HYG-03c】createEntityStore defaultPageSize=null → page_size === DEFAULT_PAGE_SIZE（零行为：?? 兜底等值）', () => {
+    const store = createEntityStore<{ id: string }>('m-hyg-03c-null-pagesize', {
+      idKey: 'id',
+      api: { getList: vi.fn() } as never,
+      message: { success: vi.fn(), error: vi.fn(), warning: vi.fn() } as never,
+      enableCache: false,
+      enableDebounce: false,
+      enablePagination: true,
+      defaultPageSize: null,
+    })()
+    expect(store.pagination.page_size).toBe(DEFAULT_PAGE_SIZE)
   })
 
   beforeEach(() => {

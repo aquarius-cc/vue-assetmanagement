@@ -203,6 +203,7 @@ import { useAssetStore } from '@/stores/assetStore'
 import { useContractStore } from '@/stores/contractStore'
 import { useStorageStore } from '@/stores/storageStore'
 import { useDamagedAssetStore } from '@/stores/damagedAssetStore'
+import { deepClone } from '@/utils/deepClone'
 import { notifyCallerError } from '@/utils/errorHandler'
 import type { DamagedAssetCreateForm } from '@/types/damagedasset'
 import type { AssetDetail } from '@/types/asset'
@@ -401,7 +402,7 @@ const loadEditData = async (code: string) => {
     fillFormFromDetail(detail)
     // 如果后端未返回名称，尝试通过 Store 联动查询
     await lookupMissingNames(detail)
-    originalFormData.value = JSON.parse(JSON.stringify(formData))
+    originalFormData.value = deepClone(formData)
   } catch (error) {
     logError(
       'components/componentsdetails/detils/DamagedAssetForm',

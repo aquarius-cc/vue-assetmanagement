@@ -7,6 +7,7 @@
 
 import { BASE_URL } from '@/api/baseUrl'
 import type { LogContext } from '@/utils/logger'
+import { deepClone } from '@/utils/deepClone'
 
 const ENDPOINT = `${BASE_URL}/frontend-logs/`
 const MAX_QUEUE_ITEMS = 100
@@ -203,7 +204,7 @@ function safeRoute(): string {
 function safeContext(context?: LogContext): LogContext | undefined {
   if (!context || Object.keys(context).length === 0) return undefined
   try {
-    return JSON.parse(JSON.stringify(context)) as LogContext
+    return deepClone(context) as LogContext
   } catch {
     return undefined
   }
@@ -292,14 +293,33 @@ export async function getQueuedFrontendLogCount(): Promise<number> {
   return persisted.length + memoryQueue.length
 }
 
+let onOnline: (() => void) | null = null
+let onVisibilityChange: (() => void) | null = null
+let onPageHide: (() => void) | null = null
+
 export function installFrontendLogFlushListeners(): void {
   if (listenersInstalled || typeof window === 'undefined') return
   listenersInstalled = true
-  window.addEventListener('online', () => void flushFrontendLogs())
-  document.addEventListener('visibilitychange', () => {
+  onOnline = () => void flushFrontendLogs()
+  onVisibilityChange = () => {
     if (document.visibilityState === 'hidden') void flushFrontendLogs()
-  })
-  window.addEventListener('pagehide', () => void flushFrontendLogs())
+  }
+  onPageHide = () => void flushFrontendLogs()
+  window.addEventListener('online', onOnline)
+  document.addEventListener('visibilitychange', onVisibilityChange)
+  window.addEventListener('pagehide', onPageHide)
+}
+
+/** 卸载三个 flush 触发器；与 installFrontendLogFlushListeners 对称 */
+export function cleanupFrontendLogFlushListeners(): void {
+  if (!listenersInstalled) return
+  if (onOnline) window.removeEventListener('online', onOnline)
+  if (onVisibilityChange) document.removeEventListener('visibilitychange', onVisibilityChange)
+  if (onPageHide) window.removeEventListener('pagehide', onPageHide)
+  onOnline = null
+  onVisibilityChange = null
+  onPageHide = null
+  listenersInstalled = false
 }
 
 export { clearQueuedFrontendLogs }

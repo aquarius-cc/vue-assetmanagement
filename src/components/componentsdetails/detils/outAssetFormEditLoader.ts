@@ -8,6 +8,7 @@ import { ElMessage } from 'element-plus'
 import { formatDate } from '@/utils/Format'
 import type { EmployeeAutocompleteItem, OutAssetEditLoaderDeps } from '@/types/outasset'
 import { logError } from '@/utils/logger'
+import { deepClone } from '@/utils/deepClone'
 
 /** [C5/M-13] 依赖注入结构已迁 @/types/outasset（OutAssetEditLoaderDeps 唯一源） */
 /** 创建编辑数据加载函数 loadEditData(recordcode) */
@@ -91,7 +92,7 @@ export function createOutAssetEditLoader(deps: OutAssetEditLoaderDeps) {
       fillForm(detail)
       syncSelected(detail)
       // 保存原始数据快照
-      originalFormData.value = JSON.parse(JSON.stringify(form))
+      originalFormData.value = deepClone(form)
     } catch (error) {
       logError(
         'components/componentsdetails/detils/outAssetFormEditLoader',

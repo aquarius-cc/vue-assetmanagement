@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 vi.mock('@/api/outAsset', () => ({
   outAssetAPI: {
@@ -40,7 +41,7 @@ describe('useRecyclableOutAssets', () => {
       expect(loading.value).toBe(false)
       expect(total.value).toBe(0)
       expect(currentPage.value).toBe(1)
-      expect(pageSize.value).toBe(10)
+      expect(pageSize.value).toBe(DEFAULT_PAGE_SIZE)
     })
   })
 
@@ -56,7 +57,7 @@ describe('useRecyclableOutAssets', () => {
 
       expect(mockGetRecyclableOutAssets).toHaveBeenCalledWith({
         page: 1,
-        page_size: 10,
+        page_size: DEFAULT_PAGE_SIZE,
       })
       expect(list.value).toEqual(items)
       expect(total.value).toBe(2)
@@ -69,7 +70,7 @@ describe('useRecyclableOutAssets', () => {
 
       expect(mockGetRecyclableOutAssets).toHaveBeenCalledWith({
         page: 1,
-        page_size: 10,
+        page_size: DEFAULT_PAGE_SIZE,
         keyword: 'test',
       })
     })
@@ -92,7 +93,7 @@ describe('useRecyclableOutAssets', () => {
 
       expect(mockGetRecyclableOutAssets).toHaveBeenLastCalledWith({
         page: 3,
-        page_size: 10,
+        page_size: DEFAULT_PAGE_SIZE,
         keyword: 'cached',
       })
     })
@@ -134,7 +135,7 @@ describe('useRecyclableOutAssets', () => {
 
       expect(mockGetRecyclableOutAssets).toHaveBeenCalledWith({
         page: 1,
-        page_size: 10,
+        page_size: DEFAULT_PAGE_SIZE,
       })
     })
   })
@@ -148,7 +149,7 @@ describe('useRecyclableOutAssets', () => {
       expect(currentPage.value).toBe(3)
       expect(mockGetRecyclableOutAssets).toHaveBeenCalledWith({
         page: 3,
-        page_size: 10,
+        page_size: DEFAULT_PAGE_SIZE,
       })
     })
 
@@ -170,7 +171,7 @@ describe('useRecyclableOutAssets', () => {
 
       expect(mockGetRecyclableOutAssets).toHaveBeenCalledWith({
         page: 2,
-        page_size: 10,
+        page_size: DEFAULT_PAGE_SIZE,
         keyword: 'test',
       })
     })
@@ -206,7 +207,7 @@ describe('useRecyclableOutAssets', () => {
 
       expect(mockGetRecyclableOutAssets).toHaveBeenCalledWith({
         page: 1,
-        page_size: 10,
+        page_size: DEFAULT_PAGE_SIZE,
       })
     })
   })

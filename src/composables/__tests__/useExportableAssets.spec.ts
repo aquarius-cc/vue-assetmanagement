@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 const { mockSearchAvailableAssets } = vi.hoisted(() => ({
   mockSearchAvailableAssets: vi.fn(),
@@ -42,7 +43,7 @@ describe('useExportableAssets', () => {
       expect(loading.value).toBe(false)
       expect(total.value).toBe(0)
       expect(currentPage.value).toBe(1)
-      expect(pageSize.value).toBe(10)
+      expect(pageSize.value).toBe(DEFAULT_PAGE_SIZE)
     })
   })
 
@@ -54,7 +55,10 @@ describe('useExportableAssets', () => {
       const { search, list, total } = useExportableAssets()
       await search()
 
-      expect(mockSearchAvailableAssets).toHaveBeenCalledWith({ page: 1, page_size: 10 })
+      expect(mockSearchAvailableAssets).toHaveBeenCalledWith({
+        page: 1,
+        page_size: DEFAULT_PAGE_SIZE,
+      })
       expect(list.value).toEqual(items)
       expect(total.value).toBe(1)
     })
@@ -65,7 +69,7 @@ describe('useExportableAssets', () => {
 
       expect(mockSearchAvailableAssets).toHaveBeenCalledWith({
         page: 1,
-        page_size: 10,
+        page_size: DEFAULT_PAGE_SIZE,
         keyword: 'test',
       })
     })
@@ -79,7 +83,7 @@ describe('useExportableAssets', () => {
 
       expect(mockSearchAvailableAssets).toHaveBeenCalledWith({
         page: 1,
-        page_size: 10,
+        page_size: DEFAULT_PAGE_SIZE,
         keyword: 'cached',
       })
     })
@@ -239,7 +243,10 @@ describe('useExportableAssets', () => {
       mockSearchAvailableAssets.mockClear()
       await changePage(2) // 修复前：被早退守卫拦截, 请求不发 → 红
       expect(mockSearchAvailableAssets).toHaveBeenCalledTimes(1)
-      expect(mockSearchAvailableAssets).toHaveBeenCalledWith({ page: 2, page_size: 10 })
+      expect(mockSearchAvailableAssets).toHaveBeenCalledWith({
+        page: 2,
+        page_size: DEFAULT_PAGE_SIZE,
+      })
       expect(currentPage.value).toBe(2)
     })
   })

@@ -4,9 +4,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  cleanupFrontendLogFlushListeners,
   clearQueuedFrontendLogs,
   flushFrontendLogs,
   getQueuedFrontendLogCount,
+  installFrontendLogFlushListeners,
   sendFrontendLog,
   type FrontendLogEntry,
 } from '../frontendLogSink'
@@ -138,5 +140,29 @@ describe('frontendLogSink', () => {
     await flushFrontendLogs()
     expect(fetchMock).not.toHaveBeenCalled()
     expect(await getQueuedFrontendLogCount()).toBe(0)
+  })
+
+  it('[M-HYG-01] install/cleanup 对称：注册 online/visibilitychange/pagehide，可对称卸载', () => {
+    const windowAdd = vi.spyOn(window, 'addEventListener')
+    const documentAdd = vi.spyOn(document, 'addEventListener')
+    const windowRemove = vi.spyOn(window, 'removeEventListener')
+    const documentRemove = vi.spyOn(document, 'removeEventListener')
+
+    installFrontendLogFlushListeners()
+    installFrontendLogFlushListeners() // 幂等：重复 install 不重复挂载
+    expect(windowAdd.mock.calls.filter(([type]) => type === 'online')).toHaveLength(1)
+    expect(windowAdd.mock.calls.filter(([type]) => type === 'pagehide')).toHaveLength(1)
+    expect(documentAdd.mock.calls.filter(([type]) => type === 'visibilitychange')).toHaveLength(1)
+
+    cleanupFrontendLogFlushListeners()
+    expect(windowRemove.mock.calls.filter(([type]) => type === 'online')).toHaveLength(1)
+    expect(windowRemove.mock.calls.filter(([type]) => type === 'pagehide')).toHaveLength(1)
+    expect(documentRemove.mock.calls.filter(([type]) => type === 'visibilitychange')).toHaveLength(
+      1,
+    )
+  })
+
+  it('[M-HYG-01] cleanup 幂等：未安装时调用不报错', () => {
+    expect(() => cleanupFrontendLogFlushListeners()).not.toThrow()
   })
 })

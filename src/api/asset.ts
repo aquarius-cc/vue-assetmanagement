@@ -219,7 +219,8 @@ export const assetAPI = {
    *
    * @param params 搜索参数
    *   - keyword: 搜索关键词（匹配资产名称、编码等）
-   *   - status: 资产状态筛选（in_store, in_use, out_of_service, destroyed）
+   *   - status: 资产状态筛选（in_store / in_use / recycled_pending / broken /
+   *     repairing / lost / damaged / scrapped，取值见 statusMapping.ASSET_STATUS_MAP）
    *   - asset_type: 资产类型编码筛选
    *   - storage_code: 仓库编码筛选
    *   - contract_code: 合同编码筛选

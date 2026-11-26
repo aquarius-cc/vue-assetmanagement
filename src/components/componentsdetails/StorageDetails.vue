@@ -66,6 +66,7 @@
             <el-button
               type="danger"
               :disabled="slotProps.selectedRows?.length === 0"
+              :loading="isBatchDeleting"
               @click="handleBatchDelete(slotProps.selectedRows)"
             >
               批量删除 ({{ slotProps.selectedRows?.length || 0 }})
@@ -103,6 +104,8 @@ import type { Storage } from '@/types/storage'
 import { storageMapping } from '@/utils/Format'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
+import { useEntityBatchDelete } from '@/composables/useEntityBatchDelete'
+import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 // ===== 状态与实例 =====
 const router = useRouter()
@@ -161,7 +164,7 @@ const columns: TableColumn[] = [
 const storeConfig = useSmartListConfig<Storage>({
   store: storageStore,
   entityName: '仓库',
-  defaultPageSize: 10,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
 })
 
 // ===== 路由监听：控制子路由遮罩 =====
@@ -231,40 +234,16 @@ const handleDelete = (row: Storage) => {
  * 弹出确认框，确认后调用 store.removeBatch 执行批量删除
  * @param rows 选中的行数据
  */
-const handleBatchDelete = async (rows: Storage[] | undefined) => {
-  if (!rows || rows.length === 0) {
-    ElMessage.warning('请先选择要删除的数据')
-    return
-  }
-
-  // 提取选中的唯一标识字段（recordcode）
-  const codes = rows.map((row) => row.recordcode).filter((code): code is string => !!code)
-
-  if (codes.length === 0) {
-    ElMessage.error('无法删除：选中的数据缺少记录标识')
-    return
-  }
-
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除选中的 ${codes.length} 条数据吗？删除后数据不可恢复！`,
-      '批量删除确认',
-      {
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
-
-    await storageStore.removeBatch(codes)
-    smartListRef.value?.clearSelection()
-    await smartListRef.value?.refresh()
-  } catch (err) {
-    if (err === 'cancel') return
-    logError('components/componentsdetails/StorageDetails', '批量删除失败:', err)
-    notifyCallerError(err, '批量删除失败，请重试')
-  }
-}
+// [M-FE-02] 批删委托 useEntityBatchDelete 单源（连点守卫 + 语义逐字保留：
+// 取键 recordcode、缺码文案「缺少记录标识」）
+const { handleBatchDelete, isBatchDeleting } = useEntityBatchDelete<Storage>({
+  getIds: (rows) => rows.map((row) => row.recordcode).filter((code): code is string => !!code),
+  missingIdMessage: '无法删除：选中的数据缺少记录标识',
+  removeBatch: (codes) => storageStore.removeBatch(codes),
+  clearSelection: () => smartListRef.value?.clearSelection(),
+  refresh: () => smartListRef.value?.refresh(),
+  logTag: 'components/componentsdetails/StorageDetails',
+})
 
 /**
  * 新增仓库

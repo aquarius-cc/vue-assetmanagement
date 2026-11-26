@@ -116,7 +116,7 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
     // ✅ 确保 pagination 正确初始化为 Ref<P>
     const pagination = ref<PaginationState>({
       page: 1,
-      page_size: defaultPageSize ?? 20,
+      page_size: defaultPageSize ?? DEFAULT_PAGE_SIZE,
       total: 0,
     })
 
@@ -361,6 +361,9 @@ export function createEntityStore<T extends object, Q extends PaginationQuery = 
     }
 
     const create = async (data: Partial<T>) => {
+      // [M-HYG-04] 保留 Date.now() key：SubmitBatch concurrency=5 并发创建须各走独立 key，
+      // 双击防重由按钮 :loading 兜底；createEntityStore.t16.spec:423-437 为变异测试锚，
+      // 固定 key 会被 pendingSet 去重吞并判红。
       return withRequestControl(requestCtx, `create:${Date.now()}`, async () => {
         const result = await config.api.create(data)
         // ✅ 支持后端返回单条或数组（如 Asset 创建时可能返回多条）

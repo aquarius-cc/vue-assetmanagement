@@ -223,6 +223,7 @@ import type { UnregisteredAssetCreateForm } from '@/types/unregisteredasset'
 import { ScenarioType } from '@/types/unregisteredasset'
 import { useUnregisteredFormLinkage } from '@/composables/useUnregisteredFormLinkage'
 import { logError } from '@/utils/logger'
+import { deepClone } from '@/utils/deepClone'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -402,7 +403,7 @@ const loadEditData = async (code: string) => {
       return
     }
     fillFormFromDetail(detail)
-    originalFormData.value = JSON.parse(JSON.stringify(formData))
+    originalFormData.value = deepClone(formData)
   } catch (error) {
     logError(
       'components/componentsdetails/detils/UnregisteredAssetForm',
