@@ -106,11 +106,11 @@ describe('AssetTypeDetails 双击守卫（D-15）', () => {
       handleBatchAddSubmit: () => Promise<void>
       batchAddList: Array<{ type_code: string; type_name: string; type_description: string }>
     }
-    vm.batchAddList.splice(
-      0,
-      vm.batchAddList.length,
-      { type_code: 'T1', type_name: '分类一', type_description: '' },
-    )
+    vm.batchAddList.splice(0, vm.batchAddList.length, {
+      type_code: 'T1',
+      type_name: '分类一',
+      type_description: '',
+    })
     const p1 = vm.handleBatchAddSubmit()
     const p2 = vm.handleBatchAddSubmit()
     await Promise.all([p1, p2])
