@@ -4,10 +4,14 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockConfirm, mockExportFromServer } = vi.hoisted(() => ({
-  mockConfirm: vi.fn(),
-  mockExportFromServer: vi.fn(),
-}))
+const { mockConfirm, mockExportFromServer, mockLogError, mockNotifyCallerError } = vi.hoisted(
+  () => ({
+    mockConfirm: vi.fn(),
+    mockExportFromServer: vi.fn(),
+    mockLogError: vi.fn(),
+    mockNotifyCallerError: vi.fn(),
+  }),
+)
 
 vi.mock('element-plus', () => ({
   ElMessage: { success: vi.fn(), warning: vi.fn(), error: vi.fn(), info: vi.fn() },
@@ -17,6 +21,10 @@ vi.mock('element-plus', () => ({
 vi.mock('@/composables/useServerExcelExport', () => ({
   useServerExcelExport: () => ({ exportFromServer: mockExportFromServer }),
 }))
+
+// logError / notifyCallerError 收敛为 spy：精确断言日志与错误出口参数（杀 Stryker 文案区字符串变异体）
+vi.mock('@/utils/logger', () => ({ logError: mockLogError }))
+vi.mock('@/utils/errorHandler', () => ({ notifyCallerError: mockNotifyCallerError }))
 
 import { useAssetLifecycleActions } from '../useAssetLifecycleActions'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -69,6 +77,12 @@ describe('useAssetLifecycleActions', () => {
       await vi.waitFor(() => expect(store.remove).toHaveBeenCalled())
 
       expect(store.remove).toHaveBeenCalledWith('R1')
+      // 确认框三参精确断言（文案/标题/按钮组逐字，杀 confirm 区字符串变异体）
+      expect(mockElMessageBoxConfirm).toHaveBeenCalledWith(
+        '确定要删除该损坏资产记录吗？',
+        '删除确认',
+        { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' },
+      )
       expect(mockElMessageSuccess).toHaveBeenCalledWith('删除成功')
       expect(params.refresh).toHaveBeenCalled()
     })
@@ -95,18 +109,45 @@ describe('useAssetLifecycleActions', () => {
 
       expect(store.remove).not.toHaveBeenCalled()
       expect(mockElMessageError).not.toHaveBeenCalled()
+      // 取消路径零日志/零错误出口（钉死 error !== 'cancel' 判定）
+      expect(mockLogError).not.toHaveBeenCalled()
+      expect(mockNotifyCallerError).not.toHaveBeenCalled()
     })
 
-    it('删除失败：提示删除失败', async () => {
+    it('删除失败：日志与错误出口精确出参（模块标签/文案逐字）', async () => {
       mockElMessageBoxConfirm.mockResolvedValue(undefined)
       const store = makeStore()
-      store.remove.mockRejectedValue(new Error('boom'))
+      const boom = new Error('boom')
+      store.remove.mockRejectedValue(boom)
       const { handleDelete } = useAssetLifecycleActions(makeParams(store))
 
       handleDelete({ recordcode: 'R1' })
-      await vi.waitFor(() => expect(mockElMessageError).toHaveBeenCalledWith('boom'))
+      await vi.waitFor(() => expect(mockNotifyCallerError).toHaveBeenCalled())
 
+      expect(mockLogError).toHaveBeenCalledWith(
+        'composables/useAssetLifecycleActions',
+        '删除失败:',
+        boom,
+      )
+      expect(mockNotifyCallerError).toHaveBeenCalledWith(boom, '删除失败')
       expect(mockElMessageSuccess).not.toHaveBeenCalled()
+    })
+
+    it('refresh 未提供：删除成功不抛错、零失败日志（refresh?.() 可选链语义）', async () => {
+      const store = makeStore()
+      const { handleDelete } = useAssetLifecycleActions({
+        store,
+        entityName: '损坏资产',
+        fetchExport: mockFetchExport,
+      })
+
+      handleDelete({ recordcode: 'R1' })
+      await vi.waitFor(() => expect(store.remove).toHaveBeenCalled())
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(mockElMessageSuccess).toHaveBeenCalledWith('删除成功')
+      expect(mockLogError).not.toHaveBeenCalled()
+      expect(mockNotifyCallerError).not.toHaveBeenCalled()
     })
   })
 
@@ -154,14 +195,61 @@ describe('useAssetLifecycleActions', () => {
       expect(mockElMessageError).not.toHaveBeenCalled()
     })
 
-    it('批删失败：提示批量删除失败', async () => {
+    it('批删失败：默认出口 logError + notifyCallerError 精确出参（委托单源语义）', async () => {
       const store = makeStore()
-      store.removeBatch.mockRejectedValue(new Error('boom'))
+      const boom = new Error('boom')
+      store.removeBatch.mockRejectedValue(boom)
       const { handleBatchDelete } = useAssetLifecycleActions(makeParams(store))
 
       await handleBatchDelete([{ recordcode: 'R1' }])
 
-      expect(mockElMessageError).toHaveBeenCalledWith('boom')
+      expect(mockLogError).toHaveBeenCalledWith(
+        'composables/useAssetLifecycleActions',
+        '批量删除失败:',
+        boom,
+      )
+      expect(mockNotifyCallerError).toHaveBeenCalledWith(boom, '批量删除失败，请重试')
+    })
+
+    it('双击：confirm 未决期间第二次调用直接返回，removeBatch 仅 1 次（M-FE-02 守卫）', async () => {
+      let resolveConfirm!: () => void
+      mockElMessageBoxConfirm.mockReturnValueOnce(
+        new Promise<void>((resolve) => {
+          resolveConfirm = resolve
+        }),
+      )
+      const store = makeStore()
+      const { handleBatchDelete, isBatchDeleting } = useAssetLifecycleActions(makeParams(store))
+
+      const first = handleBatchDelete([{ recordcode: 'R1' }])
+      await Promise.resolve()
+      expect(isBatchDeleting.value).toBe(true)
+
+      await handleBatchDelete([{ recordcode: 'R1' }])
+      expect(mockElMessageBoxConfirm).toHaveBeenCalledTimes(1)
+
+      resolveConfirm()
+      await first
+      expect(store.removeBatch).toHaveBeenCalledTimes(1)
+    })
+
+    it('isBatchDeleting 批删完成后复位', async () => {
+      const store = makeStore()
+      const { handleBatchDelete, isBatchDeleting } = useAssetLifecycleActions(makeParams(store))
+
+      await handleBatchDelete([{ recordcode: 'R1' }])
+
+      expect(isBatchDeleting.value).toBe(false)
+    })
+
+    it('isBatchDeleting 批删失败后复位', async () => {
+      const store = makeStore()
+      store.removeBatch.mockRejectedValue(new Error('boom'))
+      const { handleBatchDelete, isBatchDeleting } = useAssetLifecycleActions(makeParams(store))
+
+      await handleBatchDelete([{ recordcode: 'R1' }])
+
+      expect(isBatchDeleting.value).toBe(false)
     })
   })
 

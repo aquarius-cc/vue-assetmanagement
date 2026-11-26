@@ -84,6 +84,7 @@ interface IntegrationCase {
   useStore: () => unknown
   api: object
   del: string
+  batchDel: string
 }
 
 const cases: IntegrationCase[] = [
@@ -92,14 +93,28 @@ const cases: IntegrationCase[] = [
     useStore: useBrokenAssetStore,
     api: brokenAssetAPI,
     del: 'deleteBrokenAsset',
+    batchDel: 'batchDeleteBrokenAssets',
   },
-  { name: '遗失资产', useStore: useLostAssetStore, api: lostAssetAPI, del: 'deleteLostAsset' },
-  { name: '找回资产', useStore: useFoundAssetStore, api: foundAssetAPI, del: 'deleteFoundAsset' },
+  {
+    name: '遗失资产',
+    useStore: useLostAssetStore,
+    api: lostAssetAPI,
+    del: 'deleteLostAsset',
+    batchDel: 'batchDeleteLostAssets',
+  },
+  {
+    name: '找回资产',
+    useStore: useFoundAssetStore,
+    api: foundAssetAPI,
+    del: 'deleteFoundAsset',
+    batchDel: 'batchDeleteFoundAssets',
+  },
   {
     name: '维修资产',
     useStore: useRepairAssetStore,
     api: repairAssetAPI,
     del: 'deleteRepairAsset',
+    batchDel: 'batchDeleteRepairAssets',
   },
 ]
 
@@ -129,4 +144,51 @@ describe('[M-06] 生命周期详情页删除单出口集成', () => {
     expect(vi.mocked(ElMessage.success)).toHaveBeenCalledTimes(1)
     expect(vi.mocked(ElMessage.success)).toHaveBeenCalledWith('删除成功')
   })
+
+  it.each(cases)(
+    '$name 批删连点仅发 1 次 batchDelete（M-FE-02 守卫）',
+    async ({ useStore, api, batchDel }) => {
+      const batchDeleteFn = (api as unknown as Record<string, ReturnType<typeof vi.fn>>)[batchDel]
+      batchDeleteFn.mockResolvedValue({
+        total: 1,
+        success_count: 1,
+        fail_count: 0,
+        success_ids: ['R1'],
+        fail_items: [],
+      })
+
+      // confirm 挂起模拟「确认框打开中」，期间触发第二次连点
+      let resolveConfirm!: () => void
+      mockConfirm.mockReturnValueOnce(
+        new Promise<void>((resolve) => {
+          resolveConfirm = resolve
+        }),
+      )
+
+      const lifecycleStore = useStore() as unknown as AssetLifecycleStore
+      const { handleBatchDelete, isBatchDeleting } = useAssetLifecycleActions({
+        store: lifecycleStore,
+        entityName: '测试实体',
+        fetchExport: vi
+          .fn()
+          .mockResolvedValue({ blob: new Blob(), headers: {}, filename: 't.xlsx' }),
+        refresh: vi.fn().mockResolvedValue(undefined),
+        clearSelection: vi.fn(),
+      })
+
+      const first = handleBatchDelete([{ recordcode: 'R1' }])
+      await Promise.resolve()
+      expect(isBatchDeleting.value).toBe(true)
+
+      // 第二次连点：guard 直接返回，不叠加确认框
+      await handleBatchDelete([{ recordcode: 'R1' }])
+      expect(mockConfirm).toHaveBeenCalledTimes(1)
+
+      resolveConfirm()
+      await first
+      expect(batchDeleteFn).toHaveBeenCalledTimes(1)
+      expect(batchDeleteFn).toHaveBeenCalledWith(['R1'])
+      expect(isBatchDeleting.value).toBe(false)
+    },
+  )
 })

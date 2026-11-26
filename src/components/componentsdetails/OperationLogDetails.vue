@@ -135,6 +135,8 @@
           <div class="bottom-buttons">
             <el-button type="primary" @click="handleExportExcel">导出Excel</el-button>
             <!-- 批量删除按钮：当选中数据时可用 -->
+            <!-- [M-FE-02] 注释块不计入批删入口清单（17 入口不含此处）；若日后解注释启用，
+                 必须改走 useEntityBatchDelete 单源，禁止恢复 inline 实现 -->
             <!-- <el-button
               type="danger"
               :disabled="slotProps.selectedRows?.length === 0"

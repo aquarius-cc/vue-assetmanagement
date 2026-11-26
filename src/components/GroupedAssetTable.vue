@@ -129,7 +129,13 @@
         <el-table-column label="操作" fixed="right" width="140" align="center">
           <template #default="{ row }">
             <!-- 文字保留（F5 用例 13）；常态灰、hover 危险色，收敛常驻红噪音 -->
-            <el-button link class="group-delete-btn" @click="emit('deleteGroup', row)">
+            <!-- [M-FE-02] batchDeleting 防重：批删 in-flight 时禁用（link 按钮无 loading 态） -->
+            <el-button
+              link
+              class="group-delete-btn"
+              :disabled="props.batchDeleting"
+              @click="emit('deleteGroup', row)"
+            >
               删除组内 {{ row.asset_count }} 条
             </el-button>
           </template>
@@ -168,6 +174,10 @@ interface Props {
    * 本组件不直接依赖 pinia（保持组件可独立挂载测试）。
    */
   initialSnapshot?: GroupedPageSnapshot | null
+  /**
+   * [M-FE-02] 组批删 in-flight 守卫（link 按钮无 loading 态，用 disabled 防连点）
+   */
+  batchDeleting?: boolean
 }
 
 const props = defineProps<Props>()

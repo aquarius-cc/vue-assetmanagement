@@ -31,6 +31,8 @@ const {
   mockLogError,
   mockLeaveHooks,
   mockCaptureSession,
+  mockConfirm,
+  mockElMessage,
 } = vi.hoisted(() => ({
   mockRemoveBatch: vi.fn(),
   mockExcelExport: vi.fn(),
@@ -44,6 +46,9 @@ const {
   mockLeaveHooks: { cb: null as null | (() => void) },
   /** GroupedAssetTable 桩的 captureSession 返回值（测试注入） */
   mockCaptureSession: vi.fn(),
+  /** [M-FE-02] 批删 confirm / 消息 mock（连点守卫用例） */
+  mockConfirm: vi.fn(),
+  mockElMessage: { success: vi.fn(), warning: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 
 vi.mock('vue-router', () => ({
@@ -53,6 +58,19 @@ vi.mock('vue-router', () => ({
     mockLeaveHooks.cb = cb
   },
 }))
+
+/**
+ * [M-FE-02] element-plus 部分 mock：仅覆盖脚本级 ElMessage/ElMessageBox（批删 confirm 与
+ * 成功提示），其余导出（ElButton 等子组件内部 import）保持真实——避免打掉模块图其它引用。
+ */
+vi.mock('element-plus', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('element-plus')>()
+  return {
+    ...actual,
+    ElMessage: mockElMessage,
+    ElMessageBox: { confirm: mockConfirm, alert: vi.fn(), prompt: vi.fn() },
+  }
+})
 
 /**
  * 字段集用哨兵对象而非真实字段：本文件只断言「组件把 composable 返回的哪一个字段集
@@ -99,6 +117,7 @@ import AssetContentDetails from '../AssetContentDetails.vue'
 import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import { createPinia } from 'pinia'
 import { useGroupedAssetSession } from '@/stores/groupedAssetSession'
+import { useAuthStore } from '@/stores/auth'
 import type { AssetDetail } from '@/types/asset'
 import type { TableColumn } from '@/types/list'
 
@@ -134,6 +153,9 @@ const ROWS: AssetDetail[] = [
  */
 let activeRows: AssetDetail[] = ROWS
 
+/** 可变选中行源（M-FE-02 平铺连点用例）：桩 SmartListContainer 挂载期读取此引用 */
+let activeSelectedRows: AssetDetail[] = []
+
 /** 可变子行源：分组槽用例经 GroupedAssetTable 桩透传渲染（复刻真实 GAT 的 $slots 转发） */
 let activeChildRows: AssetDetail[] = []
 
@@ -142,12 +164,12 @@ const SmartListContainerStub = {
   props: ['storeConfig'],
   template: `<div class="smart-list">
     <slot :data="rows" :loading="false" :currentPage="1" :pageSize="20" :search="''"
-      :total="3" :pageSizeOptions="[20]" :selectedRows="[]"
+      :total="3" :pageSizeOptions="[20]" :selectedRows="selectedRows"
       :handleSizeChange="() => {}" :handleCurrentChange="() => {}"
       :performSearch="() => {}" :handleSelectionChange="() => {}" />
   </div>`,
   data() {
-    return { rows: activeRows }
+    return { rows: activeRows, selectedRows: activeSelectedRows }
   },
   methods: {
     searchWithParams: mockSmartSearchWithParams,
@@ -247,6 +269,7 @@ beforeEach(() => {
   useGroupedAssetSession(pinia).clear()
   activeRows = ROWS
   activeChildRows = []
+  activeSelectedRows = []
 })
 
 describe('AssetContentDetails · 分组开关与列集回归', () => {
@@ -524,6 +547,73 @@ describe('AssetContentDetails · 分组开关与列集回归', () => {
       mountDetails()
       expect(store.pendingRestore).toBe(true)
       expect(store.snapshot).toMatchObject({ page: 2, expandedKeys: ['G1'] })
+    })
+  })
+
+  describe('M-FE-02 批删连点防护（平铺双击 + 分组双击）', () => {
+    /** 批删按钮受 canOperateAsset 门禁（v-if），置 asset_admin 角色使其渲染 */
+    const grantAssetRole = () => {
+      const auth = useAuthStore(pinia)
+      auth.userRole = 'asset_admin'
+      return () => {
+        auth.userRole = ''
+      }
+    }
+
+    it('平铺连点两次：confirm 与 removeBatch 各仅 1 次（取键 asset_code）', async () => {
+      const revoke = grantAssetRole()
+      try {
+        activeSelectedRows = [ROWS[0], ROWS[1]]
+        let resolveConfirm!: () => void
+        mockConfirm.mockReturnValueOnce(
+          new Promise<void>((resolve) => {
+            resolveConfirm = resolve
+          }),
+        )
+
+        const wrapper = mountDetails()
+        const button = wrapper.findAll('button').find((b) => b.text().includes('批量删除'))
+        expect(button).toBeDefined()
+
+        await button!.trigger('click')
+        await button!.trigger('click')
+        expect(mockConfirm).toHaveBeenCalledTimes(1)
+
+        resolveConfirm()
+        await vi.waitFor(() => expect(mockRemoveBatch).toHaveBeenCalledTimes(1))
+        // 【双约定】取键 asset_code 而非 recordcode
+        expect(mockRemoveBatch).toHaveBeenCalledWith(['ZC001', 'ZC002'])
+      } finally {
+        revoke()
+      }
+    })
+
+    it('分组连点两次：confirm 与 removeBatch 各仅 1 次（cancel+close 双取消值路径共享守卫）', async () => {
+      let resolveConfirm!: () => void
+      mockConfirm.mockReturnValueOnce(
+        new Promise<void>((resolve) => {
+          resolveConfirm = resolve
+        }),
+      )
+
+      const wrapper = mountDetails({ enableGrouping: true })
+      const grouped = wrapper.findComponent({ name: 'GroupedAssetTable' })
+      const groupRow = {
+        asset_name: '笔记本',
+        asset_count: 2,
+        asset_codes: ['ZC001', 'ZC002'],
+      }
+
+      grouped.vm.$emit('deleteGroup', groupRow)
+      await Promise.resolve()
+      grouped.vm.$emit('deleteGroup', groupRow)
+      expect(mockConfirm).toHaveBeenCalledTimes(1)
+
+      resolveConfirm()
+      await vi.waitFor(() => expect(mockRemoveBatch).toHaveBeenCalledTimes(1))
+      expect(mockRemoveBatch).toHaveBeenCalledWith(['ZC001', 'ZC002'])
+      // 分组成功提示语义逐字保留
+      expect(mockElMessage.success).toHaveBeenCalledWith('删除成功')
     })
   })
 })

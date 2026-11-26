@@ -60,6 +60,7 @@
             <el-button
               type="danger"
               :disabled="slotProps.selectedRows?.length === 0"
+              :loading="isBatchDeleting"
               @click="handleBatchDelete(slotProps.selectedRows)"
             >
               批量删除 ({{ slotProps.selectedRows?.length || 0 }})
@@ -96,6 +97,7 @@ import { useDepartmentStore } from '@/stores/departmentStore'
 import type { SmartListContainerExpose } from '@/types/common'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
+import { useEntityBatchDelete } from '@/composables/useEntityBatchDelete'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -240,41 +242,15 @@ const handleDelete = async (row: Department) => {
  * 弹出确认框，确认后调用 store.removeBatch 执行批量删除
  * @param rows 选中的行数据
  */
-const handleBatchDelete = async (rows: Department[] | undefined) => {
-  if (!rows || rows.length === 0) {
-    ElMessage.warning('请先选择要删除的数据')
-    return
-  }
-
-  // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows.map((row) => row.department_code).filter((code): code is string => !!code)
-
-  if (codes.length === 0) {
-    ElMessage.error('无法删除：选中的数据缺少唯一标识')
-    return
-  }
-
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除选中的 ${codes.length} 条数据吗？删除后数据不可恢复！`,
-      '批量删除确认',
-      {
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
-
-    await departmentStore.removeBatch(codes)
-    smartListRef.value?.clearSelection()
-    await smartListRef.value?.refresh()
-  } catch (err) {
-    if (err === 'cancel') return
-    logError('components/componentsdetails/DepartmentDetails', '批量删除失败:', err)
-    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
-    notifyCallerError(err, '批量删除失败，请重试')
-  }
-}
+// [M-FE-02] 批删委托 useEntityBatchDelete 单源（连点守卫 + 语义逐字保留：
+// 取键 department_code、缺码文案「缺少唯一标识」）
+const { handleBatchDelete, isBatchDeleting } = useEntityBatchDelete<Department>({
+  getIds: (rows) => rows.map((row) => row.department_code).filter((code): code is string => !!code),
+  removeBatch: (codes) => departmentStore.removeBatch(codes),
+  clearSelection: () => smartListRef.value?.clearSelection(),
+  refresh: () => smartListRef.value?.refresh(),
+  logTag: 'components/componentsdetails/DepartmentDetails',
+})
 
 /**
  * 遮罩层点击：关闭子路由，返回列表页

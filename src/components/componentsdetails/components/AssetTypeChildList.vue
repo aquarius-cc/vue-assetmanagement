@@ -10,10 +10,12 @@
           <el-button type="warning" size="small" @click="$emit('batch-import')">
             <el-icon><Upload /></el-icon> 批量导入
           </el-button>
+          <!-- [M-FE-02] batchDeleting 防重：批删 in-flight 时 loading 禁连点 -->
           <el-button
             type="danger"
             size="small"
             :disabled="selectedRows.length === 0"
+            :loading="batchDeleting"
             @click="$emit('batch-delete', selectedRows)"
           >
             <el-icon><Delete /></el-icon> 批量删除 ({{ selectedRows.length }})
@@ -56,6 +58,8 @@ import type { AssetType } from '@/types/assettype'
 defineProps<{
   children: AssetType[]
   loading?: boolean
+  /** [M-FE-02] 批删 in-flight 守卫（按钮 loading 防连点） */
+  batchDeleting?: boolean
 }>()
 
 defineEmits<{

@@ -240,4 +240,46 @@ describe('useDepartmentEmployeeActions', () => {
     await handleBatchDelete()
     expect(mocks.elMessage.error).toHaveBeenCalledWith('boom')
   })
+
+  it('双击：confirm 未决期间第二次调用直接返回，removeBatch 仅 1 次（M-FE-02 守卫）', async () => {
+    const { handleBatchDelete, userStore, isBatchDeleting } = setup({
+      selectedRows: [makeEmployee('A001', '张三', 0)],
+    })
+    let resolveConfirm!: () => void
+    mocks.elMessageBox.confirm.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveConfirm = resolve as () => void
+      }),
+    )
+
+    const first = handleBatchDelete()
+    await Promise.resolve()
+    expect(isBatchDeleting.value).toBe(true)
+
+    await handleBatchDelete()
+    expect(mocks.elMessageBox.confirm).toHaveBeenCalledTimes(1)
+
+    resolveConfirm()
+    await first
+    expect(userStore.removeBatch).toHaveBeenCalledTimes(1)
+    expect(isBatchDeleting.value).toBe(false)
+  })
+
+  it('isBatchDeleting 批量删除失败后复位', async () => {
+    const { handleBatchDelete, userStore, isBatchDeleting } = setup({
+      selectedRows: [makeEmployee('A001', '张三', 0)],
+    })
+    userStore.removeBatch.mockRejectedValueOnce(new Error('boom'))
+    await handleBatchDelete()
+    expect(isBatchDeleting.value).toBe(false)
+  })
+
+  it('用户取消批量删除后 isBatchDeleting 复位', async () => {
+    const { handleBatchDelete, isBatchDeleting } = setup({
+      selectedRows: [makeEmployee('A001', '张三', 0)],
+    })
+    mocks.elMessageBox.confirm.mockRejectedValueOnce('cancel')
+    await handleBatchDelete()
+    expect(isBatchDeleting.value).toBe(false)
+  })
 })

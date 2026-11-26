@@ -2,6 +2,8 @@
  * 资产生命周期页面（损坏/遗失/找回/维修）公共操作逻辑
  * 抽取自 BrokenAssetDetails / LostAssetDetails / FoundAssetDetails / RepairAssetDetails
  *
+ * 批次 5 M-FE-02：handleBatchDelete 委托 useEntityBatchDelete 单源（连点守卫 + 语义逐字保留）。
+ *
  * @module composables/useAssetLifecycleActions
  */
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -9,7 +11,9 @@ import { formatDate } from '@/utils/Format'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
 import { useServerExcelExport } from '@/composables/useServerExcelExport'
+import { useEntityBatchDelete } from '@/composables/useEntityBatchDelete'
 import type { BlobDownload } from '@/api/request'
+import type { Ref } from 'vue'
 
 /** 最小 store 接口（适用于损坏/遗失/找回/维修四个 store） */
 export interface AssetLifecycleStore<T = Record<string, unknown>> {
@@ -42,6 +46,8 @@ export interface UseAssetLifecycleActionsReturn {
   handleDelete: (row: Record<string, unknown>) => void
   handleBatchDelete: (rows: unknown[] | undefined) => Promise<void>
   handleExportExcel: () => Promise<void>
+  /** 批量删除 in-flight 守卫（按钮 :loading 绑定，防连点） */
+  isBatchDeleting: Ref<boolean>
 }
 
 /**
@@ -78,34 +84,16 @@ export function useAssetLifecycleActions<T>(
       })
   }
 
-  const handleBatchDelete = async (rows: unknown[] | undefined) => {
-    if (!rows || rows.length === 0) {
-      ElMessage.warning('请先选择要删除的数据')
-      return
-    }
-    const codes = rows
-      .map((r) => (r as Record<string, unknown>).recordcode as string)
-      .filter((c) => !!c)
-    if (codes.length === 0) {
-      ElMessage.error('记录编码缺失，无法删除')
-      return
-    }
-    try {
-      await ElMessageBox.confirm(
-        `确定要删除选中的 ${codes.length} 条数据吗？删除后数据不可恢复！`,
-        '批量删除确认',
-        { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning' },
-      )
-      await store.removeBatch(codes)
-      clearSelection?.()
-      await refresh?.()
-    } catch (err) {
-      if (err === 'cancel') return
-      logError('composables/useAssetLifecycleActions', '批量删除失败:', err)
-      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
-      notifyCallerError(err, '批量删除失败，请重试')
-    }
-  }
+  // [M-FE-02] 批删委托 useEntityBatchDelete 单源（连点守卫 + 语义逐字保留：
+  // 取键 recordcode、缺码文案「记录编码缺失，无法删除」、成功无提示仅清选刷新）
+  const { handleBatchDelete, isBatchDeleting } = useEntityBatchDelete<Record<string, unknown>>({
+    getIds: (rows) => rows.map((r) => r.recordcode as string).filter((c): c is string => !!c),
+    missingIdMessage: '记录编码缺失，无法删除',
+    removeBatch: (ids) => store.removeBatch(ids),
+    clearSelection,
+    refresh,
+    logTag: 'composables/useAssetLifecycleActions',
+  })
 
   /**
    * 服务端导出（BF-092/I-1）
@@ -119,7 +107,7 @@ export function useAssetLifecycleActions<T>(
     })
   }
 
-  return { handleDelete, handleBatchDelete, handleExportExcel }
+  return { handleDelete, handleBatchDelete, handleExportExcel, isBatchDeleting }
 }
 
 export { formatDate }

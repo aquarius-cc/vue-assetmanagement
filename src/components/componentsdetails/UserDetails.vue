@@ -72,6 +72,7 @@
             <el-button
               type="danger"
               :disabled="slotProps.selectedRows?.length === 0"
+              :loading="isBatchDeleting"
               @click="handleBatchDelete(slotProps.selectedRows)"
             >
               批量删除 ({{ slotProps.selectedRows?.length || 0 }})
@@ -125,6 +126,7 @@ import StatusTag from '@/components/commoncomponents/StatusTag.vue'
 import { userDetailsColumns as columns } from './userDetails.columns'
 import { createUserExcelExport } from '@/composables/useUserExcelExport'
 import { useKeepAliveReload } from '@/composables/useKeepAliveReload'
+import { useEntityBatchDelete } from '@/composables/useEntityBatchDelete'
 import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
 
 // ===== 状态与实例 =====
@@ -367,39 +369,16 @@ const handleDelete = async (row: EmployeeExtended) => {
  * 弹出确认框，确认后调用 store.removeBatch 执行批量删除
  * @param rows 选中的行数据
  */
-const handleBatchDelete = async (rows: EmployeeExtended[] | undefined) => {
-  if (!rows || rows.length === 0) {
-    ElMessage.warning('请先选择要删除的数据')
-    return
-  }
-
-  // 提取选中的唯一标识字段（根据实体类型调整字段名）
-  const codes = rows.map((row) => row.employee_jobcode).filter((code): code is string => !!code)
-
-  if (codes.length === 0) {
-    ElMessage.error('无法删除：选中的数据缺少唯一标识')
-    return
-  }
-
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除选中的 ${codes.length} 条数据吗？删除后数据不可恢复！`,
-      '批量删除确认',
-      {
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
-
-    await userStore.removeBatch(codes)
-    smartListRef.value?.clearSelection()
-    await smartListRef.value?.refresh()
-  } catch (err) {
-    if (err === 'cancel') return
-    showErrorMessage(err, '批量删除失败，请重试')
-  }
-}
+// [M-FE-02] 批删委托 useEntityBatchDelete 单源（连点守卫 + 语义逐字保留：
+// 取键 employee_jobcode、失败出口 showErrorMessage）
+const { handleBatchDelete, isBatchDeleting } = useEntityBatchDelete<EmployeeExtended>({
+  getIds: (rows) =>
+    rows.map((row) => row.employee_jobcode).filter((code): code is string => !!code),
+  removeBatch: (codes) => userStore.removeBatch(codes),
+  clearSelection: () => smartListRef.value?.clearSelection(),
+  refresh: () => smartListRef.value?.refresh(),
+  onError: (err) => showErrorMessage(err, '批量删除失败，请重试'),
+})
 
 /**
  * 遮罩层点击返回

@@ -6,10 +6,10 @@
  * 所有读写均通过 .value 进行，与原组件内实现行为一致。
  */
 import { ref, type Ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import type { EmployeeExtended } from '@/types/user'
 import { logError } from '@/utils/logger'
-import { notifyCallerError } from '@/utils/errorHandler'
+import { useEntityBatchDelete } from '@/composables/useEntityBatchDelete'
 
 /** 表格实例的最小接口（仅使用 clearSelection） */
 export interface SortableTableRef {
@@ -58,9 +58,6 @@ export function useDepartmentEmployeeActions(deps: DepartmentEmployeeActionsDeps
 
   /** 保存排序中 */
   const isSavingSort = ref(false)
-
-  /** 批量删除中 */
-  const isBatchDeleting = ref(false)
 
   /**
    * 切换排序编辑模式
@@ -126,61 +123,39 @@ export function useDepartmentEmployeeActions(deps: DepartmentEmployeeActionsDeps
     }
   }
 
-  /**
-   * 批量删除人员
-   * 弹出确认框，确认后调用 userStore.removeBatch 执行批量删除
-   * 删除成功后清空选择状态并刷新列表
-   */
-  const handleBatchDelete = async () => {
-    if (selectedRows.value.length === 0) {
-      ElMessage.warning('请先选择要删除的数据')
-      return
-    }
-
-    // 提取选中的工号（唯一标识）
-    const jobcodes = selectedRows.value
-      .map((row) => row.employee_jobcode)
-      .filter((code): code is string => !!code)
-
-    if (jobcodes.length === 0) {
-      ElMessage.error('无法删除：选中的数据缺少唯一标识')
-      return
-    }
-
-    try {
-      await ElMessageBox.confirm(
-        `确定要删除选中的 ${jobcodes.length} 条数据吗？删除后数据不可恢复！`,
-        '批量删除确认',
-        {
-          confirmButtonText: '确定删除',
-          cancelButtonText: '取消',
-          type: 'warning',
-        },
-      )
-
-      isBatchDeleting.value = true
-      const result = await userStore.removeBatch(jobcodes)
-
+  // [M-FE-02] 批删委托 useEntityBatchDelete 单源（连点守卫 + 语义逐字保留：
+  // 取键 employee_jobcode、部分失败 warning、成功提示含条数、清选含 tableRef 双动作）
+  const { handleBatchDelete: runBatchDelete, isBatchDeleting } = useEntityBatchDelete<
+    EmployeeExtended,
+    { fail_count?: number; success_count?: number } | undefined
+  >({
+    getIds: (rows) =>
+      rows.map((row) => row.employee_jobcode).filter((code): code is string => !!code),
+    removeBatch: (jobcodes) => userStore.removeBatch(jobcodes),
+    onSuccess: (result, jobcodes) => {
       // 处理部分失败情况
       if (result && 'fail_count' in result && result.fail_count && result.fail_count > 0) {
         ElMessage.warning(`成功删除 ${result.success_count} 条，失败 ${result.fail_count} 条`)
       } else {
         ElMessage.success(`成功删除 ${jobcodes.length} 条数据`)
       }
-
-      // 清空选择状态
+    },
+    clearSelection: () => {
+      // 清空选择状态（表格勾选 + 选中行数据双动作）
       tableRef.value?.clearSelection()
       selectedRows.value = []
-      // 刷新列表
-      await loadEmployeeList()
-    } catch (error) {
-      if (error === 'cancel') return // 用户取消删除
-      logError('composables/useDepartmentEmployeeActions', '批量删除失败:', error)
-      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
-      notifyCallerError(error, '批量删除失败，请重试')
-    } finally {
-      isBatchDeleting.value = false
-    }
+    },
+    refresh: loadEmployeeList,
+    logTag: 'composables/useDepartmentEmployeeActions',
+  })
+
+  /**
+   * 批量删除人员
+   * 弹出确认框，确认后调用 userStore.removeBatch 执行批量删除
+   * 删除成功后清空选择状态并刷新列表
+   */
+  const handleBatchDelete = async () => {
+    await runBatchDelete(selectedRows.value)
   }
 
   return {

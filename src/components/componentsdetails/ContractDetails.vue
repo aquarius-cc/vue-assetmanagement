@@ -97,6 +97,7 @@
             <el-button
               type="danger"
               :disabled="slotProps.selectedRows?.length === 0"
+              :loading="isBatchDeleting"
               @click="handleBatchDelete(slotProps.selectedRows)"
             >
               批量删除 ({{ slotProps.selectedRows?.length || 0 }})
@@ -138,6 +139,7 @@ import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
 import { useServerExcelExport } from '@/composables/useServerExcelExport'
 import { useKeepAliveReload } from '@/composables/useKeepAliveReload'
+import { useEntityBatchDelete } from '@/composables/useEntityBatchDelete'
 
 // ===== 状态与实例 =====
 const route = useRoute()
@@ -258,44 +260,18 @@ const handleDelete = async (row: Contract) => {
 
 /**
  * 批量删除
- * 弹出确认框，确认后调甀store.removeBatch 执行批量删除
- * @param rows 选中的行数据
+ * [M-FE-02] 委托 useEntityBatchDelete 单源（连点守卫 + 语义逐字保留：
+ * 取键 recordcode、缺码文案「缺少记录标识」、文案「选中 N 条」形制）
  */
-const handleBatchDelete = async (rows: Contract[] | undefined) => {
-  if (!rows || rows.length === 0) {
-    ElMessage.warning('请先选择要删除的数据')
-    return
-  }
-
-  // 提取选中的唯一标识字段（recordcode）
-  const codes = rows.map((row) => row.recordcode).filter((code): code is string => !!code)
-
-  if (codes.length === 0) {
-    ElMessage.error('无法删除：选中的数据缺少记录标识')
-    return
-  }
-
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除选中${codes.length} 条数据吗？删除后数据不可恢复！`,
-      '批量删除确认',
-      {
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
-
-    await contractStore.removeBatch(codes)
-    smartListRef.value?.clearSelection()
-    await smartListRef.value?.refresh()
-  } catch (err) {
-    if (err === 'cancel') return
-    logError('components/componentsdetails/ContractDetails', '批量删除失败:', err)
-    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
-    notifyCallerError(err, '批量删除失败，请重试')
-  }
-}
+const { handleBatchDelete, isBatchDeleting } = useEntityBatchDelete<Contract>({
+  getIds: (rows) => rows.map((row) => row.recordcode).filter((code): code is string => !!code),
+  missingIdMessage: '无法删除：选中的数据缺少记录标识',
+  confirmMessage: (_rows, ids) => `确定要删除选中${ids.length} 条数据吗？删除后数据不可恢复！`,
+  removeBatch: (codes) => contractStore.removeBatch(codes),
+  clearSelection: () => smartListRef.value?.clearSelection(),
+  refresh: () => smartListRef.value?.refresh(),
+  logTag: 'components/componentsdetails/ContractDetails',
+})
 
 /**
  * 导出 Excel（支持当前页/全部数据）

@@ -619,3 +619,21 @@ describe('GroupedAssetTable · 展开面板锚定锁（BF-080 二轮）', () => 
     expect(gatSource).toContain('min(100cqw, 100%)')
   })
 })
+
+describe('GroupedAssetTable · 组批删防重（M-FE-02）', () => {
+  it('batchDeleting=true 时组删除按钮禁用，false 时可用', async () => {
+    mockGetGroupedAssets.mockResolvedValue(paged([SUMMARY_MULTI]))
+    const wrapper = mountTable()
+    await flush()
+
+    const deleteBtn = wrapper.find('button.group-delete-btn')
+    expect(deleteBtn.exists()).toBe(true)
+    expect(deleteBtn.attributes('disabled')).toBeUndefined()
+
+    await wrapper.setProps({ batchDeleting: true })
+    expect(deleteBtn.attributes('disabled')).toBeDefined()
+
+    await wrapper.setProps({ batchDeleting: false })
+    expect(deleteBtn.attributes('disabled')).toBeUndefined()
+  })
+})

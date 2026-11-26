@@ -56,6 +56,7 @@
             <el-button
               type="danger"
               :disabled="slotProps.selectedRows?.length === 0"
+              :loading="isBatchDeleting"
               @click="handleBatchDelete(slotProps.selectedRows)"
             >
               批量删除 ({{ slotProps.selectedRows?.length || 0 }})
@@ -114,17 +115,18 @@ const storeConfig = useSmartListConfig<RepairAssetExtended>({
   entityName: '维修记录',
 })
 
-const { handleDelete, handleBatchDelete, handleExportExcel } = useAssetLifecycleActions({
-  store: repairAssetStore,
-  entityName: '维修资产',
-  fetchExport: repairAssetExportExcel,
-  refresh: async () => {
-    smartListRef.value?.refresh()
-  },
-  clearSelection: () => {
-    smartListRef.value?.clearSelection()
-  },
-})
+const { handleDelete, handleBatchDelete, handleExportExcel, isBatchDeleting } =
+  useAssetLifecycleActions({
+    store: repairAssetStore,
+    entityName: '维修资产',
+    fetchExport: repairAssetExportExcel,
+    refresh: async () => {
+      smartListRef.value?.refresh()
+    },
+    clearSelection: () => {
+      smartListRef.value?.clearSelection()
+    },
+  })
 </script>
 
 <style lang="scss" scoped>

@@ -28,6 +28,7 @@
           ref="groupedTableRef"
           :detail-columns="columns"
           :initial-snapshot="initialSnapshot"
+          :batch-deleting="isGroupDeleting"
           @delete-group="handleDeleteGroup"
           @child-edit="handleEdit"
           @child-delete="handleDelete"
@@ -119,6 +120,7 @@
               v-if="canOperateAsset"
               type="danger"
               :disabled="slotProps.selectedRows?.length === 0"
+              :loading="isBatchDeleting"
               @click="handleBatchDelete(slotProps.selectedRows)"
             >
               批量删除 ({{ slotProps.selectedRows?.length || 0 }})
@@ -160,6 +162,7 @@ import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
 import { readReactive } from '@/utils/reactiveAccess'
 import { useServerExcelExport } from '@/composables/useServerExcelExport'
+import { useEntityBatchDelete } from '@/composables/useEntityBatchDelete'
 import { exportToExcel } from '@/utils/excelExporter'
 import { assetExportExcel } from '@/stores/assetStore'
 
@@ -351,24 +354,33 @@ const handleSearchReset = () => {
   void smartListRef.value?.reset()
 }
 
-/** 分组模式删除：组内跨合同/分类，不存在「编辑组」语义，故仅提供组内批量删除 */
-const handleDeleteGroup = async (row: AssetGroupSummary) => {
-  try {
-    await ElMessageBox.confirm(
-      `确认删除「${row.asset_name || '-'}」组内 ${row.asset_count} 条资产？`,
-      '删除确认',
-      { type: 'warning', confirmButtonText: '确认删除', cancelButtonText: '取消' },
-    )
-    await assetStore.removeBatch(row.asset_codes)
-    ElMessage.success('删除成功')
-    await groupedTableRef.value?.refresh()
-  } catch (error) {
-    if (error === 'cancel' || error === 'close') return
-    logError('components/AssetContentDetails', '[分组删除]', error)
-    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
-    notifyCallerError(error, '删除失败')
-  }
-}
+/** 分组模式删除：组内跨合同/分类，不存在「编辑组」语义，故仅提供组内批量删除
+ *  [M-FE-02] 委托 useEntityBatchDelete 单源（连点守卫 + 语义逐字保留：
+ *  取键 asset_codes、组内件数文案、cancel+close 双取消值、成功提示「删除成功」） */
+const { handleBatchDelete: runGroupDelete, isBatchDeleting: isGroupDeleting } =
+  useEntityBatchDelete<AssetGroupSummary>({
+    getIds: (rows) => rows.flatMap((row) => row.asset_codes),
+    emptySelectionMessage: null,
+    missingIdMessage: null,
+    confirmMessage: (rows) =>
+      `确认删除「${rows[0]?.asset_name || '-'}」组内 ${rows[0]?.asset_count} 条资产？`,
+    confirmTitle: '删除确认',
+    confirmButtonText: '确认删除',
+    cancelButtonText: '取消',
+    cancelValues: ['cancel', 'close'],
+    removeBatch: (codes) => assetStore.removeBatch(codes),
+    onSuccess: () => {
+      ElMessage.success('删除成功')
+    },
+    refresh: () => groupedTableRef.value?.refresh(),
+    onError: (error) => {
+      logError('components/AssetContentDetails', '[分组删除]', error)
+      // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
+      notifyCallerError(error, '删除失败')
+    },
+  })
+
+const handleDeleteGroup = (row: AssetGroupSummary) => runGroupDelete([row])
 
 // ===== 路由监听 =====
 watch(
@@ -489,38 +501,17 @@ const handleExportExcel = async () => {
 }
 
 // ===== 批量删除 =====
-const handleBatchDelete = async (rows: AssetDetail[] | undefined) => {
-  if (!rows || rows.length === 0) {
-    ElMessage.warning('请先选择要删除的数据')
-    return
-  }
-  // 【双约定】batch-delete 端点显式按 asset_code 处理（asset_view.py:357-367：
-  // filter(asset_code__in=ids) 并按 asset_code 做 RBAC 范围校验），勿统一为 recordcode。
-  const codes = rows.map((row) => row.asset_code).filter((code): code is string => !!code)
-  if (codes.length === 0) {
-    ElMessage.error('无法删除：选中的数据缺少资产编码')
-    return
-  }
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除选中的 ${codes.length} 条数据吗？删除后数据不可恢复！`,
-      '批量删除确认',
-      {
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
-    await assetStore.removeBatch(codes)
-    smartListRef.value?.clearSelection()
-    await smartListRef.value?.refresh()
-  } catch (err) {
-    if (err === 'cancel') return
-    logError('components/componentsdetails/AssetContentDetails', '批量删除失败:', err)
-    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
-    notifyCallerError(err, '批量删除失败，请重试')
-  }
-}
+// [M-FE-02] 委托 useEntityBatchDelete 单源（连点守卫 + 语义逐字保留：
+// 【双约定】batch-delete 端点显式按 asset_code 处理（asset_view.py:357-367：
+// filter(asset_code__in=ids) 并按 asset_code 做 RBAC 范围校验），勿统一为 recordcode。
+const { handleBatchDelete, isBatchDeleting } = useEntityBatchDelete<AssetDetail>({
+  getIds: (rows) => rows.map((row) => row.asset_code).filter((code): code is string => !!code),
+  missingIdMessage: '无法删除：选中的数据缺少资产编码',
+  removeBatch: (codes) => assetStore.removeBatch(codes),
+  clearSelection: () => smartListRef.value?.clearSelection(),
+  refresh: () => smartListRef.value?.refresh(),
+  logTag: 'components/componentsdetails/AssetContentDetails',
+})
 
 const handleMaskBack = () => {
   router.go(-1)
