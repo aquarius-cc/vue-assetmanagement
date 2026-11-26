@@ -237,6 +237,7 @@ const route = useRoute()
 const router = useRouter()
 const contractStore = useContractStore()
 const formRef = ref()
+const submittingLocal = ref(false)
 const isLoading = ref(false)
 
 // 是否为编辑模式
@@ -440,6 +441,9 @@ const submitForm = () => {
 
     const submitData = buildSubmitData()
 
+    // 双击守卫：置位紧贴 try
+    if (submittingLocal.value) return
+    submittingLocal.value = true
     try {
       if (isEdit.value) {
         await contractStore.update(submitData)
@@ -452,6 +456,8 @@ const submitForm = () => {
       router.push({ name: 'ContractDetails' })
     } catch (error: unknown) {
       notifySubmitError(error)
+    } finally {
+      submittingLocal.value = false
     }
   })
 }

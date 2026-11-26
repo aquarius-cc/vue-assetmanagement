@@ -297,6 +297,7 @@ const outAssetCreateExtendedForm = reactive<OutAssetCreateExtended>({
 
 // 原始数据（用于编辑模式检测变化）
 const originalFormData = ref<OutAssetCreateExtended | null>(null)
+const submittingLocal = ref(false)
 
 // 计算属性：转换为后端需要的 OutAssetCreateForm
 // [HR-02] 恢复传递 outasset_applicant_jobcode / outasset_manager_jobcode / outasset_using_location
@@ -449,11 +450,16 @@ const submitForm = () => {
       return
     }
 
+    // 双击守卫：置位紧贴 try，避免提前 return 跳过 finally 锁死表单
+    if (submittingLocal.value) return
+    submittingLocal.value = true
     try {
       await performSubmit()
       finalizeSubmitSuccess()
     } catch (error: unknown) {
       handleFormSubmitError(error)
+    } finally {
+      submittingLocal.value = false
     }
   })
 }

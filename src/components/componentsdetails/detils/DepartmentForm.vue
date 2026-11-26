@@ -102,6 +102,7 @@ const route = useRoute()
 const router = useRouter()
 const departmentStore = useDepartmentStore()
 const formRef = ref()
+const submittingLocal = ref(false)
 const isLoading = ref(false)
 
 // ===== 模式判断 =====
@@ -183,6 +184,9 @@ const submitForm = () => {
       return
     }
 
+    // 双击守卫：置位紧贴 try
+    if (submittingLocal.value) return
+    submittingLocal.value = true
     try {
       if (isEdit.value) {
         // 编辑模式：调用 update，注意 departmentStore.update 期望 Partial<Department> 或 DepartmentUpdateForm
@@ -213,6 +217,8 @@ const submitForm = () => {
         error,
         error instanceof Error ? `操作失败：${error.message}` : '操作失败：发生未知错误',
       )
+    } finally {
+      submittingLocal.value = false
     }
   })
 }

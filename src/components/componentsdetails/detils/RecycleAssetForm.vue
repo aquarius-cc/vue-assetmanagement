@@ -350,6 +350,8 @@ const submitForm = () => {
         (s) => s.storage_code === formData.recycle_asset_storage_code,
       )?.storage_name ?? formData.recycle_asset_storage_code
 
+    // 双击/重复弹窗守卫：确认框已开或提交进行中不再触发
+    if (submitState.confirmVisible.value || submitState.submitting.value) return
     submitState.showConfirm({
       actionType: isEditMode.value
         ? '更新回收记录'

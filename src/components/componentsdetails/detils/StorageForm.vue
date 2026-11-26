@@ -106,6 +106,7 @@ const router = useRouter()
 const route = useRoute()
 const storageStore = useStorageStore()
 const formRef = ref<FormInstance>()
+const submittingLocal = ref(false)
 
 // 编辑模式：根据 query.recordcode 判断
 const isEditMode = computed(() => !!route.query.recordcode)
@@ -172,6 +173,9 @@ const submitForm = () => {
       return
     }
 
+    // 双击守卫：置位紧贴 try
+    if (submittingLocal.value) return
+    submittingLocal.value = true
     try {
       if (isEditMode.value && currentCode.value) {
         // 编辑模式：调用 update
@@ -197,6 +201,8 @@ const submitForm = () => {
       // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次（消息提取收敛 getErrorMessage 单源）
       notifyCallerError(error, '操作失败')
       logError('components/componentsdetails/detils/StorageForm', '提交失败:', error)
+    } finally {
+      submittingLocal.value = false
     }
   })
 }

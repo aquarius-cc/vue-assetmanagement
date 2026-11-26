@@ -47,6 +47,7 @@
           <AssetTypeChildList
             :children="childrenOfSelected"
             :loading="false"
+            :batch-deleting="isBatchDeleting"
             @add-child="handleAddChildType"
             @batch-import="handleBatchImport"
             @batch-delete="handleBatchDelete"
@@ -154,6 +155,7 @@ import AssetTypeChildList from '@/components/componentsdetails/components/AssetT
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
 import { useKeepAliveReload } from '@/composables/useKeepAliveReload'
+import { useEntityBatchDelete } from '@/composables/useEntityBatchDelete'
 
 const route = useRoute()
 const router = useRouter()
@@ -320,6 +322,8 @@ const handleSubmitForm = async () => {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
     if (!valid) return
+    // 双击守卫
+    if (submitting.value) return
     submitting.value = true
     try {
       if (isEditMode.value) {
@@ -345,6 +349,8 @@ const handleSubmitForm = async () => {
 
 /** 批量新增提交 */
 const handleBatchAddSubmit = async () => {
+  // 双击守卫（第二提交面：与 handleSubmitForm 共享 submitting）
+  if (submitting.value) return
   const validItems = batchAddList.value.filter(
     (item) => item.type_code.trim() && item.type_name.trim(),
   )
@@ -442,29 +448,22 @@ const handleDeleteChild = async (row: AssetType) => {
   }
 }
 
-/** 批量删除子分类 */
-const handleBatchDelete = async (rows: AssetType[]) => {
-  if (rows.length === 0) return
-  const typeCodes = rows.map((r) => r.type_code).filter(Boolean)
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除选中的 ${typeCodes.length} 条资产分类吗？`,
-      '批量删除确认',
-      {
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
-    await assetTypeStore.removeBatch(typeCodes)
+/** 批量删除子分类
+ *  [M-FE-02] 委托 useEntityBatchDelete 单源（连点守卫 + 语义逐字保留：
+ *  取键 type_code、空选择静默、无缺码检查、文案「N 条资产分类」、成功提示「批量删除成功」） */
+const { handleBatchDelete, isBatchDeleting } = useEntityBatchDelete<AssetType>({
+  getIds: (rows) => rows.map((r) => r.type_code).filter((c): c is string => !!c),
+  emptySelectionMessage: null,
+  missingIdMessage: null,
+  confirmMessage: (_rows, ids) => `确定要删除选中的 ${ids.length} 条资产分类吗？`,
+  removeBatch: (typeCodes) => assetTypeStore.removeBatch(typeCodes),
+  onSuccess: () => {
     ElMessage.success('批量删除成功')
-    await fetchAllData()
-  } catch (err) {
-    if (err === 'cancel') return
-    // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
-    notifyCallerError(err, '批量删除失败，请重试')
-  }
-}
+  },
+  refresh: () => fetchAllData(),
+  // 原实现无 logError，仅 notifyCallerError（语义逐字保留）
+  onError: (err) => notifyCallerError(err, '批量删除失败，请重试'),
+})
 
 /** 批量导入 */
 const handleBatchImport = () => {
@@ -495,6 +494,10 @@ defineExpose({
   addBatchItem,
   selectedType,
   handleBatchAddChildType,
+  // 提交面测试接缝（AssetTypeDetails.submit.spec.ts 双击守卫）
+  submitting,
+  handleSubmitForm,
+  handleBatchAddSubmit,
 })
 </script>
 

@@ -107,6 +107,7 @@ const route = useRoute()
 const router = useRouter()
 const assetTypeStore = useAssetTypeStore()
 const formRef = ref()
+const submittingLocal = ref(false)
 
 const isEdit = computed(() => !!route.query.code)
 
@@ -171,6 +172,9 @@ const submitForm = () => {
       return
     }
 
+    // 双击守卫：置位紧贴 try
+    if (submittingLocal.value) return
+    submittingLocal.value = true
     try {
       if (isEdit.value) {
         const code = route.query.code as string
@@ -191,6 +195,8 @@ const submitForm = () => {
       // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
       notifyCallerError(error, '操作失败，发生未知错误')
       logError('components/componentsdetails/detils/AssetTypeForm', '资产分类操作失败：', error)
+    } finally {
+      submittingLocal.value = false
     }
   })
 }

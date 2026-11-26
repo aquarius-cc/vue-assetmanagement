@@ -287,6 +287,8 @@ const handleSubmit = async () => {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
     if (!valid) return
+    // 双击守卫
+    if (submitting.value) return
     submitting.value = true
     try {
       if (isEdit.value && editingId.value) {

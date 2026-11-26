@@ -233,6 +233,7 @@ const assetTypeStore = useAssetTypeStore()
 const storageStore = useStorageStore()
 const unregisteredAssetStore = useUnregisteredAssetStore()
 const formRef = ref()
+const submittingLocal = ref(false)
 const isLoading = ref(false)
 
 const isEditMode = ref(!!route.query.code)
@@ -435,6 +436,9 @@ const submitForm = () => {
       ElMessage.info('数据未修改，无需提交')
       return
     }
+    // 双击守卫：置位紧贴 try，避免提前 return 跳过 finally 锁死表单
+    if (submittingLocal.value) return
+    submittingLocal.value = true
     try {
       if (isEditMode.value) {
         await unregisteredAssetStore.update(submitData.value)
@@ -447,6 +451,8 @@ const submitForm = () => {
       router.push({ name: 'UnregisteredAssetDetails' })
     } catch (error: unknown) {
       notifySubmitError(error)
+    } finally {
+      submittingLocal.value = false
     }
   })
 }

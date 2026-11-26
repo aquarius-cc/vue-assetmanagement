@@ -108,6 +108,8 @@ export function useAssetOperationForm<T = Record<string, unknown>>(
     await formRef.value.validate(async (valid) => {
       if (!valid) return
 
+      // 双击守卫
+      if (submitting.value) return
       submitting.value = true
       try {
         await options.submitFn(formData)

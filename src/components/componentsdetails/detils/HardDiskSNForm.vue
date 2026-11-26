@@ -172,6 +172,7 @@ const router = useRouter()
 const assetStore = useAssetStore()
 const harddiskSnStore = useHardDiskSnStore()
 const formRef = ref()
+const submittingLocal = ref(false)
 const isLoading = ref(false)
 
 // 编辑模式判断：route.query.code 存在则为编辑模式
@@ -407,6 +408,9 @@ const submitForm = () => {
       return
     }
 
+    // 双击守卫：置位紧贴 try，避免提前 return 跳过 finally 锁死表单
+    if (submittingLocal.value) return
+    submittingLocal.value = true
     try {
       const submitData: HardDiskSNBatchSaveForm = {
         asset_recordcode: formData.asset_recordcode,
@@ -440,6 +444,8 @@ const submitForm = () => {
       // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
       notifyCallerError(error, '操作失败，请重试')
       logError('components/componentsdetails/detils/HardDiskSNForm', '硬盘序列号提交失败', error)
+    } finally {
+      submittingLocal.value = false
     }
   })
 }
