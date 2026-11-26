@@ -100,11 +100,13 @@ describe('useAssetStatusChecks', () => {
     }
   })
 
-  it('canScrap is false for in_use/in_store/repairing', () => {
+  it('canScrap is false for in_use/in_store/repairing/damaged/scrapped', () => {
     for (const s of [
       AssetCurrentStatus.IN_USE,
       AssetCurrentStatus.IN_STORE,
       AssetCurrentStatus.REPAIRING,
+      AssetCurrentStatus.DAMAGED,
+      AssetCurrentStatus.SCRAPPED,
     ]) {
       expect(statusChecksFor(s).canScrap.value).toBe(false)
     }

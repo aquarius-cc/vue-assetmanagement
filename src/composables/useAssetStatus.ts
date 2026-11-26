@@ -31,7 +31,9 @@ export function useAssetStatusChecks(statusRef: ComputedRef<AssetCurrentStatus |
     canRepair: computed(() => status.value === AssetCurrentStatus.BROKEN),
     canRepairDone: computed(() => status.value === AssetCurrentStatus.REPAIRING),
     canRepairFailed: computed(() => status.value === AssetCurrentStatus.REPAIRING),
-    // FSM 允许 recycled_pending → damaged，需补充；in_use 需先回收再报废故不加入
+    // 报废前置白名单唯一真源（DR-1）。repairing 刻意排除：后端 FSM 虽存在
+    // to_damaged 共边，但业务要求维修中资产仅走维修失败路径；in_use 须先回收；
+    // damaged/scrapped 不再申请报废。变更此集合须走业务决策，不得在 View 复制。
     canScrap: computed(() =>
       isStatusIn([
         AssetCurrentStatus.BROKEN,

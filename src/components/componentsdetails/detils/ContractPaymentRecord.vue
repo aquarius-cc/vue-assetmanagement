@@ -230,6 +230,7 @@ const submitPayment = async () => {
 
   await formRef.value.validate(async (valid) => {
     if (!valid) return
+    if (submitting.value) return // [M-CONC-03] 同步封窗,对齐 AssetForm.vue:350
 
     submitting.value = true
     try {

@@ -34,7 +34,7 @@
 
     <template #actions>
       <div class="action-buttons">
-        <el-button type="danger" :loading="submitting" :disabled="!canSubmit" @click="handleSubmit">
+        <el-button type="danger" :loading="submitting" :disabled="!canScrap" @click="handleSubmit">
           提交报废申请
         </el-button>
         <el-button @click="router.back()">取消</el-button>
@@ -51,7 +51,7 @@ import type { FormRules } from 'element-plus'
 import AssetOperationLayout from '@/components/AssetOperationLayout.vue'
 import { useAssetOperationForm } from '@/composables/useAssetOperationForm'
 import { useDamagedAssetStore } from '@/stores'
-import { AssetCurrentStatus } from '@/types/asset' // [修复] 新增状态枚举导入
+import { useAssetStatusChecks } from '@/composables/useAssetStatus'
 
 const router = useRouter()
 
@@ -83,18 +83,9 @@ const {
 // formRef 由模板 ref="formRef" 绑定到 el-form，供 composable 内部校验；
 // vue-tsc 不将模板 ref 绑定计为变量使用，此处显式消费以消除 TS6133
 void formRef
-// [修复] 前端状态校验：仅允许以下状态的资产提交报废申请
-// 【业务决策】in_use 不允许直接申请报废（须先回收），与后端 FSM 允许的前置状态
-// （recycled_pending|broken|repairing|lost）对齐；repairing 仅走维修失败路径，不在此列
-const canSubmit = computed(
-  () =>
-    asset.value?.asset_current_status &&
-    [
-      AssetCurrentStatus.RECYCLED_PENDING,
-      AssetCurrentStatus.BROKEN,
-      AssetCurrentStatus.LOST,
-    ].includes(asset.value.asset_current_status),
-)
+// 报废前置白名单唯一真源 = useAssetStatusChecks.canScrap（DR-1）
+// repairing 刻意排除（仅走维修失败路径）；in_use 须先回收。语义不变。
+const { canScrap } = useAssetStatusChecks(computed(() => asset.value?.asset_current_status))
 
 const formData = reactive({
   reason: '',
