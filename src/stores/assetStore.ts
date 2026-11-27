@@ -24,6 +24,7 @@
  */
 import { createEntityStore, withPaginationDefaults } from '@/stores/createEntityStore'
 import { assetAPI } from '@/api/asset'
+import { invalidateAssetCache } from '@/api/assetCache'
 import { scanAPI } from '@/api/scan'
 import type { PublicScanAsset } from '@/types/scan'
 import type {
@@ -65,6 +66,12 @@ interface AssetStore extends EntityStore<AssetDetail, PaginationQuery> {
    * @returns 资产详情（404 时为 null）
    */
   getByIdFresh: (recordcode: string) => Promise<AssetDetail | null>
+
+  /**
+   * 静默失效资产详情缓存副本（组件不得直连 @/api/*，经 store 透出）
+   * @param recordcode 资产记录编码
+   */
+  invalidateAssetCache: (recordcode: string) => void
 
   /**
    * 自定义资产搜索（支持多字段模糊查询）
@@ -197,6 +204,8 @@ export const useAssetStore = (): AssetStore => {
      */
     extendedStore.getByIdFresh = (recordcode: string) =>
       assetAPI.getAssetByCode(recordcode, { useCache: false })
+
+    extendedStore.invalidateAssetCache = (recordcode: string) => invalidateAssetCache(recordcode)
 
     /**
      * 自定义资产搜索方法

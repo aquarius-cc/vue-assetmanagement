@@ -155,6 +155,8 @@ export interface AssetCreateFormExtended extends AssetCreateForm {
 export interface AssetUpdateForm extends Partial<Omit<AssetCreateForm, 'asset_code'>> {
   /** 记录编码（后端唯一标识，编辑时必须传递） */
   recordcode: string
+  /** 乐观锁版本号（必填 CAS 令牌：409 VERSION_CONFLICT 语义的比对基准） */
+  version: number
 }
 
 /**
@@ -260,6 +262,8 @@ export interface Asset {
  * 包含关联对象的完整数据（API 返回的嵌套结构）
  */
 export interface AssetDetail extends Asset {
+  /** 乐观锁版本号（CAS 令牌：更新载荷必须携带加载时的版本快照，服务端锁内比对） */
+  version: number
   /** 资产类型完整信息（外键关联对象） */
   asset_type?: AssetType
   /** 关联合同摘要信息（外键关联对象；D4 白名单，财务字段剥离后可选） */

@@ -19,6 +19,10 @@ vi.mock('@/api/asset', () => ({
   },
 }))
 
+vi.mock('@/api/assetCache', () => ({
+  invalidateAssetCache: vi.fn(),
+}))
+
 vi.mock('element-plus', () => ({
   ElMessage: {
     success: vi.fn(),
@@ -352,6 +356,16 @@ describe('AssetStore', () => {
 
       const result = await store.getByIdFresh('NONEXIST')
       expect(result).toBeNull()
+    })
+  })
+
+  describe('invalidateAssetCache（缓存静默失效经 store 透出）', () => {
+    it('应把 recordcode 委托给 api 层失效函数', async () => {
+      const assetCache = await import('@/api/assetCache')
+
+      store.invalidateAssetCache('REC-001')
+
+      expect(assetCache.invalidateAssetCache).toHaveBeenCalledWith('REC-001')
     })
   })
 

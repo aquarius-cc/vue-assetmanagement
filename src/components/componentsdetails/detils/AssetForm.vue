@@ -66,12 +66,21 @@
 defineOptions({ name: 'AssetForm' })
 
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Edit, Plus } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
 import type { AssetCreateFormExtended, AssetDetail } from '@/types/asset'
 import { getAssetStatusText } from '@/utils/Format'
 import { notifyCallerError } from '@/utils/errorHandler'
+import {
+  detailToUpdatePayload,
+  dirtyDiff,
+  isVersionConflict,
+  pickNum,
+  pickPrice,
+  pickRel,
+  pickStr,
+} from '@/components/componentsdetails/detils/assetUpdateMerge'
 import {
   useUserStore,
   useAssetStore,
@@ -111,6 +120,10 @@ const isEditMode = computed(() => !!route.query.code)
 // 【ID-2/取键契约】编辑模式的定位键。route.query.code 由列表页传入 recordcode
 // （后端 AssetViewSet lookup_field="recordcode"），回填时从详情再捕获一次以防路由参数漂移。
 const editRecordcode = ref('')
+/** 乐观锁版本号：加载/刷新时捕获，提交载荷必带（后端 CAS 令牌） */
+const editVersion = ref(1)
+/** 加载回填后的归一化基线快照（脏字段 diff 的对照面） */
+const updateBaseline = ref<Record<string, unknown>>({})
 
 const assetForm = reactive<AssetCreateFormExtended>({
   asset_code: '',
@@ -140,36 +153,8 @@ const assetForm = reactive<AssetCreateFormExtended>({
   asset_current_status: '',
 })
 
-/**
- * 从可选字符串字段取值，null/undefined 兜底为默认值。
- * P1-4 复杂度收敛用：把 `field ?? ''` 的分支从 getAssetCreateForm 字段字面量里收走。
- */
-const pickStr = (value: string | null | undefined, fallback: string): string => value ?? fallback
-
-/**
- * 从可选数值字段取值，null/undefined 兜底为默认值。
- */
-const pickNum = (value: number | null | undefined, fallback: number): number => value ?? fallback
-
-/**
- * 单价字段取值：null/undefined → ''，其余 String() 化（与原三元表达式逐字等价）。
- */
-const pickPrice = (value: number | string | null | undefined): string =>
-  value != null ? String(value) : ''
-
-/**
- * 从「可空关联对象」上安全取一个字符串字段。
- * 对象或字段任一缺失均兜底为默认值，与原 `detail.rel?.field ?? ''` 逐字等价。
- * P1-4 复杂度收敛用：把 `?.` 与 `??` 两处分支从调用方收走。
- */
-const pickRel = (
-  rel: Record<string, unknown> | null | undefined,
-  field: string,
-  fallback: string,
-): string => {
-  const value = rel?.[field]
-  return typeof value === 'string' ? value : fallback
-}
+// 字段归一化 pick* 纯函数与 detailToUpdatePayload/dirtyDiff/isVersionConflict
+// 已收编至 ./assetUpdateMerge（同源映射 DR-1：与 getAssetCreateForm 共用一套归一化）
 
 /**
  * 获取提交给后端的创建表单数据
@@ -261,22 +246,66 @@ const applyRelationDetail = (detail: AssetDetail) => {
 }
 
 /**
- * 编辑模式加载详情并回填表单。以详情响应中的 recordcode 为准提交更新（【ID-2/取键契约】）。
+ * 回填 + 基线捕获（编辑提交的乐观锁载荷来源）：
+ * version 为 CAS 令牌，baseline 为脏字段 diff 的对照面。
  */
+const applyDetail = (detail: AssetDetail) => {
+  applyScalarDetail(detail)
+  applyRelationDetail(detail)
+  editVersion.value = detail.version
+  updateBaseline.value = detailToUpdatePayload(detail)
+}
+
 /**
- * 编辑模式加载详情并回填表单。
- * @param preloaded 交接数据（可选）：onMounted 早期消费，避免慢网 TTL 过期；
- *   resetForm 不传，回退 getByIdFresh（绕过缓存，编辑页打开即打网）
+ * 拉取最新详情并回填（唯一实现：非预载加载 / 409「刷新看最新」/ 编辑态重置共用）。
+ */
+const refreshFromFresh = async (recordcode: string): Promise<AssetDetail | null> => {
+  const fresh = await assetStore.getByIdFresh(recordcode)
+  if (!fresh) return null
+  applyDetail(fresh)
+  return fresh
+}
+
+/**
+ * 预载数据静默校验：handoff 预载是列表时刻的快照，后台补拉最新比对。
+ * 一致 → 静默失效缓存里的旧副本（useCache:false 拉取不回填缓存）；
+ * 不一致 → 未编辑平滑替换 / 已编辑仅提示。
+ * 验收口径：handoff 预载分支除外，数据陈旧风险由提交时乐观锁 409 绝对兜底。
+ */
+const silentValidate = async (recordcode: string, preloaded: AssetDetail) => {
+  try {
+    const fresh = await assetStore.getByIdFresh(recordcode)
+    if (!fresh) return
+    if (fresh.version === preloaded.version) {
+      assetStore.invalidateAssetCache(recordcode)
+      return
+    }
+    if (!isFormDirty.value) {
+      applyDetail(fresh)
+      return
+    }
+    ElMessage.info('该资产数据刚被他人更新，提交时如有冲突将提示处理')
+  } catch {
+    // 静默校验失败不阻断编辑，提交时 409 绝对兜底
+  }
+}
+
+/**
+ * 编辑模式加载详情并回填表单。以详情响应中的 recordcode 为准提交更新（【ID-2/取键契约】）。
+ * @param preloaded 交接数据（可选）：onMounted 早期消费，避免慢网 TTL 过期，
+ *   消费后静默校验补拉最新；resetForm 不传，回退 getByIdFresh（绕过缓存，打开即打网）
  */
 const loadAssetDetail = async (recordcode: string, preloaded?: AssetDetail | null) => {
   try {
-    const detail = preloaded ?? (await assetStore.getByIdFresh(recordcode))
-    if (!detail) {
-      ElMessage.error('未找到该资产，请确认记录编码是否正确')
+    if (preloaded) {
+      applyDetail(preloaded)
+      await silentValidate(recordcode, preloaded)
       return
     }
-    applyScalarDetail(detail)
-    applyRelationDetail(detail)
+    const fresh = await refreshFromFresh(recordcode)
+    if (!fresh) {
+      ElMessage.error('未找到该资产，请确认记录编码是否正确')
+    }
   } catch (error) {
     // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
     notifyCallerError(error, '无法加载资产详情，请检查网络连接后刷新页面重试')
@@ -293,6 +322,10 @@ const getAssetUpdateForm = computed(() => {
   delete payload.asset_purchase_number
   return payload
 })
+
+/** 当前表单相对基线的脏字段（仅用户真实修改的键） */
+const currentDiff = computed(() => dirtyDiff(updateBaseline.value, getAssetUpdateForm.value))
+const isFormDirty = computed(() => Object.keys(currentDiff.value).length > 0)
 
 // 基础数据加载
 const associations = useAssetFormAssociations(assetTypeStore, contractStore, storageStore)
@@ -360,7 +393,9 @@ const submitForm = () => {
     submitting.value = true
     try {
       if (isEditMode.value) {
-        await submitUpdate()
+        const saved = await submitUpdate()
+        // 冲突弹窗内未完成保存（刷新看最新/关闭弹窗）→ 留在编辑页，不导航
+        if (!saved) return
       } else {
         await submitCreate()
       }
@@ -378,19 +413,85 @@ const submitForm = () => {
 
 /**
  * 编辑模式提交：优先用回填捕获的 recordcode，路由参数兜底（【ID-2/取键契约】）。
+ * 载荷必带 version（乐观锁 CAS 令牌）；VERSION_CONFLICT 走人机协同弹窗。
+ * @returns 是否已完成保存（false = 冲突弹窗内选择刷新/关闭，留在编辑页）
  */
-const submitUpdate = async () => {
+const submitUpdate = async (): Promise<boolean> => {
   const recordcode = editRecordcode.value || (route.query.code as string) || ''
   if (!recordcode) {
     // [BF-095/M-5] throw 阻断 submitForm 后续 setRefreshFlag/router.go(-1)；
     // 文案由 submitForm catch 的 resolveSubmitError 统一出口，避免双弹窗
     throw new Error('缺少记录编码，无法更新资产')
   }
-  await assetStore.update({
-    ...getAssetUpdateForm.value,
-    recordcode,
-  } as unknown as Partial<AssetDetail>)
-  ElMessage.success('更新成功')
+  try {
+    await assetStore.update({
+      ...getAssetUpdateForm.value,
+      version: editVersion.value,
+      recordcode,
+    } as unknown as Partial<AssetDetail>)
+    ElMessage.success('更新成功')
+    return true
+  } catch (error: unknown) {
+    // 专属 VERSION_CONFLICT 分支必须先于通用 409 处理（后者吞掉一切 409 不弹窗）
+    if (isVersionConflict(error)) {
+      return await resolveVersionConflict(recordcode)
+    }
+    throw error
+  }
+}
+
+/** 冲突弹窗：确认=保留我的修改（合并重试），取消=刷新看最新（放弃修改），关闭=放弃提交 */
+const chooseConflictAction = async (): Promise<'keep' | 'refresh' | 'abort'> => {
+  try {
+    await ElMessageBox.confirm(
+      '该资产刚被其他用户修改。选择「保留我的修改」将自动合并他人变更后重试；选择「刷新看最新」将放弃我的修改并加载最新数据。',
+      '修改冲突',
+      {
+        confirmButtonText: '保留我的修改',
+        cancelButtonText: '刷新看最新',
+        distinguishCancelAndClose: true,
+        type: 'warning',
+      },
+    )
+    return 'keep'
+  } catch (action: unknown) {
+    return action === 'cancel' ? 'refresh' : 'abort'
+  }
+}
+
+/**
+ * VERSION_CONFLICT 人机协同处理：合并载荷 = 最新详情归一化 + 我的脏字段 + 最新版本号
+ * （未动过的字段让位给他人并发修改）。合并后再冲突回到弹窗——每次重试都需人工选择，
+ * 不自动无限重试。返回是否已保存成功。
+ */
+const resolveVersionConflict = async (recordcode: string): Promise<boolean> => {
+  for (;;) {
+    const action = await chooseConflictAction()
+    if (action === 'abort') return false
+    if (action === 'refresh') {
+      await refreshFromFresh(recordcode)
+      ElMessage.info('已刷新为最新数据，请确认后重新提交')
+      return false
+    }
+    const latest = await assetStore.getByIdFresh(recordcode)
+    if (!latest) {
+      ElMessage.error('该资产已不存在，无法合并提交')
+      return false
+    }
+    try {
+      await assetStore.update({
+        ...detailToUpdatePayload(latest),
+        ...currentDiff.value,
+        version: latest.version,
+        recordcode,
+      } as unknown as Partial<AssetDetail>)
+      ElMessage.success('更新成功（已合并他人修改）')
+      return true
+    } catch (error: unknown) {
+      // 合并后再次冲突 → 回到弹窗（人工再次选择）；其余错误交统一出口
+      if (!isVersionConflict(error)) throw error
+    }
+  }
 }
 
 /**

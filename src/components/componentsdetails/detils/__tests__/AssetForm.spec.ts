@@ -20,6 +20,8 @@ const {
   mockHandoff,
   mockGuardOnMounted,
   elMessage,
+  mockConfirm,
+  mockInvalidateAssetCache,
 } = vi.hoisted(() => ({
   mockGo: vi.fn(),
   mockPush: vi.fn(),
@@ -35,6 +37,8 @@ const {
   mockHandoff: { seed: vi.fn(), consume: vi.fn(() => null), clear: vi.fn() },
   mockGuardOnMounted: { value: true },
   elMessage: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
+  mockConfirm: vi.fn(),
+  mockInvalidateAssetCache: vi.fn(),
 }))
 
 vi.mock('vue-router', () => ({
@@ -44,6 +48,7 @@ vi.mock('vue-router', () => ({
 
 vi.mock('element-plus', () => ({
   ElMessage: elMessage,
+  ElMessageBox: { confirm: mockConfirm },
 }))
 
 vi.mock('@element-plus/icons-vue', () => ({
@@ -64,6 +69,7 @@ vi.mock('@/stores/index', () => ({
   useUserStore: () => ({ getByName: vi.fn(async () => []), getById: mockUserGetById }),
   useAssetStore: () => ({
     getByIdFresh: mockAssetGetByIdFresh,
+    invalidateAssetCache: mockInvalidateAssetCache,
     update: mockAssetUpdate,
     create: mockAssetCreate,
     setRefreshFlag: mockSetRefreshFlag,
@@ -109,6 +115,8 @@ const stubs = {
   AssetBasicInfo: {
     props: ['form', 'isEditMode', 'displayStatus', 'assetTypes', 'entryLinkage'],
     template: `<div class="basic-stub">
+      <span class="f-asset-name">{{ form.asset_name }}</span>
+      <input class="f-name-input" :value="form.asset_name" @input="form.asset_name = $event.target.value" />
       <span class="f-asset-type">{{ form.asset_type }}</span>
       <span class="f-asset-type-name">{{ form.asset_type_name }}</span>
       <span class="f-entry-person">{{ form.asset_entry_person }}</span>
@@ -157,6 +165,7 @@ function makeDetail() {
     asset_using_location: '3楼办公区',
     asset_description: '日常办公用',
     asset_current_status: 'in_store',
+    version: 5,
     asset_type: { type_code: 'AT001', type_name: '笔记本' },
     asset_contract: { contract_code: 'CT001', contract_name: '采购合同A' },
     asset_storage: { storage_code: 'ST001', storage_name: '主仓库' },
@@ -251,6 +260,8 @@ describe('AssetForm 编辑回填与提交【BF-081】', () => {
 
     expect(payload).toHaveProperty('recordcode', 'REC-001')
     expect(payload).toHaveProperty('asset_name', '笔记本电脑')
+    // 乐观锁 CAS 令牌：载荷必带加载时的版本快照
+    expect(payload).toHaveProperty('version', 5)
     // FK 编码取自回填结果（修复前回填为空）
     expect(payload).toHaveProperty('asset_type', 'AT001')
     expect(payload).toHaveProperty('asset_storage', 'ST001')
@@ -308,15 +319,19 @@ describe('AssetForm 交接消费与加载遮罩', () => {
     mockGuardOnMounted.value = true
   })
 
-  it('命中交接：字段即时回填且 getByIdFresh 零调用', async () => {
+  it('命中交接：字段即时回填（不等补拉网络），静默校验后台补拉最新', async () => {
     mockHandoff.consume.mockReturnValue(makeDetail() as never)
+    // 静默校验的补拉请求挂起：断言即时回填不依赖其返回
+    mockAssetGetByIdFresh.mockReturnValue(new Promise<null>(() => {}))
 
     const wrapper = mountForm()
     await flushPromises()
 
     expect(mockHandoff.consume).toHaveBeenCalledWith('REC-001')
-    expect(mockAssetGetByIdFresh).not.toHaveBeenCalled()
     expect(wrapper.find('.f-asset-type').text()).toBe('AT001')
+    expect(wrapper.find('.f-asset-name').text()).toBe('笔记本电脑')
+    // 预载分支除外的陈旧风险由 409 绝对兜底；此处补拉一次做静默校验
+    expect(mockAssetGetByIdFresh).toHaveBeenCalledTimes(1)
   })
 
   it('未命中交接：回退 getByIdFresh 回填', async () => {
@@ -354,18 +369,20 @@ describe('AssetForm 交接消费与加载遮罩', () => {
     expect(mockHandoff.consume).not.toHaveBeenCalled()
   })
 
-  it('resetForm 不传 preloaded，仍走 getByIdFresh（打开即打网，不走缓存）', async () => {
+  it('resetForm 不传 preloaded，仍走 getByIdFresh（重置即打网，不走缓存）', async () => {
     mockHandoff.consume.mockReturnValue(makeDetail() as never)
     const wrapper = mountForm()
     await flushPromises()
-    expect(mockAssetGetByIdFresh).not.toHaveBeenCalled()
+    // 预载命中后静默校验已补拉 1 次；重置须再次打网，不得被缓存短路
+    expect(mockAssetGetByIdFresh).toHaveBeenCalledTimes(1)
 
     const resetBtn = wrapper.findAll('button').find((b) => b.text().includes('重置'))
     expect(resetBtn).toBeTruthy()
     await resetBtn!.trigger('click')
     await flushPromises()
 
-    expect(mockAssetGetByIdFresh).toHaveBeenCalledWith('REC-001')
+    expect(mockAssetGetByIdFresh).toHaveBeenCalledTimes(2)
+    expect(mockAssetGetByIdFresh).toHaveBeenLastCalledWith('REC-001')
   })
 
   it('非预载路径打开即打网，二次进入仍打网（不命中缓存）', async () => {
@@ -385,5 +402,196 @@ describe('AssetForm 交接消费与加载遮罩', () => {
     expect(mockAssetGetByIdFresh).toHaveBeenCalledTimes(1)
     expect(mockAssetGetByIdFresh).toHaveBeenCalledWith('REC-001')
     second.unmount()
+  })
+})
+
+describe('AssetForm 预载静默校验【乐观锁】', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    currentQuery.value = { code: 'REC-001' }
+    mockLoadAssociations.mockResolvedValue(undefined)
+    mockHandoff.consume.mockReturnValue(makeDetail() as never)
+    mockGuardOnMounted.value = true
+    mockAssetUpdate.mockResolvedValue({})
+  })
+
+  it('一致：静默失效缓存副本，表单保留预载值', async () => {
+    mockAssetGetByIdFresh.mockResolvedValue(makeDetail()) // v5 == 预载 v5
+
+    const wrapper = mountForm()
+    await flushPromises()
+
+    expect(mockAssetGetByIdFresh).toHaveBeenCalledTimes(1)
+    expect(mockInvalidateAssetCache).toHaveBeenCalledWith('REC-001')
+    expect(wrapper.find('.f-asset-name').text()).toBe('笔记本电脑')
+  })
+
+  it('不一致且未编辑：平滑替换为最新（值与版本、基线同步更新）', async () => {
+    const latest = { ...makeDetail(), version: 6, asset_name: '他人改名' }
+    mockAssetGetByIdFresh.mockResolvedValue(latest)
+
+    const wrapper = mountForm()
+    await flushPromises()
+    expect(wrapper.find('.f-asset-name').text()).toBe('他人改名')
+    expect(mockInvalidateAssetCache).not.toHaveBeenCalled()
+
+    const submitBtn = wrapper.findAll('button').find((b) => b.text().includes('提交'))
+    await submitBtn!.trigger('click')
+    await vi.waitFor(() => expect(mockAssetUpdate).toHaveBeenCalled())
+    const payload = mockAssetUpdate.mock.calls[0][0] as Record<string, unknown>
+    expect(payload).toHaveProperty('version', 6)
+    expect(payload).toHaveProperty('asset_name', '他人改名')
+  })
+
+  it('不一致且已编辑：仅提示，保留用户修改不替换', async () => {
+    let resolveFresh!: (v: unknown) => void
+    mockAssetGetByIdFresh.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFresh = resolve
+        }),
+    )
+    const wrapper = mountForm()
+    await flushPromises()
+    await wrapper.find('.f-name-input').setValue('我的改名')
+    resolveFresh({ ...makeDetail(), version: 6, asset_name: '他人改名' })
+    await flushPromises()
+
+    expect(elMessage.info).toHaveBeenCalledWith('该资产数据刚被他人更新，提交时如有冲突将提示处理')
+    expect(wrapper.find('.f-asset-name').text()).toBe('我的改名')
+    expect(mockInvalidateAssetCache).not.toHaveBeenCalled()
+  })
+})
+
+describe('AssetForm 409 VERSION_CONFLICT 人机协同', () => {
+  const versionConflictError = () =>
+    Object.assign(new Error('conflict'), {
+      response: {
+        status: 409,
+        data: { code: 409, message: 'conflict', data: { error_code: 'VERSION_CONFLICT' } },
+      },
+    })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    currentQuery.value = { code: 'REC-001' }
+    mockLoadAssociations.mockResolvedValue(undefined)
+    mockHandoff.consume.mockReturnValue(null)
+    mockAssetGetByIdFresh.mockResolvedValue(makeDetail()) // v5
+    mockAssetUpdate.mockResolvedValue({})
+    mockConfirm.mockResolvedValue(undefined) // 默认「保留我的修改」
+    mockGuardOnMounted.value = true
+  })
+
+  const mountAndSubmit = async () => {
+    const wrapper = mountForm()
+    await flushPromises()
+    const submitBtn = wrapper.findAll('button').find((b) => b.text().includes('提交'))
+    await submitBtn!.trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  it('保留我的修改：合并载荷 = 最新归一化 + 脏字段覆盖 + 最新版本号', async () => {
+    mockAssetUpdate.mockRejectedValueOnce(versionConflictError())
+    // 首拉 v5 → 冲突后合并拉 v6（他人改了 name 与 brand）
+    mockAssetGetByIdFresh.mockResolvedValueOnce(makeDetail()).mockResolvedValueOnce({
+      ...makeDetail(),
+      version: 6,
+      asset_name: '他人改名',
+      asset_brand: '华为',
+    })
+
+    const wrapper = mountForm()
+    await flushPromises()
+    await wrapper.find('.f-name-input').setValue('我的改名') // 仅脏 asset_name
+    const submitBtn = wrapper.findAll('button').find((b) => b.text().includes('提交'))
+    await submitBtn!.trigger('click')
+    await flushPromises()
+
+    expect(mockConfirm).toHaveBeenCalledTimes(1)
+    expect(mockAssetUpdate).toHaveBeenCalledTimes(2)
+    const merged = mockAssetUpdate.mock.calls[1][0] as Record<string, unknown>
+    expect(merged).toHaveProperty('version', 6) // 最新版本号
+    expect(merged).toHaveProperty('asset_name', '我的改名') // 脏字段保留
+    expect(merged).toHaveProperty('asset_brand', '华为') // 未动字段让位给他人修改
+    expect(merged).not.toHaveProperty('asset_purchase_number')
+    expect(mockGo).toHaveBeenCalledWith(-1)
+    expect(elMessage.success).toHaveBeenCalledWith('更新成功（已合并他人修改）')
+  })
+
+  it('刷新看最新：放弃修改回填最新，不重试不导航', async () => {
+    mockAssetUpdate.mockRejectedValueOnce(versionConflictError())
+    mockAssetGetByIdFresh
+      .mockResolvedValueOnce(makeDetail())
+      .mockResolvedValueOnce({ ...makeDetail(), version: 6, asset_name: '他人改名' })
+    mockConfirm.mockRejectedValueOnce('cancel') // 取消 = 刷新看最新
+
+    const wrapper = await mountAndSubmit()
+
+    expect(mockAssetUpdate).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('.f-asset-name').text()).toBe('他人改名')
+    expect(elMessage.info).toHaveBeenCalledWith('已刷新为最新数据，请确认后重新提交')
+    expect(mockGo).not.toHaveBeenCalled()
+    expect(mockSetRefreshFlag).not.toHaveBeenCalled()
+  })
+
+  it('合并后再 409：重新弹窗，人工再次选择后成功', async () => {
+    mockAssetUpdate
+      .mockRejectedValueOnce(versionConflictError())
+      .mockRejectedValueOnce(versionConflictError())
+    mockAssetGetByIdFresh
+      .mockResolvedValueOnce(makeDetail())
+      .mockResolvedValueOnce({ ...makeDetail(), version: 6 })
+      .mockResolvedValueOnce({ ...makeDetail(), version: 7 })
+
+    await mountAndSubmit()
+
+    // 每次重试均需人工选择（confirm 两次），不自动无限重试
+    expect(mockConfirm).toHaveBeenCalledTimes(2)
+    expect(mockAssetUpdate).toHaveBeenCalledTimes(3)
+    expect(mockAssetUpdate.mock.calls[2][0]).toHaveProperty('version', 7)
+    expect(mockGo).toHaveBeenCalledWith(-1)
+  })
+
+  it('关闭弹窗：放弃提交留在编辑页', async () => {
+    mockAssetUpdate.mockRejectedValueOnce(versionConflictError())
+    mockConfirm.mockRejectedValueOnce('close')
+
+    await mountAndSubmit()
+
+    expect(mockAssetUpdate).toHaveBeenCalledTimes(1)
+    expect(mockGo).not.toHaveBeenCalled()
+  })
+
+  it('非 VERSION_CONFLICT 业务码的 409 不弹专属弹窗（判别不可与 HTTP 码混同）', async () => {
+    mockAssetUpdate.mockRejectedValueOnce(
+      Object.assign(new Error('conflict'), {
+        response: {
+          status: 409,
+          data: { code: 409, message: 'conflict', data: { error_code: 'OTHER' } },
+        },
+      }),
+    )
+
+    await mountAndSubmit()
+
+    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(mockAssetUpdate).toHaveBeenCalledTimes(1)
+    expect(mockGo).not.toHaveBeenCalled()
+  })
+
+  it('仅信封 code=409（无 VERSION_CONFLICT 业务码）同样不弹专属弹窗', async () => {
+    mockAssetUpdate.mockRejectedValueOnce(
+      Object.assign(new Error('conflict'), {
+        response: { status: 409, data: { code: 409, message: 'conflict', data: {} } },
+      }),
+    )
+
+    await mountAndSubmit()
+
+    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(mockAssetUpdate).toHaveBeenCalledTimes(1)
+    expect(mockGo).not.toHaveBeenCalled()
   })
 })
