@@ -9,11 +9,13 @@
  *   本模块收敛为唯一来源，两处均改为引用。
  *
  * @callers
- *   - components/componentsdetails/AssetContentDetails.vue: 汇总端点筛选参数拼装
+ *   - components/componentsdetails/AssetContentDetails.vue: 汇总端点筛选参数拼装 + 返回时 SearchBar 回填（toGroupedFilters / fromGroupedFilters）
  *   - composables/useGroupChildrenCache.ts: 组内明细筛选透传白名单
  * @dependsOn
- *   - (无依赖，纯常量)
+ *   - @/types/asset（AssetGroupQueryParams 类型，仅类型导入）
  */
+
+import type { AssetGroupQueryParams } from '@/types/asset'
 
 /**
  * 可透传至组内明细的筛选键（9 键）
@@ -67,4 +69,42 @@ export const isGroupedFieldDropped = (key: string): boolean =>
 export const GROUPED_FILTER_KEY_MAP: Readonly<Record<string, string>> = {
   ...Object.fromEntries(GROUPED_PASS_THROUGH_KEYS.map((key) => [key, key])),
   asset_contract: 'contract_code',
+}
+
+/** 反向映射：分组端点 API 键 → SearchBar UI 键（由正向 map 派生，DR-1 不写第二份字面量） */
+const SEARCH_KEY_BY_API_KEY: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.entries(GROUPED_FILTER_KEY_MAP).map(([searchKey, apiKey]) => [apiKey, searchKey]),
+) as Readonly<Record<string, string>>
+
+/**
+ * SearchBar UI 键 → 分组端点 API 键（从 AssetContentDetails 上移，键集单一来源在此）
+ *
+ * 未在映射表内的键刻意丢弃：DRF 对不认的键静默忽略，会造成筛选无声失效。
+ */
+export const toGroupedFilters = (params: Record<string, string>): AssetGroupQueryParams => {
+  const filters: Record<string, string> = {}
+  Object.entries(GROUPED_FILTER_KEY_MAP).forEach(([from, to]) => {
+    const value = params[from]
+    if (value) filters[to] = value
+  })
+  return filters as AssetGroupQueryParams
+}
+
+/**
+ * API 键 → SearchBar UI 键；过滤非字符串/空值/未知键 + UI 已剔除的键
+ *
+ * 供分组页返回时把 session.filters 回填到 SearchBar 输入框（AC-67j 补强）。
+ */
+export const fromGroupedFilters = (
+  filters: AssetGroupQueryParams | null | undefined,
+): Record<string, string> => {
+  const values: Record<string, string> = {}
+  if (!filters) return values
+  Object.entries(filters).forEach(([apiKey, value]) => {
+    if (typeof value !== 'string' || value === '') return
+    const searchKey = SEARCH_KEY_BY_API_KEY[apiKey]
+    if (!searchKey || isGroupedFieldDropped(searchKey)) return
+    values[searchKey] = value
+  })
+  return values
 }

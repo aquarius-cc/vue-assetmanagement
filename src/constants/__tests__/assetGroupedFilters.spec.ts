@@ -12,7 +12,9 @@ import {
   GROUPED_FIELD_DROP_KEYS,
   GROUPED_FILTER_KEY_MAP,
   GROUPED_PASS_THROUGH_KEYS,
+  fromGroupedFilters,
   isGroupedFieldDropped,
+  toGroupedFilters,
 } from '../assetGroupedFilters'
 
 /** 与后端 AssetGroupedSelector.PASS_THROUGH_FILTER_PATHS 逐字相等（9 键） */
@@ -56,5 +58,30 @@ describe('assetGroupedFilters', () => {
     expect(isGroupedFieldDropped('asset_type_category')).toBe(true)
     expect(isGroupedFieldDropped('asset_type_recordcode')).toBe(false)
     expect(isGroupedFieldDropped('asset_code')).toBe(false)
+  })
+
+  // ===== AC-67j 补强：双向映射（SearchBar 回填）=====
+  it('反向映射：contract_code → asset_contract，同名键透传', () => {
+    expect(fromGroupedFilters({ contract_code: 'HT1', asset_name: '显示器' })).toEqual({
+      asset_contract: 'HT1',
+      asset_name: '显示器',
+    })
+  })
+
+  it('非 UI 键忽略：page / page_size / no_contract / 未知键 / asset_type_category', () => {
+    const result = fromGroupedFilters({
+      page: 2,
+      page_size: 20,
+      no_contract: true,
+      asset_type_category: 'AT_W2',
+      unknown_key: 'x',
+      asset_code: 'ZC001',
+    })
+    expect(result).toEqual({ asset_code: 'ZC001' })
+  })
+
+  it('往返一致（限 UI 可见键子集）', () => {
+    const ui = { asset_name: '显示器', asset_contract: 'HT1', asset_code: 'ZC001' }
+    expect(fromGroupedFilters(toGroupedFilters(ui))).toEqual(ui)
   })
 })

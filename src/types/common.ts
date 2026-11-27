@@ -214,7 +214,7 @@ export interface SearchFieldConfig {
 }
 
 /**
- * SearchBar 组件 Props
+ * SearchBar 组件 Props（影子类型：仅文档用，组件实际使用本地 interface Props）
  */
 export interface SearchBarProps {
   /** 字段配置数组 */
@@ -223,6 +223,8 @@ export interface SearchBarProps {
   searchButtonText?: string
   /** 是否显示重置按钮 */
   showReset?: boolean
+  /** 恢复回填值（一次性；null/缺省 = 纯默认初始化） */
+  initialValues?: Record<string, string> | null
 }
 
 /**

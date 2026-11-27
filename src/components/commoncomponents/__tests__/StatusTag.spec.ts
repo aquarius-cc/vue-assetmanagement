@@ -1,6 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { logWarn } from '@/utils/logger'
 import StatusTag from '../StatusTag.vue'
+
+vi.mock('@/utils/logger', () => ({ logWarn: vi.fn() }))
 
 describe('StatusTag', () => {
   const stubs = { 'el-tag': { template: '<span class="el-tag"><slot /></span>' } }
@@ -48,5 +51,15 @@ describe('StatusTag', () => {
       global: { stubs },
     })
     expect(wrapper.text()).toContain('not_in_map')
+  })
+
+  it('【CT-4】空值归一为未知且不告警', () => {
+    vi.mocked(logWarn).mockClear()
+    const emptyStatuses = ['', undefined as unknown as string, null as unknown as string]
+    for (const status of emptyStatuses) {
+      const wrapper = mount(StatusTag, { props: { status }, global: { stubs } })
+      expect(wrapper.text()).toContain('未知')
+    }
+    expect(logWarn).not.toHaveBeenCalled()
   })
 })

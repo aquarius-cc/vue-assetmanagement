@@ -77,6 +77,14 @@ describe('statusMapping', () => {
       const result = getStatusInfo('', ASSET_STATUS_MAP)
       expect(result).toEqual({ label: '未知', type: 'info' })
     })
+
+    it('【CT-4】空值 null/undefined/空串归一为未知且不告警', () => {
+      for (const empty of [null, undefined, ''] as const) {
+        const result = getStatusInfo(empty, ASSET_STATUS_MAP)
+        expect(result).toEqual({ label: '未知', type: 'info' })
+      }
+      expect(logWarn).not.toHaveBeenCalled()
+    })
   })
 
   describe('Asset status functions', () => {

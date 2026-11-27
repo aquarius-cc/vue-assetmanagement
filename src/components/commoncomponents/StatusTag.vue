@@ -51,6 +51,11 @@ const MAP_SELECTOR = {
 const statusInfo = computed(() => {
   const map = props.customMap || MAP_SELECTOR[props.mapType || 'asset']
 
+  // 空值属渲染时序/占位态，归一为"未知"且不告警（与 getStatusInfo 空值口径一致）
+  if (props.status == null || props.status === '') {
+    return { label: '未知', type: 'info' }
+  }
+
   // 验证状态值合法性
   const isValidStatus = (
     status: string,

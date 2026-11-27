@@ -8,7 +8,7 @@
 -->
 <template>
   <el-card class="search-bar" shadow="never">
-    <el-form :model="formData" label-width="auto" class="search-form">
+    <el-form :model="formData" label-width="80px" class="search-form">
       <el-row :gutter="16">
         <!-- 动态渲染搜索字段 -->
         <el-col v-for="field in fields" :key="field.key" :span="field.span || 6">
@@ -86,12 +86,13 @@
  *   - fields: 搜索字段配置数组
  *   - searchButtonText: 搜索按钮文本（默认"搜索"）
  *   - showReset: 是否显示重置按钮（默认true）
+ *   - initialValues: 恢复回填值（一次性；null/缺省 = 纯默认初始化）
  *
  * Events:
  *   - search: 搜索事件，返回所有非空字段的 key-value 对
  *   - reset: 重置事件
  */
-import { reactive, watch } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { Search, RefreshRight } from '@element-plus/icons-vue'
 import type { SearchFieldConfig } from '@/types/common'
 
@@ -103,11 +104,14 @@ interface Props {
   searchButtonText?: string
   /** 是否显示重置按钮 */
   showReset?: boolean
+  /** 恢复回填值（一次性；null/缺省 = 纯默认初始化） */
+  initialValues?: Record<string, string> | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   searchButtonText: '搜索',
   showReset: true,
+  initialValues: null,
 })
 
 // ===== Emits 定义 =====
@@ -124,19 +128,44 @@ const emit = defineEmits<{
  * key 为字段的 key，value 为字段值
  */
 const formData = reactive<Record<string, string>>({})
+const pendingInitialValues = ref<Record<string, string> | null>(null)
+let hydrated = false
 
-// 初始化默认值
-const initFormData = () => {
+/** fields 变化只补缺键；快照含该键则优先取快照，避免异步选项加载丢值 */
+const fillMissingFields = () => {
   props.fields.forEach((field) => {
-    formData[field.key] = field.defaultValue || ''
+    if (Object.prototype.hasOwnProperty.call(formData, field.key)) return
+    formData[field.key] = pendingInitialValues.value?.[field.key] ?? field.defaultValue ?? ''
   })
 }
 
-// 监听 fields 变化，重新初始化
+/** 显式回填：浅拷贝记住完整快照，再对当前 fields 强制赋值 */
+const applyInitialValues = (values: Record<string, string>) => {
+  pendingInitialValues.value = { ...values }
+  props.fields.forEach((field) => {
+    formData[field.key] = values[field.key] ?? field.defaultValue ?? ''
+  })
+}
+
+/** 重置：先清快照记忆，再整表回落默认值（唯一重置入口） */
+const clearToDefaults = () => {
+  pendingInitialValues.value = null
+  props.fields.forEach((field) => {
+    formData[field.key] = field.defaultValue ?? ''
+  })
+}
+
+// deep 仅用于感知键集/下拉选项变化，不再承担「重置」语义；重置唯一入口是 clearToDefaults
+watch(() => props.fields, fillMissingFields, { immediate: true, deep: true })
+
 watch(
-  () => props.fields,
-  () => initFormData(),
-  { immediate: true, deep: true },
+  () => props.initialValues,
+  (values) => {
+    if (hydrated || !values) return
+    hydrated = true
+    applyInitialValues(values)
+  },
+  { immediate: true },
 )
 
 // ===== 方法 =====
@@ -170,7 +199,7 @@ const handleSearch = () => {
  * 清空所有字段值，触发 reset 事件
  */
 const handleReset = () => {
-  initFormData()
+  clearToDefaults()
   emit('reset')
 }
 

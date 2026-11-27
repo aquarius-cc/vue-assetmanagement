@@ -208,10 +208,13 @@ export const ASSET_TYPE_MAP: Record<
  * @returns { label, type } 或默认值
  */
 export function getStatusInfo(
-  status: string,
+  status: string | null | undefined,
   map: Record<string, { label: string; type: string }>,
   warnOnUnknown = true,
 ): { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' } {
+  if (status == null || status === '') {
+    return { label: '未知', type: 'info' }
+  }
   const info = map[status]
   if (info) {
     return {

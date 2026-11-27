@@ -16,8 +16,9 @@
 <template>
   <div class="asset-details-root">
     <SearchBar
-      ref="searchBarRef"
+      v-show="!isChildRouteActive"
       :fields="activeSearchFields"
+      :initial-values="initialSearchValues"
       @search="handleSearch"
       @reset="handleSearchReset"
     />
@@ -57,9 +58,10 @@
 
       <SmartListContainer
         v-else
+        v-show="!isChildRouteActive"
         ref="smartListRef"
         :store-config="storeConfig"
-        :auto-load="true"
+        :auto-load="!isChildRouteActive"
         :initial-page="1"
         :initial-page-size="20"
       >
@@ -156,13 +158,14 @@ import type { SmartListContainerExpose } from '@/types/common'
 import { useAssetListConfig } from '@/composables/useAssetListConfig'
 import { usePermission } from '@/composables/usePermission'
 import type { AssetDetail, AssetGroupQueryParams, AssetGroupSummary } from '@/types/asset'
-import { GROUPED_FILTER_KEY_MAP } from '@/constants/assetGroupedFilters'
+import { fromGroupedFilters, toGroupedFilters } from '@/constants/assetGroupedFilters'
 import { useGroupedAssetSession, type GroupedPageSnapshot } from '@/stores/groupedAssetSession'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
 import { readReactive } from '@/utils/reactiveAccess'
 import { useServerExcelExport } from '@/composables/useServerExcelExport'
 import { useEntityBatchDelete } from '@/composables/useEntityBatchDelete'
+import { useAssetDetailHandoff } from '@/composables/useAssetDetailHandoff'
 import { exportToExcel } from '@/utils/excelExporter'
 import { assetExportExcel } from '@/stores/assetStore'
 
@@ -209,9 +212,6 @@ const groupedTableRef = ref<GroupedAssetTableExpose | null>(null)
 const isChildRouteActive = ref(false)
 
 // ===== 分组页会话（BF-078 需求3）=====
-/** 分组模式当前生效筛选（SearchBar → toGroupedFilters 产出，离开时随快照保存） */
-const lastGroupedFilters = ref<AssetGroupQueryParams>({})
-
 const session = useGroupedAssetSession()
 
 /**
@@ -224,6 +224,17 @@ const session = useGroupedAssetSession()
 const initialSnapshot =
   props.enableGrouping && session.pendingRestore && session.snapshot ? session.snapshot : null
 if (initialSnapshot) session.clearPending()
+
+/** 分组模式当前生效筛选（SearchBar → toGroupedFilters 产出，离开时随快照保存）
+ *  二次往返防线：由快照继承筛选，否则再次离开会把已恢复筛选写成空 */
+const lastGroupedFilters = ref<AssetGroupQueryParams>({ ...(initialSnapshot?.filters ?? {}) })
+
+/**
+ * SearchBar 一次性水合载荷（setup 期常量，引用稳定）。
+ * 依赖 AssetDetails.vue 的 childViewKey 在 grouped ↔ detail 切换时重挂；
+ * 若未来去掉重挂，需另设显式回填入口（如重新暴露 setSearchParams）或监听恢复旗。
+ */
+const initialSearchValues = initialSnapshot ? fromGroupedFilters(initialSnapshot.filters) : null
 
 /**
  * 快照保存：分组模式离开本路由记录时（grouped ↔ form/detail 为兄弟记录，必触发本钩子）。
@@ -318,22 +329,8 @@ const columns: TableColumn[] = [
 ]
 
 // ===== 搜索栏事件 =====
-// 【分组模式筛选映射】SearchBar 的字段集已按 `enableGrouping` 切换，但键名到分组端点
-// 参数名的映射仍需在此收敛：键集单一来源是 `GROUPED_FILTER_KEY_MAP`（9 键同名透传 +
-// `asset_contract → contract_code` 唯一改名键），**不重复列举第二份白名单**（DR-1）。
-//
-// 未在映射表内的键**刻意丢弃**：透传后端不认的键会被 DRF 静默忽略（无报错、筛选
-// 无声失效）；`contract_code` 另有一层含义——它已编码进 `group_key` 首元素，误传会
-// 与组键取交集得空集（R-1，故组内明细端点不声明该参数）。
-const toGroupedFilters = (params: Record<string, string>): AssetGroupQueryParams => {
-  const filters: Record<string, string> = {}
-  Object.entries(GROUPED_FILTER_KEY_MAP).forEach(([from, to]) => {
-    const value = params[from]
-    if (value) filters[to] = value
-  })
-  return filters as AssetGroupQueryParams
-}
-
+// 【分组模式筛选映射】键集单一来源已上移至 constants/assetGroupedFilters（toGroupedFilters），
+// 本文件直接复用，不在组件内重复列举第二份白名单（DR-1）。
 const handleSearch = (params: Record<string, string>) => {
   if (groupedTableRef.value) {
     const filters = toGroupedFilters(params)
@@ -395,14 +392,31 @@ watch(
 // ===== 事件处理 =====
 // 【ID-2/取键契约】后端 AssetViewSet lookup_field="recordcode"（asset_view.py:57），
 // 编辑/删除等 detail 路由只认 recordcode 或数字 pk；asset_code 是业务编码，不可用于 detail 路由。
+/** 一次性交接：仅分组子行（AssetDetailSerializer 完整字段）可 seed；平铺行字段不完整，刻意不 seed */
+const handoff = useAssetDetailHandoff()
+const seedGroupRow = (row: AssetDetail): void => {
+  if (props.enableGrouping) handoff.seed(row)
+}
+const clearGroupRow = (recordcode: string): void => {
+  if (props.enableGrouping) handoff.clear(recordcode)
+}
+
 const handleEdit = (row: AssetDetail) => {
   if (!row.recordcode) {
     ElMessage.error('记录编码不存在，无法编辑')
     return
   }
-  router.push({ name: 'AssetForm', query: { code: row.recordcode } }).catch((err) => {
-    ElMessage.error(`跳转失败: ${err.message || '未知错误'}`)
-  })
+  const code = row.recordcode
+  seedGroupRow(row)
+  router
+    .push({ name: 'AssetForm', query: { code } })
+    .then((failure) => {
+      if (failure) clearGroupRow(code)
+    })
+    .catch((err) => {
+      clearGroupRow(code)
+      ElMessage.error(`跳转失败: ${err.message || '未知错误'}`)
+    })
 }
 
 /** 分组子行「详细」：与平铺页 CommonListActions 的 detail-route-name='BasicAssetDetails' 同契约 */
@@ -411,9 +425,17 @@ const handleDetail = (row: AssetDetail) => {
     ElMessage.error('记录编码不存在，无法查看详情')
     return
   }
-  router.push({ name: 'BasicAssetDetails', query: { code: row.recordcode } }).catch((err) => {
-    ElMessage.error(`跳转失败: ${err.message || '未知错误'}`)
-  })
+  const code = row.recordcode
+  seedGroupRow(row)
+  router
+    .push({ name: 'BasicAssetDetails', query: { code } })
+    .then((failure) => {
+      if (failure) clearGroupRow(code)
+    })
+    .catch((err) => {
+      clearGroupRow(code)
+      ElMessage.error(`跳转失败: ${err.message || '未知错误'}`)
+    })
 }
 
 const handleDelete = (row: AssetDetail) => {

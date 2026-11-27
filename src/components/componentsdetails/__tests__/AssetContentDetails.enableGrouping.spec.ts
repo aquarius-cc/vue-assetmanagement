@@ -33,6 +33,8 @@ const {
   mockCaptureSession,
   mockConfirm,
   mockElMessage,
+  mockRouterPush,
+  mockHandoff,
 } = vi.hoisted(() => ({
   mockRemoveBatch: vi.fn(),
   mockExcelExport: vi.fn(),
@@ -49,11 +51,18 @@ const {
   /** [M-FE-02] 批删 confirm / 消息 mock（连点守卫用例） */
   mockConfirm: vi.fn(),
   mockElMessage: { success: vi.fn(), warning: vi.fn(), error: vi.fn(), info: vi.fn() },
+  /** 路由跳转 Promise 化（新代码链式 .then 清理 handoff） */
+  mockRouterPush: vi.fn(() => Promise.resolve()),
+  /** handoff 契约桩：断言 seed/clear 的 enableGrouping 门控 */
+  mockHandoff: { seed: vi.fn(), consume: vi.fn(), clear: vi.fn() },
 }))
 
+/** 可变 matched：子路由激活用例在挂载前替换为 length>3 */
+let activeMatched: { name: string }[] = [{ name: 'AssetContentDetails' }]
+
 vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: vi.fn() }),
-  useRoute: () => ({ matched: [{ name: 'AssetContentDetails' }] }),
+  useRouter: () => ({ push: mockRouterPush, go: vi.fn() }),
+  useRoute: () => ({ matched: activeMatched }),
   onBeforeRouteLeave: (cb: () => void) => {
     mockLeaveHooks.cb = cb
   },
@@ -98,6 +107,10 @@ vi.mock('@/composables/useAssetListConfig', async () => {
 
 vi.mock('@/composables/useExcelExport', () => ({
   useExcelExport: () => ({ handleExportExcel: mockExcelExport }),
+}))
+
+vi.mock('@/composables/useAssetDetailHandoff', () => ({
+  useAssetDetailHandoff: () => mockHandoff,
 }))
 
 vi.mock('@/composables/useServerExcelExport', () => ({
@@ -207,7 +220,7 @@ const globalMount = {
     SmartListContainer: SmartListContainerStub,
     SearchBar: {
       name: 'SearchBar',
-      props: ['fields'],
+      props: ['fields', 'initialValues'],
       emits: ['search', 'reset'],
       template: '<div class="search-bar" />',
     },
@@ -270,6 +283,8 @@ beforeEach(() => {
   activeRows = ROWS
   activeChildRows = []
   activeSelectedRows = []
+  activeMatched = [{ name: 'AssetContentDetails' }]
+  useAuthStore(pinia).userRole = ''
 })
 
 describe('AssetContentDetails · 分组开关与列集回归', () => {
@@ -548,6 +563,93 @@ describe('AssetContentDetails · 分组开关与列集回归', () => {
       expect(store.pendingRestore).toBe(true)
       expect(store.snapshot).toMatchObject({ page: 2, expandedKeys: ['G1'] })
     })
+
+    // ===== AC-67j 补强：SearchBar 输入框恢复（与 GAT 数据恢复并列）=====
+    it('有快照：SearchBar 收到反向映射后的 initialValues，GAT 仍收 initialSnapshot', () => {
+      const store = useGroupedAssetSession(pinia)
+      store.save({
+        filters: { asset_name: '显示器', contract_code: 'HT1' },
+        page: 1,
+        expandedKeys: [],
+        childPages: {},
+        selectedCodes: [],
+        scrollTop: 0,
+      })
+
+      const wrapper = mountDetails({ enableGrouping: true })
+      expect(wrapper.findComponent({ name: 'SearchBar' }).props('initialValues')).toEqual({
+        asset_name: '显示器',
+        asset_contract: 'HT1',
+      })
+      expect(
+        wrapper.findComponent({ name: 'GroupedAssetTable' }).props('initialSnapshot'),
+      ).toMatchObject({
+        filters: { asset_name: '显示器', contract_code: 'HT1' },
+      })
+    })
+
+    it('无快照 / 平铺模式：initialValues 为 null', () => {
+      expect(
+        mountDetails({ enableGrouping: true })
+          .findComponent({ name: 'SearchBar' })
+          .props('initialValues'),
+      ).toBeNull()
+      const store = useGroupedAssetSession(pinia)
+      store.save({
+        filters: { asset_name: '显示器' },
+        page: 1,
+        expandedKeys: [],
+        childPages: {},
+        selectedCodes: [],
+        scrollTop: 0,
+      })
+      expect(mountDetails().findComponent({ name: 'SearchBar' }).props('initialValues')).toBeNull()
+    })
+
+    it('双程往返：恢复后再次离开仍保留筛选（lastGroupedFilters 由快照继承）', async () => {
+      const store = useGroupedAssetSession(pinia)
+      store.save({
+        filters: { asset_name: '显示器', contract_code: 'HT1' },
+        page: 1,
+        expandedKeys: ['G1'],
+        childPages: {},
+        selectedCodes: [],
+        scrollTop: 0,
+      })
+      mockCaptureSession.mockReturnValue({
+        page: 1,
+        expandedKeys: ['G1'],
+        childPages: {},
+        selectedCodes: [],
+        scrollTop: 0,
+      })
+
+      const first = mountDetails({ enableGrouping: true })
+      expect(first.findComponent({ name: 'SearchBar' }).props('initialValues')).toEqual({
+        asset_name: '显示器',
+        asset_contract: 'HT1',
+      })
+      expect(
+        first.findComponent({ name: 'GroupedAssetTable' }).props('initialSnapshot'),
+      ).toMatchObject({
+        filters: { asset_name: '显示器', contract_code: 'HT1' },
+      })
+
+      expect(mockLeaveHooks.cb).toBeTypeOf('function')
+      mockLeaveHooks.cb!()
+      expect(store.snapshot?.filters).toEqual({ asset_name: '显示器', contract_code: 'HT1' })
+
+      const second = mountDetails({ enableGrouping: true })
+      expect(second.findComponent({ name: 'SearchBar' }).props('initialValues')).toEqual({
+        asset_name: '显示器',
+        asset_contract: 'HT1',
+      })
+      expect(
+        second.findComponent({ name: 'GroupedAssetTable' }).props('initialSnapshot'),
+      ).toMatchObject({
+        filters: { asset_name: '显示器', contract_code: 'HT1' },
+      })
+    })
   })
 
   describe('M-FE-02 批删连点防护（平铺双击 + 分组双击）', () => {
@@ -616,4 +718,77 @@ describe('AssetContentDetails · 分组开关与列集回归', () => {
       expect(mockElMessage.success).toHaveBeenCalledWith('删除成功')
     })
   })
+
+  // ===== 空壳闪烁修复（P0-1）=====
+  describe('子路由激活：背景列表隐藏 + 停止自动加载', () => {
+    it('子路由激活时 autoLoad=false，SearchBar 与平铺列表 v-show 隐藏', async () => {
+      activeMatched = [
+        { name: 'MainViews' },
+        { name: 'AssetDetails' },
+        { name: 'AssetContentDetails' },
+        { name: 'AssetForm' },
+      ]
+      const wrapper = mountDetails()
+      await wrapper.vm.$nextTick()
+
+      const smart = wrapper.findComponent({ name: 'SmartListContainer' })
+      expect(smart.attributes('auto-load')).toBe('false')
+      // v-show 作用在单根组件上：display:none
+      expect(wrapper.find('.search-bar').attributes('style')).toContain('display: none')
+      expect(smart.attributes('style')).toContain('display: none')
+    })
+
+    it('非子路由时 autoLoad=true 且背景列表可见', () => {
+      const wrapper = mountDetails()
+      const smart = wrapper.findComponent({ name: 'SmartListContainer' })
+      expect(smart.attributes('auto-load')).toBe('true')
+      expect(smart.attributes('style') ?? '').not.toContain('display: none')
+    })
+  })
+
+  // ===== handoff 播种门控（P0-2 前置）=====
+  describe('详情/编辑跳转交接门控', () => {
+    it('分组模式 childDetail/childEdit 播种，平铺模式不播种', async () => {
+      const grouped = mountDetails({ enableGrouping: true })
+      const table = grouped.findComponent({ name: 'GroupedAssetTable' })
+      const row = ROWS[0]
+
+      table.vm.$emit('childDetail', row)
+      table.vm.$emit('childEdit', row)
+      await wrapperTick(grouped)
+
+      expect(mockHandoff.seed).toHaveBeenCalledTimes(2)
+      expect(mockHandoff.seed).toHaveBeenNthCalledWith(1, row)
+      expect(mockRouterPush).toHaveBeenCalledWith({
+        name: 'BasicAssetDetails',
+        query: { code: 'RC-1' },
+      })
+      expect(mockRouterPush).toHaveBeenCalledWith({
+        name: 'AssetForm',
+        query: { code: 'RC-1' },
+      })
+    })
+
+    it('平铺模式 CommonList edit 不播种（行字段不完整）', async () => {
+      grantRoleForEdit()
+      const wrapper = mountDetails()
+      const editButton = wrapper.findAll('button').find((b) => b.text() === '编辑')
+      expect(editButton).toBeDefined()
+      await editButton!.trigger('click')
+      await wrapperTick(wrapper)
+
+      expect(mockHandoff.seed).not.toHaveBeenCalled()
+      expect(mockRouterPush).toHaveBeenCalled()
+    })
+  })
 })
+
+/** 授予 asset_admin 角色，使平铺 CommonList 的编辑按钮渲染 */
+function grantRoleForEdit(): void {
+  useAuthStore(pinia).userRole = 'asset_admin'
+}
+
+/** 等待 Vue 更新队列（避免各用例重复 import nextTick） */
+async function wrapperTick(wrapper: { vm: { $nextTick: () => Promise<void> } }): Promise<void> {
+  await wrapper.vm.$nextTick()
+}
