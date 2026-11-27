@@ -4,15 +4,23 @@ import BasicAssetDetails from '../BasicAssetDetails.vue'
 
 const currentQuery: { value: Record<string, string> } = { value: {} }
 
-const { mockPush, mockGo, mockGetById, mockGetQrCodeImageUrl, elMessage, permissionState } =
-  vi.hoisted(() => ({
-    mockPush: vi.fn(() => Promise.resolve()),
-    mockGo: vi.fn(),
-    mockGetById: vi.fn(async () => null),
-    mockGetQrCodeImageUrl: vi.fn(() => 'https://example.com/qr.png'),
-    elMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
-    permissionState: { canOperateAsset: false },
-  }))
+const {
+  mockPush,
+  mockGo,
+  mockGetById,
+  mockGetQrCodeImageUrl,
+  mockHandoff,
+  elMessage,
+  permissionState,
+} = vi.hoisted(() => ({
+  mockPush: vi.fn(() => Promise.resolve()),
+  mockGo: vi.fn(),
+  mockGetById: vi.fn(async () => null),
+  mockGetQrCodeImageUrl: vi.fn(() => 'https://example.com/qr.png'),
+  mockHandoff: { seed: vi.fn(), consume: vi.fn(() => null), clear: vi.fn() },
+  elMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+  permissionState: { canOperateAsset: false },
+}))
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ query: currentQuery.value }),
@@ -50,6 +58,10 @@ vi.mock('@/composables/useExcelExport', () => ({
   useExcelExport: () => ({ exportDetail: vi.fn() }),
 }))
 
+vi.mock('@/composables/useAssetDetailHandoff', () => ({
+  useAssetDetailHandoff: () => mockHandoff,
+}))
+
 const stubs = {
   'el-button': {
     template: '<button class="el-button" @click="$emit(\'click\')"><slot /></button>',
@@ -64,6 +76,8 @@ const stubs = {
   InfoCard: { props: ['config'], template: '<div class="info-card-stub" />' },
   HardDiskSNCard: { props: ['harddiskSns', 'assetCode'], template: '<div class="hd-stub" />' },
   StatusTag: { props: ['status', 'size'], template: '<span class="status-stub"><slot /></span>' },
+  'el-skeleton': { template: '<div class="skeleton-stub" />' },
+  'el-empty': { template: '<div class="empty-stub" />' },
 }
 
 function makeDetail() {
@@ -193,5 +207,60 @@ describe('BasicAssetDetails 出库/回收按钮', () => {
 
     expect(wrapper.findAll('button').find((b) => b.text().includes('出库'))).toBeUndefined()
     expect(wrapper.findAll('button').find((b) => b.text().includes('回收'))).toBeUndefined()
+  })
+})
+
+describe('BasicAssetDetails 交接消费与来源标志', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    permissionState.canOperateAsset = true
+    currentQuery.value = { code: 'REC-001' }
+    mockGetById.mockResolvedValue(makeDetail())
+    mockHandoff.consume.mockReturnValue(null)
+  })
+
+  const editButton = async () => {
+    const wrapper = mountDetail()
+    await flushPromises()
+    const btn = wrapper.findAll('button').find((b) => b.text().includes('编辑'))
+    expect(btn).toBeTruthy()
+    return btn!
+  }
+
+  it('setup 命中交接：首帧渲染详情、零骨架帧、getById 零调用', async () => {
+    const seeded = makeDetail()
+    mockHandoff.consume.mockReturnValue(seeded as never)
+
+    const wrapper = mountDetail()
+    // 不 await flushPromises：首帧即断言
+    expect(mockHandoff.consume).toHaveBeenCalledWith('REC-001')
+    expect(wrapper.find('.loading-container').exists()).toBe(false)
+    expect(wrapper.find('.asset-detail-container').exists()).toBe(true)
+    expect(mockGetById).not.toHaveBeenCalled()
+  })
+
+  it('交接来源的详情点编辑不播种（防陈旧回灌）', async () => {
+    mockHandoff.consume.mockReturnValue(makeDetail() as never)
+    const btn = await editButton()
+
+    await btn.trigger('click')
+    expect(mockHandoff.seed).not.toHaveBeenCalled()
+    expect(mockPush).toHaveBeenCalledWith({ name: 'AssetForm', query: { code: 'REC-001' } })
+  })
+
+  it('getById 来源的详情点编辑播种，导航失败时按 didSeed 清理', async () => {
+    const btn = await editButton()
+    await btn.trigger('click')
+
+    expect(mockGetById).toHaveBeenCalledWith('REC-001')
+    expect(mockHandoff.seed).toHaveBeenCalledTimes(1)
+    expect(mockHandoff.seed).toHaveBeenCalledWith(
+      expect.objectContaining({ recordcode: 'REC-001' }),
+    )
+
+    // 导航失败（push resolve 非 falsy failure）按 didSeed 清理
+    mockPush.mockResolvedValueOnce({ type: 16 } as never)
+    await btn.trigger('click')
+    expect(mockHandoff.clear).toHaveBeenCalledWith('REC-001')
   })
 })

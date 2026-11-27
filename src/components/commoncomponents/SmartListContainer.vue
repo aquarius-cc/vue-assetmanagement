@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts" generic="T extends object">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { usePaginationSearch, type PaginationSearchConfig } from '@/composables/usePaginationSearch'
 import { notifyCallerError } from '@/utils/errorHandler'
 import { logError, logWarn } from '@/utils/logger'
@@ -144,11 +144,11 @@ const isLoading = computed(() => {
 
 // ===== 生命周期：自动加载数据 =====
 const hasLoaded = ref(false)
+/** 在途守卫：防止 watch 与 onMounted 双触发重复请求 */
+const isLoadingInitial = ref(false)
 
-onMounted(async () => {
-  if (!props.autoLoad) {
-    return
-  }
+const loadInitial = async (): Promise<void> => {
+  if (isLoadingInitial.value) return
 
   if (hasLoaded.value) {
     logWarn(
@@ -157,6 +157,7 @@ onMounted(async () => {
     )
     return
   }
+  isLoadingInitial.value = true
   hasLoaded.value = true
 
   try {
@@ -174,8 +175,23 @@ onMounted(async () => {
     // [M-RC-09] 单出口：AxiosError 由拦截器已提示，仅非 AxiosError 弹一次
     notifyCallerError(error, props.storeConfig.messages?.loadFailed ?? '加载数据失败')
     hasLoaded.value = false
+  } finally {
+    isLoadingInitial.value = false
   }
+}
+
+onMounted(() => {
+  if (!props.autoLoad || hasLoaded.value) return
+  void loadInitial()
 })
+
+// 深链直达时 autoLoad=false 挂载不加载；返回列表 false→true 时补加载一次（A5）
+watch(
+  () => props.autoLoad,
+  (now, was) => {
+    if (now && !was && !hasLoaded.value) void loadInitial()
+  },
+)
 
 // ===== 暴露方法给父组件 =====
 defineExpose({

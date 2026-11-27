@@ -31,7 +31,7 @@
           <AppBreadcrumb />
           <!-- 如果同时使用transition和keep-alive -->
           <router-view v-slot="{ Component }">
-            <transition name="fade">
+            <transition name="fade" mode="out-in">
               <keep-alive :include="keepAliveComponents">
                 <component :is="Component" />
               </keep-alive>
@@ -237,5 +237,16 @@ const keepAliveComponents = router
       color: var(--text-primary);
     }
   }
+}
+
+/* 路由切换淡入淡出：仅改透明度，不参与布局流（见 docs/style-optimization-proposal.md §2.3） */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

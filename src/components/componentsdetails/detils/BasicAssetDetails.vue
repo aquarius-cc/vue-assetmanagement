@@ -165,6 +165,7 @@ import { getAssetStatusText } from '@/utils/Format'
 import { basicAssetDetailExportColumns } from './basicAssetDetailExport'
 import { usePermission } from '@/composables/usePermission'
 import { useAssetStatusChecks } from '@/composables/useAssetStatus'
+import { useAssetDetailHandoff } from '@/composables/useAssetDetailHandoff'
 import { logError } from '@/utils/logger'
 import { notifyCallerError } from '@/utils/errorHandler'
 // import { useOperationGuard } from '@/composables/useOperationGuard'
@@ -173,9 +174,16 @@ import { notifyCallerError } from '@/utils/errorHandler'
 const router = useRouter()
 const route = useRoute()
 const assetStore = useAssetStore()
-const assetDetail = ref<AssetDetail | null>(null)
-const isLoading = ref(true)
-const qrCodeUrl = ref('')
+const handoff = useAssetDetailHandoff()
+
+/** setup 期消费交接：首帧即有数据，零骨架闪烁 */
+const assetCode = (route.query.code as string) || (route.query.recordcode as string)
+const seeded = typeof assetCode === 'string' ? handoff.consume(assetCode) : null
+const assetDetail = ref<AssetDetail | null>(seeded)
+const isLoading = ref(!seeded)
+/** 来源标志：handoff 来源的数据可能较旧，编辑时不再回灌给编辑页 */
+const seededFromHandoff = ref(!!seeded)
+const qrCodeUrl = ref(seeded?.recordcode ? assetStore.getQrCodeImageUrl(seeded.recordcode) : '')
 
 // ===== 使用 composable 生成卡片配置 =====
 const {
@@ -290,7 +298,9 @@ const downloadQRCode = () => {
 
 // ===== 生命周期 =====
 onMounted(async () => {
-  const assetCode = (route.query.code as string) || (route.query.recordcode as string)
+  // 命中交接：setup 期已消费并初始化，跳过 getById 与骨架屏
+  if (seeded) return
+
   if (!assetCode || typeof assetCode !== 'string') {
     logError('components/componentsdetails/detils/BasicAssetDetails', '无效的资产编码参数')
     ElMessage.error('无效的资产编码参数')
@@ -361,12 +371,20 @@ const handleEdit = () => {
     ElMessage.error('资产记录编码不存在，无法编辑')
     return
   }
+  const code = assetDetail.value.recordcode
+  // 仅 getById 来源才播种；handoff 来源的数据可能较旧，刻意不回灌编辑页
+  const didSeed = !seededFromHandoff.value
+  if (didSeed) handoff.seed(assetDetail.value)
   router
     .push({
       name: 'AssetForm',
-      query: { code: assetDetail.value.recordcode },
+      query: { code },
+    })
+    .then((failure) => {
+      if (failure && didSeed) handoff.clear(code)
     })
     .catch((err) => {
+      if (didSeed) handoff.clear(code)
       ElMessage.error(`跳转到编辑页面失败: ${err.message || '未知错误'}`)
     })
 }

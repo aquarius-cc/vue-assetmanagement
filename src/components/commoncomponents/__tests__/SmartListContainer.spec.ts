@@ -97,6 +97,43 @@ describe('SmartListContainer', () => {
       expect(hoisted.getList).not.toHaveBeenCalled()
     })
 
+    it('autoLoad false→true 时补加载一次（深链返回兜底）', async () => {
+      const wrapper = mountContainer({ autoLoad: false })
+      await Promise.resolve()
+      expect(hoisted.getList).not.toHaveBeenCalled()
+
+      await wrapper.setProps({ autoLoad: true })
+      await vi.waitFor(() => expect(hoisted.getList).toHaveBeenCalledTimes(1))
+      expect(hoisted.getList).toHaveBeenCalledWith({ page: 1, page_size: 50 })
+    })
+
+    it('autoLoad 已加载后再次 false→true 不重复请求', async () => {
+      const wrapper = mountContainer({})
+      await vi.waitFor(() => expect(hoisted.getList).toHaveBeenCalledTimes(1))
+
+      await wrapper.setProps({ autoLoad: false })
+      await wrapper.setProps({ autoLoad: true })
+      await Promise.resolve()
+      expect(hoisted.getList).toHaveBeenCalledTimes(1)
+    })
+
+    it('在途期间 autoLoad 双触发仅请求一次', async () => {
+      let resolveList!: (value: { count: number; results: unknown[] }) => void
+      hoisted.getList.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveList = resolve
+          }),
+      )
+      const wrapper = mountContainer({})
+      await wrapper.setProps({ autoLoad: false })
+      await wrapper.setProps({ autoLoad: true })
+
+      expect(hoisted.getList).toHaveBeenCalledTimes(1)
+      resolveList({ count: 0, results: [] })
+      await vi.waitFor(() => expect(hoisted.logWarn).not.toHaveBeenCalled())
+    })
+
     it('reports load failures through ElMessage and the logger', async () => {
       const failure = new Error('network down')
       hoisted.getList.mockRejectedValueOnce(failure)

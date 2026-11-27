@@ -33,6 +33,7 @@
     <el-table
       ref="tableRef"
       v-loading="loading"
+      element-loading-text="正在加载组内资产..."
       class="child-table"
       :data="rows"
       :row-key="getRowKey"

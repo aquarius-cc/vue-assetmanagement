@@ -10,6 +10,7 @@
     "src/composables/useGroup*.ts",
     "src/composables/useKeepAliveReload.ts",
     "src/composables/useDelayedRoute.ts",
+    "src/composables/useAssetDetailHandoff.ts",
     "!src/stores/**/*.spec.ts",
     "!src/stores/**/__tests__/**/*.ts",
     "!src/stores/**/*.test.ts"
