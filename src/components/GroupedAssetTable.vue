@@ -155,10 +155,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import GroupedAssetChildTable from './asset/GroupedAssetChildTable.vue'
 import { useGroupedAssetList } from '@/composables/useGroupedAssetList'
 import { useGroupedSessionRestore } from '@/composables/useGroupedSessionRestore'
+import { useTableLayoutFallback } from '@/composables/useTableLayoutFallback'
 import { NULL_DISPLAY, useGroupedAssetColumns } from '@/composables/useGroupedAssetColumns'
 import type { GroupedPageSnapshot } from '@/stores/groupedAssetSession'
 import type { TableColumn } from '@/types/list'
@@ -309,7 +310,10 @@ const onChildSelectionChange = (row: AssetGroupSummary, rows: AssetDetail[]): vo
 
 /** 汇总滚动容器 / 根节点（BF-078 需求3：滚动位采集与回放） */
 const rootRef = ref<HTMLElement | null>(null)
-const summaryTableRef = ref<{ setScrollTop?: (top?: number) => void } | null>(null)
+const summaryTableRef = ref<{
+  setScrollTop?: (top?: number) => void
+  doLayout?: () => void
+} | null>(null)
 
 const { restore } = useGroupedSessionRestore({
   search,
@@ -341,9 +345,9 @@ const restoreSession = async (snapshot: GroupedPageSnapshot): Promise<void> => {
   }
 }
 
-onMounted(() => {
-  void (props.initialSnapshot ? restoreSession(props.initialSnapshot) : search())
-})
+useTableLayoutFallback(summaryTableRef, () =>
+  props.initialSnapshot ? restoreSession(props.initialSnapshot) : search(),
+)
 
 /** 供 AssetContentDetails 的既有 SearchBar 复用触发筛选 */
 const searchGrouped = (filters?: AssetGroupQueryParams): Promise<void> => search(filters)

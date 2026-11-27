@@ -145,6 +145,22 @@ describe('RoleManage [M-27/M-25]', () => {
     expect(wrapper.findComponent({ name: 'ElPagination' }).exists()).toBe(true)
   })
 
+  // 回归屏障（CT-4）：首载完成后补一次表格布局重算
+  it('首载完成后调用一次 el-table doLayout', async () => {
+    getListMock.mockResolvedValue([])
+    const doLayout = vi.fn()
+    const tableStub = {
+      name: 'ElTable',
+      template: '<div class="el-table"><slot /></div>',
+      methods: { doLayout },
+    }
+
+    mountPage({ 'el-table': tableStub })
+    await flushPromises()
+
+    expect(doLayout).toHaveBeenCalledTimes(1)
+  })
+
   it('[B-30] 删除失败：不直弹后端原文，收编 notifyCallerError + logError', async () => {
     getListMock.mockResolvedValue([])
     const axiosError = {

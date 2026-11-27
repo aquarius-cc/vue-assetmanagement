@@ -40,6 +40,7 @@
            滚动不再错位，分页常驻可见；零数据时 el-table 常驻，EP 默认空文案在场 -->
       <div class="table-container">
         <el-table
+          ref="tableRef"
           v-loading="loading"
           :data="authUsers"
           stripe
@@ -156,9 +157,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { User, Search, Plus } from '@element-plus/icons-vue'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage, type ElTable, type FormInstance, type FormRules } from 'element-plus'
 import { useAuthUserStore } from '@/stores/authUserStore'
 import { notifyCallerError } from '@/utils/errorHandler'
 import { usePermission } from '@/composables/usePermission'
@@ -169,6 +170,7 @@ import type { PaginationQuery } from '@/stores/createEntityStore'
 import BindAuthUserDialog from '@/components/system/BindAuthUserDialog.vue'
 import UserRoleAssignDialog from '@/components/system/UserRoleAssignDialog.vue'
 import CommonPagination from '@/components/commoncomponents/CommonPagination.vue'
+import { useTableLayoutFallback } from '@/composables/useTableLayoutFallback'
 import { formatDateTimeFull } from '@/utils/Format'
 
 // 权限检查
@@ -176,6 +178,7 @@ import { formatDateTimeFull } from '@/utils/Format'
 // 并且 isAdmin 的判断逻辑已经包含了 isSuperuser 的判断,直接解构 isAdmin,不需要别名
 const { isAdmin } = usePermission()
 const authUserStore = useAuthUserStore()
+const tableRef = ref<InstanceType<typeof ElTable> | null>(null)
 
 // ==================== 用户列表 ====================
 // [S10/M-14] usePagedList 统一数据层：M-RC-13 stale 语义由其请求序号守卫承接
@@ -350,9 +353,7 @@ const openRoleDialog = (row: AuthUser) => {
 }
 
 // ==================== 初始化 ====================
-onMounted(() => {
-  fetchAuthUsers()
-})
+useTableLayoutFallback(tableRef, () => fetchAuthUsers())
 </script>
 
 <style scoped>

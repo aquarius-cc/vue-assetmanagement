@@ -93,12 +93,13 @@
 </template>
 
 <script setup lang="ts" generic="T extends object">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import type { ElTable } from 'element-plus'
 import CommonListColumn from './CommonListColumn.vue'
 import CommonListActions from './CommonListActions.vue'
 import CommonPagination from './CommonPagination.vue'
 import { useContainerWidth } from '@/composables/useContainerWidth'
+import { useTableLayoutFallback } from '@/composables/useTableLayoutFallback'
 import type { TableColumn } from '@/types/list'
 import { PAGE_SIZE_OPTIONS } from '@/utils/pagination'
 import { DEFAULT_PAGE_SIZE } from '@/utils/pagination'
@@ -323,8 +324,9 @@ watch(() => props.selectedKeys, applySelectedKeys, { deep: true })
 watch(() => props.data, applySelectedKeys)
 // 【为何不能用 immediate】`immediate: true` 会在 setup 阶段同步执行，此时 `tableRef` 仍为 null，
 // `applySelectedKeys` 首行即 return —— 首屏受控选中永远不生效（分组表格刷新后勾选态丢失）。
-// 故改由 onMounted 兜底首屏同步，watch 只负责后续变更。
-onMounted(() => {
+// 故改由 useTableLayoutFallback 的 onMounted 兜底首屏同步与布局重算，watch 只负责后续变更。
+// onReady 保持 fire-and-forget：不等待选中同步完成再重排，与既有语义一致。
+useTableLayoutFallback(tableRef, () => {
   void applySelectedKeys()
 })
 

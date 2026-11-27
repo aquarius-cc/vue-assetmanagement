@@ -24,11 +24,14 @@ import { computed } from 'vue'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import gatSource from '../GroupedAssetTable.vue?raw'
 
-const { mockGetGroupedAssets, mockGetGroupChildren, mockLogError } = vi.hoisted(() => ({
-  mockGetGroupedAssets: vi.fn(),
-  mockGetGroupChildren: vi.fn(),
-  mockLogError: vi.fn(),
-}))
+const { mockGetGroupedAssets, mockGetGroupChildren, mockLogError, mockDoLayout } = vi.hoisted(
+  () => ({
+    mockGetGroupedAssets: vi.fn(),
+    mockGetGroupChildren: vi.fn(),
+    mockLogError: vi.fn(),
+    mockDoLayout: vi.fn(),
+  }),
+)
 
 vi.mock('@/api/asset', () => ({
   assetAPI: {
@@ -77,6 +80,8 @@ const ElTableStub = {
     clearSelection: vi.fn(),
     // BF-078 需求3：水合完成后回放滚动位的公开 API 位（真 EP 由 useScrollbar 提供）
     setScrollTop: vi.fn(),
+    // 布局重算兜底（P1+B）：onMounted 首载/水合完成后应调用一次
+    doLayout: mockDoLayout,
   },
   template: '<div class="el-table"><slot /></div>',
 }
@@ -286,6 +291,14 @@ describe('GroupedAssetTable · F3 组件层', () => {
     expect(wrapper.find('.grouped-asset-table > .grouped-asset-table__pagination').exists()).toBe(
       true,
     )
+  })
+
+  // 回归屏障（CT-4）：首载/水合完成后补一次汇总表布局重算
+  it('首载完成后对汇总表调用一次 doLayout', async () => {
+    mountTable()
+    await flush()
+
+    expect(mockDoLayout).toHaveBeenCalledTimes(1)
   })
 
   it('用例6：无合同哨兵组合同号渲染「—」，不出现裸 null', async () => {

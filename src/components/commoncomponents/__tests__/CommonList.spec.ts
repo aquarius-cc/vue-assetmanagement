@@ -114,6 +114,30 @@ describe('CommonList', () => {
       expect(wrapper.findComponent({ name: 'ElTable' }).props('height')).toBe('100%')
     })
 
+    // 回归屏障（CT-4）：切入页面后必须补一次 EP 布局重算，
+    // 否则过渡期首算列宽会残留错位/固定列跳变。
+    it('re-layouts the table once after mount', async () => {
+      const doLayout = vi.fn()
+      const tableStub = {
+        name: 'ElTable',
+        props: ElTableStub.props,
+        emits: ElTableStub.emits,
+        setup: () => ({ doLayout }),
+        template: '<div class="el-table"><slot /></div>',
+      }
+      mount(CommonList, {
+        props: { data: DATA, columns: COLUMNS },
+        global: {
+          ...global,
+          stubs: { ...global.stubs, 'el-table': tableStub },
+        },
+      })
+
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(doLayout).toHaveBeenCalledTimes(1)
+    })
+
     it('renders selection column only when enableSelection is true', () => {
       const off = mountList()
       expect(off.findAllComponents({ name: 'ElTableColumn' })).toHaveLength(0)

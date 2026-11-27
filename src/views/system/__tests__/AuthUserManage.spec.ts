@@ -55,8 +55,10 @@ const stubs = {
   UserRoleAssignDialog: { template: '<div />' },
 }
 
-function mountPage() {
-  return mount(AuthUserManage, { global: { stubs, directives: { loading: {} } } })
+function mountPage(extraStubs: Record<string, unknown> = {}) {
+  return mount(AuthUserManage, {
+    global: { stubs: { ...stubs, ...extraStubs }, directives: { loading: {} } },
+  })
 }
 
 beforeEach(() => {
@@ -96,5 +98,21 @@ describe('AuthUserManage [M-27/M-25]', () => {
     await flushPromises()
 
     expect(wrapper.findComponent({ name: 'ElPagination' }).exists()).toBe(true)
+  })
+
+  // 回归屏障（CT-4）：首载完成后补一次表格布局重算
+  it('首载完成后调用一次 el-table doLayout', async () => {
+    getListMock.mockResolvedValue([])
+    const doLayout = vi.fn()
+    const tableStub = {
+      name: 'ElTable',
+      template: '<div class="el-table"><slot /></div>',
+      methods: { doLayout },
+    }
+
+    mountPage({ 'el-table': tableStub })
+    await flushPromises()
+
+    expect(doLayout).toHaveBeenCalledTimes(1)
   })
 })

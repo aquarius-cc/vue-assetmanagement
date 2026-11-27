@@ -40,7 +40,15 @@
       <!-- [M-27] 表格区弹性自滚容器（复用 CommonList flex 模式）：fixed 列在容器内
            滚动不再错位，分页常驻可见；零数据时 el-table 常驻，EP 默认空文案在场 -->
       <div class="table-container">
-        <el-table v-loading="loading" :data="roles" stripe height="100%" fit style="width: 100%">
+        <el-table
+          ref="tableRef"
+          v-loading="loading"
+          :data="roles"
+          stripe
+          height="100%"
+          fit
+          style="width: 100%"
+        >
           <el-table-column prop="role_code" label="角色编码" width="160" />
           <el-table-column prop="role_name" label="角色名称" width="140" />
           <el-table-column prop="role_level" label="层级" width="80" align="center" />
@@ -119,9 +127,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive } from 'vue'
 import { User, Search, Plus } from '@element-plus/icons-vue'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage, type ElTable, type FormInstance, type FormRules } from 'element-plus'
 import { notifyCallerError } from '@/utils/errorHandler'
 import { logError } from '@/utils/logger'
 import { useRoleStore } from '@/stores/roleStore'
@@ -132,10 +140,12 @@ import type { Role, RoleCreateUpdateForm } from '@/types/roles'
 import type { PaginationQuery } from '@/stores/createEntityStore'
 import RolePermDialog from '@/components/system/RolePermDialog.vue'
 import CommonPagination from '@/components/commoncomponents/CommonPagination.vue'
+import { useTableLayoutFallback } from '@/composables/useTableLayoutFallback'
 
 // C2 修复：添加权限检查
 const { isAdmin } = usePermission()
 const roleStore = useRoleStore()
+const tableRef = ref<InstanceType<typeof ElTable> | null>(null)
 
 // ==================== 角色列表 ====================
 // [S10/M-14] usePagedList 统一数据层：M-RC-13 stale 语义由其请求序号守卫承接
@@ -276,9 +286,7 @@ const openPermDialog = (row: Role) => {
 }
 
 // ==================== 初始化 ====================
-onMounted(() => {
-  fetchRoles()
-})
+useTableLayoutFallback(tableRef, () => fetchRoles())
 </script>
 
 <style scoped>
