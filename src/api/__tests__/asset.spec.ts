@@ -60,6 +60,16 @@ describe('assetAPI', () => {
     )
   })
 
+  it('getAssetByCode 传 useCache:false 时透传 request.get 第三参（读写双跳，getByIdFresh 止血链）', async () => {
+    await assetAPI.getAssetByCode('Asset-20260101-ABC12345', { useCache: false })
+    expect(mockRequest.get).toHaveBeenCalledWith(
+      '/assets/assets/Asset-20260101-ABC12345/',
+      undefined,
+      false,
+      300000,
+    )
+  })
+
   it('updateAsset calls PUT /assets/assets/{recordcode}/ and strips recordcode from payload', async () => {
     await assetAPI.updateAsset({
       recordcode: 'Asset-20260101-ABC12345',

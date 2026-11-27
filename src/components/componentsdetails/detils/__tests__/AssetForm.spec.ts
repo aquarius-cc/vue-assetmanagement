@@ -8,7 +8,7 @@ const currentQuery: { value: Record<string, string> } = { value: {} }
 const {
   mockGo,
   mockPush,
-  mockAssetGetById,
+  mockAssetGetByIdFresh,
   mockAssetUpdate,
   mockAssetCreate,
   mockSetRefreshFlag,
@@ -17,11 +17,13 @@ const {
   mockUserGetById,
   mockContractGetByName,
   mockLoadAssociations,
+  mockHandoff,
+  mockGuardOnMounted,
   elMessage,
 } = vi.hoisted(() => ({
   mockGo: vi.fn(),
   mockPush: vi.fn(),
-  mockAssetGetById: vi.fn(async () => null),
+  mockAssetGetByIdFresh: vi.fn(async () => null),
   mockAssetUpdate: vi.fn(async () => ({})),
   mockAssetCreate: vi.fn(async () => [] as unknown[]),
   mockSetRefreshFlag: vi.fn(),
@@ -30,6 +32,8 @@ const {
   mockUserGetById: vi.fn(async () => null),
   mockContractGetByName: vi.fn(async () => []),
   mockLoadAssociations: vi.fn(async () => {}),
+  mockHandoff: { seed: vi.fn(), consume: vi.fn(() => null), clear: vi.fn() },
+  mockGuardOnMounted: { value: true },
   elMessage: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }))
 
@@ -49,13 +53,17 @@ vi.mock('@element-plus/icons-vue', () => ({
 
 // [R-3/M-RC-07] AssetForm 于 onMounted 首行执行 guardOnMounted，此处放行以聚焦表单行为
 vi.mock('@/composables/useOperationGuard', () => ({
-  useOperationGuard: () => ({ guardOnMounted: () => true }),
+  useOperationGuard: () => ({ guardOnMounted: () => mockGuardOnMounted.value }),
+}))
+
+vi.mock('@/composables/useAssetDetailHandoff', () => ({
+  useAssetDetailHandoff: () => mockHandoff,
 }))
 
 vi.mock('@/stores/index', () => ({
   useUserStore: () => ({ getByName: vi.fn(async () => []), getById: mockUserGetById }),
   useAssetStore: () => ({
-    getById: mockAssetGetById,
+    getByIdFresh: mockAssetGetByIdFresh,
     update: mockAssetUpdate,
     create: mockAssetCreate,
     setRefreshFlag: mockSetRefreshFlag,
@@ -159,9 +167,19 @@ function makeDetail() {
   }
 }
 
+/** v-loading 桩：把绑定值写成 data-loading，便于断言 isBootstrapping 状态 */
+const loadingDirective = {
+  mounted(el: HTMLElement, binding: { value: unknown }) {
+    el.setAttribute('data-loading', String(binding.value))
+  },
+  updated(el: HTMLElement, binding: { value: unknown }) {
+    el.setAttribute('data-loading', String(binding.value))
+  },
+}
+
 function mountForm() {
   return mount(AssetForm, {
-    global: { stubs, directives: { loading: {} } },
+    global: { stubs, directives: { loading: loadingDirective } },
   })
 }
 
@@ -169,7 +187,7 @@ describe('AssetForm 编辑回填与提交【BF-081】', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     currentQuery.value = {}
-    mockAssetGetById.mockResolvedValue(null)
+    mockAssetGetByIdFresh.mockResolvedValue(null)
     mockAssetUpdate.mockResolvedValue({})
     mockAssetCreate.mockResolvedValue([])
     // 关联查询端点一律 404：修复后回填不得再触碰它们
@@ -177,16 +195,18 @@ describe('AssetForm 编辑回填与提交【BF-081】', () => {
     mockStorageGetById.mockRejectedValue(new Error('404'))
     mockUserGetById.mockRejectedValue(new Error('404'))
     mockContractGetByName.mockRejectedValue(new Error('404'))
+    mockHandoff.consume.mockReturnValue(null)
+    mockGuardOnMounted.value = true
   })
 
   it('编辑回填从嵌套对象直读 FK 编码与名称，且不发起任何关联查询', async () => {
     currentQuery.value = { code: 'REC-001' }
-    mockAssetGetById.mockResolvedValue(makeDetail())
+    mockAssetGetByIdFresh.mockResolvedValue(makeDetail())
 
     const wrapper = mountForm()
     await flushPromises()
 
-    expect(mockAssetGetById).toHaveBeenCalledWith('REC-001')
+    expect(mockAssetGetByIdFresh).toHaveBeenCalledWith('REC-001')
     const text = (sel: string) => wrapper.find(sel).text()
 
     // FK 编码：修复前读平铺键（detail 无该键）恒为空
@@ -217,7 +237,7 @@ describe('AssetForm 编辑回填与提交【BF-081】', () => {
 
   it('编辑提交 payload 使用回填捕获的 recordcode 定位，FK 值为回填后的业务码，且剔除录入倍数', async () => {
     currentQuery.value = { code: 'REC-001' }
-    mockAssetGetById.mockResolvedValue(makeDetail())
+    mockAssetGetByIdFresh.mockResolvedValue(makeDetail())
 
     const wrapper = mountForm()
     await flushPromises()
@@ -247,7 +267,7 @@ describe('AssetForm 编辑回填与提交【BF-081】', () => {
     const wrapper = mountForm()
     await flushPromises()
 
-    expect(mockAssetGetById).not.toHaveBeenCalled()
+    expect(mockAssetGetByIdFresh).not.toHaveBeenCalled()
 
     const submitBtn = wrapper.findAll('button').find((b) => b.text().includes('提交'))
     await submitBtn!.trigger('click')
@@ -263,7 +283,7 @@ describe('AssetForm 编辑回填与提交【BF-081】', () => {
     // recordcode 缺失防御分支被 isEditMode（!!route.query.code）网关保护、常规不可达，
     // 本用例锁定其 throw 语义的可达等价面：任何 submitUpdate 失败均阻断导航。
     currentQuery.value = { code: 'REC-001' }
-    mockAssetGetById.mockResolvedValue(makeDetail())
+    mockAssetGetByIdFresh.mockResolvedValue(makeDetail())
     mockAssetUpdate.mockRejectedValue(new Error('network down'))
 
     const wrapper = mountForm()
@@ -275,5 +295,95 @@ describe('AssetForm 编辑回填与提交【BF-081】', () => {
 
     expect(mockGo).not.toHaveBeenCalled()
     expect(mockSetRefreshFlag).not.toHaveBeenCalled()
+  })
+})
+
+describe('AssetForm 交接消费与加载遮罩', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    currentQuery.value = { code: 'REC-001' }
+    mockAssetGetByIdFresh.mockResolvedValue(makeDetail())
+    mockLoadAssociations.mockResolvedValue(undefined)
+    mockHandoff.consume.mockReturnValue(null)
+    mockGuardOnMounted.value = true
+  })
+
+  it('命中交接：字段即时回填且 getByIdFresh 零调用', async () => {
+    mockHandoff.consume.mockReturnValue(makeDetail() as never)
+
+    const wrapper = mountForm()
+    await flushPromises()
+
+    expect(mockHandoff.consume).toHaveBeenCalledWith('REC-001')
+    expect(mockAssetGetByIdFresh).not.toHaveBeenCalled()
+    expect(wrapper.find('.f-asset-type').text()).toBe('AT001')
+  })
+
+  it('未命中交接：回退 getByIdFresh 回填', async () => {
+    const wrapper = mountForm()
+    await flushPromises()
+
+    expect(mockAssetGetByIdFresh).toHaveBeenCalledWith('REC-001')
+    expect(wrapper.find('.f-asset-type').text()).toBe('AT001')
+  })
+
+  it('加载完成后 isBootstrapping 复位（v-loading 关闭）', async () => {
+    let resolveAssociations!: () => void
+    mockLoadAssociations.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveAssociations = resolve
+        }),
+    )
+
+    const wrapper = mountForm()
+    await Promise.resolve()
+    expect(wrapper.find('.asset-form').attributes('data-loading')).toBe('true')
+
+    resolveAssociations()
+    await flushPromises()
+    expect(wrapper.find('.asset-form').attributes('data-loading')).toBe('false')
+  })
+
+  it('guardOnMounted=false 早退时仍复位遮罩', async () => {
+    mockGuardOnMounted.value = false
+    const wrapper = mountForm()
+    await flushPromises()
+
+    expect(wrapper.find('.asset-form').attributes('data-loading')).toBe('false')
+    expect(mockHandoff.consume).not.toHaveBeenCalled()
+  })
+
+  it('resetForm 不传 preloaded，仍走 getByIdFresh（打开即打网，不走缓存）', async () => {
+    mockHandoff.consume.mockReturnValue(makeDetail() as never)
+    const wrapper = mountForm()
+    await flushPromises()
+    expect(mockAssetGetByIdFresh).not.toHaveBeenCalled()
+
+    const resetBtn = wrapper.findAll('button').find((b) => b.text().includes('重置'))
+    expect(resetBtn).toBeTruthy()
+    await resetBtn!.trigger('click')
+    await flushPromises()
+
+    expect(mockAssetGetByIdFresh).toHaveBeenCalledWith('REC-001')
+  })
+
+  it('非预载路径打开即打网，二次进入仍打网（不命中缓存）', async () => {
+    currentQuery.value = { code: 'REC-001' }
+    mockHandoff.consume.mockReturnValue(null)
+    mockAssetGetByIdFresh.mockResolvedValue(makeDetail())
+
+    const first = mountForm()
+    await flushPromises()
+    expect(mockAssetGetByIdFresh).toHaveBeenCalledTimes(1)
+    first.unmount()
+
+    // 二次进入：getByIdFresh 每次都走网络（useCache:false），不得被首次结果缓存短路
+    mockAssetGetByIdFresh.mockClear()
+    const second = mountForm()
+    await flushPromises()
+    expect(mockAssetGetByIdFresh).toHaveBeenCalledTimes(1)
+    expect(mockAssetGetByIdFresh).toHaveBeenCalledWith('REC-001')
+    second.unmount()
   })
 })

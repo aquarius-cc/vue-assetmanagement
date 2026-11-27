@@ -59,6 +59,14 @@ type StrictQueryParams = {
  */
 interface AssetStore extends EntityStore<AssetDetail, PaginationQuery> {
   /**
+   * 绕过缓存强制拉取资产详情（编辑页打开即打网的止血链）
+   * 使用 api.getAssetByCode(code, { useCache: false })，request 层缓存读写双跳
+   * @param recordcode 资产记录编码
+   * @returns 资产详情（404 时为 null）
+   */
+  getByIdFresh: (recordcode: string) => Promise<AssetDetail | null>
+
+  /**
    * 自定义资产搜索（支持多字段模糊查询）
    * 使用后端 search_assets action
    * @param params 查询参数
@@ -181,6 +189,15 @@ export const useAssetStore = (): AssetStore => {
 
   if (!('searchAssets' in store)) {
     const extendedStore = store as unknown as AssetStore
+
+    /**
+     * 绕过缓存强制拉取资产详情
+     * useCache:false 使 request 层读写双跳（不命中缓存也不回填缓存），
+     * 供编辑页加载/静默校验确保拿到服务端最新版本
+     */
+    extendedStore.getByIdFresh = (recordcode: string) =>
+      assetAPI.getAssetByCode(recordcode, { useCache: false })
+
     /**
      * 自定义资产搜索方法
      * 使用后端 search_assets action，支持多条件组合搜索

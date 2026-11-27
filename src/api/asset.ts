@@ -123,15 +123,21 @@ export const assetAPI = {
    * 【ID-2/取键契约】后端 AssetViewSet lookup_field="recordcode"（asset_view.py:57），
    * detail 路由只认 recordcode 或数字 pk；函数名保留 getAssetByCode 以兼容 8+ 调用方，
    * 入参实为 recordcode。
+   *
+   * @param options 缓存选项（可选）：缺省 useCache=true / cacheTTL=5 分钟（行为不变）；
+   *   传 { useCache: false } 时 request 层缓存读写双跳（getByIdFresh 止血链：编辑页打开即打网）
    */
-  getAssetByCode: async (recordcode: string): Promise<AssetDetail | null> => {
+  getAssetByCode: async (
+    recordcode: string,
+    options?: { useCache?: boolean; cacheTTL?: number },
+  ): Promise<AssetDetail | null> => {
     try {
       return unwrapResponse(
         request.get<AssetDetail>(
           `/assets/assets/${recordcode}/`,
           undefined,
-          true, // 使用缓存
-          300000, // 缓存时间 5 分钟
+          options?.useCache ?? true, // 使用缓存（缺省）
+          options?.cacheTTL ?? 300000, // 缓存时间 5 分钟
         ),
       )
     } catch (error) {

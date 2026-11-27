@@ -334,6 +334,27 @@ describe('AssetStore', () => {
     })
   })
 
+  describe('getByIdFresh（绕过缓存强制拉取）', () => {
+    it('应以 useCache:false 调用 getAssetByCode，读写双跳不命中缓存', async () => {
+      const mockAsset = { recordcode: 'REC-AS-001', asset_code: 'AS-001' }
+      const { assetAPI } = await import('@/api/asset')
+      vi.mocked(assetAPI.getAssetByCode).mockResolvedValue(mockAsset as any)
+
+      const result = await store.getByIdFresh('AS-001')
+
+      expect(result).toEqual(mockAsset)
+      expect(assetAPI.getAssetByCode).toHaveBeenCalledWith('AS-001', { useCache: false })
+    })
+
+    it('资产不存在时应返回null', async () => {
+      const { assetAPI } = await import('@/api/asset')
+      vi.mocked(assetAPI.getAssetByCode).mockResolvedValue(null)
+
+      const result = await store.getByIdFresh('NONEXIST')
+      expect(result).toBeNull()
+    })
+  })
+
   describe('状态时间线', () => {
     it('getAssetTimeline应该调用API并返回时间线', async () => {
       const mockTimeline = [

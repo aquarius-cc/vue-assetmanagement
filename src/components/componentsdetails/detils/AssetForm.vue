@@ -7,7 +7,7 @@
   - asset_purchase_number > 1 时，后端创建多条 Asset 记录并返回 List[AssetDetail]
 -->
 <template>
-  <div class="asset-form">
+  <div class="asset-form" v-loading="isBootstrapping" element-loading-text="正在加载资产数据...">
     <el-card class="box-card">
       <template #header>
         <div class="card-header">
@@ -86,6 +86,7 @@ import {
   useAssetFormAssociationMethods,
 } from '@/composables/useAssetFormHelpers'
 import { useOperationGuard } from '@/composables/useOperationGuard'
+import { useAssetDetailHandoff } from '@/composables/useAssetDetailHandoff'
 import AssetBasicInfo from '@/components/componentsdetails/detils/detilschildcomponents/AssetBasicInfo.vue'
 import AssetContractInfo from '@/components/componentsdetails/detils/detilschildcomponents/AssetContractInfo.vue'
 import AssetManagementInfo from '@/components/componentsdetails/detils/detilschildcomponents/AssetManagementInfo.vue'
@@ -101,6 +102,9 @@ const contractStore = useContractStore()
 const storageStore = useStorageStore()
 const formRef = ref()
 const submitting = ref(false)
+/** 首帧即遮罩，避免编辑页空壳闪现 */
+const isBootstrapping = ref(true)
+const handoff = useAssetDetailHandoff()
 
 const isEditMode = computed(() => !!route.query.code)
 
@@ -259,9 +263,14 @@ const applyRelationDetail = (detail: AssetDetail) => {
 /**
  * 编辑模式加载详情并回填表单。以详情响应中的 recordcode 为准提交更新（【ID-2/取键契约】）。
  */
-const loadAssetDetail = async (recordcode: string) => {
+/**
+ * 编辑模式加载详情并回填表单。
+ * @param preloaded 交接数据（可选）：onMounted 早期消费，避免慢网 TTL 过期；
+ *   resetForm 不传，回退 getByIdFresh（绕过缓存，编辑页打开即打网）
+ */
+const loadAssetDetail = async (recordcode: string, preloaded?: AssetDetail | null) => {
   try {
-    const detail = await assetStore.getById(recordcode)
+    const detail = preloaded ?? (await assetStore.getByIdFresh(recordcode))
     if (!detail) {
       ElMessage.error('未找到该资产，请确认记录编码是否正确')
       return
@@ -427,13 +436,19 @@ const handleLotAdds = () =>
 const goBack = () => router.go(-1)
 
 onMounted(async () => {
-  // [R-3/M-RC-07] 组件级兜底：路由守卫已按 meta.requiredMinRole 拦截，
-  // 此处再拦一次（如经 router.push 的编程式导航、缓存复用场景），无权限即跳 /main
-  if (!guardOnMounted()) return
-  await associations.loadAssociations()
-  if (isEditMode.value) {
-    const code = route.query.code as string
-    if (code) await loadAssetDetail(code)
+  isBootstrapping.value = true
+  try {
+    // [R-3/M-RC-07] 组件级兜底：路由守卫已按 meta.requiredMinRole 拦截，
+    // 此处再拦一次（如经 router.push 的编程式导航、缓存复用场景），无权限即跳 /main
+    if (!guardOnMounted()) return
+    const code = isEditMode.value ? (route.query.code as string) : ''
+    // 在 associations 之前消费：慢网下也不会因 10s TTL 过期而丢失交接数据
+    const pendingDetail = code ? handoff.consume(code) : null
+    await associations.loadAssociations()
+    if (code) await loadAssetDetail(code, pendingDetail)
+  } finally {
+    // guard 早退也复位，避免遮罩常驻
+    isBootstrapping.value = false
   }
 })
 </script>
